@@ -1,4 +1,4 @@
-!> \brief \b DZASUM
+!> \brief \b ICAMAX
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,13 +8,13 @@
 !  Definition:
 !  ===========
 !
-!       DOUBLE PRECISION FUNCTION DZASUM(N,ZX,INCX)
+!       INTEGER FUNCTION ICAMAX(N,CX,INCX)
 !
 !       .. Scalar Arguments ..
 !       INTEGER INCX,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX*16 ZX(*)
+!       COMPLEX CX(*)
 !       ..
 !
 !
@@ -23,8 +23,7 @@
 !>
 !> \verbatim
 !>
-!>    DZASUM takes the sum of the (|Re(.)| + |Im(.)|)'s of a complex vector and
-!>    returns a double precision result.
+!>    ICAMAX finds the index of the first element having maximum |Re(.)| + |Im(.)|
 !> \endverbatim
 !
 !  Arguments:
@@ -36,15 +35,15 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in,out] ZX
+!> \param[in] CX
 !> \verbatim
-!>          ZX is COMPLEX*16 array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of ZX
+!>         storage spacing between elements of CX
 !> \endverbatim
 !
 !  Authors:
@@ -54,24 +53,21 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
-!> \author Olivier Thomine
 !
-!> \ingroup asum
+!> \ingroup iamax
 !
 !> \par Further Details:
 !  =====================
 !>
 !> \verbatim
 !>
-!>     jack dongarra, 3/11/78.
+!>     jack dongarra, linpack, 3/11/78.
 !>     modified 3/93 to return if incx .le. 0.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
-!>
-!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   DOUBLE PRECISION FUNCTION DZASUM(N,ZX,INCX)
+   INTEGER FUNCTION ICAMAX(N,CX,INCX)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
@@ -81,36 +77,44 @@
    INTEGER INCX,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX*16 ZX(*)
+   COMPLEX CX(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   DOUBLE PRECISION STEMP
-   INTEGER I,NINCX
+   INTEGER I,IX
 !     ..
-   DZASUM = 0.0d0
-   STEMP = 0.0d0
-   IF (N <= 0 .OR. INCX <= 0) RETURN
+!     .. External Functions ..
+   REAL SCABS1
+   EXTERNAL SCABS1
+!     ..
+   ICAMAX = 0
+   IF (N < 1 .OR. INCX <= 0) RETURN
+   ICAMAX = 1
+   IF (N == 1) RETURN
    IF (INCX == 1) THEN
 !
 !        code for increment equal to 1
 !
-
-       STEMP = sum(ABS(DBLE(ZX(1:N))) + ABS(DIMAG(ZX(1:N))))
+      ICAMAX = maxloc(ABS(REAL(CX(1:N))) + ABS(AIMAG(CX(1:N))),1)
    ELSE
 !
 !        code for increment not equal to 1
 !
-      NINCX = N*INCX
-      DO I = 1,NINCX,INCX
-         STEMP = STEMP + ABS(DBLE(ZX(I))) + ABS(DIMAG(ZX(I)))
+      IX = 1
+      SMAX = SCABS1(CX(1))
+      IX = IX + INCX
+      DO I = 2,N
+         IF (SCABS1(CX(IX)) > SMAX) THEN
+            ICAMAX = I
+            SMAX = SCABS1(CX(IX))
+         END IF
+         IX = IX + INCX
       END DO
    END IF
-   DZASUM = STEMP
    RETURN
 !
-!     End of DZASUM
+!     End of ICAMAX
 !
 END
