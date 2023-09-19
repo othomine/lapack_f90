@@ -85,7 +85,7 @@
 !> \endverbatim
 !>
 !  =====================================================================
-function DNRM2( n, x, incx ) 
+function DNRM2( n, x, incx )
    integer, parameter :: wp = kind(1.d0)
    real(wp) :: DNRM2
 !
@@ -95,8 +95,6 @@ function DNRM2( n, x, incx )
 !     March 2021
 !
 !  .. Constants ..
-   real(wp), parameter :: zero = 0.0_wp
-   real(wp), parameter :: one  = 1.0_wp
    real(wp), parameter :: maxN = huge(0.0_wp)
 !  ..
 !  .. Blue's scaling constants ..
@@ -122,11 +120,11 @@ function DNRM2( n, x, incx )
 !
 !  Quick return if possible
 !
-   DNRM2 = zero
+   DNRM2 = 0.0_wp
    if( n <= 0 ) return
 !
-   scl = one
-   sumsq = zero
+   scl = 1.0_wp
+   sumsq = 0.0_wp
 !
 !  Compute the sum of squares in 3 accumulators:
 !     abig -- sums of squares scaled down to avoid overflow
@@ -137,9 +135,9 @@ function DNRM2( n, x, incx )
 !     tsml -- values smaller than this are scaled up by ssml
 !
    notbig = .true.
-   asml = zero
-   amed = zero
-   abig = zero
+   asml = 0.0_wp
+   amed = 0.0_wp
+   abig = 0.0_wp
    ix = 1
    if( incx < 0 ) ix = 1 - (n-1)*incx
    do i = 1, n
@@ -158,20 +156,20 @@ function DNRM2( n, x, incx )
 !  Combine abig and amed or amed and asml if more than one
 !  accumulator was used.
 !
-   if (abig > zero) then
+   if (abig > 0.0_wp) then
 !
 !     Combine abig and amed if abig > 0.
 !
-      if ( (amed > zero) .or. (amed > maxN) .or. (amed /= amed) ) then
+      if ( (amed > 0.0_wp) .or. (amed > maxN) .or. (amed /= amed) ) then
          abig = abig + (amed*sbig)*sbig
       end if
-      scl = one / sbig
+      scl = 1.0_wp / sbig
       sumsq = abig
-   else if (asml > zero) then
+   else if (asml > 0.0_wp) then
 !
 !     Combine amed and asml if asml > 0.
 !
-      if ( (amed > zero) .or. (amed > maxN) .or. (amed /= amed) ) then
+      if ( (amed > 0.0_wp) .or. (amed > maxN) .or. (amed /= amed) ) then
          amed = sqrt(amed)
          asml = sqrt(asml) / ssml
          if (asml > amed) then
@@ -181,17 +179,17 @@ function DNRM2( n, x, incx )
             ymin = asml
             ymax = amed
          end if
-         scl = one
-         sumsq = ymax**2*( one + (ymin/ymax)**2 )
+         scl = 1.0_wp
+         sumsq = ymax**2*( 1.0_wp + (ymin/ymax)**2 )
       else
-         scl = one / ssml
+         scl = 1.0_wp / ssml
          sumsq = asml
       end if
    else
 !
 !     Otherwise all values are mid-range
 !
-      scl = one
+      scl = 1.0_wp
       sumsq = amed
    end if
    DNRM2 = scl*sqrt( sumsq )
