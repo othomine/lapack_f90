@@ -1,4 +1,4 @@
-!> \brief \b DSYMM
+!> \brief \b SSYMM
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,15 +8,15 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE DSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
+!       SUBROUTINE SSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 !
 !       .. Scalar Arguments ..
-!       DOUBLE PRECISION ALPHA,BETA
+!       REAL ALPHA,BETA
 !       INTEGER LDA,LDB,LDC,M,N
 !       CHARACTER SIDE,UPLO
 !       ..
 !       .. Array Arguments ..
-!       DOUBLE PRECISION A(LDA,*),B(LDB,*),C(LDC,*)
+!       REAL A(LDA,*),B(LDB,*),C(LDC,*)
 !       ..
 !
 !
@@ -25,7 +25,7 @@
 !>
 !> \verbatim
 !>
-!> DSYMM  performs one of the matrix-matrix operations
+!> SSYMM  performs one of the matrix-matrix operations
 !>
 !>    C := alpha*A*B + beta*C,
 !>
@@ -81,13 +81,13 @@
 !>
 !> \param[in] ALPHA
 !> \verbatim
-!>          ALPHA is DOUBLE PRECISION.
+!>          ALPHA is REAL
 !>           On entry, ALPHA specifies the scalar alpha.
 !> \endverbatim
 !>
 !> \param[in] A
 !> \verbatim
-!>          A is DOUBLE PRECISION array, dimension ( LDA, ka ), where ka is
+!>          A is REAL array, dimension ( LDA, ka ), where ka is
 !>           m  when  SIDE = 'L' or 'l'  and is  n otherwise.
 !>           Before entry  with  SIDE = 'L' or 'l',  the  m by m  part of
 !>           the array  A  must contain the  symmetric matrix,  such that
@@ -122,7 +122,7 @@
 !>
 !> \param[in] B
 !> \verbatim
-!>          B is DOUBLE PRECISION array, dimension ( LDB, N )
+!>          B is REAL array, dimension ( LDB, N )
 !>           Before entry, the leading  m by n part of the array  B  must
 !>           contain the matrix B.
 !> \endverbatim
@@ -137,14 +137,14 @@
 !>
 !> \param[in] BETA
 !> \verbatim
-!>          BETA is DOUBLE PRECISION.
+!>          BETA is REAL
 !>           On entry,  BETA  specifies the scalar  beta.  When  BETA  is
 !>           supplied as zero then C need not be set on input.
 !> \endverbatim
 !>
 !> \param[in,out] C
 !> \verbatim
-!>          C is DOUBLE PRECISION array, dimension ( LDC, N )
+!>          C is REAL array, dimension ( LDC, N )
 !>           Before entry, the leading  m by n  part of the array  C must
 !>           contain the matrix  C,  except when  beta  is zero, in which
 !>           case C need not be set on entry.
@@ -188,19 +188,19 @@
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE DSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
+   SUBROUTINE SSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 !
 !  -- Reference BLAS level3 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   DOUBLE PRECISION ALPHA,BETA
+   REAL ALPHA,BETA
    INTEGER LDA,LDB,LDC,M,N
    CHARACTER SIDE,UPLO
 !     ..
 !     .. Array Arguments ..
-   DOUBLE PRECISION A(LDA,*),B(LDB,*),C(LDC,*)
+   REAL A(LDA,*),B(LDB,*),C(LDC,*)
 !     ..
 !
 !  =====================================================================
@@ -216,9 +216,10 @@
    INTRINSIC MAX
 !     ..
 !     .. Local Scalars ..
-   DOUBLE PRECISION TEMP1,TEMP2
+   REAL TEMP1,TEMP2
    INTEGER I,INFO,J,K,NROWA
    LOGICAL UPPER
+!     ..
 !
 !     Set NROWA as the number of rows of A.
 !
@@ -235,7 +236,8 @@
    IF ((.NOT.LSAME(SIDE,'L')) .AND. &
        (.NOT.LSAME(SIDE,'R'))) THEN
        INFO = 1
-   ELSE IF ((.NOT.UPPER) .AND. (.NOT.LSAME(UPLO,'L'))) THEN
+   ELSE IF ((.NOT.UPPER) .AND. &
+            (.NOT.LSAME(UPLO,'L'))) THEN
        INFO = 2
    ELSE IF (M < 0) THEN
        INFO = 3
@@ -249,19 +251,23 @@
        INFO = 12
    END IF
    IF (INFO /= 0) THEN
-       CALL XERBLA('DSYMM ',INFO)
+       CALL XERBLA('SSYMM ',INFO)
        RETURN
    END IF
 !
 !     Quick return if possible.
 !
    IF ((M == 0) .OR. (N == 0) .OR. &
-       ((ALPHA == 0.0D+0).AND. (BETA == 1.0D+0))) RETURN
+       ((ALPHA == 0.0E+0).AND. (BETA == 1.0E+0))) RETURN
 !
 !     And when  alpha.eq.zero.
 !
-   C(1:M,1:N) = BETA*C(1:M,1:N)
-   IF (ALPHA == 0.0D+0) RETURN
+   IF (BETA == 0.0E+0) THEN
+       C(1:M,1:N) = 0.0E+0
+   ELSE
+       C(1:M,1:N) = BETA*C(1:M,1:N)
+   END IF
+   IF (ALPHA == 0.0E+0) RETURN
 !
 !     Start the operations.
 !
@@ -281,8 +287,8 @@
            DO J = 1,N
                DO I = M,1,-1
                    TEMP1 = ALPHA*B(I,J)
-                   C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
                    C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
+                   C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
                ENDDO
            ENDDO
        END IF
@@ -292,7 +298,6 @@
 !
        IF (UPPER) THEN
            DO J = 1,N
-               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
                    C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
                ENDDO
@@ -302,7 +307,6 @@
            ENDDO
        ELSE
            DO J = 1,N
-               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
                    C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
                ENDDO
@@ -315,6 +319,6 @@
 !
    RETURN
 !
-!     End of DSYMM
+!     End of SSYMM
 !
 END

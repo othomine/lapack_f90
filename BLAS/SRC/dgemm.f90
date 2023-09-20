@@ -270,10 +270,12 @@
 !
 !     And if  alpha.eq.zero.
 !
-   IF (ALPHA == 0.0D+0) THEN
+   IF (BETA == 0.0D+0) THEN
+       C(1:M,1:N) = 0.0D+0
+   ELSEIF (BETA /= 1.0D+0) THEN
        C(1:M,1:N) = BETA*C(1:M,1:N)
-       RETURN
-   END IF
+   ENDIF
+   IF (ALPHA == 0.0D+0) RETURN
 !
 !     Start the operations.
 !
@@ -283,7 +285,6 @@
 !           Form  C := alpha*A*B + beta*C.
 !
            DO J = 1,N
-               C(1:M,J) = BETA*C(1:M,J)
                DO L = 1,K
                    C(1:M,J) = C(1:M,J) + ALPHA*B(L,J)*A(1:M,L)
                ENDDO
@@ -293,8 +294,8 @@
 !           Form  C := alpha*A**T*B + beta*C
 !
            DO J = 1,N
-               DO I = 1,M
-                   C(I,J) = ALPHA*sum(A(1:K,I)*B(1:K,J)) + BETA*C(I,J)
+               DO L = 1,K
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(L,1:M)*B(L,J)
                ENDDO
            ENDDO
        END IF
@@ -304,7 +305,6 @@
 !           Form  C := alpha*A*B**T + beta*C
 !
            DO J = 1,N
-               C(1:M,J) = BETA*C(1:M,J)
                DO L = 1,K
                    C(1:M,J) = C(1:M,J) + ALPHA*B(J,L)*A(1:M,L)
                ENDDO
@@ -314,8 +314,8 @@
 !           Form  C := alpha*A**T*B**T + beta*C
 !
            DO J = 1,N
-               DO I = 1,M
-                   C(I,J) = ALPHA*sum(A(1:K,I)*B(J,1:K)) + BETA*C(I,J)
+               DO L = 1,K
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(L,1:M)*B(J,L)
                ENDDO
            ENDDO
        END IF

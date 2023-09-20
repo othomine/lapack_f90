@@ -1,4 +1,4 @@
-!> \brief \b CHERK
+!> \brief \b ZSYRK
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,15 +8,15 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE CHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
+!       SUBROUTINE ZSYRK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
 !
 !       .. Scalar Arguments ..
-!       REAL ALPHA,BETA
+!       COMPLEX*16 ALPHA,BETA
 !       INTEGER K,LDA,LDC,N
 !       CHARACTER TRANS,UPLO
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX A(LDA,*),C(LDC,*)
+!       COMPLEX*16 A(LDA,*),C(LDC,*)
 !       ..
 !
 !
@@ -25,17 +25,17 @@
 !>
 !> \verbatim
 !>
-!> CHERK  performs one of the hermitian rank k operations
+!> ZSYRK  performs one of the symmetric rank k operations
 !>
-!>    C := alpha*A*A**H + beta*C,
+!>    C := alpha*A*A**T + beta*C,
 !>
 !> or
 !>
-!>    C := alpha*A**H*A + beta*C,
+!>    C := alpha*A**T*A + beta*C,
 !>
-!> where  alpha and beta  are  real scalars,  C is an  n by n  hermitian
-!> matrix and  A  is an  n by k  matrix in the  first case and a  k by n
-!> matrix in the second case.
+!> where  alpha and beta  are scalars,  C is an  n by n symmetric matrix
+!> and  A  is an  n by k  matrix in the first case and a  k by n  matrix
+!> in the second case.
 !> \endverbatim
 !
 !  Arguments:
@@ -61,9 +61,9 @@
 !>           On entry,  TRANS  specifies the operation to be performed as
 !>           follows:
 !>
-!>              TRANS = 'N' or 'n'   C := alpha*A*A**H + beta*C.
+!>              TRANS = 'N' or 'n'   C := alpha*A*A**T + beta*C.
 !>
-!>              TRANS = 'C' or 'c'   C := alpha*A**H*A + beta*C.
+!>              TRANS = 'T' or 't'   C := alpha*A**T*A + beta*C.
 !> \endverbatim
 !>
 !> \param[in] N
@@ -78,19 +78,19 @@
 !>          K is INTEGER
 !>           On entry with  TRANS = 'N' or 'n',  K  specifies  the number
 !>           of  columns   of  the   matrix   A,   and  on   entry   with
-!>           TRANS = 'C' or 'c',  K  specifies  the number of rows of the
+!>           TRANS = 'T' or 't',  K  specifies  the number of rows of the
 !>           matrix A.  K must be at least zero.
 !> \endverbatim
 !>
 !> \param[in] ALPHA
 !> \verbatim
-!>          ALPHA is REAL
+!>          ALPHA is COMPLEX*16
 !>           On entry, ALPHA specifies the scalar alpha.
 !> \endverbatim
 !>
 !> \param[in] A
 !> \verbatim
-!>          A is COMPLEX array, dimension ( LDA, ka ), where ka is
+!>          A is COMPLEX*16 array, dimension ( LDA, ka ), where ka is
 !>           k  when  TRANS = 'N' or 'n',  and is  n  otherwise.
 !>           Before entry with  TRANS = 'N' or 'n',  the  leading  n by k
 !>           part of the array  A  must contain the matrix  A,  otherwise
@@ -109,28 +109,25 @@
 !>
 !> \param[in] BETA
 !> \verbatim
-!>          BETA is REAL
+!>          BETA is COMPLEX*16
 !>           On entry, BETA specifies the scalar beta.
 !> \endverbatim
 !>
 !> \param[in,out] C
 !> \verbatim
-!>          C is COMPLEX array, dimension ( LDC, N )
+!>          C is COMPLEX*16 array, dimension ( LDC, N )
 !>           Before entry  with  UPLO = 'U' or 'u',  the leading  n by n
 !>           upper triangular part of the array C must contain the upper
-!>           triangular part  of the  hermitian matrix  and the strictly
+!>           triangular part  of the  symmetric matrix  and the strictly
 !>           lower triangular part of C is not referenced.  On exit, the
 !>           upper triangular part of the array  C is overwritten by the
 !>           upper triangular part of the updated matrix.
 !>           Before entry  with  UPLO = 'L' or 'l',  the leading  n by n
 !>           lower triangular part of the array C must contain the lower
-!>           triangular part  of the  hermitian matrix  and the strictly
+!>           triangular part  of the  symmetric matrix  and the strictly
 !>           upper triangular part of C is not referenced.  On exit, the
 !>           lower triangular part of the array  C is overwritten by the
 !>           lower triangular part of the updated matrix.
-!>           Note that the imaginary parts of the diagonal elements need
-!>           not be set,  they are assumed to be zero,  and on exit they
-!>           are set to zero.
 !> \endverbatim
 !>
 !> \param[in] LDC
@@ -165,26 +162,23 @@
 !>     Jeremy Du Croz, Numerical Algorithms Group Ltd.
 !>     Sven Hammarling, Numerical Algorithms Group Ltd.
 !>
-!>  -- Modified 8-Nov-93 to set C(J,J) to REAL( C(J,J) ) when BETA = 1.
-!>     Ed Anderson, Cray Research Inc.
-!>
 !>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE CHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
+   SUBROUTINE ZSYRK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
 !
 !  -- Reference BLAS level3 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   REAL ALPHA,BETA
+   COMPLEX*16 ALPHA,BETA
    INTEGER K,LDA,LDC,N
    CHARACTER TRANS,UPLO
 !     ..
 !     .. Array Arguments ..
-   COMPLEX A(LDA,*),C(LDC,*)
+   COMPLEX*16 A(LDA,*),C(LDC,*)
 !     ..
 !
 !  =====================================================================
@@ -197,11 +191,10 @@
    EXTERNAL XERBLA
 !     ..
 !     .. Intrinsic Functions ..
-   INTRINSIC CMPLX,CONJG,MAX,REAL
+   INTRINSIC MAX
 !     ..
 !     .. Local Scalars ..
-   COMPLEX TEMP
-   REAL RTEMP
+   COMPLEX*16 TEMP
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..
@@ -219,7 +212,7 @@
    IF ((.NOT.UPPER) .AND. (.NOT.LSAME(UPLO,'L'))) THEN
        INFO = 1
    ELSE IF ((.NOT.LSAME(TRANS,'N')) .AND. &
-            (.NOT.LSAME(TRANS,'C'))) THEN
+            (.NOT.LSAME(TRANS,'T'))) THEN
        INFO = 2
    ELSE IF (N < 0) THEN
        INFO = 3
@@ -231,85 +224,85 @@
        INFO = 10
    END IF
    IF (INFO /= 0) THEN
-       CALL XERBLA('CHERK ',INFO)
+       CALL XERBLA('ZSYRK ',INFO)
        RETURN
    END IF
 !
 !     Quick return if possible.
 !
-   IF ((N == 0) .OR. (((ALPHA == 0.0E+0).OR. &
-       (K == 0)).AND. (BETA == 1.0E+0))) RETURN
+   IF ((N == 0) .OR. (((ALPHA == (0.0D+0,0.0D+0)).OR. &
+       (K == 0)).AND. (BETA == (1.0D+0,0.0D+0)))) RETURN
 !
-!     prepreating
+!     And when  alpha.eq.zero.
 !
    IF (UPPER) THEN
-       IF (BETA == 0.0E+0) THEN
+       IF (BETA == (0.0D+0,0.0D+0)) THEN
            DO J = 1,N
-               C(1:J,J) = 0.0E+0
+               DO I = 1,J
+                   C(I,J) = (0.0D+0,0.0D+0)
+               ENDDO
            ENDDO
        ELSE
            DO J = 1,N
-               C(1:J - 1,J) = BETA*C(1:J - 1,J)
-               C(J,J) = BETA*REAL(C(J,J))
+               DO I = 1,J
+                   C(I,J) = BETA*C(I,J)
+               ENDDO
            ENDDO
        END IF
    ELSE
-       IF (BETA == 0.0E+0) THEN
+       IF (BETA == (0.0D+0,0.0D+0)) THEN
            DO J = 1,N
-               C(J:N,J) = 0.0E+0
+               DO I = J,N
+                   C(I,J) = (0.0D+0,0.0D+0)
+               ENDDO
            ENDDO
        ELSE
            DO J = 1,N
-               C(J,J) = BETA*REAL(C(J,J))
-               C(J + 1:N,J) = BETA*C(J + 1:N,J)
+               DO I = J,N
+                   C(I,J) = BETA*C(I,J)
+               ENDDO
            ENDDO
        END IF
    END IF
-   IF (ALPHA == 0.0E+0) RETURN
+   IF (ALPHA == (0.0D+0,0.0D+0)) RETURN
 !
 !     Start the operations.
 !
    IF (LSAME(TRANS,'N')) THEN
 !
-!        Form  C := alpha*A*A**H + beta*C.
+!        Form  C := alpha*A*A**T + beta*C.
 !
        IF (UPPER) THEN
            DO J = 1,N
                DO L = 1,K
-                   IF (A(J,L) /= CMPLX(0.0E+0)) THEN
-                       TEMP = ALPHA*CONJG(A(J,L))
-                       C(1:J - 1,J) = C(1:J - 1,J) + TEMP*A(1:J - 1,L)
-                       C(J,J) = REAL(C(J,J)) + REAL(TEMP*A(J,L))
+                   IF (A(J,L) /= (0.0D+0,0.0D+0)) THEN
+                       C(1:J,J) = C(1:J,J) + ALPHA*A(J,L)*A(1:J,L)
                    END IF
                ENDDO
            ENDDO
        ELSE
            DO J = 1,N
                DO L = 1,K
-                   IF (A(J,L) /= CMPLX(0.0E+0)) THEN
-                       TEMP = ALPHA*CONJG(A(J,L))
-                       C(J,J) = REAL(C(J,J)) + REAL(TEMP*A(J,L))
-                       C(J + 1:N,J) = C(J + 1:N,J) + TEMP*A(J + 1:N,L)
+                   IF (A(J,L) /= (0.0D+0,0.0D+0)) THEN
+                       C(J:N,J) = C(J:N,J) + ALPHA*A(J,L)*A(J:N,L)
                    END IF
                ENDDO
            ENDDO
        END IF
    ELSE
 !
-!        Form  C := alpha*A**H*A + beta*C.
+!        Form  C := alpha*A**T*A + beta*C.
 !
        IF (UPPER) THEN
            DO J = 1,N
-               DO I = 1,J - 1
-                   C(I,J) = ALPHA*sum(CONJG(A(1:K,I))*A(1:K,J)) + C(I,J)
+               DO I = 1,J
+                   C(I,J) = C(I,J) + ALPHA*sum(A(1:K,I)*A(1:K,J))
                ENDDO
-               C(J,J) = ALPHA*sum(REAL(CONJG(A(1:K,J))*A(1:K,J))) + REAL(C(J,J))
-          ENDDO
+           ENDDO
        ELSE
            DO J = 1,N
-               C(J,J) = ALPHA*sum(REAL(CONJG(A(1:K,J))*A(1:K,J))) + REAL(C(J,J))
-               DO I = J + 1,N
-                   C(I,J) = ALPHA*sum(CONJG(A(1:K,I))*A(1:K,J)) + C(I,J)
+               DO I = J,N
+                   C(I,J) = C(I,J) + ALPHA*sum(A(1:K,I)*A(1:K,J))
                ENDDO
            ENDDO
        END IF
@@ -317,6 +310,6 @@
 !
    RETURN
 !
-!     End of CHERK
+!     End of ZSYRK
 !
 END

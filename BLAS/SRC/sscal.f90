@@ -1,4 +1,4 @@
-!> \brief \b ICAMAX
+!> \brief \b SSCAL
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,13 +8,14 @@
 !  Definition:
 !  ===========
 !
-!       INTEGER FUNCTION ICAMAX(N,CX,INCX)
+!       SUBROUTINE SSCAL(N,SA,SX,INCX)
 !
 !       .. Scalar Arguments ..
+!       REAL SA
 !       INTEGER INCX,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX CX(*)
+!       REAL SX(*)
 !       ..
 !
 !
@@ -23,7 +24,8 @@
 !>
 !> \verbatim
 !>
-!>    ICAMAX finds the index of the first element having maximum |Re(.)| + |Im(.)|
+!>    SSCAL scales a vector by a constant.
+!>    uses unrolled loops for increment equal to 1.
 !> \endverbatim
 !
 !  Arguments:
@@ -35,15 +37,21 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in] CX
+!> \param[in] SA
 !> \verbatim
-!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          SA is REAL
+!>           On entry, SA specifies the scalar alpha.
+!> \endverbatim
+!>
+!> \param[in,out] SX
+!> \verbatim
+!>          SX is REAL array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of CX
+!>         storage spacing between elements of SX
 !> \endverbatim
 !
 !  Authors:
@@ -53,8 +61,9 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine
 !
-!> \ingroup iamax
+!> \ingroup scal
 !
 !> \par Further Details:
 !  =====================
@@ -64,53 +73,50 @@
 !>     jack dongarra, linpack, 3/11/78.
 !>     modified 3/93 to return if incx .le. 0.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
+!>
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   INTEGER FUNCTION ICAMAX(N,CX,INCX)
+   SUBROUTINE SSCAL(N,SA,SX,INCX)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
+   REAL SA
    INTEGER INCX,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*)
+   REAL SX(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,IX
+   INTEGER I,M,MP1
 !     ..
-   ICAMAX = 0
-   IF (N < 1 .OR. INCX <= 0) RETURN
-   ICAMAX = 1
-   IF (N == 1) RETURN
+!     .. Intrinsic Functions ..
+   INTRINSIC MOD
+!     ..
+   IF (N <= 0 .OR. INCX <= 0 .OR. SA == 1.0E+0) RETURN
    IF (INCX == 1) THEN
 !
 !        code for increment equal to 1
 !
-      ICAMAX = maxloc(ABS(REAL(CX(1:N))) + ABS(AIMAG(CX(1:N))),1)
+!
+!        clean-up loop
+!
+      SX(1:N) = SA*SX(1:N)
    ELSE
 !
 !        code for increment not equal to 1
 !
-      IX = 1
-      SMAX = ABS(REAL(CX(1))) + ABS(AIMAG(CX(1)))
-      IX = IX + INCX
-      DO I = 2,N
-         IF (ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX))) > SMAX) THEN
-            ICAMAX = I
-            SMAX = ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX)))
-         END IF
-         IX = IX + INCX
-      END DO
+      SX(1:N*INCX:INCX) = SA*SX(1:N*INCX:INCX)
    END IF
    RETURN
 !
-!     End of ICAMAX
+!     End of SSCAL
 !
 END

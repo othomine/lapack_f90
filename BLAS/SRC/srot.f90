@@ -1,4 +1,4 @@
-!> \brief \b CAXPY
+!> \brief \b SROT
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,14 +8,14 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE CAXPY(N,CA,CX,INCX,CY,INCY)
+!       SUBROUTINE SROT(N,SX,INCX,SY,INCY,C,S)
 !
 !       .. Scalar Arguments ..
-!       COMPLEX CA
+!       REAL C,S
 !       INTEGER INCX,INCY,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX CX(*),CY(*)
+!       REAL SX(*),SY(*)
 !       ..
 !
 !
@@ -24,7 +24,7 @@
 !>
 !> \verbatim
 !>
-!>    CAXPY constant times a vector plus a vector.
+!>    applies a plane rotation.
 !> \endverbatim
 !
 !  Arguments:
@@ -36,32 +36,36 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in] CA
+!> \param[in,out] SX
 !> \verbatim
-!>          CA is COMPLEX
-!>           On entry, CA specifies the scalar alpha.
-!> \endverbatim
-!>
-!> \param[in] CX
-!> \verbatim
-!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          SX is REAL array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of CX
+!>         storage spacing between elements of SX
 !> \endverbatim
 !>
-!> \param[in,out] CY
+!> \param[in,out] SY
 !> \verbatim
-!>          CY is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
+!>          SY is REAL array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
 !> \endverbatim
 !>
 !> \param[in] INCY
 !> \verbatim
 !>          INCY is INTEGER
-!>         storage spacing between elements of CY
+!>         storage spacing between elements of SY
+!> \endverbatim
+!>
+!> \param[in] C
+!> \verbatim
+!>          C is REAL
+!> \endverbatim
+!>
+!> \param[in] S
+!> \verbatim
+!>          S is REAL
 !> \endverbatim
 !
 !  Authors:
@@ -73,7 +77,7 @@
 !> \author NAG Ltd.
 !> \author Olivier Thomine
 !
-!> \ingroup axpy
+!> \ingroup rot
 !
 !> \par Further Details:
 !  =====================
@@ -83,54 +87,59 @@
 !>     jack dongarra, linpack, 3/11/78.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
 !>
-!>     converted to F90 and optimized 2023, olivier thomine
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE CAXPY(N,CA,CX,INCX,CY,INCY)
+   SUBROUTINE SROT(N,SX,INCX,SY,INCY,C,S)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   COMPLEX CA
+   REAL C,S
    INTEGER INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*),CY(*)
+   REAL SX(*),SY(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
+   REAL STEMP
    INTEGER I,IX,IY
 !     ..
    IF (N <= 0) RETURN
-   IF (ABS(REAL(CA)) + ABS(AIMAG(CA)) == 0.0E+0) RETURN
    IF (INCX == 1 .AND. INCY == 1) THEN
 !
-!        code for both increments equal to 1
+!       code for both increments equal to 1
 !
-      CY(1:N) = CY(1:N) + CA*CX(1:N)
+      DO I = 1,N
+         STEMP = C*SX(I) + S*SY(I)
+         SY(I) = C*SY(I) - S*SX(I)
+         SX(I) = STEMP
+      END DO
    ELSE
 !
-!        code for unequal increments or equal increments
-!          not equal to 1
+!       code for unequal increments or equal increments not equal
+!         to 1
 !
       IX = 1
       IY = 1
       IF (INCX < 0) IX = (-N+1)*INCX + 1
       IF (INCY < 0) IY = (-N+1)*INCY + 1
       DO I = 1,N
-         CY(IY) = CY(IY) + CA*CX(IX)
+         STEMP = C*SX(IX) + S*SY(IY)
+         SY(IY) = C*SY(IY) - S*SX(IX)
+         SX(IX) = STEMP
          IX = IX + INCX
          IY = IY + INCY
       END DO
    END IF
-!
    RETURN
 !
-!     End of CAXPY
+!     End of SROT
 !
 END

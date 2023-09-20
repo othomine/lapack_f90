@@ -1,4 +1,4 @@
-!> \brief \b CAXPY
+!> \brief \b SAXPY
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,14 +8,14 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE CAXPY(N,CA,CX,INCX,CY,INCY)
+!       SUBROUTINE SAXPY(N,SA,SX,INCX,SY,INCY)
 !
 !       .. Scalar Arguments ..
-!       COMPLEX CA
+!       REAL SA
 !       INTEGER INCX,INCY,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX CX(*),CY(*)
+!       REAL SX(*),SY(*)
 !       ..
 !
 !
@@ -24,7 +24,8 @@
 !>
 !> \verbatim
 !>
-!>    CAXPY constant times a vector plus a vector.
+!>    SAXPY constant times a vector plus a vector.
+!>    uses unrolled loops for increments equal to one.
 !> \endverbatim
 !
 !  Arguments:
@@ -36,32 +37,32 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in] CA
+!> \param[in] SA
 !> \verbatim
-!>          CA is COMPLEX
-!>           On entry, CA specifies the scalar alpha.
+!>          SA is REAL
+!>           On entry, SA specifies the scalar alpha.
 !> \endverbatim
 !>
-!> \param[in] CX
+!> \param[in] SX
 !> \verbatim
-!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          SX is REAL array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of CX
+!>         storage spacing between elements of SX
 !> \endverbatim
 !>
-!> \param[in,out] CY
+!> \param[in,out] SY
 !> \verbatim
-!>          CY is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
+!>          SY is REAL array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
 !> \endverbatim
 !>
 !> \param[in] INCY
 !> \verbatim
 !>          INCY is INTEGER
-!>         storage spacing between elements of CY
+!>         storage spacing between elements of SY
 !> \endverbatim
 !
 !  Authors:
@@ -83,36 +84,43 @@
 !>     jack dongarra, linpack, 3/11/78.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
 !>
-!>     converted to F90 and optimized 2023, olivier thomine
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE CAXPY(N,CA,CX,INCX,CY,INCY)
+   SUBROUTINE SAXPY(N,SA,SX,INCX,SY,INCY)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   COMPLEX CA
+   REAL SA
    INTEGER INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*),CY(*)
+   REAL SX(*),SY(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,IX,IY
+   INTEGER I,IX,IY,M,MP1
+!     ..
+!     .. Intrinsic Functions ..
+   INTRINSIC MOD
 !     ..
    IF (N <= 0) RETURN
-   IF (ABS(REAL(CA)) + ABS(AIMAG(CA)) == 0.0E+0) RETURN
+   IF (SA == 0.0) RETURN
    IF (INCX == 1 .AND. INCY == 1) THEN
 !
 !        code for both increments equal to 1
 !
-      CY(1:N) = CY(1:N) + CA*CX(1:N)
+!
+!        clean-up loop
+!
+      SY(1:N) = SY(1:N) + SA*SX(1:N)
+!       stop 'to change in source code'
    ELSE
 !
 !        code for unequal increments or equal increments
@@ -123,14 +131,13 @@
       IF (INCX < 0) IX = (-N+1)*INCX + 1
       IF (INCY < 0) IY = (-N+1)*INCY + 1
       DO I = 1,N
-         CY(IY) = CY(IY) + CA*CX(IX)
-         IX = IX + INCX
-         IY = IY + INCY
+       SY(IY) = SY(IY) + SA*SX(IX)
+       IX = IX + INCX
+       IY = IY + INCY
       END DO
    END IF
-!
    RETURN
 !
-!     End of CAXPY
+!     End of SAXPY
 !
 END

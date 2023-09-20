@@ -262,14 +262,12 @@
 !
 !     And when  alpha.eq.zero.
 !
-   IF (ALPHA == (0.0E+0,0.0E+0)) THEN
-       IF (BETA == (0.0E+0,0.0E+0)) THEN
-           C(1:M,1:N) = (0.0E+0,0.0E+0)
-       ELSE
-           C(1:M,1:N) = BETA*C(1:M,1:N)
-       END IF
-       RETURN
+   IF (BETA == (0.0E+0,0.0E+0)) THEN
+       C(1:M,1:N) = (0.0E+0,0.0E+0)
+   ELSE
+       C(1:M,1:N) = BETA*C(1:M,1:N)
    END IF
+   IF (ALPHA == (0.0E+0,0.0E+0)) RETURN
 !
 !     Start the operations.
 !
@@ -278,91 +276,45 @@
 !        Form  C := alpha*A*B + beta*C.
 !
        IF (UPPER) THEN
-           IF (BETA == (0.0E+0,0.0E+0)) THEN
-               DO J = 1,N
-                   DO I = 1,M
-                       TEMP1 = ALPHA*B(I,J)
-                       C(1:I - 1,J) = C(1:I - 1,J) + TEMP1*A(1:I - 1,I)
-                       C(I,J) = TEMP1*A(I,I) + ALPHA*sum(B(1:I - 1,J)*A(1:I - 1,I))
-                   ENDDO
+           DO J = 1,N
+               DO I = 1,M
+                   TEMP1 = ALPHA*B(I,J)
+                   C(1:I - 1,J) = C(1:I - 1,J) + TEMP1*A(1:I - 1,I)
+                   C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(1:I - 1,J)*A(1:I - 1,I))
                ENDDO
-           ELSEIF (BETA /= (1.0E+0,0.0E+0)) THEN
-               DO J = 1,N
-                   DO I = 1,M
-                       C(1:I - 1,J) = C(1:I - 1,J) + TEMP1*A(1:I - 1,I)
-                       C(I,J) = BETA*C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(1:I - 1,J)*A(1:I - 1,I))
-                   ENDDO
-               ENDDO
-           ELSE
-               DO J = 1,N
-                   DO I = 1,M
-                       TEMP1 = ALPHA*B(I,J)
-                       C(1:I - 1,J) = C(1:I - 1,J) + TEMP1*A(1:I - 1,I)
-                       C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(1:I - 1,J)*A(1:I - 1,I))
-                   ENDDO
-               ENDDO
-           ENDIF
+           ENDDO
        ELSE
-           IF (BETA == (0.0E+0,0.0E+0)) THEN
-               DO J = 1,N
-                   DO I = M,1,-1
-                       TEMP1 = ALPHA*B(I,J)
-                       C(I,J) = TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
-                       C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
-                   ENDDO
+           DO J = 1,N
+               DO I = M,1,-1
+                   TEMP1 = ALPHA*B(I,J)
+                   C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
+                   C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
                ENDDO
-           ELSEIF (BETA /= (1.0E+0,0.0E+0)) THEN
-               DO J = 1,N
-                   DO I = M,1,-1
-                       TEMP1 = ALPHA*B(I,J)
-                       C(I,J) = BETA*C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
-                       C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
-                   ENDDO
-               ENDDO
-           ELSE
-               DO J = 1,N
-                   DO I = M,1,-1
-                       TEMP1 = ALPHA*B(I,J)
-                       C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
-                       C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
-                   ENDDO
-               ENDDO
-           ENDIF
+           ENDDO
        END IF
    ELSE
 !
 !        Form  C := alpha*B*A + beta*C.
 !
-       IF (BETA == (0.0E+0,0.0E+0)) THEN
+       IF (UPPER) THEN
            DO J = 1,N
-               C(1:M,J) = ALPHA*A(J,J)*B(1:M,J)
-           ENDDO
-       ELSEIF (BETA /= (1.0E+0,0.0E+0)) THEN
-           DO J = 1,N
-               C(1:M,J) = BETA*C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
+               DO K = 1,J - 1
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
+               ENDDO
+               DO K = J + 1,N
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
+               ENDDO
            ENDDO
        ELSE
            DO J = 1,N
-               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
+               DO K = 1,J - 1
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
+               ENDDO
+               DO K = J + 1,N
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
+               ENDDO
            ENDDO
        ENDIF
-       DO J = 1,N
-           IF (UPPER) THEN
-               DO K = 1,J - 1
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
-               ENDDO
-               DO K = J + 1,N
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
-               ENDDO
-           ELSE
-               DO K = 1,J - 1
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
-               ENDDO
-               DO K = J + 1,N
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
-               ENDDO
-           END IF
-       ENDDO
    END IF
 !
    RETURN

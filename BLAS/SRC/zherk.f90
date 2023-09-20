@@ -1,4 +1,4 @@
-!> \brief \b CHERK
+!> \brief \b ZHERK
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,15 +8,15 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE CHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
+!       SUBROUTINE ZHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
 !
 !       .. Scalar Arguments ..
-!       REAL ALPHA,BETA
+!       DOUBLE PRECISION ALPHA,BETA
 !       INTEGER K,LDA,LDC,N
 !       CHARACTER TRANS,UPLO
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX A(LDA,*),C(LDC,*)
+!       COMPLEX*16 A(LDA,*),C(LDC,*)
 !       ..
 !
 !
@@ -25,7 +25,7 @@
 !>
 !> \verbatim
 !>
-!> CHERK  performs one of the hermitian rank k operations
+!> ZHERK  performs one of the hermitian rank k operations
 !>
 !>    C := alpha*A*A**H + beta*C,
 !>
@@ -84,13 +84,13 @@
 !>
 !> \param[in] ALPHA
 !> \verbatim
-!>          ALPHA is REAL
+!>          ALPHA is DOUBLE PRECISION .
 !>           On entry, ALPHA specifies the scalar alpha.
 !> \endverbatim
 !>
 !> \param[in] A
 !> \verbatim
-!>          A is COMPLEX array, dimension ( LDA, ka ), where ka is
+!>          A is COMPLEX*16 array, dimension ( LDA, ka ), where ka is
 !>           k  when  TRANS = 'N' or 'n',  and is  n  otherwise.
 !>           Before entry with  TRANS = 'N' or 'n',  the  leading  n by k
 !>           part of the array  A  must contain the matrix  A,  otherwise
@@ -109,13 +109,13 @@
 !>
 !> \param[in] BETA
 !> \verbatim
-!>          BETA is REAL
+!>          BETA is DOUBLE PRECISION.
 !>           On entry, BETA specifies the scalar beta.
 !> \endverbatim
 !>
 !> \param[in,out] C
 !> \verbatim
-!>          C is COMPLEX array, dimension ( LDC, N )
+!>          C is COMPLEX*16 array, dimension ( LDC, N )
 !>           Before entry  with  UPLO = 'U' or 'u',  the leading  n by n
 !>           upper triangular part of the array C must contain the upper
 !>           triangular part  of the  hermitian matrix  and the strictly
@@ -165,26 +165,26 @@
 !>     Jeremy Du Croz, Numerical Algorithms Group Ltd.
 !>     Sven Hammarling, Numerical Algorithms Group Ltd.
 !>
-!>  -- Modified 8-Nov-93 to set C(J,J) to REAL( C(J,J) ) when BETA = 1.
+!>  -- Modified 8-Nov-93 to set C(J,J) to DBLE( C(J,J) ) when BETA = 1.
 !>     Ed Anderson, Cray Research Inc.
 !>
 !>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE CHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
+   SUBROUTINE ZHERK(UPLO,TRANS,N,K,ALPHA,A,LDA,BETA,C,LDC)
 !
 !  -- Reference BLAS level3 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   REAL ALPHA,BETA
+   DOUBLE PRECISION ALPHA,BETA
    INTEGER K,LDA,LDC,N
    CHARACTER TRANS,UPLO
 !     ..
 !     .. Array Arguments ..
-   COMPLEX A(LDA,*),C(LDC,*)
+   COMPLEX*16 A(LDA,*),C(LDC,*)
 !     ..
 !
 !  =====================================================================
@@ -197,11 +197,11 @@
    EXTERNAL XERBLA
 !     ..
 !     .. Intrinsic Functions ..
-   INTRINSIC CMPLX,CONJG,MAX,REAL
+   INTRINSIC DBLE,DCMPLX,DCONJG,MAX
 !     ..
 !     .. Local Scalars ..
-   COMPLEX TEMP
-   REAL RTEMP
+   COMPLEX*16 TEMP
+   DOUBLE PRECISION RTEMP
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..
@@ -231,41 +231,41 @@
        INFO = 10
    END IF
    IF (INFO /= 0) THEN
-       CALL XERBLA('CHERK ',INFO)
+       CALL XERBLA('ZHERK ',INFO)
        RETURN
    END IF
 !
 !     Quick return if possible.
 !
-   IF ((N == 0) .OR. (((ALPHA == 0.0E+0).OR. &
-       (K == 0)).AND. (BETA == 1.0E+0))) RETURN
+   IF ((N == 0) .OR. (((ALPHA == 0.0D+0).OR. &
+       (K == 0)).AND. (BETA == 1.0D+0))) RETURN
 !
 !     prepreating
 !
    IF (UPPER) THEN
-       IF (BETA == 0.0E+0) THEN
+       IF (BETA == 0.0D+0) THEN
            DO J = 1,N
-               C(1:J,J) = 0.0E+0
+               C(1:J,J) = 0.0D+0
            ENDDO
        ELSE
            DO J = 1,N
-               C(1:J - 1,J) = BETA*C(1:J - 1,J)
-               C(J,J) = BETA*REAL(C(J,J))
+               C(1:J-1,J) = BETA*C(1:J-1,J)
+               C(J,J) = BETA*DBLE(C(J,J))
            ENDDO
        END IF
    ELSE
-       IF (BETA == 0.0E+0) THEN
+       IF (BETA == 0.0D+0) THEN
            DO J = 1,N
-               C(J:N,J) = 0.0E+0
+               C(J:N,J) = 0.0D+0
            ENDDO
        ELSE
            DO J = 1,N
-               C(J,J) = BETA*REAL(C(J,J))
-               C(J + 1:N,J) = BETA*C(J + 1:N,J)
+               C(J,J) = BETA*DBLE(C(J,J))
+               C(J+1:N,J) = BETA*C(J+1:N,J)
            ENDDO
        END IF
    END IF
-   IF (ALPHA == 0.0E+0) RETURN
+   IF (ALPHA == 0.0D+0) RETURN
 !
 !     Start the operations.
 !
@@ -276,20 +276,20 @@
        IF (UPPER) THEN
            DO J = 1,N
                DO L = 1,K
-                   IF (A(J,L) /= CMPLX(0.0E+0)) THEN
-                       TEMP = ALPHA*CONJG(A(J,L))
-                       C(1:J - 1,J) = C(1:J - 1,J) + TEMP*A(1:J - 1,L)
-                       C(J,J) = REAL(C(J,J)) + REAL(TEMP*A(J,L))
+                   IF (A(J,L) /= DCMPLX(0.0D+0)) THEN
+                       TEMP = ALPHA*DCONJG(A(J,L))
+                       C(1:J-1,J) = C(1:J-1,J) + TEMP*A(1:J-1,L)
+                       C(J,J) = DBLE(C(J,J)) + DBLE(TEMP*A(J,L))
                    END IF
                ENDDO
            ENDDO
        ELSE
            DO J = 1,N
                DO L = 1,K
-                   IF (A(J,L) /= CMPLX(0.0E+0)) THEN
-                       TEMP = ALPHA*CONJG(A(J,L))
-                       C(J,J) = REAL(C(J,J)) + REAL(TEMP*A(J,L))
-                       C(J + 1:N,J) = C(J + 1:N,J) + TEMP*A(J + 1:N,L)
+                   IF (A(J,L) /= DCMPLX(0.0D+0)) THEN
+                       TEMP = ALPHA*DCONJG(A(J,L))
+                       C(J,J) = DBLE(C(J,J)) + DBLE(TEMP*A(J,L))
+                       C(J+1:N,J) = C(J+1:N,J) + TEMP*A(J+1:N,L)
                    END IF
                ENDDO
            ENDDO
@@ -301,15 +301,15 @@
        IF (UPPER) THEN
            DO J = 1,N
                DO I = 1,J - 1
-                   C(I,J) = ALPHA*sum(CONJG(A(1:K,I))*A(1:K,J)) + C(I,J)
+                   C(I,J) = C(I,J) + ALPHA*sum(DCONJG(A(1:K,I))*A(1:K,J))
                ENDDO
-               C(J,J) = ALPHA*sum(REAL(CONJG(A(1:K,J))*A(1:K,J))) + REAL(C(J,J))
-          ENDDO
+               C(J,J) = ALPHA*sum(DBLE(DCONJG(A(1:K,J))*A(1:K,J))) + DBLE(C(J,J))
+           ENDDO
        ELSE
            DO J = 1,N
-               C(J,J) = ALPHA*sum(REAL(CONJG(A(1:K,J))*A(1:K,J))) + REAL(C(J,J))
+               C(J,J) = ALPHA*sum(DBLE(DCONJG(A(1:K,J))*A(1:K,J))) + DBLE(C(J,J))
                DO I = J + 1,N
-                   C(I,J) = ALPHA*sum(CONJG(A(1:K,I))*A(1:K,J)) + C(I,J)
+                   C(I,J) = ALPHA*sum(DCONJG(A(1:K,I))*A(1:K,J)) + C(I,J)
                ENDDO
            ENDDO
        END IF
@@ -317,6 +317,6 @@
 !
    RETURN
 !
-!     End of CHERK
+!     End of ZHERK
 !
 END

@@ -1,4 +1,4 @@
-!> \brief \b ICAMAX
+!> \brief \b ZDOTU
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,13 +8,13 @@
 !  Definition:
 !  ===========
 !
-!       INTEGER FUNCTION ICAMAX(N,CX,INCX)
+!       COMPLEX*16 FUNCTION ZDOTU(N,ZX,INCX,ZY,INCY)
 !
 !       .. Scalar Arguments ..
-!       INTEGER INCX,N
+!       INTEGER INCX,INCY,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX CX(*)
+!       COMPLEX*16 ZX(*),ZY(*)
 !       ..
 !
 !
@@ -23,7 +23,9 @@
 !>
 !> \verbatim
 !>
-!>    ICAMAX finds the index of the first element having maximum |Re(.)| + |Im(.)|
+!> ZDOTU forms the dot product of two complex vectors
+!>      ZDOTU = X^T * Y
+!>
 !> \endverbatim
 !
 !  Arguments:
@@ -35,15 +37,26 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in] CX
+!> \param[in] ZX
 !> \verbatim
-!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          ZX is COMPLEX*16 array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of CX
+!>         storage spacing between elements of ZX
+!> \endverbatim
+!>
+!> \param[in] ZY
+!> \verbatim
+!>          ZY is COMPLEX*16 array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
+!> \endverbatim
+!>
+!> \param[in] INCY
+!> \verbatim
+!>          INCY is INTEGER
+!>         storage spacing between elements of ZY
 !> \endverbatim
 !
 !  Authors:
@@ -53,64 +66,67 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine
 !
-!> \ingroup iamax
+!> \ingroup dot
 !
 !> \par Further Details:
 !  =====================
 !>
 !> \verbatim
 !>
-!>     jack dongarra, linpack, 3/11/78.
-!>     modified 3/93 to return if incx .le. 0.
+!>     jack dongarra, 3/11/78.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
+!>
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   INTEGER FUNCTION ICAMAX(N,CX,INCX)
+   COMPLEX*16 FUNCTION ZDOTU(N,ZX,INCX,ZY,INCY)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER INCX,N
+   INTEGER INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*)
+   COMPLEX*16 ZX(*),ZY(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,IX
+   COMPLEX*16 ZTEMP
+   INTEGER I,IX,IY
 !     ..
-   ICAMAX = 0
-   IF (N < 1 .OR. INCX <= 0) RETURN
-   ICAMAX = 1
-   IF (N == 1) RETURN
-   IF (INCX == 1) THEN
+   ZTEMP = (0.0d0,0.0d0)
+   ZDOTU = (0.0d0,0.0d0)
+   IF (N <= 0) RETURN
+   IF (INCX == 1 .AND. INCY == 1) THEN
 !
-!        code for increment equal to 1
+!        code for both increments equal to 1
 !
-      ICAMAX = maxloc(ABS(REAL(CX(1:N))) + ABS(AIMAG(CX(1:N))),1)
+      ZTEMP = sum(ZX(1:N)*ZY(1:N))
    ELSE
 !
-!        code for increment not equal to 1
+!        code for unequal increments or equal increments
+!          not equal to 1
 !
       IX = 1
-      SMAX = ABS(REAL(CX(1))) + ABS(AIMAG(CX(1)))
-      IX = IX + INCX
-      DO I = 2,N
-         IF (ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX))) > SMAX) THEN
-            ICAMAX = I
-            SMAX = ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX)))
-         END IF
+      IY = 1
+      IF (INCX < 0) IX = (-N+1)*INCX + 1
+      IF (INCY < 0) IY = (-N+1)*INCY + 1
+      DO I = 1,N
+         ZTEMP = ZTEMP + ZX(IX)*ZY(IY)
          IX = IX + INCX
+         IY = IY + INCY
       END DO
    END IF
+   ZDOTU = ZTEMP
    RETURN
 !
-!     End of ICAMAX
+!     End of ZDOTU
 !
 END

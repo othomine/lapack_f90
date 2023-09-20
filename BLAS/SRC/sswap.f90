@@ -1,4 +1,4 @@
-!> \brief \b ICAMAX
+!> \brief \b SSWAP
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,13 +8,13 @@
 !  Definition:
 !  ===========
 !
-!       INTEGER FUNCTION ICAMAX(N,CX,INCX)
+!       SUBROUTINE SSWAP(N,SX,INCX,SY,INCY)
 !
 !       .. Scalar Arguments ..
-!       INTEGER INCX,N
+!       INTEGER INCX,INCY,N
 !       ..
 !       .. Array Arguments ..
-!       COMPLEX CX(*)
+!       REAL SX(*),SY(*)
 !       ..
 !
 !
@@ -23,7 +23,8 @@
 !>
 !> \verbatim
 !>
-!>    ICAMAX finds the index of the first element having maximum |Re(.)| + |Im(.)|
+!>    SSWAP interchanges two vectors.
+!>    uses unrolled loops for increments equal to 1.
 !> \endverbatim
 !
 !  Arguments:
@@ -35,15 +36,26 @@
 !>         number of elements in input vector(s)
 !> \endverbatim
 !>
-!> \param[in] CX
+!> \param[in,out] SX
 !> \verbatim
-!>          CX is COMPLEX array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
+!>          SX is REAL array, dimension ( 1 + ( N - 1 )*abs( INCX ) )
 !> \endverbatim
 !>
 !> \param[in] INCX
 !> \verbatim
 !>          INCX is INTEGER
-!>         storage spacing between elements of CX
+!>         storage spacing between elements of SX
+!> \endverbatim
+!>
+!> \param[in,out] SY
+!> \verbatim
+!>          SY is REAL array, dimension ( 1 + ( N - 1 )*abs( INCY ) )
+!> \endverbatim
+!>
+!> \param[in] INCY
+!> \verbatim
+!>          INCY is INTEGER
+!>         storage spacing between elements of SY
 !> \endverbatim
 !
 !  Authors:
@@ -53,8 +65,9 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine
 !
-!> \ingroup iamax
+!> \ingroup swap
 !
 !> \par Further Details:
 !  =====================
@@ -62,55 +75,66 @@
 !> \verbatim
 !>
 !>     jack dongarra, linpack, 3/11/78.
-!>     modified 3/93 to return if incx .le. 0.
 !>     modified 12/3/93, array(1) declarations changed to array(*)
+!>
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
-   INTEGER FUNCTION ICAMAX(N,CX,INCX)
+   SUBROUTINE SSWAP(N,SX,INCX,SY,INCY)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER INCX,N
+   INTEGER INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*)
+   REAL SX(*),SY(*)
 !     ..
 !
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,IX
+   REAL STEMP
+   INTEGER I,IX,IY,M,MP1
 !     ..
-   ICAMAX = 0
-   IF (N < 1 .OR. INCX <= 0) RETURN
-   ICAMAX = 1
-   IF (N == 1) RETURN
-   IF (INCX == 1) THEN
+!     .. Intrinsic Functions ..
+   INTRINSIC MOD
+!     ..
+   IF (N <= 0) RETURN
+   IF (INCX == 1 .AND. INCY == 1) THEN
 !
-!        code for increment equal to 1
+!       code for both increments equal to 1
 !
-      ICAMAX = maxloc(ABS(REAL(CX(1:N))) + ABS(AIMAG(CX(1:N))),1)
+!
+!       clean-up loop
+!
+      DO I = 1,N
+         STEMP = SX(I)
+         SX(I) = SY(I)
+         SY(I) = STEMP
+      END DO
    ELSE
 !
-!        code for increment not equal to 1
+!       code for unequal increments or equal increments not equal
+!         to 1
 !
       IX = 1
-      SMAX = ABS(REAL(CX(1))) + ABS(AIMAG(CX(1)))
-      IX = IX + INCX
-      DO I = 2,N
-         IF (ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX))) > SMAX) THEN
-            ICAMAX = I
-            SMAX = ABS(REAL(CX(IX))) + ABS(AIMAG(CX(IX)))
-         END IF
+      IY = 1
+      IF (INCX < 0) IX = (-N+1)*INCX + 1
+      IF (INCY < 0) IY = (-N+1)*INCY + 1
+      DO I = 1,N
+         STEMP = SX(IX)
+         SX(IX) = SY(IY)
+         SY(IY) = STEMP
          IX = IX + INCX
+         IY = IY + INCY
       END DO
    END IF
    RETURN
 !
-!     End of ICAMAX
+!     End of SSWAP
 !
 END

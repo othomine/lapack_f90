@@ -1,4 +1,4 @@
-!> \brief \b DSYMM
+!> \brief \b ZHEMM
 !
 !  =========== DOCUMENTATION ===========
 !
@@ -8,15 +8,15 @@
 !  Definition:
 !  ===========
 !
-!       SUBROUTINE DSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
+!       SUBROUTINE ZHEMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 !
 !       .. Scalar Arguments ..
-!       DOUBLE PRECISION ALPHA,BETA
+!       COMPLEX*16 ALPHA,BETA
 !       INTEGER LDA,LDB,LDC,M,N
 !       CHARACTER SIDE,UPLO
 !       ..
 !       .. Array Arguments ..
-!       DOUBLE PRECISION A(LDA,*),B(LDB,*),C(LDC,*)
+!       COMPLEX*16 A(LDA,*),B(LDB,*),C(LDC,*)
 !       ..
 !
 !
@@ -25,7 +25,7 @@
 !>
 !> \verbatim
 !>
-!> DSYMM  performs one of the matrix-matrix operations
+!> ZHEMM  performs one of the matrix-matrix operations
 !>
 !>    C := alpha*A*B + beta*C,
 !>
@@ -33,8 +33,8 @@
 !>
 !>    C := alpha*B*A + beta*C,
 !>
-!> where alpha and beta are scalars,  A is a symmetric matrix and  B and
-!> C are  m by n matrices.
+!> where alpha and beta are scalars, A is an hermitian matrix and  B and
+!> C are m by n matrices.
 !> \endverbatim
 !
 !  Arguments:
@@ -43,7 +43,7 @@
 !> \param[in] SIDE
 !> \verbatim
 !>          SIDE is CHARACTER*1
-!>           On entry,  SIDE  specifies whether  the  symmetric matrix  A
+!>           On entry,  SIDE  specifies whether  the  hermitian matrix  A
 !>           appears on the  left or right  in the  operation as follows:
 !>
 !>              SIDE = 'L' or 'l'   C := alpha*A*B + beta*C,
@@ -55,14 +55,14 @@
 !> \verbatim
 !>          UPLO is CHARACTER*1
 !>           On  entry,   UPLO  specifies  whether  the  upper  or  lower
-!>           triangular  part  of  the  symmetric  matrix   A  is  to  be
+!>           triangular  part  of  the  hermitian  matrix   A  is  to  be
 !>           referenced as follows:
 !>
 !>              UPLO = 'U' or 'u'   Only the upper triangular part of the
-!>                                  symmetric matrix is to be referenced.
+!>                                  hermitian matrix is to be referenced.
 !>
 !>              UPLO = 'L' or 'l'   Only the lower triangular part of the
-!>                                  symmetric matrix is to be referenced.
+!>                                  hermitian matrix is to be referenced.
 !> \endverbatim
 !>
 !> \param[in] M
@@ -81,48 +81,50 @@
 !>
 !> \param[in] ALPHA
 !> \verbatim
-!>          ALPHA is DOUBLE PRECISION.
+!>          ALPHA is COMPLEX*16
 !>           On entry, ALPHA specifies the scalar alpha.
 !> \endverbatim
 !>
 !> \param[in] A
 !> \verbatim
-!>          A is DOUBLE PRECISION array, dimension ( LDA, ka ), where ka is
-!>           m  when  SIDE = 'L' or 'l'  and is  n otherwise.
+!>          A is COMPLEX*16 array, dimension ( LDA, ka ), where ka is
+!>           m  when  SIDE = 'L' or 'l'  and is n  otherwise.
 !>           Before entry  with  SIDE = 'L' or 'l',  the  m by m  part of
-!>           the array  A  must contain the  symmetric matrix,  such that
+!>           the array  A  must contain the  hermitian matrix,  such that
 !>           when  UPLO = 'U' or 'u', the leading m by m upper triangular
 !>           part of the array  A  must contain the upper triangular part
-!>           of the  symmetric matrix and the  strictly  lower triangular
+!>           of the  hermitian matrix and the  strictly  lower triangular
 !>           part of  A  is not referenced,  and when  UPLO = 'L' or 'l',
 !>           the leading  m by m  lower triangular part  of the  array  A
-!>           must  contain  the  lower triangular part  of the  symmetric
+!>           must  contain  the  lower triangular part  of the  hermitian
 !>           matrix and the  strictly upper triangular part of  A  is not
 !>           referenced.
 !>           Before entry  with  SIDE = 'R' or 'r',  the  n by n  part of
-!>           the array  A  must contain the  symmetric matrix,  such that
+!>           the array  A  must contain the  hermitian matrix,  such that
 !>           when  UPLO = 'U' or 'u', the leading n by n upper triangular
 !>           part of the array  A  must contain the upper triangular part
-!>           of the  symmetric matrix and the  strictly  lower triangular
+!>           of the  hermitian matrix and the  strictly  lower triangular
 !>           part of  A  is not referenced,  and when  UPLO = 'L' or 'l',
 !>           the leading  n by n  lower triangular part  of the  array  A
-!>           must  contain  the  lower triangular part  of the  symmetric
+!>           must  contain  the  lower triangular part  of the  hermitian
 !>           matrix and the  strictly upper triangular part of  A  is not
 !>           referenced.
+!>           Note that the imaginary parts  of the diagonal elements need
+!>           not be set, they are assumed to be zero.
 !> \endverbatim
 !>
 !> \param[in] LDA
 !> \verbatim
 !>          LDA is INTEGER
 !>           On entry, LDA specifies the first dimension of A as declared
-!>           in the calling (sub) program.  When  SIDE = 'L' or 'l'  then
+!>           in the  calling (sub) program. When  SIDE = 'L' or 'l'  then
 !>           LDA must be at least  max( 1, m ), otherwise  LDA must be at
-!>           least  max( 1, n ).
+!>           least max( 1, n ).
 !> \endverbatim
 !>
 !> \param[in] B
 !> \verbatim
-!>          B is DOUBLE PRECISION array, dimension ( LDB, N )
+!>          B is COMPLEX*16 array, dimension ( LDB, N )
 !>           Before entry, the leading  m by n part of the array  B  must
 !>           contain the matrix B.
 !> \endverbatim
@@ -137,14 +139,14 @@
 !>
 !> \param[in] BETA
 !> \verbatim
-!>          BETA is DOUBLE PRECISION.
+!>          BETA is COMPLEX*16
 !>           On entry,  BETA  specifies the scalar  beta.  When  BETA  is
 !>           supplied as zero then C need not be set on input.
 !> \endverbatim
 !>
 !> \param[in,out] C
 !> \verbatim
-!>          C is DOUBLE PRECISION array, dimension ( LDC, N )
+!>          C is COMPLEX*16 array, dimension ( LDC, N )
 !>           Before entry, the leading  m by n  part of the array  C must
 !>           contain the matrix  C,  except when  beta  is zero, in which
 !>           case C need not be set on entry.
@@ -188,19 +190,19 @@
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE DSYMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
+   SUBROUTINE ZHEMM(SIDE,UPLO,M,N,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 !
 !  -- Reference BLAS level3 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   DOUBLE PRECISION ALPHA,BETA
+   COMPLEX*16 ALPHA,BETA
    INTEGER LDA,LDB,LDC,M,N
    CHARACTER SIDE,UPLO
 !     ..
 !     .. Array Arguments ..
-   DOUBLE PRECISION A(LDA,*),B(LDB,*),C(LDC,*)
+   COMPLEX*16 A(LDA,*),B(LDB,*),C(LDC,*)
 !     ..
 !
 !  =====================================================================
@@ -213,12 +215,13 @@
    EXTERNAL XERBLA
 !     ..
 !     .. Intrinsic Functions ..
-   INTRINSIC MAX
+   INTRINSIC DBLE,DCONJG,MAX
 !     ..
 !     .. Local Scalars ..
-   DOUBLE PRECISION TEMP1,TEMP2
+   COMPLEX*16 TEMP1,TEMP2
    INTEGER I,INFO,J,K,NROWA
    LOGICAL UPPER
+!     ..
 !
 !     Set NROWA as the number of rows of A.
 !
@@ -235,7 +238,8 @@
    IF ((.NOT.LSAME(SIDE,'L')) .AND. &
        (.NOT.LSAME(SIDE,'R'))) THEN
        INFO = 1
-   ELSE IF ((.NOT.UPPER) .AND. (.NOT.LSAME(UPLO,'L'))) THEN
+   ELSE IF ((.NOT.UPPER) .AND. &
+            (.NOT.LSAME(UPLO,'L'))) THEN
        INFO = 2
    ELSE IF (M < 0) THEN
        INFO = 3
@@ -249,19 +253,25 @@
        INFO = 12
    END IF
    IF (INFO /= 0) THEN
-       CALL XERBLA('DSYMM ',INFO)
+       CALL XERBLA('ZHEMM ',INFO)
        RETURN
    END IF
 !
 !     Quick return if possible.
 !
    IF ((M == 0) .OR. (N == 0) .OR. &
-       ((ALPHA == 0.0D+0).AND. (BETA == 1.0D+0))) RETURN
+       ((ALPHA == (0.0D+0,0.0D+0)).AND. (BETA == (1.0D+0,0.0D+0)))) RETURN
 !
 !     And when  alpha.eq.zero.
 !
-   C(1:M,1:N) = BETA*C(1:M,1:N)
-   IF (ALPHA == 0.0D+0) RETURN
+   IF (ALPHA == (0.0D+0,0.0D+0)) THEN
+       IF (BETA == (0.0D+0,0.0D+0)) THEN
+           C(1:M,1:N) = (0.0D+0,0.0D+0)
+       ELSE
+           C(1:M,1:N) = BETA*C(I,J)
+       END IF
+       RETURN
+   END IF
 !
 !     Start the operations.
 !
@@ -270,41 +280,82 @@
 !        Form  C := alpha*A*B + beta*C.
 !
        IF (UPPER) THEN
-           DO J = 1,N
-               DO I = 1,M
-                   TEMP1 = ALPHA*B(I,J)
-                   C(1:I - 1,J) = C(1:I - 1,J) + TEMP1*A(1:I - 1,I)
-                   C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(1:I - 1,J)*A(1:I - 1,I))
+           IF (BETA == (0.0D+0,0.0D+0)) THEN
+               DO J = 1,N
+                   DO I = 1,M
+                       TEMP1 = ALPHA*B(I,J)
+                       C(1:I-1,J) = C(1:I-1,J) + TEMP1*A(1:I-1,I)
+                       C(I,J) = TEMP1*DBLE(A(I,I)) + ALPHA*sum(B(1:I-1,J)*DCONJG(A(1:I-1,I)))
+                   ENDDO
                ENDDO
-           ENDDO
+           ELSEIF (BETA /= (1.0D+0,0.0D+0)) THEN
+               DO J = 1,N
+                   DO I = 1,M
+                       TEMP1 = ALPHA*B(I,J)
+                       C(1:I-1,J) = C(1:I-1,J) + TEMP1*A(1:I-1,I)
+                       C(I,J) = BETA*C(I,J) + TEMP1*DBLE(A(I,I)) + ALPHA*sum(B(1:I-1,J)*DCONJG(A(1:I-1,I)))
+                   ENDDO
+               ENDDO
+           ELSE
+               DO J = 1,N
+                   DO I = 1,M
+                       TEMP1 = ALPHA*B(I,J)
+                       C(1:I-1,J) = C(1:I-1,J) + TEMP1*A(1:I-1,I)
+                       C(I,J) = C(I,J) + TEMP1*DBLE(A(I,I)) + ALPHA*sum(B(1:I-1,J)*DCONJG(A(1:I-1,I)))
+                   ENDDO
+               ENDDO
+           ENDIF
        ELSE
-           DO J = 1,N
-               DO I = M,1,-1
-                   TEMP1 = ALPHA*B(I,J)
-                   C(I + 1:M,J) = C(I + 1:M,J) + TEMP1*A(I + 1:M,I)
-                   C(I,J) = C(I,J) + TEMP1*A(I,I) + ALPHA*sum(B(I + 1:M,J)*A(I + 1:M,I))
+           IF (BETA == (0.0D+0,0.0D+0)) THEN
+               DO J = 1,N
+                   DO I = M,1,-1
+                       TEMP1 = ALPHA*B(I,J)
+                       C(I,J) = TEMP1*DBLE(A(I,I)) + ALPHA*sum(B(I+1:M,J)*DCONJG(A(I+1:M,I)))
+                       C(I+1:M,J) = C(I+1:M,J) + TEMP1*A(I+1:M,I)
+                   ENDDO
                ENDDO
-           ENDDO
+           ELSEIF (BETA /= (1.0D+0,0.0D+0)) THEN
+               DO J = 1,N
+                   DO I = M,1,-1
+                       TEMP1 = ALPHA*B(I,J)
+                       C(I,J) = BETA*C(I,J) + TEMP1*DBLE(A(I,I)) + &
+                                ALPHA*sum(B(I+1:M,J)*DCONJG(A(I+1:M,I)))
+                       C(I+1:M,J) = C(I+1:M,J) + TEMP1*A(I+1:M,I)
+                   ENDDO
+               ENDDO
+           ELSE
+               DO J = 1,N
+                   DO I = M,1,-1
+                       TEMP1 = ALPHA*B(I,J)
+                       C(I,J) = C(I,J) + TEMP1*DBLE(A(I,I)) + &
+                                    ALPHA*sum(B(I+1:M,J)*DCONJG(A(I+1:M,I)))
+                       C(I+1:M,J) = C(I+1:M,J) + TEMP1*A(I+1:M,I)
+                   ENDDO
+               ENDDO
+           ENDIF
        END IF
    ELSE
 !
 !        Form  C := alpha*B*A + beta*C.
 !
+       IF (BETA == (0.0D+0,0.0D+0)) THEN
+           C(1:M,1:N) = TEMP1*B(1:M,1:N)
+       ELSE
+           C(1:M,1:N) = BETA*C(1:M,1:N) + TEMP1*B(1:M,1:N)
+       END IF
        IF (UPPER) THEN
            DO J = 1,N
-               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
                    C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
                ENDDO
                DO K = J + 1,N
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
+                   C(1:M,J) = C(1:M,J) + ALPHA*DCONJG(A(J,K))*B(1:M,K)
                ENDDO
            ENDDO
        ELSE
            DO J = 1,N
-               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
-                   C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
+                   C(1:M,J) = C(1:M,J) + ALPHA*DCONJG(A(J,K))*B(1:M,K)
                ENDDO
                DO K = J + 1,N
                    C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
@@ -315,6 +366,6 @@
 !
    RETURN
 !
-!     End of DSYMM
+!     End of ZHEMM
 !
 END
