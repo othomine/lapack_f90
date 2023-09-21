@@ -152,9 +152,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG,MAX
-!     ..
 !
 !     Test the input parameters.
 !
@@ -190,7 +187,8 @@
    IF (INCX == 1) THEN
        DO J = 1,N
            IF (Y(JY) /= (0.0D+0,0.0D+0)) THEN
-               A(1:M,J) = A(1:M,J) + X(1:M)*ALPHA*DCONJG(Y(JY))
+               TEMP = ALPHA*DCONJG(Y(JY))
+               A(1:M,J) = A(1:M,J) + X(1:M)*TEMP
            END IF
            JY = JY + INCY
        ENDDO

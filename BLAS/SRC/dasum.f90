@@ -87,10 +87,7 @@
 !
 !     .. Local Scalars ..
    DOUBLE PRECISION DTEMP
-   INTEGER I,M,MP1,NINCX
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DABS,MOD
+   INTEGER I,NINCX
 !     ..
    DASUM = 0.0d0
    DTEMP = 0.0d0

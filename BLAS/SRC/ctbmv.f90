@@ -203,7 +203,7 @@
 !     ..
 !     .. Local Scalars ..
    COMPLEX TEMP
-   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L
+   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L,MINI,MAXI
    LOGICAL NOCONJ,NOUNIT
 !     ..
 !     .. External Functions ..
@@ -212,9 +212,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX,MIN
 !     ..
 !
 !     Test the input parameters.
@@ -358,7 +355,7 @@
                        ENDDO
                    ELSE
                        IF (NOUNIT) TEMP = TEMP*CONJG(A(K+1,J))
-                       DO I = MINI,-1, J - 1
+                       DO I = MINI, J - 1
                            TEMP = TEMP + CONJG(A(L+I,J))*X(IX)
                            IX = IX - INCX
                        ENDDO

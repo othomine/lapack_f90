@@ -406,7 +406,7 @@ DXLASRC = dgesvxx.o dgerfsx.o dla_gerfsx_extended.o dla_geamv.o \
    dlascl2.o dla_wwaddw.o
 endif
 
-ZLASRC = \
+ZLASRC = la_xisnan.mod \
    zpotrf2.o zgetrf2.o \
    zbdsqr.o zgbbrd.o zgbcon.o zgbequ.o zgbrfs.o zgbsv.o  zgbsvx.o \
    zgbtf2.o zgbtrf.o zgbtrs.o zgebak.o zgebal.o zgebd2.o zgebrd.o \
@@ -626,15 +626,18 @@ cleanobj:
 cleanlib:
 	rm -f $(LAPACKLIB)
 
-slaruv.o: slaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dlaruv.o: dlaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-sla_wwaddw.o: sla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dla_wwaddw.o: dla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-cla_wwaddw.o: cla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-zla_wwaddw.o: zla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+slaruv.o: slaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dlaruv.o: dlaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+sla_wwaddw.o: sla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dla_wwaddw.o: dla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+cla_wwaddw.o: cla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+zla_wwaddw.o: zla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
 
 # Modules
 la_xisnan.o: la_xisnan.F90 la_constants.mod
 	$(FC) $(FFLAGS) -c -o $@ $<
+la_xisnan.mod: 
+	$(FC) $(FFLAGS) -c la_constants.f90
+	$(FC) $(FFLAGS) -c la_xisnan.F90
 la_constants.o: la_constants.f90
 	$(FC) $(FFLAGS) -c -o $@ $<

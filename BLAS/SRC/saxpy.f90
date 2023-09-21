@@ -105,10 +105,7 @@
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,IX,IY,M,MP1
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MOD
+   INTEGER I,IX,IY
 !     ..
    IF (N <= 0) RETURN
    IF (SA == 0.0) RETURN

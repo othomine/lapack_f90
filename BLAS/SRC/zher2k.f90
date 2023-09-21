@@ -206,7 +206,7 @@
 !     .. Scalar Arguments ..
    COMPLEX*16 ALPHA
    DOUBLE PRECISION BETA
-   INTEGER K,LDA,LDB,LDC,N
+   INTEGER K,LDA,LDB,LDC,N,I
    CHARACTER TRANS,UPLO
 !     ..
 !     .. Array Arguments ..
@@ -222,12 +222,9 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DBLE,DCONJG,MAX
-!     ..
 !     .. Local Scalars ..
    COMPLEX*16 TEMP1,TEMP2
-   INTEGER I,INFO,J,L,NROWA
+   INTEGER INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..
 !
@@ -331,16 +328,16 @@
 !
        IF (UPPER) THEN
            DO J = 1,N
-               DO L = 1,K
-                   C(1:J-1,J) = C(1:J-1,J) + ALPHA*DCONJG(A(L,1:J-1))*B(L,J) + DCONJG(ALPHA)*DCONJG(B(L,1:J-1))*A(L,J)
-                   C(J,J) = DBLE(ALPHA*DCONJG(A(L,J))*B(L,J)+DCONJG(ALPHA)*DCONJG(B(L,J))*A(L,J))
+               DO I = 1,J - 1
+                   C(I,J) = C(I,J) + ALPHA*sum(DCONJG(A(1:K,I))*B(1:K,J)) + DCONJG(ALPHA)*sum(DCONJG(B(1:K,I))*A(1:K,J))
                ENDDO
+               C(J,J) = DBLE(C(J,J)) + DBLE(ALPHA*sum(DCONJG(A(1:K,J))*B(1:K,J)) + DCONJG(ALPHA)*sum(DCONJG(B(1:K,J))*A(1:K,J)))
            ENDDO
        ELSE
            DO J = 1,N
-               DO L = 1, K
-                   C(J,J) = DBLE(C(J,J)) + DBLE(ALPHA*DCONJG(A(L,J))*B(L,J)+DCONJG(ALPHA)**DCONJG(B(L,J))*A(L,J))
-                   C(J+1:N,J) = C(J+1:N,J) + ALPHA*DCONJG(A(L,J+1:N))*B(L,J) + DCONJG(ALPHA)*DCONJG(B(L,J+1:N))*A(L,J)
+               C(J,J) = DBLE(C(J,J)) + DBLE(ALPHA*sum(DCONJG(A(1:K,J))*B(1:K,J))+DCONJG(ALPHA)*sum(DCONJG(B(1:K,J))*A(1:K,J)))
+               DO I = J + 1,N
+                   C(I,J) = C(I,J) + ALPHA*sum(DCONJG(A(1:K,I))*B(1:K,J)) + DCONJG(ALPHA)*sum(DCONJG(B(1:K,I))*A(1:K,J))
                ENDDO
            ENDDO
        END IF

@@ -211,9 +211,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX,MIN
-!     ..
 !
 !     Test the input parameters.
 !

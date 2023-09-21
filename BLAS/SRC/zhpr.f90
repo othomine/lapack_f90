@@ -148,7 +148,7 @@
 !     ..
 !     .. Local Scalars ..
    COMPLEX*16 TEMP
-   INTEGER I,INFO,IX,J,JX,K,KK,KX
+   INTEGER INFO,IX,J,JX,K,KK,KX
 !     ..
 !     .. External Functions ..
    LOGICAL LSAME
@@ -156,9 +156,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DBLE,DCONJG
 !     ..
 !
 !     Test the input parameters.

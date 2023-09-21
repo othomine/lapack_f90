@@ -171,9 +171,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG
-!     ..
 !
 !     Test the input parameters.
 !

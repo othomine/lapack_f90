@@ -169,6 +169,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine
 !
 !> \ingroup hemm
 !
@@ -184,6 +185,8 @@
 !>     Iain Duff, AERE Harwell.
 !>     Jeremy Du Croz, Numerical Algorithms Group Ltd.
 !>     Sven Hammarling, Numerical Algorithms Group Ltd.
+!>
+!>     converted to F90 and optimized 2023, olivier thomine
 !> \endverbatim
 !>
 !  =====================================================================
@@ -211,19 +214,9 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX,REAL
-!     ..
 !     .. Local Scalars ..
-   COMPLEX TEMP1,TEMP2
    INTEGER I,INFO,J,K,NROWA
    LOGICAL UPPER
-!     ..
-!     .. Parameters ..
-   COMPLEX ONE
-   PARAMETER (ONE= (1.0E+0,0.0E+0))
-   COMPLEX ZERO
-   PARAMETER (ZERO= (0.0E+0,0.0E+0))
 !     ..
 !
 !     Set NROWA as the number of rows of A.
@@ -263,26 +256,16 @@
 !     Quick return if possible.
 !
    IF ((M == 0) .OR. (N == 0) .OR. &
-       ((ALPHA == ZERO).AND. (BETA == ONE))) RETURN
+       ((ALPHA == (0.0E+0,0.0E+0)).AND. (BETA == (1.0E+0,0.0E+0)))) RETURN
 !
 !     And when  alpha.eq.zero.
 !
-   IF (ALPHA == ZERO) THEN
-       IF (BETA == ZERO) THEN
-           DO J = 1,N
-               DO I = 1,M
-                   C(I,J) = ZERO
-               ENDDO
-           ENDDO
-       ELSE
-           DO J = 1,N
-               DO I = 1,M
-                   C(I,J) = BETA*C(I,J)
-               ENDDO
-           ENDDO
-       END IF
-       RETURN
+   IF (BETA == (0.0E+0,0.0E+0)) THEN
+       C(1:M,1:N) = (0.0E+0,0.0E+0)
+   ELSE
+       C(1:M,1:N) = BETA*C(1:M,1:N)
    END IF
+   IF (ALPHA == (0.0E+0,0.0E+0)) RETURN
 !
 !     Start the operations.
 !
@@ -293,35 +276,15 @@
        IF (UPPER) THEN
            DO J = 1,N
                DO I = 1,M
-                   TEMP1 = ALPHA*B(I,J)
-                   TEMP2 = ZERO
-                   DO K = 1,I - 1
-                       C(K,J) = C(K,J) + TEMP1*A(K,I)
-                       TEMP2 = TEMP2 + B(K,J)*CONJG(A(K,I))
-                   ENDDO
-                   IF (BETA == ZERO) THEN
-                       C(I,J) = TEMP1*REAL(A(I,I)) + ALPHA*TEMP2
-                   ELSE
-                       C(I,J) = BETA*C(I,J) + TEMP1*REAL(A(I,I)) + &
-                                ALPHA*TEMP2
-                   END IF
+                   C(1:I-1,J) = C(1:I-1,J) + ALPHA*B(I,J)*A(1:I-1,I)
+                   C(I,J) = C(I,J) + ALPHA*B(I,J)*REAL(A(I,I)) + ALPHA*sum(B(1:I-1,J)*CONJG(A(1:I-1,I)))
                ENDDO
            ENDDO
        ELSE
            DO J = 1,N
                DO I = M,1,-1
-                   TEMP1 = ALPHA*B(I,J)
-                   TEMP2 = ZERO
-                   DO K = I + 1,M
-                       C(K,J) = C(K,J) + TEMP1*A(K,I)
-                       TEMP2 = TEMP2 + B(K,J)*CONJG(A(K,I))
-                   ENDDO
-                   IF (BETA == ZERO) THEN
-                       C(I,J) = TEMP1*REAL(A(I,I)) + ALPHA*TEMP2
-                   ELSE
-                       C(I,J) = BETA*C(I,J) + TEMP1*REAL(A(I,I)) + &
-                                ALPHA*TEMP2
-                   END IF
+                   C(I+1:M,J) = C(I+1:M,J) + ALPHA*B(I,J)*A(I+1:M,I)
+                   C(I,J) = C(I,J) + ALPHA*B(I,J)*REAL(A(I,I)) + ALPHA*sum(B(I+1:M,J)*CONJG(A(I+1:M,I)))
                ENDDO
            ENDDO
        END IF
@@ -329,38 +292,27 @@
 !
 !        Form  C := alpha*B*A + beta*C.
 !
-       DO J = 1,N
-           TEMP1 = ALPHA*REAL(A(J,J))
-           IF (BETA == ZERO) THEN
-               DO I = 1,M
-                   C(I,J) = TEMP1*B(I,J)
+       IF (UPPER) THEN
+           DO J = 1,N
+               C(1:M,J) = C(1:M,J) + ALPHA*REAL(A(J,J))*B(1:M,J)
+               DO K = 1,J - 1
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
                ENDDO
-           ELSE
-               DO I = 1,M
-                   C(I,J) = BETA*C(I,J) + TEMP1*B(I,J)
-               ENDDO
-           END IF
-           DO K = 1,J - 1
-               IF (UPPER) THEN
-                   TEMP1 = ALPHA*A(K,J)
-               ELSE
-                   TEMP1 = ALPHA*CONJG(A(J,K))
-               END IF
-               DO I = 1,M
-                   C(I,J) = C(I,J) + TEMP1*B(I,K)
+               DO K = J + 1,N
+                   C(1:M,J) = C(1:M,J) + ALPHA*CONJG(A(J,K))*B(1:M,K)
                ENDDO
            ENDDO
-           DO K = J + 1,N
-               IF (UPPER) THEN
-                   TEMP1 = ALPHA*CONJG(A(J,K))
-               ELSE
-                   TEMP1 = ALPHA*A(K,J)
-               END IF
-               DO I = 1,M
-                   C(I,J) = C(I,J) + TEMP1*B(I,K)
+       ELSE
+           DO J = 1,N
+               C(1:M,J) = C(1:M,J) + ALPHA*REAL(A(J,J))*B(1:M,J)
+               DO K = 1,J - 1
+                   C(1:M,J) = C(1:M,J) + ALPHA*CONJG(A(J,K))*B(1:M,K)
+               ENDDO
+               DO K = J + 1,N
+                   C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
                ENDDO
            ENDDO
-       ENDDO
+       ENDIF
    END IF
 !
    RETURN

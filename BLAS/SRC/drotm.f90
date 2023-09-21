@@ -111,7 +111,7 @@
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   DOUBLE PRECISION DFLAG,DH11,DH12,DH21,DH22,TWO,W,Z,ZERO
+   DOUBLE PRECISION DFLAG,DH11,DH12,DH21,DH22,W,Z
    INTEGER I,KX,KY,NSTEPS
 !     ..
 !

@@ -68,9 +68,6 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN_TRIM
 !     ..
 !     .. Executable Statements ..
 !

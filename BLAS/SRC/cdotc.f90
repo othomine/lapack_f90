@@ -89,10 +89,10 @@
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER INCX,INCY,N
+   INTEGER, INTENT(IN) :: INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*),CY(*)
+   COMPLEX, INTENT(IN) :: CX(*),CY(*)
 !     ..
 !
 !  =====================================================================
@@ -100,9 +100,6 @@
 !     .. Local Scalars ..
    COMPLEX CTEMP
    INTEGER I,IX,IY
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG
 !     ..
    CDOTC = (0.0,0.0)
    IF (N <= 0) RETURN

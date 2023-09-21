@@ -192,11 +192,7 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
-   DOUBLE PRECISION TEMP
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..
@@ -285,7 +281,7 @@
        ELSE
            DO J = 1,N
                DO I = J,N
-                   C(I,J) = ALPHA*sum(A(1:K,I)*A(1:KL,J)) + BETA*C(I,J)
+                   C(I,J) = ALPHA*sum(A(1:K,I)*A(1:K,J)) + BETA*C(I,J)
                ENDDO
            ENDDO
        END IF

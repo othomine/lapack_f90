@@ -203,9 +203,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG,MAX
-!     ..
 !     .. Local Scalars ..
    COMPLEX*16 TEMP
    INTEGER I,INFO,J,K,NROWA

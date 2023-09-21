@@ -205,7 +205,7 @@
 !     ..
 !     .. Local Scalars ..
    DOUBLE PRECISION TEMP
-   INTEGER I,INFO,IX,IY,J,JX,JY,K,KUP1,KX,KY,LENX,LENY
+   INTEGER I,INFO,IX,IY,J,JX,JY,K,KUP1,KX,KY,LENX,LENY,MINI,MAXI
 !     ..
 !     .. External Functions ..
    LOGICAL LSAME

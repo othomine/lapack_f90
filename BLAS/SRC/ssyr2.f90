@@ -164,7 +164,6 @@
 !  =====================================================================
 !     ..
 !     .. Local Scalars ..
-   REAL TEMP1,TEMP2
    INTEGER I,INFO,IX,IY,J,JX,JY,KX,KY
 !     ..
 !     .. External Functions ..
@@ -173,9 +172,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
 !     ..
 !
 !     Test the input parameters.

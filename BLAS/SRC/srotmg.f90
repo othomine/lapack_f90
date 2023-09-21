@@ -108,9 +108,6 @@
    REAL GAM,GAMSQ,RGAMSQ,SFLAG,SH11,SH12,SH21,SH22,SP1,SP2,SQ1, &
         SQ2,STEMP,SU
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS
-!     ..
 !     .. Data statements ..
 !
    DATA GAM,GAMSQ,RGAMSQ/4096.E0,1.67772E7,5.96046E-8/

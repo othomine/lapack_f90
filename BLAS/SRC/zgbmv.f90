@@ -196,7 +196,7 @@
 !
 !     .. Scalar Arguments ..
    COMPLEX*16 ALPHA,BETA
-   INTEGER INCX,INCY,KL,KU,LDA,M,N
+   INTEGER INCX,INCY,KL,KU,LDA,M,N,MINI,MAXI
    CHARACTER TRANS
 !     ..
 !     .. Array Arguments ..
@@ -216,9 +216,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG,MAX,MIN
 !     ..
 !
 !     Test the input parameters.

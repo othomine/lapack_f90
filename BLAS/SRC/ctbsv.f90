@@ -203,14 +203,10 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX ZERO
-   PARAMETER (ZERO= (0.0E+0,0.0E+0))
 !     ..
 !     .. Local Scalars ..
    COMPLEX TEMP
-   INTEGER I,INFO,IX,J,JX,KX,L
+   INTEGER I,INFO,IX,J,JX,KX,L,MINI,MAXI
    LOGICAL NOCONJ,NOUNIT
 !     ..
 !     .. External Functions ..
@@ -219,9 +215,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX,MIN
 !     ..
 !
 !     Test the input parameters.

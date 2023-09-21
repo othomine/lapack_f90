@@ -88,10 +88,7 @@
 !
 !     .. Local Scalars ..
    REAL STEMP
-   INTEGER I,M,MP1,NINCX
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS,MOD
+   INTEGER I,NINCX
 !     ..
    SASUM = 0.0e0
    STEMP = 0.0e0

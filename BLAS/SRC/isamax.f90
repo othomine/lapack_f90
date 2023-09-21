@@ -90,9 +90,6 @@
    REAL SMAX
    INTEGER I,IX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS
-!     ..
    ISAMAX = 0
    IF (N < 1 .OR. INCX <= 0) RETURN
    ISAMAX = 1

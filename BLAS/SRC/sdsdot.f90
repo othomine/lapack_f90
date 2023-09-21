@@ -127,9 +127,6 @@
    DOUBLE PRECISION DSDOT
    INTEGER I,KX,KY,NS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DBLE
-!     ..
    DSDOT = SB
    IF (N <= 0) THEN
       SDSDOT = REAL(DSDOT)

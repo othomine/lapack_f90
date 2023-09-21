@@ -204,9 +204,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
    DOUBLE PRECISION TEMP
    INTEGER I,INFO,J,K,NROWA

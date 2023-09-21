@@ -93,9 +93,6 @@
 !     .. Local Scalars ..
    INTEGER I,NINCX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC AIMAG,CMPLX,REAL
-!     ..
    IF (N <= 0 .OR. INCX <= 0 .OR. SA == 1.0E+0) RETURN
    IF (INCX == 1) THEN
 !

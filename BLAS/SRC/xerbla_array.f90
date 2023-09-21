@@ -98,9 +98,6 @@
 !     .. Local Arrays ..
    CHARACTER*32 SRNAME
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MIN, LEN
-!     ..
 !     .. External Functions ..
    EXTERNAL XERBLA
 !     ..

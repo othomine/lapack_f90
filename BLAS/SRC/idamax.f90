@@ -89,9 +89,6 @@
    DOUBLE PRECISION DMAX
    INTEGER I,IX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DABS
-!     ..
    IDAMAX = 0
    IF (N < 1 .OR. INCX <= 0) RETURN
    IDAMAX = 1

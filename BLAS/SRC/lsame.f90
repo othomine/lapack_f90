@@ -52,20 +52,17 @@
 !> \ingroup lsame
 !
 !  =====================================================================
-   LOGICAL FUNCTION LSAME(CA,CB)
+   LOGICAL PURE FUNCTION LSAME(CA,CB)
 !
 !  -- Reference BLAS level1 routine --
 !  -- Reference BLAS is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   CHARACTER CA,CB
+   CHARACTER, INTENT(IN) :: CA,CB
 !     ..
 !
 ! =====================================================================
-!
-!     .. Intrinsic Functions ..
-   INTRINSIC ICHAR
 !     ..
 !     .. Local Scalars ..
    INTEGER INTA,INTB,ZCODE

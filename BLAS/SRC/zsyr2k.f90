@@ -166,6 +166,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine
 !
 !> \ingroup her2k
 !
@@ -181,6 +182,8 @@
 !>     Iain Duff, AERE Harwell.
 !>     Jeremy Du Croz, Numerical Algorithms Group Ltd.
 !>     Sven Hammarling, Numerical Algorithms Group Ltd.
+!>
+!>     converted to F90 and optimized 2023, Olivier Thomine
 !> \endverbatim
 !>
 !  =====================================================================
@@ -208,11 +211,7 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
-   COMPLEX*16 TEMP1,TEMP2
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..

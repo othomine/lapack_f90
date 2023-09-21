@@ -192,7 +192,7 @@
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER INCX,K,LDA,N
+   INTEGER INCX,K,LDA,N,MINI
    CHARACTER DIAG,TRANS,UPLO
 !     ..
 !     .. Array Arguments ..
@@ -212,9 +212,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX,MIN
 !     ..
 !
 !     Test the input parameters.

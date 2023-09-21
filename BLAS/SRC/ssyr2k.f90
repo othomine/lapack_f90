@@ -215,11 +215,7 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
-   REAL TEMP1,TEMP2
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..
@@ -316,7 +312,7 @@
                IF (BETA == 0.0E+0) THEN
                    C(J:N,J) = 0.0E+0
                ELSE IF (BETA /= 1.0E+0) THEN
-                   C(J:N,J) = BETA*C(I,J)
+                   C(J:N,J) = BETA*C(J:N,J)
                END IF
                DO L = 1,K
                    IF ((A(J,L) /= 0.0E+0) .OR. (B(J,L) /= 0.0E+0)) THEN

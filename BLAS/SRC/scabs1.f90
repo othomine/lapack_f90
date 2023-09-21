@@ -52,13 +52,10 @@
 !>     converted to F90 and optimized 2023, Olivier Thomine
 !
 !     .. Scalar Arguments ..
-   COMPLEX Z
+   COMPLEX, INTENT(IN) :: Z
 !     ..
 !
 !  =====================================================================
-!
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS,AIMAG,REAL
 !     ..
    SCABS1 = ABS(REAL(Z)) + ABS(AIMAG(Z))
    RETURN

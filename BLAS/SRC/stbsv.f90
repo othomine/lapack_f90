@@ -206,7 +206,7 @@
 !     ..
 !     .. Local Scalars ..
    REAL TEMP
-   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L
+   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L,MINI
    LOGICAL NOUNIT
 !     ..
 !     .. External Functions ..
@@ -215,9 +215,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX,MIN
 !     ..
 !
 !     Test the input parameters.

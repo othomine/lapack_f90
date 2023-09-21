@@ -145,7 +145,7 @@
 !     ..
 !     .. Local Scalars ..
    REAL TEMP
-   INTEGER I,INFO,IX,J,JX,K,KK,KX
+   INTEGER INFO,IX,J,JX,K,KK,KX
 !     ..
 !     .. External Functions ..
    LOGICAL LSAME

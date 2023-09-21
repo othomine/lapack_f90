@@ -194,7 +194,7 @@
 !
 !     .. Scalar Arguments ..
    COMPLEX ALPHA,BETA
-   INTEGER INCX,INCY,K,LDA,N
+   INTEGER INCX,INCY,K,LDA,N,MINI,MAXI
    CHARACTER UPLO
 !     ..
 !     .. Array Arguments ..
@@ -202,12 +202,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX ONE
-   PARAMETER (ONE= (1.0E+0,0.0E+0))
-   COMPLEX ZERO
-   PARAMETER (ZERO= (0.0E+0,0.0E+0))
 !     ..
 !     .. Local Scalars ..
    COMPLEX TEMP1,TEMP2
@@ -219,9 +213,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX,MIN,REAL
 !     ..
 !
 !     Test the input parameters.

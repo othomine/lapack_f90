@@ -161,7 +161,7 @@
 !     ..
 !     .. Local Scalars ..
    DOUBLE PRECISION TEMP
-   INTEGER I,INFO,IX,J,JX,K,KK,KX
+   INTEGER INFO,IX,J,JX,K,KK,KX
    LOGICAL NOUNIT
 !     ..
 !     .. External Functions ..

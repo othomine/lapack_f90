@@ -98,7 +98,7 @@
 !
 !     .. Local Scalars ..
    DOUBLE PRECISION DTEMP
-   INTEGER I,IX,IY,M,MP1
+   INTEGER I,IX,IY
 !     ..
 !     .. Intrinsic Functions ..
    INTRINSIC MOD

@@ -93,12 +93,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Local Scalars ..
-   INTEGER I,M,MP1
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MOD
 !     ..
    IF (N <= 0 .OR. INCX <= 0 .OR. SA == 1.0E+0) RETURN
    IF (INCX == 1) THEN

@@ -89,10 +89,10 @@
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER INCX,INCY,N
+   INTEGER, INTENT(IN) :: INCX,INCY,N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX CX(*),CY(*)
+   COMPLEX, INTENT(IN) :: CX(*),CY(*)
 !     ..
 !
 !  =====================================================================

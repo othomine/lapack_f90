@@ -98,10 +98,7 @@
 !
 !     .. Local Scalars ..
    REAL STEMP
-   INTEGER I,IX,IY,M,MP1
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MOD
+   INTEGER I,IX,IY
 !     ..
    STEMP = 0.0e0
    SDOT = 0.0e0

@@ -206,7 +206,7 @@
 !     ..
 !     .. Local Scalars ..
    COMPLEX*16 TEMP
-   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L
+   INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L,MINI,MAXI
    LOGICAL NOCONJ,NOUNIT
 !     ..
 !     .. External Functions ..
@@ -215,9 +215,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG,MAX,MIN
 !     ..
 !
 !     Test the input parameters.

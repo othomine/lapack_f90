@@ -212,11 +212,8 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
-   REAL TEMP1,TEMP2
+   REAL TEMP1
    INTEGER I,INFO,J,K,NROWA
    LOGICAL UPPER
 !     ..
@@ -298,6 +295,7 @@
 !
        IF (UPPER) THEN
            DO J = 1,N
+               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
                    C(1:M,J) = C(1:M,J) + ALPHA*A(K,J)*B(1:M,K)
                ENDDO
@@ -307,6 +305,7 @@
            ENDDO
        ELSE
            DO J = 1,N
+               C(1:M,J) = C(1:M,J) + ALPHA*A(J,J)*B(1:M,J)
                DO K = 1,J - 1
                    C(1:M,J) = C(1:M,J) + ALPHA*A(J,K)*B(1:M,K)
                ENDDO

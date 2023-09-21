@@ -159,7 +159,7 @@
 !     ..
 !     .. Local Scalars ..
    COMPLEX TEMP
-   INTEGER I,INFO,IX,J,JX,K,KK,KX
+   INTEGER INFO,IX,J,JX,K,KK,KX
    LOGICAL NOCONJ,NOUNIT
 !     ..
 !     .. External Functions ..
@@ -168,9 +168,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG
 !     ..
 !
 !     Test the input parameters.
@@ -249,7 +246,7 @@
            IF (INCX == 1) THEN
                DO J = N,1,-1
                    IF (X(J) /= (0.0E+0,0.0E+0)) THEN
-                       X(J+1:N) = X(J+1:N) + X(J)*AP(KK-N+J+1:KK+1)
+                       X(J+1:N) = X(J+1:N) + X(J)*AP(KK-N+J+1:KK)
                        IF (NOUNIT) X(J) = X(J)*AP(KK-N+J)
                    END IF
                    KK = KK - (N-J+1)

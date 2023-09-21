@@ -215,17 +215,9 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
-   DOUBLE PRECISION TEMP1,TEMP2
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
-!     ..
-!     .. Parameters ..
-   DOUBLE PRECISION ONE,ZERO
-   PARAMETER (ONE=1.0D+0,ZERO=0.0D+0)
 !     ..
 !
 !     Test the input parameters.

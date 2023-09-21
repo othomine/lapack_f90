@@ -214,11 +214,8 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DBLE,DCONJG,MAX
-!     ..
 !     .. Local Scalars ..
-   COMPLEX*16 TEMP1,TEMP2
+   COMPLEX*16 TEMP1
    INTEGER I,INFO,J,K,NROWA
    LOGICAL UPPER
 !     ..
@@ -268,7 +265,7 @@
        IF (BETA == (0.0D+0,0.0D+0)) THEN
            C(1:M,1:N) = (0.0D+0,0.0D+0)
        ELSE
-           C(1:M,1:N) = BETA*C(I,J)
+           C(1:M,1:N) = BETA*C(1:M,1:N)
        END IF
        RETURN
    END IF
@@ -339,10 +336,21 @@
 !        Form  C := alpha*B*A + beta*C.
 !
        IF (BETA == (0.0D+0,0.0D+0)) THEN
-           C(1:M,1:N) = TEMP1*B(1:M,1:N)
+           DO J = 1,N
+               TEMP1 = ALPHA*DBLE(A(J,J))
+               C(1:M,J) = TEMP1*B(1:M,J)
+           ENDDO
+       ELSEIF (BETA /= (1.0D+0,0.0D+0)) THEN
+           DO J = 1,N
+               TEMP1 = ALPHA*DBLE(A(J,J))
+               C(1:M,J) = BETA*C(1:M,J) + TEMP1*B(1:M,J)
+           END DO
        ELSE
-           C(1:M,1:N) = BETA*C(1:M,1:N) + TEMP1*B(1:M,1:N)
-       END IF
+           DO J = 1,N
+               TEMP1 = ALPHA*DBLE(A(J,J))
+               C(1:M,J) = C(1:M,J) + TEMP1*B(1:M,J)
+           END DO
+       ENDIF
        IF (UPPER) THEN
            DO J = 1,N
                DO K = 1,J - 1

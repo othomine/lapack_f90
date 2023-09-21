@@ -194,7 +194,7 @@
 !
 !     .. Scalar Arguments ..
    REAL ALPHA,BETA
-   INTEGER INCX,INCY,KL,KU,LDA,M,N
+   INTEGER INCX,INCY,KL,KU,LDA,M,N,MINI,MAXI
    CHARACTER TRANS
 !     ..
 !     .. Array Arguments ..
@@ -213,9 +213,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX,MIN
 !     ..
 !
 !     Test the input parameters.

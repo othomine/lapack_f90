@@ -210,12 +210,8 @@ SUBROUTINE CGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB, BETA,C,LDC)
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX
-!     ..
 !     .. Local Scalars ..
-   COMPLEX TEMP
-   INTEGER I,INFO,J,L,NROWA,NROWB
+   INTEGER INFO,J,L,NROWA,NROWB
    LOGICAL CONJA,CONJB,NOTA,NOTB
 !     ..
 !

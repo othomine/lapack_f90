@@ -204,17 +204,10 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX
-!     ..
 !     .. Local Scalars ..
    REAL TEMP
    INTEGER I,INFO,J,K,NROWA
    LOGICAL LSIDE,NOUNIT,UPPER
-!     ..
-!     .. Parameters ..
-   REAL ONE,ZERO
-   PARAMETER (ONE=1.0E+0,ZERO=0.0E+0)
 !     ..
 !
 !     Test the input parameters.

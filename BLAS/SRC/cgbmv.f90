@@ -217,9 +217,6 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CONJG,MAX,MIN
-!     ..
 !
 !     Test the input parameters.
 !
@@ -284,7 +281,7 @@
            IF (BETA == (0.0E+0,0.0E+0)) THEN
                Y(1:LENY) = (0.0E+0,0.0E+0)
            ELSE
-               Y(1:LENY) = BETA*Y(I)
+               Y(1:LENY) = BETA*Y(1:LENY)
            END IF
        ELSE
            IY = KY

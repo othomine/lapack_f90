@@ -196,12 +196,8 @@
 !     .. External Subroutines ..
    EXTERNAL XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC CMPLX,CONJG,MAX,REAL
-!     ..
 !     .. Local Scalars ..
    COMPLEX TEMP
-   REAL RTEMP
    INTEGER I,INFO,J,L,NROWA
    LOGICAL UPPER
 !     ..

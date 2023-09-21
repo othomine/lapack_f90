@@ -98,36 +98,30 @@
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   COMPLEX*16 ZTEMP
    INTEGER I,IX,IY
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DCONJG
-!     ..
-   ZTEMP = (0.0d0,0.0d0)
-   ZDOTC = (0.0d0,0.0d0)
    IF (N <= 0) RETURN
    IF (INCX == 1 .AND. INCY == 1) THEN
 !
 !        code for both increments equal to 1
 !
-      ZTEMP = sum(DCONJG(ZX(1:N))*ZY(1:N))
+      ZDOTC = sum(DCONJG(ZX(1:N))*ZY(1:N))
    ELSE
 !
 !        code for unequal increments or equal increments
 !          not equal to 1
 !
+      ZDOTC = (0.0d0,0.0d0)
       IX = 1
       IY = 1
       IF (INCX < 0) IX = (-N+1)*INCX + 1
       IF (INCY < 0) IY = (-N+1)*INCY + 1
       DO I = 1,N
-         ZTEMP = ZTEMP + DCONJG(ZX(IX))*ZY(IY)
+         ZDOTC = ZDOTC + DCONJG(ZX(IX))*ZY(IY)
          IX = IX + INCX
          IY = IY + INCY
       END DO
    END IF
-   ZDOTC = ZTEMP
    RETURN
 !
 !     End of ZDOTC

@@ -94,10 +94,7 @@
 !  =====================================================================
 !
 !     .. Local Scalars ..
-   INTEGER I,NINCX
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC DBLE, DCMPLX, DIMAG
+   INTEGER NINCX
 !     ..
    IF (N <= 0 .OR. INCX <= 0 .OR. DA == 1.0D+0) RETURN
    IF (INCX == 1) THEN

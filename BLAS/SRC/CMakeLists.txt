@@ -29,68 +29,68 @@
 #  Level 1 BLAS
 #---------------------------------------------------------
 
-set(SBLAS1 isamax.f sasum.f saxpy.f scopy.f sdot.f snrm2.f90
-	srot.f srotg.f90 sscal.f sswap.f sdsdot.f srotmg.f srotm.f)
+set(SBLAS1 isamax.f90 sasum.f90 saxpy.f90 scopy.f90 sdot.f90 snrm2.f90
+	srot.f90 srotg.f90 sscal.f90 sswap.f90 sdsdot.f90 srotmg.f90 srotm.f90)
 
-set(CBLAS1 scabs1.f scasum.f scnrm2.f90 icamax.f caxpy.f ccopy.f
-	cdotc.f cdotu.f csscal.f crotg.f90 cscal.f cswap.f csrot.f)
+set(CBLAS1 scabs1.f90 scasum.f90 scnrm2.f90 icamax.f90 caxpy.f90 ccopy.f90
+	cdotc.f90 cdotu.f90 csscal.f90 crotg.f90 cscal.f90 cswap.f90 csrot.f90)
 
-set(DBLAS1 idamax.f dasum.f daxpy.f dcopy.f ddot.f dnrm2.f90
-	drot.f drotg.f90 dscal.f dsdot.f dswap.f drotmg.f drotm.f)
+set(DBLAS1 idamax.f90 dasum.f90 daxpy.f90 dcopy.f90 ddot.f90 dnrm2.f90
+	drot.f90 drotg.f90 dscal.f90 dsdot.f90 dswap.f90 drotmg.f90 drotm.f90)
 
-set(DB1AUX sscal.f isamax.f)
+set(DB1AUX sscal.f90 isamax.f90)
 
-set(ZBLAS1 dcabs1.f dzasum.f dznrm2.f90 izamax.f zaxpy.f zcopy.f
-	zdotc.f zdotu.f zdscal.f zrotg.f90 zscal.f zswap.f zdrot.f)
+set(ZBLAS1 dcabs1.f90 dzasum.f90 dznrm2.f90 izamax.f90 zaxpy.f90 zcopy.f90
+	zdotc.f90 zdotu.f90 zdscal.f90 zrotg.f90 zscal.f90 zswap.f90 zdrot.f90)
 
 set(CB1AUX
-    isamax.f idamax.f
-    sasum.f saxpy.f scopy.f sdot.f sgemm.f sgemv.f snrm2.f90 srot.f sscal.f
-    sswap.f)
+    isamax.f90 idamax.f90
+    sasum.f90 saxpy.f90 scopy.f90 sdot.f90 sgemm.f90 sgemv.f90 snrm2.f90 srot.f90 sscal.f90
+    sswap.f90)
 
 set(ZB1AUX
-    icamax.f idamax.f
-    cgemm.f cherk.f cscal.f ctrsm.f
-    dasum.f daxpy.f dcopy.f ddot.f dgemm.f dgemv.f dnrm2.f90 drot.f dscal.f
-    dswap.f
-    scabs1.f)
+    icamax.f90 idamax.f90
+    cgemm.f90 cherk.f90 cscal.f90 ctrsm.f90
+    dasum.f90 daxpy.f90 dcopy.f90 ddot.f90 dgemm.f90 dgemv.f90 dnrm2.f90 drot.f90 dscal.f90
+    dswap.f90
+    scabs1.f90)
 
 #---------------------------------------------------------------------
 #  Auxiliary routines needed by both the Level 2 and Level 3 BLAS
 #---------------------------------------------------------------------
-set(ALLBLAS lsame.f xerbla.f xerbla_array.f)
+set(ALLBLAS lsame.f90 xerbla.f90 xerbla_array.f90)
 
 #---------------------------------------------------------
 #  Level 2 BLAS
 #---------------------------------------------------------
-set(SBLAS2 sgemv.f sgbmv.f ssymv.f ssbmv.f sspmv.f
-	strmv.f stbmv.f stpmv.f strsv.f stbsv.f stpsv.f
-	sger.f ssyr.f sspr.f ssyr2.f sspr2.f)
+set(SBLAS2 sgemv.f90 sgbmv.f90 ssymv.f90 ssbmv.f90 sspmv.f90
+	strmv.f90 stbmv.f90 stpmv.f90 strsv.f90 stbsv.f90 stpsv.f90
+	sger.f90 ssyr.f90 sspr.f90 ssyr2.f90 sspr2.f90)
 
-set(CBLAS2 cgemv.f cgbmv.f chemv.f chbmv.f chpmv.f
-	ctrmv.f ctbmv.f ctpmv.f ctrsv.f ctbsv.f ctpsv.f
-	cgerc.f cgeru.f cher.f chpr.f cher2.f chpr2.f)
+set(CBLAS2 cgemv.f90 cgbmv.f90 chemv.f90 chbmv.f90 chpmv.f90
+	ctrmv.f90 ctbmv.f90 ctpmv.f90 ctrsv.f90 ctbsv.f90 ctpsv.f90
+	cgerc.f90 cgeru.f90 cher.f90 chpr.f90 cher2.f90 chpr2.f90)
 
-set(DBLAS2 dgemv.f dgbmv.f dsymv.f dsbmv.f dspmv.f
-	dtrmv.f dtbmv.f dtpmv.f dtrsv.f dtbsv.f dtpsv.f
-	dger.f dsyr.f dspr.f dsyr2.f dspr2.f)
+set(DBLAS2 dgemv.f90 dgbmv.f90 dsymv.f90 dsbmv.f90 dspmv.f90
+	dtrmv.f90 dtbmv.f90 dtpmv.f90 dtrsv.f90 dtbsv.f90 dtpsv.f90
+	dger.f90 dsyr.f90 dspr.f90 dsyr2.f90 dspr2.f90)
 
-set(ZBLAS2 zgemv.f zgbmv.f zhemv.f zhbmv.f zhpmv.f
-	ztrmv.f ztbmv.f ztpmv.f ztrsv.f ztbsv.f ztpsv.f
-	zgerc.f zgeru.f zher.f zhpr.f zher2.f zhpr2.f)
+set(ZBLAS2 zgemv.f90 zgbmv.f90 zhemv.f90 zhbmv.f90 zhpmv.f90
+	ztrmv.f90 ztbmv.f90 ztpmv.f90 ztrsv.f90 ztbsv.f90 ztpsv.f90
+	zgerc.f90 zgeru.f90 zher.f90 zhpr.f90 zher2.f90 zhpr2.f90)
 
 #---------------------------------------------------------
 #  Level 3 BLAS
 #---------------------------------------------------------
-set(SBLAS3 sgemm.f ssymm.f ssyrk.f ssyr2k.f strmm.f strsm.f)
+set(SBLAS3 sgemm.f90 ssymm.f90 ssyrk.f90 ssyr2k.f90 strmm.f90 strsm.f90)
 
-set(CBLAS3 cgemm.f csymm.f csyrk.f csyr2k.f ctrmm.f ctrsm.f
-	chemm.f cherk.f cher2k.f)
+set(CBLAS3 cgemm.f90 csymm.f90 csyrk.f90 csyr2k.f90 ctrmm.f90 ctrsm.f90
+	chemm.f90 cherk.f90 cher2k.f90)
 
-set(DBLAS3 dgemm.f dsymm.f dsyrk.f dsyr2k.f dtrmm.f dtrsm.f)
+set(DBLAS3 dgemm.f90 dsymm.f90 dsyrk.f90 dsyr2k.f90 dtrmm.f90 dtrsm.f90)
 
-set(ZBLAS3 zgemm.f zsymm.f zsyrk.f zsyr2k.f ztrmm.f ztrsm.f
-	zhemm.f zherk.f zher2k.f)
+set(ZBLAS3 zgemm.f90 zsymm.f90 zsyrk.f90 zsyr2k.f90 ztrmm.f90 ztrsm.f90
+	zhemm.f90 zherk.f90 zher2k.f90)
 
 
 set(SOURCES)
