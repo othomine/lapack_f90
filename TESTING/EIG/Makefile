@@ -34,6 +34,10 @@
 TOPSRCDIR = ../..
 include $(TOPSRCDIR)/make.inc
 
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(FFLAGS) -c -o $@ $<
+
 AEIGTST = \
    alahdg.o \
    alasum.o \
@@ -181,13 +185,13 @@ cleanobj:
 cleanexe:
 	rm -f xeigtst* xdmdeigtst*
 
-schkee.o: schkee.F
+schkee.o: schkee.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-dchkee.o: dchkee.F
+dchkee.o: dchkee.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-cchkee.o: cchkee.F
+cchkee.o: cchkee.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-zchkee.o: zchkee.F
+zchkee.o: zchkee.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
 schkdmd.o: schkdmd.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<

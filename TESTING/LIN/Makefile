@@ -34,6 +34,11 @@
 TOPSRCDIR = ../..
 include $(TOPSRCDIR)/make.inc
 
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(FFLAGS) -c -o $@ $<
+
+
 ALINTST = \
    aladhd.o alaerh.o alaesm.o alahd.o alareq.o \
    alasum.o alasvm.o chkxer.o icopy.o ilaenv.o xlaenv.o xerbla.o
@@ -317,13 +322,13 @@ cleanobj:
 cleanexe:
 	rm -f xlintst*
 
-schkaa.o: schkaa.F
+schkaa.o: schkaa.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-dchkaa.o: dchkaa.F
+dchkaa.o: dchkaa.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-cchkaa.o: cchkaa.F
+cchkaa.o: cchkaa.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-zchkaa.o: zchkaa.F
+zchkaa.o: zchkaa.f90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
 
 .NOTPARALLEL:
