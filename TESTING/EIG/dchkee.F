@@ -1036,7 +1036,7 @@
 *> \ingroup double_eig
 *
 *  =====================================================================
-      PROGRAM DCHKEE      
+      PROGRAM DCHKEE
 *
 #if defined(_OPENMP)
       use omp_lib
@@ -1080,7 +1080,9 @@
      $                   NK, NN, NPARMS, NRHS, NTYPES,
      $                   VERS_MAJOR, VERS_MINOR, VERS_PATCH
       INTEGER*4          N_THREADS, ONE_THREAD
-      DOUBLE PRECISION   EPS, S1, S2, THRESH, THRSHN
+      DOUBLE PRECISION   EPS2, THRESH, THRSHN
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       LOGICAL            DOTYPE( MAXT ), LOGWRK( NMAX )
@@ -1111,7 +1113,7 @@
      $                   DDRGEV, DDRGSX, DDRGVX, DDRVBD, DDRVES, DDRVEV,
      $                   DDRVSG, DDRVST, DDRVSX, DDRVVX, DERRBD,
      $                   DERRED, DERRGG, DERRHS, DERRST, ILAVER, XLAENV,
-     $                   DDRGES3, DDRGEV3, 
+     $                   DDRGES3, DDRGEV3,
      $                   DCHKST2STG, DDRVST2STG, DCHKSB2STG, DDRVSG2STG
 *     ..
 *     .. Intrinsic Functions ..
@@ -1137,7 +1139,7 @@
 *     ..
 *     .. Data statements ..
       DATA               INTSTR / '0123456789' /
-      DATA               IOLDSD / 0, 0, 0, 1 /  
+      DATA               IOLDSD / 0, 0, 0, 1 /
 *     ..
 *     .. Allocate memory dynamically ..
 *
@@ -1156,7 +1158,7 @@
       B = 0.0
       C = 0.0
       D = 0.0
-      S1 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       FATAL = .FALSE.
       NUNIT = NOUT
 *
@@ -1239,25 +1241,49 @@
 *
 *        DGEBAL:  Balancing
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKBL( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKBL : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 10
       ELSE IF( DBK ) THEN
 *
 *        DGEBAK:  Back transformation
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKBK( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKBK : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 10
       ELSE IF( DGL ) THEN
 *
 *        DGGBAL:  Balancing
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKGL( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKGL : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 10
       ELSE IF( DGK ) THEN
 *
 *        DGGBAK:  Back transformation
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKGK( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKGK : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 10
       ELSE IF( LSAMEN( 3, PATH, 'DEC' ) ) THEN
 *
@@ -1271,7 +1297,13 @@
          CALL XLAENV( 15, 2 )
          CALL XLAENV( 16, 2 )
          TSTERR = .TRUE.
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKEC( THRESH, TSTERR, NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKEC : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 10
       ELSE
          WRITE( NOUT, FMT = 9992 )PATH
@@ -1824,8 +1856,15 @@
          NTYPES = MIN( MAXTYP, NTYPES )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          CALL XLAENV( 1, 1 )
-         IF( TSTERR )
-     $      CALL DERRHS( 'DHSEQR', NOUT )
+         IF( TSTERR ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
+            CALL DERRHS( 'DHSEQR', NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DERRHS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
+       ENDIF
          DO 270 I = 1, NPARMS
             CALL XLAENV( 1, NBVAL( I ) )
             CALL XLAENV( 2, NBMIN( I ) )
@@ -1844,6 +1883,7 @@
             WRITE( NOUT, FMT = 9961 )C3, NBVAL( I ), NBMIN( I ),
      $         NXVAL( I ), MAX( 11, INMIN(I)),
      $         INWIN( I ), INIBL( I ), ISHFTS( I ), IACC22( I )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DCHKHS( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 5 ), NMAX, A( 1, 6 ),
@@ -1852,11 +1892,16 @@
      $                   A( 1, 9 ), A( 1, 10 ), A( 1, 11 ), A( 1, 12 ),
      $                   D( 1, 7 ), WORK, LWORK, IWORK, LOGWRK, RESULT,
      $                   INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCHKHS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DCHKHS', INFO
   270    CONTINUE
 *
-      ELSE IF( LSAMEN( 3, C3, 'DST' ) .OR. LSAMEN( 3, C3, 'SEP' ) 
+      ELSE IF( LSAMEN( 3, C3, 'DST' ) .OR. LSAMEN( 3, C3, 'SEP' )
      $                                .OR. LSAMEN( 3, C3, 'SE2' ) ) THEN
 *
 *        ----------------------------------
@@ -1897,6 +1942,7 @@
      $         NXVAL( I )
             IF( TSTCHK ) THEN
                IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DCHKST2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ),
      $                      D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), D( 1, 5 ),
@@ -1904,7 +1950,13 @@
      $                      D( 1, 10 ), D( 1, 11 ), A( 1, 3 ), NMAX,
      $                      A( 1, 4 ), A( 1, 5 ), D( 1, 12 ), A( 1, 6 ),
      $                      WORK, LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCHKST2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ELSE
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DCHKST( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ),
      $                      D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), D( 1, 5 ),
@@ -1912,25 +1964,42 @@
      $                      D( 1, 10 ), D( 1, 11 ), A( 1, 3 ), NMAX,
      $                      A( 1, 4 ), A( 1, 5 ), D( 1, 12 ), A( 1, 6 ),
      $                      WORK, LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCHKST : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ENDIF
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'DCHKST', INFO
             END IF
             IF( TSTDRV ) THEN
                IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DDRVST2STG( NN, NVAL, 18, DOTYPE, ISEED, THRESH,
      $                      NOUT, A( 1, 1 ), NMAX, D( 1, 3 ), D( 1, 4 ),
      $                      D( 1, 5 ), D( 1, 6 ), D( 1, 8 ), D( 1, 9 ),
      $                      D( 1, 10 ), D( 1, 11 ), A( 1, 2 ), NMAX,
      $                      A( 1, 3 ), D( 1, 12 ), A( 1, 4 ), WORK,
      $                      LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DDRVST2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ELSE
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DDRVST( NN, NVAL, 18, DOTYPE, ISEED, THRESH, NOUT,
      $                      A( 1, 1 ), NMAX, D( 1, 3 ), D( 1, 4 ),
      $                      D( 1, 5 ), D( 1, 6 ), D( 1, 8 ), D( 1, 9 ),
      $                      D( 1, 10 ), D( 1, 11 ), A( 1, 2 ), NMAX,
      $                      A( 1, 3 ), D( 1, 12 ), A( 1, 4 ), WORK,
      $                      LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DDRVST : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ENDIF
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'DDRVST', INFO
@@ -1969,12 +2038,18 @@
 *     $                      D( 1, 3 ), A( 1, 3 ), NMAX, A( 1, 4 ),
 *     $                      A( 1, 5 ), A( 1, 6 ), A( 1, 7 ), WORK,
 *     $                      LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DDRVSG2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                          NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
      $                          D( 1, 3 ), D( 1, 3 ), A( 1, 3 ), NMAX,
      $                          A( 1, 4 ), A( 1, 5 ), A( 1, 6 ),
      $                          A( 1, 7 ), WORK, LWORK, IWORK, LIWORK,
      $                          RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DDRVSG2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'DDRVSG', INFO
             END IF
@@ -2017,21 +2092,34 @@
             WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ),
      $         NXVAL( I ), NRHS
             IF( TSTCHK ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DCHKBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, NRHS, ISEED,
      $                      THRESH, A( 1, 1 ), NMAX, D( 1, 1 ),
      $                      D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), A( 1, 2 ),
      $                      NMAX, A( 1, 3 ), A( 1, 4 ), A( 1, 5 ), NMAX,
      $                      A( 1, 6 ), NMAX, A( 1, 7 ), A( 1, 8 ), WORK,
      $                      LWORK, IWORK, NOUT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCHKBD : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'DCHKBD', INFO
             END IF
-            IF( TSTDRV )
-     $         CALL DDRVBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, ISEED,
+            IF( TSTDRV ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
+               CALL DDRVBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, ISEED,
      $                      THRESH, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
      $                      A( 1, 3 ), NMAX, A( 1, 4 ), A( 1, 5 ),
      $                      A( 1, 6 ), D( 1, 1 ), D( 1, 2 ), D( 1, 3 ),
      $                      WORK, LWORK, IWORK, NOUT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DDRVBD : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
+       ENDIF
   330    CONTINUE
 *
       ELSE IF( LSAMEN( 3, C3, 'DEV' ) ) THEN
@@ -2049,11 +2137,17 @@
             IF( TSTERR )
      $         CALL DERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVEV( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ),
      $                   D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), A( 1, 3 ),
      $                   NMAX, A( 1, 4 ), NMAX, A( 1, 5 ), NMAX, RESULT,
      $                   WORK, LWORK, IWORK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVEV : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DGEEV', INFO
          END IF
@@ -2075,11 +2169,17 @@
             IF( TSTERR )
      $         CALL DERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVES( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   D( 1, 1 ), D( 1, 2 ), D( 1, 3 ), D( 1, 4 ),
      $                   A( 1, 4 ), NMAX, RESULT, WORK, LWORK, IWORK,
      $                   LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVES : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DGEES', INFO
          END IF
@@ -2101,6 +2201,7 @@
             IF( TSTERR )
      $         CALL DERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVVX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN,
      $                   NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ),
      $                   D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), A( 1, 3 ),
@@ -2108,6 +2209,11 @@
      $                   D( 1, 5 ), D( 1, 6 ), D( 1, 7 ), D( 1, 8 ),
      $                   D( 1, 9 ), D( 1, 10 ), D( 1, 11 ), D( 1, 12 ),
      $                   RESULT, WORK, LWORK, IWORK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVVX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DGEEVX', INFO
          END IF
@@ -2129,12 +2235,18 @@
             IF( TSTERR )
      $         CALL DERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVSX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN,
      $                   NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   D( 1, 1 ), D( 1, 2 ), D( 1, 3 ), D( 1, 4 ),
      $                   D( 1, 5 ), D( 1, 6 ), A( 1, 4 ), NMAX,
      $                   A( 1, 5 ), RESULT, WORK, LWORK, IWORK, LOGWRK,
      $                   INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVSX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DGEESX', INFO
          END IF
@@ -2178,6 +2290,7 @@
             TSTDIF = .FALSE.
             THRSHN = 10.D0
             IF( TSTCHK ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL DCHKGG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      TSTDIF, THRSHN, NOUT, A( 1, 1 ), NMAX,
      $                      A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
@@ -2187,6 +2300,11 @@
      $                      D( 1, 5 ), D( 1, 6 ), A( 1, 13 ),
      $                      A( 1, 14 ), WORK, LWORK, LOGWRK, RESULT,
      $                      INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCHKGG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'DCHKGG', INFO
             END IF
@@ -2207,22 +2325,34 @@
             IF( TSTERR )
      $         CALL DERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGES( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                   D( 1, 1 ), D( 1, 2 ), D( 1, 3 ), WORK, LWORK,
      $                   RESULT, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGES : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $          WRITE( NOUT, FMT = 9980 )'DDRGES', INFO
 *
 *     Blocked version
 *
             CALL XLAENV(16, 2)
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGES3( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                    A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                    A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                    D( 1, 1 ), D( 1, 2 ), D( 1, 3 ), WORK, LWORK,
      $                    RESULT, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGES3 : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $          WRITE( NOUT, FMT = 9980 )'DDRGES3', INFO
          END IF
@@ -2245,11 +2375,17 @@
      $         CALL DERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
             CALL XLAENV( 5, 2 )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGSX( NN, NCMAX, THRESH, NIN, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   A( 1, 6 ), D( 1, 1 ), D( 1, 2 ), D( 1, 3 ),
      $                   C( 1, 1 ), NCMAX*NCMAX, A( 1, 12 ), WORK,
      $                   LWORK, IWORK, LIWORK, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGSX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DDRGSX', INFO
          END IF
@@ -2271,23 +2407,35 @@
             IF( TSTERR )
      $         CALL DERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGEV( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                   A( 1, 9 ), NMAX, D( 1, 1 ), D( 1, 2 ),
      $                   D( 1, 3 ), D( 1, 4 ), D( 1, 5 ), D( 1, 6 ),
      $                   WORK, LWORK, RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGEV : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DDRGEV', INFO
 *
 *     Blocked version
 *
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGEV3( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                    A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                    A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                    A( 1, 9 ), NMAX, D( 1, 1 ), D( 1, 2 ),
      $                    D( 1, 3 ), D( 1, 4 ), D( 1, 5 ), D( 1, 6 ),
      $                    WORK, LWORK, RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGEV3 : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DDRGEV3', INFO
          END IF
@@ -2309,6 +2457,7 @@
             IF( TSTERR )
      $         CALL DERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRGVX( NN, THRESH, NIN, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), D( 1, 1 ),
      $                   D( 1, 2 ), D( 1, 3 ), A( 1, 5 ), A( 1, 6 ),
@@ -2316,6 +2465,11 @@
      $                   D( 1, 6 ), D( 1, 7 ), D( 1, 8 ), D( 1, 9 ),
      $                   WORK, LWORK, IWORK( 3 ), LIWORK-2, RESULT,
      $                   LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRGVX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
 *
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DDRGVX', INFO
@@ -2337,10 +2491,16 @@
 *         CALL DCHKSB( NN, NVAL, NK, KVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 *     $                NOUT, A( 1, 1 ), NMAX, D( 1, 1 ), D( 1, 2 ),
 *     $                A( 1, 2 ), NMAX, WORK, LWORK, RESULT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKSB2STG( NN, NVAL, NK, KVAL, MAXTYP, DOTYPE, ISEED,
-     $                 THRESH, NOUT, A( 1, 1 ), NMAX, D( 1, 1 ), 
+     $                 THRESH, NOUT, A( 1, 1 ), NMAX, D( 1, 1 ),
      $                 D( 1, 2 ), D( 1, 3 ), D( 1, 4 ), D( 1, 5 ),
      $                 A( 1, 2 ), NMAX, WORK, LWORK, RESULT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCHKSB2STG : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCHKSB', INFO
 *
@@ -2362,11 +2522,17 @@
   360          CONTINUE
             END IF
             WRITE( NOUT, FMT = 9966 )C3, NRHS
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DCHKBB( NN, MVAL, NVAL, NK, KVAL, MAXTYP, DOTYPE, NRHS,
      $                   ISEED, THRESH, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), 2*NMAX, D( 1, 1 ), D( 1, 2 ),
      $                   A( 1, 4 ), NMAX, A( 1, 5 ), NMAX, A( 1, 6 ),
      $                   NMAX, A( 1, 7 ), WORK, LWORK, RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCHKBB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'DCHKBB', INFO
   370    CONTINUE
@@ -2380,9 +2546,15 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL DERRGG( 'GLM', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCKGLM( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X,
      $                WORK, D( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCKGLM : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCKGLM', INFO
 *
@@ -2395,11 +2567,17 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL DERRGG( 'GQR', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCKGQR( NN, MVAL, NN, PVAL, NN, NVAL, NTYPES, ISEED,
      $                THRESH, NMAX, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                A( 1, 4 ), TAUA, B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                B( 1, 4 ), B( 1, 5 ), TAUB, WORK, D( 1, 1 ), NIN,
      $                NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCKGQR : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCKGQR', INFO
 *
@@ -2412,11 +2590,17 @@
          CALL XLAENV(1,1)
          IF( TSTERR )
      $      CALL DERRGG( 'GSV', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCKGSV( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                A( 1, 3 ), B( 1, 3 ), A( 1, 4 ), TAUA, TAUB,
      $                B( 1, 4 ), IWORK, WORK, D( 1, 1 ), NIN, NOUT,
      $                INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCKGSV : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCKGSV', INFO
 *
@@ -2429,10 +2613,16 @@
          CALL XLAENV(1,1)
          IF( TSTERR )
      $      CALL DERRGG( 'CSD', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCKCSD( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), A( 1, 4 ),
      $                A( 1, 5 ), A( 1, 6 ), A( 1, 7 ), IWORK, WORK,
      $                D( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCKCSD : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCKCSD', INFO
 *
@@ -2445,9 +2635,15 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL DERRGG( 'LSE', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCKLSE( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X,
      $                WORK, D( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCKLSE : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'DCKLSE', INFO
 *
@@ -2460,8 +2656,8 @@
      $   GO TO 190
   380 CONTINUE
       WRITE( NOUT, FMT = 9994 )
-      S2 = DSECND( )
-      WRITE( NOUT, FMT = 9993 )S2 - S1     
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
+      WRITE( NOUT, FMT = 9993 ) real(S2T - S1T)/real(nb_periods_sec)
 *
       DEALLOCATE (A, STAT = AllocateStatus)
       DEALLOCATE (B, STAT = AllocateStatus)
@@ -2475,7 +2671,7 @@
  9995 FORMAT( / / 1X, A3, ':  NB =', I4, ', NBMIN =', I4, ', NX =', I4,
      $      ', NRHS =', I4 )
  9994 FORMAT( / / ' End of tests' )
- 9993 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9993 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9992 FORMAT( 1X, A3, ':  Unrecognized path name' )
  9991 FORMAT( / / ' *** Invalid integer value in column ', I2,
      $      ' of input', ' line:', / A79 )
@@ -2535,3 +2731,4 @@
 *     End of DCHKEE
 *
       END
+

@@ -101,8 +101,10 @@
       INTEGER            I, IC, K, LDA, NM, NMATS,
      $                   NNS, NRHS, NTYPES,
      $                   VERS_MAJOR, VERS_MINOR, VERS_PATCH
-      DOUBLE PRECISION   EPS, S1, S2, THRESH
+      DOUBLE PRECISION   EPS2, THRESH
       REAL               SEPS
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       LOGICAL            DOTYPE( MATMAX )
@@ -135,7 +137,7 @@
 *     ..
 *     .. Executable Statements ..
 *
-      S1 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       LDA = NMAX
       FATAL = .FALSE.
 *
@@ -297,10 +299,16 @@
      $      CALL DERRAB( NOUT )
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVAB( DOTYPE, NM, MVAL, NNS,
      $                   NSVAL, THRESH, LDA, A( 1, 1 ),
      $                   A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                   WORK, RWORK, SWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVAB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )'DSGESV'
          END IF
@@ -318,10 +326,16 @@
 *
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DDRVAC( DOTYPE, NM, MVAL, NNS, NSVAL,
      $                   THRESH, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   B( 1, 1 ), B( 1, 2 ),
      $                   WORK, RWORK, SWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DDRVAC : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -337,13 +351,13 @@
 *
   140 CONTINUE
       CLOSE ( NIN )
-      S2 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
       WRITE( NOUT, FMT = 9998 )
-      WRITE( NOUT, FMT = 9997 )S2 - S1
+      WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
 *
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
- 9997 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9997 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9996 FORMAT( ' Invalid input value: ', A4, '=', I6, '; must be >=',
      $      I6 )
  9995 FORMAT( ' Invalid input value: ', A4, '=', I6, '; must be <=',

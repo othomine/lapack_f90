@@ -1,13 +1,12 @@
-c     scabs1.f
+c     cabs1sub.f
 c
-c     The program is a fortran wrapper for scabs1.
+c     The program is a fortran wrapper for cabs1.
 c
       subroutine scabs1sub(z, cabs1)
 c
-      external scabs1
       complex z
-      real scabs1, cabs1
+      real cabs1
 c
-      cabs1=scabs1(z)
+      cabs1=ABS(REAL(Z)) + ABS(AIMAG(Z))
       return
       end

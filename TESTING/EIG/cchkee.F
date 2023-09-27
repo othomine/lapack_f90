@@ -1074,7 +1074,9 @@
      $                   NK, NN, NPARMS, NRHS, NTYPES,
      $                   VERS_MAJOR, VERS_MINOR, VERS_PATCH
       INTEGER*4          N_THREADS, ONE_THREAD
-      REAL               EPS, S1, S2, THRESH, THRSHN
+      REAL               EPS2, THRESH, THRSHN
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       LOGICAL            DOTYPE( MAXT ), LOGWRK( NMAX )
@@ -1108,7 +1110,7 @@
      $                   CDRGEV, CDRGSX, CDRGVX, CDRVBD, CDRVES, CDRVEV,
      $                   CDRVSG, CDRVST, CDRVSX, CDRVVX, CERRBD,
      $                   CERRED, CERRGG, CERRHS, CERRST, ILAVER, XLAENV,
-     $                   CDRGES3, CDRGEV3, 
+     $                   CDRGES3, CDRGEV3,
      $                   CCHKST2STG, CDRVST2STG, CCHKHB2STG
 *     ..
 *     .. Intrinsic Functions ..
@@ -1157,7 +1159,7 @@
       B = 0.0
       C = 0.0
       DC = 0.0
-      S1 = SECOND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       FATAL = .FALSE.
       NUNIT = NOUT
 *
@@ -1240,25 +1242,49 @@
 *
 *        CGEBAL:  Balancing
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKBL( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKBL : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 380
       ELSE IF( CBK ) THEN
 *
 *        CGEBAK:  Back transformation
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKBK( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKBK : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 380
       ELSE IF( CGL ) THEN
 *
 *        CGGBAL:  Balancing
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKGL( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKGL : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 380
       ELSE IF( CGK ) THEN
 *
 *        CGGBAK:  Back transformation
 *
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKGK( NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKGK : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 380
       ELSE IF( LSAMEN( 3, PATH, 'CEC' ) ) THEN
 *
@@ -1268,7 +1294,13 @@
          CALL XLAENV( 1, 1 )
          CALL XLAENV( 12, 1 )
          TSTERR = .TRUE.
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKEC( THRESH, TSTERR, NIN, NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKEC : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          GO TO 380
       ELSE
          WRITE( NOUT, FMT = 9992 )PATH
@@ -1820,8 +1852,15 @@
          NTYPES = MIN( MAXTYP, NTYPES )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          CALL XLAENV( 1, 1 )
-         IF( TSTERR )
-     $      CALL CERRHS( 'CHSEQR', NOUT )
+         IF( TSTERR ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
+            CALL CERRHS( 'CHSEQR', NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CERRHS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
+       ENDIF
          DO 270 I = 1, NPARMS
             CALL XLAENV( 1, NBVAL( I ) )
             CALL XLAENV( 2, NBMIN( I ) )
@@ -1840,6 +1879,7 @@
             WRITE( NOUT, FMT = 9961 )C3, NBVAL( I ), NBMIN( I ),
      $         NXVAL( I ), MAX( 11, INMIN(I)),
      $         INWIN( I ), INIBL( I ), ISHFTS( I ), IACC22( I )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CCHKHS( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 5 ), NMAX, A( 1, 6 ),
@@ -1847,6 +1887,11 @@
      $                   A( 1, 9 ), A( 1, 10 ), A( 1, 11 ), A( 1, 12 ),
      $                   DC( 1, 3 ), WORK, LWORK, RWORK, IWORK, LOGWRK,
      $                   RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCHKHS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CCHKHS', INFO
   270    CONTINUE
@@ -1892,6 +1937,7 @@
      $         NXVAL( I )
             IF( TSTCHK ) THEN
                IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CCHKST2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ),
      $                      DR( 1, 1 ), DR( 1, 2 ), DR( 1, 3 ),
@@ -1901,7 +1947,13 @@
      $                      A( 1, 4 ), A( 1, 5 ), DC( 1, 1 ), A( 1, 6 ),
      $                      WORK, LWORK, RWORK, LWORK, IWORK, LIWORK,
      $                      RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCHKST2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ELSE
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CCHKST( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ),
      $                      DR( 1, 1 ), DR( 1, 2 ), DR( 1, 3 ),
@@ -1911,25 +1963,42 @@
      $                      A( 1, 4 ), A( 1, 5 ), DC( 1, 1 ), A( 1, 6 ),
      $                      WORK, LWORK, RWORK, LWORK, IWORK, LIWORK,
      $                      RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCHKST : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ENDIF
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'CCHKST', INFO
             END IF
             IF( TSTDRV ) THEN
                IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CDRVST2STG( NN, NVAL, 18, DOTYPE, ISEED, THRESH,
      $                    NOUT, A( 1, 1 ), NMAX, DR( 1, 3 ), DR( 1, 4 ),
      $                    DR( 1, 5 ), DR( 1, 8 ), DR( 1, 9 ),
      $                    DR( 1, 10 ), A( 1, 2 ), NMAX, A( 1, 3 ),
      $                    DC( 1, 1 ), A( 1, 4 ), WORK, LWORK, RWORK,
      $                    LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CDRVST2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                ELSE
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CDRVST( NN, NVAL, 18, DOTYPE, ISEED, THRESH, NOUT,
      $                    A( 1, 1 ), NMAX, DR( 1, 3 ), DR( 1, 4 ),
      $                    DR( 1, 5 ), DR( 1, 8 ), DR( 1, 9 ),
      $                    DR( 1, 10 ), A( 1, 2 ), NMAX, A( 1, 3 ),
      $                    DC( 1, 1 ), A( 1, 4 ), WORK, LWORK, RWORK,
      $                    LWORK, IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CDRVST : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
            ENDIF
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'CDRVST', INFO
@@ -1969,12 +2038,18 @@
 *     $                      A( 1, 5 ), A( 1, 6 ), A( 1, 7 ), WORK,
 *     $                      LWORK, RWORK, LWORK, IWORK, LIWORK, RESULT,
 *     $                      INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CDRVSG2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                          NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
      $                          DR( 1, 3 ), DR( 1, 4 ), A( 1, 3 ), NMAX,
      $                          A( 1, 4 ), A( 1, 5 ), A( 1, 6 ),
      $                          A( 1, 7 ), WORK, LWORK, RWORK, LWORK,
      $                          IWORK, LIWORK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CDRVSG2STG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'CDRVSG', INFO
             END IF
@@ -2017,22 +2092,35 @@
             WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ),
      $         NXVAL( I ), NRHS
             IF( TSTCHK ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CCHKBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, NRHS, ISEED,
      $                      THRESH, A( 1, 1 ), NMAX, DR( 1, 1 ),
      $                      DR( 1, 2 ), DR( 1, 3 ), DR( 1, 4 ),
      $                      A( 1, 2 ), NMAX, A( 1, 3 ), A( 1, 4 ),
      $                      A( 1, 5 ), NMAX, A( 1, 6 ), NMAX, A( 1, 7 ),
      $                      A( 1, 8 ), WORK, LWORK, RWORK, NOUT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCHKBD : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'CCHKBD', INFO
             END IF
-            IF( TSTDRV )
-     $         CALL CDRVBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, ISEED,
+            IF( TSTDRV ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
+               CALL CDRVBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, ISEED,
      $                      THRESH, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
      $                      A( 1, 3 ), NMAX, A( 1, 4 ), A( 1, 5 ),
      $                      A( 1, 6 ), DR( 1, 1 ), DR( 1, 2 ),
      $                      DR( 1, 3 ), WORK, LWORK, RWORK, IWORK, NOUT,
      $                      INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CDRVBD : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
+       ENDIF
   330    CONTINUE
 *
       ELSE IF( LSAMEN( 3, C3, 'CEV' ) ) THEN
@@ -2050,11 +2138,17 @@
             IF( TSTERR )
      $         CALL CERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRVEV( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), DC( 1, 1 ),
      $                   DC( 1, 2 ), A( 1, 3 ), NMAX, A( 1, 4 ), NMAX,
      $                   A( 1, 5 ), NMAX, RESULT, WORK, LWORK, RWORK,
      $                   IWORK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRVEV : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CGEEV', INFO
          END IF
@@ -2076,11 +2170,17 @@
             IF( TSTERR )
      $         CALL CERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRVES( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   DC( 1, 1 ), DC( 1, 2 ), A( 1, 4 ), NMAX,
      $                   RESULT, WORK, LWORK, RWORK, IWORK, LOGWRK,
      $                   INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRVES : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CGEES', INFO
          END IF
@@ -2102,6 +2202,7 @@
             IF( TSTERR )
      $         CALL CERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRVVX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN,
      $                   NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), DC( 1, 1 ),
      $                   DC( 1, 2 ), A( 1, 3 ), NMAX, A( 1, 4 ), NMAX,
@@ -2109,6 +2210,11 @@
      $                   DR( 1, 3 ), DR( 1, 4 ), DR( 1, 5 ), DR( 1, 6 ),
      $                   DR( 1, 7 ), DR( 1, 8 ), RESULT, WORK, LWORK,
      $                   RWORK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRVVX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CGEEVX', INFO
          END IF
@@ -2130,11 +2236,17 @@
             IF( TSTERR )
      $         CALL CERRED( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRVSX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN,
      $                   NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   DC( 1, 1 ), DC( 1, 2 ), DC( 1, 3 ), A( 1, 4 ),
      $                   NMAX, A( 1, 5 ), RESULT, WORK, LWORK, RWORK,
      $                   LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRVSX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CGEESX', INFO
          END IF
@@ -2178,6 +2290,7 @@
             TSTDIF = .FALSE.
             THRSHN = 10.
             IF( TSTCHK ) THEN
+               call system_clock(count_rate=nb_periods_sec,count=S1)
                CALL CCHKGG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
      $                      TSTDIF, THRSHN, NOUT, A( 1, 1 ), NMAX,
      $                      A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
@@ -2186,6 +2299,11 @@
      $                      DC( 1, 1 ), DC( 1, 2 ), DC( 1, 3 ),
      $                      DC( 1, 4 ), A( 1, 13 ), A( 1, 14 ), WORK,
      $                      LWORK, RWORK, LOGWRK, RESULT, INFO )
+               call system_clock(count_rate=nb_periods_sec,count=S2)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCHKGG : ',
+     $               real(S2-S1)/real(nb_periods_sec), ' s'
+               close(10)
                IF( INFO.NE.0 )
      $            WRITE( NOUT, FMT = 9980 )'CCHKGG', INFO
             END IF
@@ -2206,11 +2324,17 @@
             IF( TSTERR )
      $         CALL CERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGES( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                   DC( 1, 1 ), DC( 1, 2 ), WORK, LWORK, RWORK,
      $                   RESULT, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGES : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
 *
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CDRGES', INFO
@@ -2218,11 +2342,17 @@
 * Blocked version
 *
             CALL XLAENV(16,2)
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGES3( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                    A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                    A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                    DC( 1, 1 ), DC( 1, 2 ), WORK, LWORK, RWORK,
      $                    RESULT, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGES3 : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
 *
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CDRGES3', INFO
@@ -2247,11 +2377,17 @@
      $         CALL CERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
             CALL XLAENV( 5, 2 )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGSX( NN, NCMAX, THRESH, NIN, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   A( 1, 6 ), DC( 1, 1 ), DC( 1, 2 ), C,
      $                   NCMAX*NCMAX, S, WORK, LWORK, RWORK, IWORK,
      $                   LIWORK, LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGSX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CDRGSX', INFO
          END IF
@@ -2273,24 +2409,36 @@
             IF( TSTERR )
      $         CALL CERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGEV( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                   A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                   A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                   A( 1, 9 ), NMAX, DC( 1, 1 ), DC( 1, 2 ),
      $                   DC( 1, 3 ), DC( 1, 4 ), WORK, LWORK, RWORK,
      $                   RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGEV : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CDRGEV', INFO
 *
 * Blocked version
 *
             CALL XLAENV(16,2)
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGEV3( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT,
      $                    A( 1, 1 ), NMAX, A( 1, 2 ), A( 1, 3 ),
      $                    A( 1, 4 ), A( 1, 7 ), NMAX, A( 1, 8 ),
      $                    A( 1, 9 ), NMAX, DC( 1, 1 ), DC( 1, 2 ),
      $                    DC( 1, 3 ), DC( 1, 4 ), WORK, LWORK, RWORK,
      $                    RESULT, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGEV3 : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $           WRITE( NOUT, FMT = 9980 )'CDRGEV3', INFO
          END IF
@@ -2312,6 +2460,7 @@
             IF( TSTERR )
      $         CALL CERRGG( C3, NOUT )
             CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRGVX( NN, THRESH, NIN, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), DC( 1, 1 ),
      $                   DC( 1, 2 ), A( 1, 5 ), A( 1, 6 ), IWORK( 1 ),
@@ -2319,6 +2468,11 @@
      $                   DR( 1, 4 ), DR( 1, 5 ), DR( 1, 6 ), WORK,
      $                   LWORK, RWORK, IWORK( 3 ), LIWORK-2, RESULT,
      $                   LOGWRK, INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CDRGVX : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
 *
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CDRGVX', INFO
@@ -2350,11 +2504,17 @@
 *     $                NOUT, A( 1, 1 ), NMAX, DR( 1, 1 ), DR( 1, 2 ),
 *     $                A( 1, 2 ), NMAX, WORK, LWORK, RWORK, RESULT,
 *     $                INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCHKHB2STG( NN, NVAL, NK, KVAL, MAXTYP, DOTYPE, ISEED,
-     $                 THRESH, NOUT, A( 1, 1 ), NMAX, DR( 1, 1 ), 
+     $                 THRESH, NOUT, A( 1, 1 ), NMAX, DR( 1, 1 ),
      $                 DR( 1, 2 ), DR( 1, 3 ), DR( 1, 4 ), DR( 1, 5 ),
-     $                 A( 1, 2 ), NMAX, WORK, LWORK, RWORK, RESULT, 
+     $                 A( 1, 2 ), NMAX, WORK, LWORK, RWORK, RESULT,
      $                 INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCHKHB2STG : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCHKHB', INFO
 *
@@ -2376,12 +2536,18 @@
   360          CONTINUE
             END IF
             WRITE( NOUT, FMT = 9966 )C3, NRHS
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CCHKBB( NN, MVAL, NVAL, NK, KVAL, MAXTYP, DOTYPE, NRHS,
      $                   ISEED, THRESH, NOUT, A( 1, 1 ), NMAX,
      $                   A( 1, 2 ), 2*NMAX, DR( 1, 1 ), DR( 1, 2 ),
      $                   A( 1, 4 ), NMAX, A( 1, 5 ), NMAX, A( 1, 6 ),
      $                   NMAX, A( 1, 7 ), WORK, LWORK, RWORK, RESULT,
      $                   INFO )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCHKBB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
             IF( INFO.NE.0 )
      $         WRITE( NOUT, FMT = 9980 )'CCHKBB', INFO
   370    CONTINUE
@@ -2395,9 +2561,15 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL CERRGG( 'GLM', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCKGLM( NN, NVAL, MVAL, PVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X,
      $                WORK, DR( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCKGLM : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCKGLM', INFO
 *
@@ -2410,11 +2582,17 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL CERRGG( 'GQR', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCKGQR( NN, MVAL, NN, PVAL, NN, NVAL, NTYPES, ISEED,
      $                THRESH, NMAX, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                A( 1, 4 ), TAUA, B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                B( 1, 4 ), B( 1, 5 ), TAUB, WORK, DR( 1, 1 ), NIN,
      $                NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCKGQR : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCKGQR', INFO
 *
@@ -2427,11 +2605,17 @@
          CALL XLAENV(1,1)
          IF( TSTERR )
      $      CALL CERRGG( 'GSV', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCKGSV( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                A( 1, 3 ), B( 1, 3 ), A( 1, 4 ), ALPHA, BETA,
      $                B( 1, 4 ), IWORK, WORK, DR( 1, 1 ), NIN, NOUT,
      $                INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCKGSV : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCKGSV', INFO
 *
@@ -2444,10 +2628,16 @@
          CALL XLAENV(1,1)
          IF( TSTERR )
      $      CALL CERRGG( 'CSD', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCKCSD( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), A( 1, 4 ),
      $                A( 1, 5 ), A( 1, 6 ), RWORK, IWORK, WORK,
      $                DR( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCKCSD : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCKCSD', INFO
 *
@@ -2460,9 +2650,15 @@
          CALL XLAENV( 1, 1 )
          IF( TSTERR )
      $      CALL CERRGG( 'LSE', NOUT )
+         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL CCKLSE( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX,
      $                A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X,
      $                WORK, DR( 1, 1 ), NIN, NOUT, INFO )
+         call system_clock(count_rate=nb_periods_sec,count=S2)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CCKLSE : ',
+     $         real(S2-S1)/real(nb_periods_sec), ' s'
+         close(10)
          IF( INFO.NE.0 )
      $      WRITE( NOUT, FMT = 9980 )'CCKLSE', INFO
       ELSE
@@ -2474,8 +2670,8 @@
      $   GO TO 190
   380 CONTINUE
       WRITE( NOUT, FMT = 9994 )
-      S2 = SECOND( )
-      WRITE( NOUT, FMT = 9993 )S2 - S1    
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
+      WRITE( NOUT, FMT = 9993 ) real(S2T - S1T)/real(nb_periods_sec)
 *
       DEALLOCATE (S, STAT = AllocateStatus)
       DEALLOCATE (A, STAT = AllocateStatus)
@@ -2491,7 +2687,7 @@
  9995 FORMAT( / / 1X, A3, ':  NB =', I4, ', NBMIN =', I4, ', NX =', I4,
      $      ', NRHS =', I4 )
  9994 FORMAT( / / ' End of tests' )
- 9993 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9993 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9992 FORMAT( 1X, A3, ':  Unrecognized path name' )
  9991 FORMAT( / / ' *** Invalid integer value in column ', I2,
      $      ' of input', ' line:', / A79 )
@@ -2551,3 +2747,4 @@
 *     End of CCHKEE
 *
       END
+

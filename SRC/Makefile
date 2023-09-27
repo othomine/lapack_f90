@@ -515,18 +515,22 @@ ZXLASRC = zgesvxx.o zgerfsx.o zla_gerfsx_extended.o zla_geamv.o \
    zla_lin_berr.o zlarscl2.o zlascl2.o zla_wwaddw.o
 endif
 
-DEPRECSRC = DEPRECATED/cgegs.o DEPRECATED/cgegv.o DEPRECATED/cgelsx.o \
-   DEPRECATED/cgeqpf.o DEPRECATED/cggsvd.o DEPRECATED/cggsvp.o \
-   DEPRECATED/clahrd.o DEPRECATED/clatzm.o DEPRECATED/ctzrqf.o \
-   DEPRECATED/dgegs.o  DEPRECATED/dgegv.o  DEPRECATED/dgelsx.o \
-   DEPRECATED/dgeqpf.o DEPRECATED/dggsvd.o DEPRECATED/dggsvp.o \
-   DEPRECATED/dlahrd.o DEPRECATED/dlatzm.o DEPRECATED/dtzrqf.o \
-   DEPRECATED/sgegs.o  DEPRECATED/sgegv.o  DEPRECATED/sgelsx.o \
-   DEPRECATED/sgeqpf.o DEPRECATED/sggsvd.o DEPRECATED/sggsvp.o \
-   DEPRECATED/slahrd.o DEPRECATED/slatzm.o DEPRECATED/stzrqf.o \
-   DEPRECATED/zgegs.o  DEPRECATED/zgegv.o  DEPRECATED/zgelsx.o \
-   DEPRECATED/zgeqpf.o DEPRECATED/zggsvd.o DEPRECATED/zggsvp.o \
-   DEPRECATED/zlahrd.o DEPRECATED/zlatzm.o DEPRECATED/ztzrqf.o
+DEPRECSRC = DEPRECATED/cgegs.o DEPRECATED/cgegv.o DEPRECATED/cgelqs.o \
+   DEPRECATED/cgelsx.o DEPRECATED/cgeqpf.o DEPRECATED/cgeqrs.o \
+   DEPRECATED/cggsvd.o DEPRECATED/cggsvp.o DEPRECATED/clahrd.o \
+   DEPRECATED/clatzm.o DEPRECATED/ctzrqf.o \
+   DEPRECATED/dgegs.o  DEPRECATED/dgegv.o  DEPRECATED/dgelqs.o \
+   DEPRECATED/dgelsx.o DEPRECATED/dgeqpf.o DEPRECATED/dgeqrs.o \
+   DEPRECATED/dggsvd.o DEPRECATED/dggsvp.o DEPRECATED/dlahrd.o \
+   DEPRECATED/dlatzm.o DEPRECATED/dtzrqf.o \
+   DEPRECATED/sgegs.o  DEPRECATED/sgegv.o  DEPRECATED/sgelqs.o \
+   DEPRECATED/sgelsx.o DEPRECATED/sgeqpf.o DEPRECATED/sgeqrs.o \
+   DEPRECATED/sggsvd.o DEPRECATED/sggsvp.o DEPRECATED/slahrd.o \
+   DEPRECATED/slatzm.o DEPRECATED/stzrqf.o \
+   DEPRECATED/zgegs.o  DEPRECATED/zgegv.o  DEPRECATED/zgelqs.o \
+   DEPRECATED/zgelsx.o DEPRECATED/zgeqpf.o DEPRECATED/zgeqrs.o \
+   DEPRECATED/zggsvd.o DEPRECATED/zggsvp.o DEPRECATED/zlahrd.o \
+   DEPRECATED/zlatzm.o DEPRECATED/ztzrqf.o
 
 ALLOBJ = $(SLASRC) $(DLASRC) $(DSLASRC) $(CLASRC) $(ZLASRC) $(ZCLASRC) \
    $(SCLAUX) $(DZLAUX) $(ALLAUX)
@@ -626,18 +630,18 @@ cleanobj:
 cleanlib:
 	rm -f $(LAPACKLIB)
 
-slaruv.o: slaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dlaruv.o: dlaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-sla_wwaddw.o: sla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dla_wwaddw.o: dla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-cla_wwaddw.o: cla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-zla_wwaddw.o: zla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+slaruv.o: slaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dlaruv.o: dlaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+sla_wwaddw.o: sla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dla_wwaddw.o: dla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+cla_wwaddw.o: cla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+zla_wwaddw.o: zla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
 
 # Modules
+la_xisnan.mod: 
+	$(FC) $(FFLAGS) -c la_constants.f90 
+	$(FC) $(FFLAGS) -c la_xisnan.F90
 la_xisnan.o: la_xisnan.F90 la_constants.mod
 	$(FC) $(FFLAGS) -c -o $@ $<
-la_xisnan.mod: 
-	$(FC) $(FFLAGS) -c la_constants.f90
-	$(FC) $(FFLAGS) -c la_xisnan.F90
 la_constants.o: la_constants.f90
 	$(FC) $(FFLAGS) -c -o $@ $<

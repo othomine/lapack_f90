@@ -79,8 +79,10 @@
       LOGICAL            FATAL, TSTERR
       INTEGER            VERS_MAJOR, VERS_MINOR, VERS_PATCH
       INTEGER            I, NN, NNS, NNT
-      DOUBLE PRECISION   EPS, S1, S2, THRESH
+      DOUBLE PRECISION   EPS2, THRESH
 
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       INTEGER            NVAL( MAXIN ), NSVAL( MAXIN ), NTVAL( NTYPES )
@@ -114,7 +116,7 @@
 *     ..
 *     .. Executable Statements ..
 *
-      S1 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       FATAL = .FALSE.
 *
 *     Read a dummy line.
@@ -233,44 +235,74 @@
 *    Test the routines: zpftrf, zpftri, zpftrs (as in ZDRVPO).
 *    This also tests the routines: ztfsm, ztftri, ztfttr, ztrttf.
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL ZDRVRFP( NOUT, NN, NVAL, NNS, NSVAL, NNT, NTVAL, THRESH,
      $              WORKA, WORKASAV, WORKAFAC, WORKAINV, WORKB,
      $              WORKBSAV, WORKXACT, WORKX, WORKARF, WORKARFINV,
      $              Z_WORK_ZLATMS, Z_WORK_ZPOT02,
      $              Z_WORK_ZPOT03, D_WORK_ZLATMS, D_WORK_ZLANHE,
      $              D_WORK_ZPOT01, D_WORK_ZPOT02, D_WORK_ZPOT03 )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDRVRFP : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the routine: zlanhf
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL ZDRVRF1( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF,
      +              D_WORK_ZLANHE )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDRVRF1 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the conversion routines:
 *       zhfttp, ztpthf, ztfttr, ztrttf, ztrttp and ztpttr.
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL ZDRVRF2( NOUT, NN, NVAL, WORKA, NMAX, WORKARF,
      +              WORKAP, WORKASAV )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDRVRF2 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the routine: ztfsm
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL ZDRVRF3( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF,
      +              WORKAINV, WORKAFAC, D_WORK_ZLANHE,
      +              Z_WORK_ZPOT03, Z_WORK_ZPOT02 )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDRVRF3 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 
 *
 *    Test the routine: zhfrk
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL ZDRVRF4( NOUT, NN, NVAL, THRESH, WORKA, WORKAFAC, NMAX,
      +              WORKARF, WORKAINV, NMAX,D_WORK_ZLANHE)
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDRVRF4 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
       CLOSE ( NIN )
-      S2 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
       WRITE( NOUT, FMT = 9998 )
-      WRITE( NOUT, FMT = 9997 )S2 - S1
+      WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
 *
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
- 9997 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9997 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9996 FORMAT( ' !! Invalid input value: ', A4, '=', I6, '; must be >=',
      $      I6 )
  9995 FORMAT( ' !! Invalid input value: ', A4, '=', I6, '; must be <=',

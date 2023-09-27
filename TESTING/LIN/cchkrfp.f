@@ -79,8 +79,10 @@
       LOGICAL            FATAL, TSTERR
       INTEGER            VERS_MAJOR, VERS_MINOR, VERS_PATCH
       INTEGER            I, NN, NNS, NNT
-      REAL               EPS, S1, S2, THRESH
+      REAL               EPS2, THRESH
 
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       INTEGER            NVAL( MAXIN ), NSVAL( MAXIN ), NTVAL( NTYPES )
@@ -114,7 +116,7 @@
 *     ..
 *     .. Executable Statements ..
 *
-      S1 = SECOND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       FATAL = .FALSE.
 *
 *     Read a dummy line.
@@ -233,44 +235,74 @@
 *    Test the routines: cpftrf, cpftri, cpftrs (as in CDRVPO).
 *    This also tests the routines: ctfsm, ctftri, ctfttr, ctrttf.
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL CDRVRFP( NOUT, NN, NVAL, NNS, NSVAL, NNT, NTVAL, THRESH,
      $              WORKA, WORKASAV, WORKAFAC, WORKAINV, WORKB,
      $              WORKBSAV, WORKXACT, WORKX, WORKARF, WORKARFINV,
      $              C_WORK_CLATMS, C_WORK_CPOT02,
      $              C_WORK_CPOT03, S_WORK_CLATMS, S_WORK_CLANHE,
      $              S_WORK_CPOT01, S_WORK_CPOT02, S_WORK_CPOT03 )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CDRVRFP : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the routine: clanhf
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL CDRVRF1( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF,
      +              S_WORK_CLANHE )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CDRVRF1 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the conversion routines:
 *       chfttp, ctpthf, ctfttr, ctrttf, ctrttp and ctpttr.
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL CDRVRF2( NOUT, NN, NVAL, WORKA, NMAX, WORKARF,
      +              WORKAP, WORKASAV )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CDRVRF2 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *    Test the routine: ctfsm
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL CDRVRF3( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF,
      +              WORKAINV, WORKAFAC, S_WORK_CLANHE,
      +              C_WORK_CPOT03, C_WORK_CPOT02 )
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CDRVRF3 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
 *
 *    Test the routine: chfrk
 *
+      call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL CDRVRF4( NOUT, NN, NVAL, THRESH, WORKA, WORKAFAC, NMAX,
      +              WORKARF, WORKAINV, NMAX, S_WORK_CLANHE)
+      call system_clock(count_rate=nb_periods_sec,count=S2)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CDRVRF4 : ',
+     $      real(S2-S1)/real(nb_periods_sec), ' s'
+      close(10)
 *
       CLOSE ( NIN )
-      S2 = SECOND( )
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
       WRITE( NOUT, FMT = 9998 )
-      WRITE( NOUT, FMT = 9997 )S2 - S1
+      WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
 *
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
- 9997 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9997 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9996 FORMAT( ' !! Invalid input value: ', A4, '=', I6, '; must be >=',
      $      I6 )
  9995 FORMAT( ' !! Invalid input value: ', A4, '=', I6, '; must be <=',

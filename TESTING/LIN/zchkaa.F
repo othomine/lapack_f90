@@ -145,7 +145,9 @@
       INTEGER            I, IC, J, K, LA, LAFAC, LDA, NB, NM, NMATS, NN,
      $                   NNB, NNB2, NNS, NRHS, NTYPES, NRANK,
      $                   VERS_MAJOR, VERS_MINOR, VERS_PATCH
-      DOUBLE PRECISION   EPS, S1, S2, THREQ, THRESH
+      DOUBLE PRECISION   EPS2, THREQ, THRESH
+      INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
+      REAL               STOT
 *     ..
 *     .. Local Arrays ..
       LOGICAL            DOTYPE( MATMAX )
@@ -208,7 +210,7 @@
 *     ..
 *     .. Executable Statements ..
 *
-      S1 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S1T)
       LDA = NMAX
       FATAL = .FALSE.
 *
@@ -455,19 +457,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKGE( DOTYPE, NM, MVAL, NN, NVAL, NNB2, NBVAL2, NNS,
      $                   NSVAL, THRESH, TSTERR, LDA, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVGE( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), B( 1, 4 ), S, WORK,
      $                   RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -482,19 +496,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKGB( DOTYPE, NM, MVAL, NN, NVAL, NNB2, NBVAL2, NNS,
      $                   NSVAL, THRESH, TSTERR, A( 1, 1 ), LA,
      $                   A( 1, 3 ), LAFAC, B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKGB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVGB( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                   A( 1, 1 ), LA, A( 1, 3 ), LAFAC, A( 1, 6 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), B( 1, 4 ), S,
      $                   WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVGB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -507,17 +533,29 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKGT( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKGT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVGT( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                   A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVGT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -530,19 +568,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKPO( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                   THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                   WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKPO : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVPO( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), B( 1, 4 ), S, WORK,
      $                   RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVPO : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -556,10 +606,16 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKPS( DOTYPE, NN, NVAL, NNB2, NBVAL2, NRANK,
      $                   RANKVAL, THRESH, TSTERR, LDA, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), PIV, WORK, RWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKPS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -572,19 +628,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKPP( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK, RWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKPP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVPP( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), B( 1, 4 ), S, WORK,
      $                   RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVPP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -597,19 +665,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKPB( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                   THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                   WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKPB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVPB( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), B( 1, 4 ), S, WORK,
      $                   RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVPB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -622,17 +702,29 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKPT( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   A( 1, 1 ), S, A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKPT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVPT( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                   A( 1, 1 ), S, A( 1, 2 ), B( 1, 1 ), B( 1, 2 ),
      $                   B( 1, 3 ), WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVPT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -645,19 +737,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHE( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                   THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                   WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHE( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, IWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -671,19 +775,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHE_ROOK(DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                       THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                       A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                       WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHE_ROOK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHE_ROOK( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                        LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                        B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                        RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHE_ROOK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -698,19 +814,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHE_RK ( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                       THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                       E, A( 1, 3 ), B( 1, 1 ), B( 1, 2 ),
      $                       B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHE_RK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHE_RK( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                      LDA, A( 1, 1 ), A( 1, 2 ), E, A( 1, 3 ),
      $                      B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                      RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHE_RK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -724,20 +852,32 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHE_AA( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS,
      $                         NSVAL, THRESH, TSTERR, LDA,
      $                         A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                         B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                         WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHE_AA : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHE_AA( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                         LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                              B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                         WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHE_AA : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -751,21 +891,33 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHE_AA_2STAGE( DOTYPE, NN, NVAL, NNB2, NBVAL2,
      $                         NNS, NSVAL, THRESH, TSTERR, LDA,
      $                         A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                         B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                         WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHE_AA_2STAGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHE_AA_2STAGE(
      $                         DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                         LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                              B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                         WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHE_AA_2STAGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -779,19 +931,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKHP( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK, RWORK,
      $                   IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKHP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVHP( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, IWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVHP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -805,19 +969,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSY( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                   THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                   WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSY : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSY( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, IWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSY : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -831,19 +1007,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSY_ROOK(DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                       THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                       A( 1, 3 ), B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                       WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSY_ROOK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSY_ROOK( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                        LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                        B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                        RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSY_ROOK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -858,19 +1046,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSY_RK( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                      THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                      E, A( 1, 3 ), B( 1, 1 ), B( 1, 2 ),
      $                      B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSY_RK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSY_RK( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                      LDA, A( 1, 1 ), A( 1, 2 ), E, A( 1, 3 ),
      $                      B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                      RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSY_RK : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -883,19 +1083,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSY_AA( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                      THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                      A( 1, 3 ), B( 1, 1 ), B( 1, 2 ),
      $                      B( 1, 3 ), WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSY_AA : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSY_AA( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                      LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                      B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                      RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSY_AA : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -909,21 +1121,33 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSY_AA_2STAGE( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS,
      $                      NSVAL, THRESH, TSTERR, LDA,
      $                      A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                      B( 1, 1 ), B( 1, 2 ), B( 1, 3 ),
      $                      WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSY_AA_2STAGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSY_AA_2STAGE(
      $                      DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR,
      $                      LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                      B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK,
      $                      RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSY_AA_2STAGE : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -937,19 +1161,31 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKSP( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   LDA, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK, RWORK,
      $                   IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKSP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVSP( DOTYPE, NN, NVAL, NRHS, THRESH, TSTERR, LDA,
      $                   A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, IWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVSP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9988 )PATH
          END IF
@@ -962,10 +1198,16 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTR( DOTYPE, NN, NVAL, NNB2, NBVAL2, NNS, NSVAL,
      $                   THRESH, TSTERR, LDA, A( 1, 1 ), A( 1, 2 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), WORK, RWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTR : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -978,9 +1220,15 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTP( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   LDA, A( 1, 1 ), A( 1, 2 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -993,9 +1241,15 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTB( DOTYPE, NN, NVAL, NNS, NSVAL, THRESH, TSTERR,
      $                   LDA, A( 1, 1 ), A( 1, 2 ), B( 1, 1 ),
      $                   B( 1, 2 ), B( 1, 3 ), WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTB : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1008,11 +1262,17 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKQR( DOTYPE, NM, MVAL, NN, NVAL, NNB, NBVAL, NXVAL,
      $                   NRHS, THRESH, TSTERR, NMAX, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), B( 1, 4 ),
      $                   WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKQR : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1025,11 +1285,17 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKLQ( DOTYPE, NM, MVAL, NN, NVAL, NNB, NBVAL, NXVAL,
      $                   NRHS, THRESH, TSTERR, NMAX, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), B( 1, 4 ),
      $                   WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKLQ : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1042,11 +1308,17 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKQL( DOTYPE, NM, MVAL, NN, NVAL, NNB, NBVAL, NXVAL,
      $                   NRHS, THRESH, TSTERR, NMAX, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), B( 1, 4 ),
      $                   WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKQL : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1059,11 +1331,17 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKRQ( DOTYPE, NM, MVAL, NN, NVAL, NNB, NBVAL, NXVAL,
      $                   NRHS, THRESH, TSTERR, NMAX, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   B( 1, 1 ), B( 1, 2 ), B( 1, 3 ), B( 1, 4 ),
      $                   WORK, RWORK, IWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKRQ : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1074,7 +1352,13 @@
 *             matrices (THREQ should be between 2 and 10)
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKEQ( THREQ, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKEQ : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1087,9 +1371,15 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTZ( DOTYPE, NM, MVAL, NN, NVAL, THRESH, TSTERR,
      $                   A( 1, 1 ), A( 1, 2 ), S( 1 ),
      $                   B( 1, 1 ), WORK, RWORK, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTZ : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1102,10 +1392,16 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKQ3( DOTYPE, NM, MVAL, NN, NVAL, NNB, NBVAL, NXVAL,
      $                   THRESH, A( 1, 1 ), A( 1, 2 ), S( 1 ),
      $                   B( 1, 1 ), WORK, RWORK, IWORK,
      $                   NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKQ3 : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1118,10 +1414,16 @@
          CALL ALAREQ( PATH, NMATS, DOTYPE, NTYPES, NIN, NOUT )
 *
          IF( TSTDRV ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZDRVLS( DOTYPE, NM, MVAL, NN, NVAL, NNS, NSVAL, NNB,
      $                   NBVAL, NXVAL, THRESH, TSTERR, A( 1, 1 ),
      $                   A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), A( 1, 5 ),
      $                   S( 1 ), S( NMAX+1 ), NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDRVLS : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1132,8 +1434,14 @@
 *        QT:  QRT routines for general matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKQRT( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                    NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKQRT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1143,8 +1451,14 @@
 *        QX:  QRT routines for triangular-pentagonal matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKQRTP( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                     NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKQRTP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1154,8 +1468,14 @@
 *        TQ:  LQT routines for general matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKLQT( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                    NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKLQT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1165,8 +1485,14 @@
 *        XQ:  LQT routines for triangular-pentagonal matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKLQTP( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                     NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKLQTP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1176,8 +1502,14 @@
 *        TS:  QR routines for tall-skinny matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTSQR( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                     NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTSQR : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1187,8 +1519,14 @@
 *        TQ:  LQT routines for general matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKLQT( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                    NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKLQT : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1198,8 +1536,14 @@
 *        XQ:  LQT routines for triangular-pentagonal matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKLQTP( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                     NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKLQTP : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1209,8 +1553,14 @@
 *        TS:  QR routines for tall-skinny matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKTSQR( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                     NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKTSQR : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 )PATH
          END IF
@@ -1220,8 +1570,14 @@
 *        HH:  Householder reconstruction for tall-skinny matrices
 *
          IF( TSTCHK ) THEN
+            call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL ZCHKUNHR_COL( THRESH, TSTERR, NM, MVAL, NN, NVAL, NNB,
      $                         NBVAL, NOUT )
+            call system_clock(count_rate=nb_periods_sec,count=S2)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCHKUNHR_COL : ',
+     $            real(S2-S1)/real(nb_periods_sec), ' s'
+            close(10)
          ELSE
             WRITE( NOUT, FMT = 9989 ) PATH
          END IF
@@ -1239,9 +1595,9 @@
 *
   140 CONTINUE
       CLOSE ( NIN )
-      S2 = DSECND( )
+      call system_clock(count_rate=nb_periods_sec,count=S2T)
       WRITE( NOUT, FMT = 9998 )
-      WRITE( NOUT, FMT = 9997 )S2 - S1
+      WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
 *
       DEALLOCATE (A, STAT = AllocateStatus)
       DEALLOCATE (B, STAT = AllocateStatus)
@@ -1250,7 +1606,7 @@
 *
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
- 9997 FORMAT( ' Total time used = ', F12.2, ' seconds', / )
+ 9997 FORMAT( ' Total time used = ', F16.8, ' seconds', / )
  9996 FORMAT( ' Invalid input value: ', A4, '=', I6, '; must be >=',
      $      I6 )
  9995 FORMAT( ' Invalid input value: ', A4, '=', I6, '; must be <=',
@@ -1269,3 +1625,4 @@
 *     End of ZCHKAA
 *
       END
+
