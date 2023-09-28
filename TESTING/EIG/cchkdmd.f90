@@ -45,12 +45,6 @@
       IMPLICIT NONE
       integer, parameter :: WP = real32
 !............................................................
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
-
-      COMPLEX(KIND=WP), PARAMETER ::  CONE = ( 1.0_WP, 0.0_WP )
-      COMPLEX(KIND=WP), PARAMETER :: CZERO = ( 0.0_WP, 0.0_WP )
-!............................................................
       REAL(KIND=WP), ALLOCATABLE, DIMENSION(:)   :: RES, &
                      RES1, RESEX, SINGVX, SINGVQX, WORK
       INTEGER      , ALLOCATABLE, DIMENSION(:)   ::   IWORK
@@ -159,12 +153,12 @@
       LDAU = M
       LDS  = N
 
-      TMP_XW  = ZERO
-      TMP_AU   = ZERO
-      TMP_REZ  = ZERO
-      TMP_REZQ = ZERO
-      SVDIFF   = ZERO
-      TMP_EX   = ZERO
+      TMP_XW  = 0.0_WP
+      TMP_AU   = 0.0_WP
+      TMP_REZ  = 0.0_WP
+      TMP_REZQ = 0.0_WP
+      SVDIFF   = 0.0_WP
+      TMP_EX   = 0.0_WP
 
       ALLOCATE( A(LDA,M) )
       ALLOCATE( AC(LDA,M) )
@@ -217,7 +211,7 @@
       CALL CLATMR( M, M, 'N', ISEED, 'N', CDA, MODE, COND, &
                    CMAX, RSIGN, GRADE, CDL, MODEL,  CONDL, &
                    CDR, MODER, CONDR, PIVTNG, IWORK, M, M, &
-                   ZERO, -ONE, 'N', A, LDA, IWORK(M+1), INFO )
+                   0.0_WP, -1.0_WP, 'N', A, LDA, IWORK(M+1), INFO )
       DEALLOCATE( CDR )
       DEALLOCATE( CDL )
       DEALLOCATE( CDA )
@@ -235,9 +229,9 @@
 
       TMP = ABS(CEIGSA(ICAMAX(M, CEIGSA, 1))) ! The spectral radius of A
       ! Scale the matrix A to have unit spectral radius.
-      CALL CLASCL( 'G',0, 0, TMP, ONE, M, M, &
+      CALL CLASCL( 'G',0, 0, TMP, 1.0_WP, M, M, &
                    A, LDA, INFO )
-      CALL CLASCL( 'G',0, 0, TMP, ONE, M, 1, &
+      CALL CLASCL( 'G',0, 0, TMP, 1.0_WP, M, 1, &
                    CEIGSA, M, INFO )
       ANORM = CLANGE( 'F', M, M, A, LDA, WDUMMY )
 
@@ -246,24 +240,24 @@
           ! with two inital conditions
           CALL CLARNV(2, ISEED, M, F(1,1) )
           DO i = 1, N/2
-             CALL CGEMV( 'N', M, M, CONE, A, LDA, F(1,i), 1,  &
-                  CZERO, F(1,i+1), 1 )
+             CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, LDA, F(1,i), 1,  &
+                  (0.0_WP,0.0_WP), F(1,i+1), 1 )
           END DO
           X0(1:M,1:N/2) = F(1:M,1:N/2)
           Y0(1:M,1:N/2) = F(1:M,2:N/2+1)
 
           CALL CLARNV(2, ISEED, M, F(1,1) )
           DO i = 1, N-N/2
-             CALL CGEMV( 'N', M, M, CONE, A, LDA, F(1,i), 1,  &
-                  CZERO, F(1,i+1), 1 )
+             CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, LDA, F(1,i), 1,  &
+                  (0.0_WP,0.0_WP), F(1,i+1), 1 )
           END DO
           X0(1:M,N/2+1:N) = F(1:M,1:N-N/2)
           Y0(1:M,N/2+1:N) = F(1:M,2:N-N/2+1)
       ELSE
           CALL CLARNV(2, ISEED, M, F(1,1) )
           DO i = 1, N
-             CALL CGEMV( 'N', M, M, CONE, A, M, F(1,i), 1,  &
-                  CZERO, F(1,i+1), 1 )
+             CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, M, F(1,i), 1,  &
+                  (0.0_WP,0.0_WP), F(1,i+1), 1 )
           END DO
           F0(1:M,1:N+1) = F(1:M,1:N+1)
           X0(1:M,1:N) = F0(1:M,1:N)
@@ -381,11 +375,11 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the Rayleigh quotient
           ! returned in W
-          CALL CGEMM( 'N', 'N', M, K, K, CONE, X, LDX, W, LDW, &
-                      CZERO, Z1, LDZ )
-          TMP = ZERO
+          CALL CGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), X, LDX, W, LDW, &
+                      (0.0_WP,0.0_WP), Z1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-             CALL CAXPY( M, -CONE, Z(1,i), 1, Z1(1,i), 1)
+             CALL CAXPY( M, -(1.0_WP,0.0_WP), Z(1,i), 1, Z1(1,i), 1)
              TMP = MAX(TMP, SCNRM2( M, Z1(1,i), 1 ) )
           END DO
           TMP_XW = MAX(TMP_XW, TMP )
@@ -410,11 +404,11 @@
            ! See the paper for an error analysis.
            ! Note that the left singular vectors of the input matrix X
            ! are returned in the array X.
-           CALL CGEMM( 'N', 'N', M, K, M, CONE, A, LDA, X, LDX, &
-                      CZERO, Z1, LDZ )
-          TMP = ZERO
+           CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, X, LDX, &
+                      (0.0_WP,0.0_WP), Z1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-             CALL CAXPY( M, -CONE, AU(1,i), 1, Z1(1,i), 1)
+             CALL CAXPY( M, -(1.0_WP,0.0_WP), AU(1,i), 1, Z1(1,i), 1)
              TMP = MAX( TMP, SCNRM2( M, Z1(1,i),1 ) * &
                      SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -436,7 +430,7 @@
           ! returned vectors are in the real form, in the same way
           ! as the Ritz vectors. Here we just save the vectors
           ! and test them separately using a Matlab script.
-          CALL CGEMM( 'N', 'N', M, K, M, CONE, A, LDA, AU, LDAU, CZERO, Y1, LDY )
+          CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, AU, LDAU, (0.0_WP,0.0_WP), Y1, LDY )
 
           DO i=1, K
              CALL CAXPY( M, -CEIGS(i), AU(1,i), 1, Y1(1,i), 1 )
@@ -449,7 +443,7 @@
           ! Compare the residuals returned by CGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
-          CALL CGEMM( 'N', 'N', M, K, M, CONE, A, LDA, Z, LDZ, CZERO, Y1, LDY )
+          CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, Z, LDZ, (0.0_WP,0.0_WP), Y1, LDY )
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in CGEDMD,)
@@ -459,7 +453,7 @@
                 CALL CAXPY( M, -CEIGS(i), Z(1,i), 1, Y1(1,i), 1 )
                 RES1(i) = SCNRM2( M, Y1(1,i), 1)
           END DO
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, K
           TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
                     SINGVX(K)/(ANORM*SINGVX(1)) )
@@ -478,13 +472,9 @@
 
 
          IF ( LSAME(JOBREF,'E') ) THEN
-            TMP = ZERO
-          DO i = 1, K
-          TMP = MAX( TMP, ABS(RES1(i) - RESEX(i))/(RES1(i)+RESEX(i)) )
-          END DO
-          TMP_EX = MAX(TMP_EX,TMP)
+            TMP = MAXVAL(ABS(RES1(1:K) - RESEX(1:K))/(RES1(1:K)+RESEX(1:K)))
+            TMP_EX = MAX(TMP_EX,TMP)
          END IF
-
       END IF
 
       DEALLOCATE(CWORK)
@@ -527,7 +517,7 @@
 
           !..... ZGEDMDQ check point
 
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, MIN(K, KQ)
              TMP = MAX(TMP, ABS(SINGVX(i)-SINGVQX(i)) / &
                                    SINGVX(1) )
@@ -545,8 +535,8 @@
              ! as requested. The residual ||F-Q*R||_F / ||F||_F
              ! is compared to M*N*EPS.
              F1(1:M,1:N+1) = F0(1:M,1:N+1)
-             CALL CGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -CONE, F, &
-                         LDF, Y, LDY, CONE, F1, LDF )
+             CALL CGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -(1.0_WP,0.0_WP), F, &
+                         LDF, Y, LDY, (1.0_WP,0.0_WP), F1, LDF )
              TMP_FQR = CLANGE( 'F', M, N+1, F1, LDF, WORK ) / &
                    CLANGE( 'F', M, N+1, F0,  LDF, WORK )
              IF ( TMP_FQR <= TOL2 ) THEN
@@ -562,7 +552,7 @@
               ! Compare the residuals returned by ZGEDMDQ with the
               ! explicitly computed residuals using the matrix A.
               ! Compute explicitly Y1 = A*Z
-              CALL CGEMM( 'N', 'N', M, KQ, M, CONE, A, LDA, Z, LDZ, CZERO, Y1, LDY )
+              CALL CGEMM( 'N', 'N', M, KQ, M, (1.0_WP,0.0_WP), A, LDA, Z, LDZ, (0.0_WP,0.0_WP), Y1, LDY )
               ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
               ! of the invariant subspaces that correspond to complex conjugate
               ! pairs of eigencalues. (See the description of Z in ZGEDMDQ)
@@ -572,11 +562,7 @@
                     ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
                     RES1(i) = SCNRM2( M, Y1(1,i), 1)
               END DO
-              TMP = ZERO
-              DO i = 1, KQ
-              TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
-                  SINGVQX(KQ)/(ANORM*SINGVQX(1)) )
-              END DO
+              TMP = MAXVAL(ABS(RES(1:KQ) - RES1(1:KQ)) * SINGVQX(KQ)/(ANORM*SINGVQX(1)))
               TMP_REZQ = MAX( TMP_REZQ, TMP )
               IF ( TMP <= TOL2 ) THEN
                   !WRITE(*,*) '.... OK ........ CGEDMDQ PASSED.'
@@ -719,4 +705,4 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

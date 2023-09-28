@@ -245,12 +245,7 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               REALONE, REALZERO
-   PARAMETER          ( REALONE = 1.0E0, REALZERO = 0.0E0 )
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = (0.0E0,0.0E0), ONE = (1.0E0,0.0E0) )
-   REAL               PIOVER2
-   PARAMETER ( PIOVER2 = 1.57079632679489661923132169163975144210E0 )
+   REAL, PARAMETER :: PIOVER2 = 1.57079632679489661923132169163975144210E0
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, R
@@ -264,22 +259,18 @@
    EXTERNAL           CGEMM, CHERK, CLACPY, CLASET, CUNCSD, &
                       CUNCSD2BY1
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, COS, MAX, MIN, REAL, SIN
-!     ..
 !     .. Executable Statements ..
 !
    ULP = SLAMCH( 'Precision' )
-   ULPINV = REALONE / ULP
+   ULPINV = 1.0E0 / ULP
 !
 !     The first half of the routine checks the 2-by-2 CSD
 !
-   CALL CLASET( 'Full', M, M, ZERO, ONE, WORK, LDX )
-   CALL CHERK( 'Upper', 'Conjugate transpose', M, M, -REALONE, &
-               X, LDX, REALONE, WORK, LDX )
+   CALL CLASET( 'Full', M, M, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDX )
+   CALL CHERK( 'Upper', 'Conjugate transpose', M, M, -1.0E0, &
+               X, LDX, 1.0E0, WORK, LDX )
    IF (M > 0) THEN
-      EPS2 = MAX( ULP, &
-                  CLANGE( '1', M, M, WORK, LDX, RWORK ) / REAL( M ) )
+      EPS2 = MAX( ULP, CLANGE( '1', M, M, WORK, LDX, RWORK ) / REAL( M ) )
    ELSE
       EPS2 = ULP
    END IF
@@ -300,29 +291,27 @@
 !
    CALL CLACPY( 'Full', M, M, X, LDX, XF, LDX )
 !
-   CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, ONE, &
-               XF, LDX, V1T, LDV1T, ZERO, WORK, LDX )
+   CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, (1.0E0,0.0E0), &
+               XF, LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, ONE, &
-               U1, LDU1, WORK, LDX, ZERO, XF, LDX )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, (1.0E0,0.0E0), &
+               U1, LDU1, WORK, LDX, (0.0E0,0.0E0), XF, LDX )
 !
    DO I = 1, MIN(P,Q)-R
-      XF(I,I) = XF(I,I) - ONE
+      XF(I,I) = XF(I,I) - (1.0E0,0.0E0)
    END DO
    DO I = 1, R
-      XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = &
-              XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) - CMPLX( COS(THETA(I)), &
-                 0.0E0 )
+      XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) - CMPLX( COS(THETA(I)), 0.0E0 )
    END DO
 !
    CALL CGEMM( 'No transpose', 'Conjugate transpose', P, M-Q, M-Q, &
-               ONE, XF(1,Q+1), LDX, V2T, LDV2T, ZERO, WORK, LDX )
+               (1.0E0,0.0E0), XF(1,Q+1), LDX, V2T, LDV2T, (0.0E0,0.0E0), WORK, LDX )
 !
    CALL CGEMM( 'Conjugate transpose', 'No transpose', P, M-Q, P, &
-               ONE, U1, LDU1, WORK, LDX, ZERO, XF(1,Q+1), LDX )
+               (1.0E0,0.0E0), U1, LDU1, WORK, LDX, (0.0E0,0.0E0), XF(1,Q+1), LDX )
 !
    DO I = 1, MIN(P,M-Q)-R
-      XF(P-I+1,M-I+1) = XF(P-I+1,M-I+1) + ONE
+      XF(P-I+1,M-I+1) = XF(P-I+1,M-I+1) + (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       XF(P-(MIN(P,M-Q)-R)+1-I,M-(MIN(P,M-Q)-R)+1-I) = &
@@ -330,14 +319,14 @@
          CMPLX( SIN(THETA(R-I+1)), 0.0E0 )
    END DO
 !
-   CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, ONE, &
-               XF(P+1,1), LDX, V1T, LDV1T, ZERO, WORK, LDX )
+   CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, (1.0E0,0.0E0), &
+               XF(P+1,1), LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
 !
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, Q, M-P, &
-               ONE, U2, LDU2, WORK, LDX, ZERO, XF(P+1,1), LDX )
+               (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), XF(P+1,1), LDX )
 !
    DO I = 1, MIN(M-P,Q)-R
-      XF(M-I+1,Q-I+1) = XF(M-I+1,Q-I+1) - ONE
+      XF(M-I+1,Q-I+1) = XF(M-I+1,Q-I+1) - (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       XF(M-(MIN(M-P,Q)-R)+1-I,Q-(MIN(M-P,Q)-R)+1-I) = &
@@ -346,13 +335,13 @@
    END DO
 !
    CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, M-Q, M-Q, &
-               ONE, XF(P+1,Q+1), LDX, V2T, LDV2T, ZERO, WORK, LDX )
+               (1.0E0,0.0E0), XF(P+1,Q+1), LDX, V2T, LDV2T, (0.0E0,0.0E0), WORK, LDX )
 !
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, M-Q, M-P, &
-               ONE, U2, LDU2, WORK, LDX, ZERO, XF(P+1,Q+1), LDX )
+               (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), XF(P+1,Q+1), LDX )
 !
    DO I = 1, MIN(M-P,M-Q)-R
-      XF(P+I,Q+I) = XF(P+I,Q+I) - ONE
+      XF(P+I,Q+I) = XF(P+I,Q+I) - (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       XF(P+(MIN(M-P,M-Q)-R)+I,Q+(MIN(M-P,M-Q)-R)+I) = &
@@ -382,9 +371,9 @@
 !
 !     Compute I - U1'*U1
 !
-   CALL CLASET( 'Full', P, P, ZERO, ONE, WORK, LDU1 )
-   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -REALONE, &
-               U1, LDU1, REALONE, WORK, LDU1 )
+   CALL CLASET( 'Full', P, P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU1 )
+   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E0, &
+               U1, LDU1, 1.0E0, WORK, LDU1 )
 !
 !     Compute norm( I - U'*U ) / ( MAX(1,P) * ULP ) .
 !
@@ -393,9 +382,9 @@
 !
 !     Compute I - U2'*U2
 !
-   CALL CLASET( 'Full', M-P, M-P, ZERO, ONE, WORK, LDU2 )
-   CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -REALONE, &
-               U2, LDU2, REALONE, WORK, LDU2 )
+   CALL CLASET( 'Full', M-P, M-P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU2 )
+   CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -1.0E0, &
+               U2, LDU2, 1.0E0, WORK, LDU2 )
 !
 !     Compute norm( I - U2'*U2 ) / ( MAX(1,M-P) * ULP ) .
 !
@@ -404,9 +393,9 @@
 !
 !     Compute I - V1T*V1T'
 !
-   CALL CLASET( 'Full', Q, Q, ZERO, ONE, WORK, LDV1T )
-   CALL CHERK( 'Upper', 'No transpose', Q, Q, -REALONE, &
-               V1T, LDV1T, REALONE, WORK, LDV1T )
+   CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV1T )
+   CALL CHERK( 'Upper', 'No transpose', Q, Q, -1.0E0, &
+               V1T, LDV1T, 1.0E0, WORK, LDV1T )
 !
 !     Compute norm( I - V1T*V1T' ) / ( MAX(1,Q) * ULP ) .
 !
@@ -415,9 +404,9 @@
 !
 !     Compute I - V2T*V2T'
 !
-   CALL CLASET( 'Full', M-Q, M-Q, ZERO, ONE, WORK, LDV2T )
-   CALL CHERK( 'Upper', 'No transpose', M-Q, M-Q, -REALONE, &
-               V2T, LDV2T, REALONE, WORK, LDV2T )
+   CALL CLASET( 'Full', M-Q, M-Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV2T )
+   CALL CHERK( 'Upper', 'No transpose', M-Q, M-Q, -1.0E0, &
+               V2T, LDV2T, 1.0E0, WORK, LDV2T )
 !
 !     Compute norm( I - V2T*V2T' ) / ( MAX(1,M-Q) * ULP ) .
 !
@@ -426,9 +415,9 @@
 !
 !     Check sorting
 !
-   RESULT( 9 ) = REALZERO
+   RESULT( 9 ) = 0.0E0
    DO I = 1, R
-      IF( THETA(I) < REALZERO .OR. THETA(I) > PIOVER2 ) THEN
+      IF( THETA(I) < 0.0E0 .OR. THETA(I) > PIOVER2 ) THEN
          RESULT( 9 ) = ULPINV
       END IF
       IF( I > 1) THEN
@@ -440,9 +429,9 @@
 !
 !     The second half of the routine checks the 2-by-1 CSD
 !
-   CALL CLASET( 'Full', Q, Q, ZERO, ONE, WORK, LDX )
-   CALL CHERK( 'Upper', 'Conjugate transpose', Q, M, -REALONE, &
-               X, LDX, REALONE, WORK, LDX )
+   CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDX )
+   CALL CHERK( 'Upper', 'Conjugate transpose', Q, M, -1.0E0, &
+               X, LDX, 1.0E0, WORK, LDX )
    IF (M > 0) THEN
       EPS2 = MAX( ULP, &
                   CLANGE( '1', Q, Q, WORK, LDX, RWORK ) / REAL( M ) )
@@ -463,29 +452,27 @@
 !
 !     Compute [X11;X21] := diag(U1,U2)'*[X11;X21]*V1 - [D11;D21]
 !
-   CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, ONE, &
-               X, LDX, V1T, LDV1T, ZERO, WORK, LDX )
+   CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, (1.0E0,0.0E0), &
+               X, LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, ONE, &
-               U1, LDU1, WORK, LDX, ZERO, X, LDX )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, (1.0E0,0.0E0), &
+               U1, LDU1, WORK, LDX, (0.0E0,0.0E0), X, LDX )
 !
-   DO I = 1, MIN(P,Q)-R
-      X(I,I) = X(I,I) - ONE
-   END DO
+   FORALL (I = 1:MIN(P,Q)-R) X(I,I) = X(I,I) - (1.0E0,0.0E0)
    DO I = 1, R
       X(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = &
               X(MIN(P,Q)-R+I,MIN(P,Q)-R+I) - CMPLX( COS(THETA(I)), &
                  0.0E0 )
    END DO
 !
-   CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, ONE, &
-               X(P+1,1), LDX, V1T, LDV1T, ZERO, WORK, LDX )
+   CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, (1.0E0,0.0E0), &
+               X(P+1,1), LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
 !
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, Q, M-P, &
-               ONE, U2, LDU2, WORK, LDX, ZERO, X(P+1,1), LDX )
+               (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), X(P+1,1), LDX )
 !
    DO I = 1, MIN(M-P,Q)-R
-      X(M-I+1,Q-I+1) = X(M-I+1,Q-I+1) - ONE
+      X(M-I+1,Q-I+1) = X(M-I+1,Q-I+1) - (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       X(M-(MIN(M-P,Q)-R)+1-I,Q-(MIN(M-P,Q)-R)+1-I) = &
@@ -505,9 +492,9 @@
 !
 !     Compute I - U1'*U1
 !
-   CALL CLASET( 'Full', P, P, ZERO, ONE, WORK, LDU1 )
-   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -REALONE, &
-               U1, LDU1, REALONE, WORK, LDU1 )
+   CALL CLASET( 'Full', P, P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU1 )
+   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E0, &
+               U1, LDU1, 1.0E0, WORK, LDU1 )
 !
 !     Compute norm( I - U1'*U1 ) / ( MAX(1,P) * ULP ) .
 !
@@ -516,9 +503,9 @@
 !
 !     Compute I - U2'*U2
 !
-   CALL CLASET( 'Full', M-P, M-P, ZERO, ONE, WORK, LDU2 )
-   CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -REALONE, &
-               U2, LDU2, REALONE, WORK, LDU2 )
+   CALL CLASET( 'Full', M-P, M-P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU2 )
+   CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -1.0E0, &
+               U2, LDU2, 1.0E0, WORK, LDU2 )
 !
 !     Compute norm( I - U2'*U2 ) / ( MAX(1,M-P) * ULP ) .
 !
@@ -527,9 +514,9 @@
 !
 !     Compute I - V1T*V1T'
 !
-   CALL CLASET( 'Full', Q, Q, ZERO, ONE, WORK, LDV1T )
-   CALL CHERK( 'Upper', 'No transpose', Q, Q, -REALONE, &
-               V1T, LDV1T, REALONE, WORK, LDV1T )
+   CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV1T )
+   CALL CHERK( 'Upper', 'No transpose', Q, Q, -1.0E0, &
+               V1T, LDV1T, 1.0E0, WORK, LDV1T )
 !
 !     Compute norm( I - V1T*V1T' ) / ( MAX(1,Q) * ULP ) .
 !
@@ -538,9 +525,9 @@
 !
 !     Check sorting
 !
-   RESULT( 15 ) = REALZERO
+   RESULT( 15 ) = 0.0E0
    DO I = 1, R
-      IF( THETA(I) < REALZERO .OR. THETA(I) > PIOVER2 ) THEN
+      IF( THETA(I) < 0.0E0 .OR. THETA(I) > PIOVER2 ) THEN
          RESULT( 15 ) = ULPINV
       END IF
       IF( I > 1) THEN
@@ -555,4 +542,4 @@
 !     End of CCSDTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -156,13 +156,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMA, NORME
@@ -179,17 +172,12 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CONJG, MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize RESULT (in case N=0)
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0E+0
+   IF( N <= 0 ) RETURN
 !
    UNFL = SLAMCH( 'Safe minimum' )
    ULP = SLAMCH( 'Precision' )
@@ -199,9 +187,7 @@
    NORMA = 'O'
    NORME = 'O'
 !
-   IF( LSAME( TRANSA, 'T' ) .OR. LSAME( TRANSA, 'C' ) ) THEN
-      NORMA = 'I'
-   END IF
+   IF( LSAME( TRANSA, 'T' ) .OR. LSAME( TRANSA, 'C' ) ) NORMA = 'I'
 !
    IF( LSAME( TRANSE, 'T' ) ) THEN
       ITRNSE = 1
@@ -211,28 +197,20 @@
       NORME = 'I'
    END IF
 !
-   IF( LSAME( TRANSW, 'C' ) ) THEN
-      ITRNSW = 1
-   END IF
+   IF( LSAME( TRANSW, 'C' ) ) ITRNSW = 1
 !
 !     Normalization of E:
 !
-   ENRMIN = ONE / ULP
-   ENRMAX = ZERO
+   ENRMIN = 1.0E+0 / ULP
+   ENRMAX = 0.0E+0
    IF( ITRNSE == 0 ) THEN
       DO JVEC = 1, N
-         TEMP1 = ZERO
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( REAL( E( J, JVEC ) ) )+ &
-                    ABS( AIMAG( E( J, JVEC ) ) ) )
-         ENDDO
+         TEMP1 = MAXVAL(ABS( REAL( E(1:N, JVEC ) ) )+ ABS( AIMAG( E(1:N, JVEC ) ) ) )
          ENRMIN = MIN( ENRMIN, TEMP1 )
          ENRMAX = MAX( ENRMAX, TEMP1 )
       ENDDO
    ELSE
-      DO JVEC = 1, N
-         RWORK( JVEC ) = ZERO
-      ENDDO
+   RWORK(1:N) = 0.0E+0
 !
       DO J = 1, N
          DO JVEC = 1, N
@@ -242,10 +220,8 @@
          ENDDO
       ENDDO
 !
-      DO JVEC = 1, N
-         ENRMIN = MIN( ENRMIN, RWORK( JVEC ) )
-         ENRMAX = MAX( ENRMAX, RWORK( JVEC ) )
-      ENDDO
+      ENRMIN = MIN( ENRMIN, MINVAL(RWORK(1:N)))
+      ENRMAX = MAX( ENRMAX, MAXVAL(RWORK(1:N)))
    END IF
 !
 !     Norm of A:
@@ -260,7 +236,7 @@
 !
 !     Error =  AE - EW
 !
-   CALL CLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+   CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK, N )
 !
    JOFF = 0
    DO JCOL = 1, N
@@ -271,22 +247,16 @@
       END IF
 !
       IF( ITRNSE == 0 ) THEN
-         DO JROW = 1, N
-            WORK( JOFF+JROW ) = E( JROW, JCOL )*WTEMP
-         ENDDO
+         WORK( JOFF+1:JOFF+N) = E(1:N, JCOL )*WTEMP
       ELSE IF( ITRNSE == 1 ) THEN
-         DO JROW = 1, N
-            WORK( JOFF+JROW ) = E( JCOL, JROW )*WTEMP
-         ENDDO
+         WORK( JOFF+1:JOFF+N ) = E( JCOL, 1:N )*WTEMP
       ELSE
-         DO JROW = 1, N
-            WORK( JOFF+JROW ) = CONJG( E( JCOL, JROW ) )*WTEMP
-         ENDDO
+         WORK( JOFF+1:JOFF+N ) = CONJG( E( JCOL, 1:N ) )*WTEMP
       END IF
       JOFF = JOFF + N
       ENDDO
 !
-   CALL CGEMM( TRANSA, TRANSE, N, N, N, CONE, A, LDA, E, LDE, -CONE, &
+   CALL CGEMM( TRANSA, TRANSE, N, N, N, (1.0E+0,0.0E+0), A, LDA, E, LDE, -(1.0E+0,0.0E+0), &
                WORK, N )
 !
    ERRNRM = CLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
@@ -296,21 +266,20 @@
    IF( ANORM > ERRNRM ) THEN
       RESULT( 1 ) = ( ERRNRM / ANORM ) / ULP
    ELSE
-      IF( ANORM < ONE ) THEN
-         RESULT( 1 ) = ONE / ULP
+      IF( ANORM < 1.0E+0 ) THEN
+         RESULT( 1 ) = 1.0E+0 / ULP
       ELSE
-         RESULT( 1 ) = MIN( ERRNRM / ANORM, ONE ) / ULP
+         RESULT( 1 ) = MIN( ERRNRM / ANORM, 1.0E+0 ) / ULP
       END IF
    END IF
 !
 !     Compute RESULT(2) : the normalization error in E.
 !
-   RESULT( 2 ) = MAX( ABS( ENRMAX-ONE ), ABS( ENRMIN-ONE ) ) / &
-                 ( REAL( N )*ULP )
+   RESULT( 2 ) = MAX( ABS( ENRMAX-1.0E+0 ), ABS( ENRMIN-1.0E+0 ) ) / ( REAL( N )*ULP )
 !
    RETURN
 !
 !     End of CGET22
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

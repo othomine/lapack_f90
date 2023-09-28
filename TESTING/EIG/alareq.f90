@@ -124,13 +124,9 @@
 !
 !        Test everything if NMATS >= NTYPES.
 !
-      DO I = 1, NTYPES
-         DOTYPE( I ) = .TRUE.
-      ENDDO
+      DOTYPE( 1:NTYPES ) = .TRUE.
    ELSE
-      DO I = 1, NTYPES
-         DOTYPE( I ) = .FALSE.
-      ENDDO
+      DOTYPE( 1:NTYPES ) = .FALSE.
       FIRSTT = .TRUE.
 !
 !        Read a line of matrix types if 0 < NMATS < NTYPES.

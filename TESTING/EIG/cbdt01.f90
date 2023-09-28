@@ -161,9 +161,6 @@
 !
 !  =====================================================================
 !
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -176,21 +173,18 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
    IF( M <= 0 .OR. N <= 0 ) THEN
-      RESID = ZERO
+      RESID = 0.0E+0
       RETURN
    END IF
 !
 !     Compute A - Q * B * P**H one column at a time.
 !
-   RESID = ZERO
+   RESID = 0.0E+0
    IF( KD /= 0 ) THEN
 !
 !        B is bidiagonal.
@@ -201,12 +195,10 @@
 !
          DO J = 1, N
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, N - 1
-               WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
-            ENDDO
+            WORK(M+1:M+N-1) = D(1:N-1)*PT(1:N-1,J) + E(1:N-1)*PT(2:N, J )
             WORK( M+N ) = D( N )*PT( N, J )
-            CALL CGEMV( 'No transpose', M, N, -CMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( ONE ), WORK, 1 )
+            CALL CGEMV( 'No transpose', M, N, -CMPLX( 1.0E+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -215,12 +207,10 @@
 !
          DO J = 1, N
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, M - 1
-               WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
-            ENDDO
+            WORK(M+1:2*M-1) = D(1:M-1)*PT(1:M-1,J) + E(1:M-1)*PT(2:M, J )
             WORK( M+M ) = D( M )*PT( M, J )
-            CALL CGEMV( 'No transpose', M, M, -CMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( ONE ), WORK, 1 )
+            CALL CGEMV( 'No transpose', M, M, -CMPLX( 1.0E+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -230,12 +220,9 @@
          DO J = 1, N
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
             WORK( M+1 ) = D( 1 )*PT( 1, J )
-            DO I = 2, M
-               WORK( M+I ) = E( I-1 )*PT( I-1, J ) + &
-                             D( I )*PT( I, J )
-            ENDDO
-            CALL CGEMV( 'No transpose', M, M, -CMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( ONE ), WORK, 1 )
+            WORK(M+2:2*M) = E(1:M-1)*PT(1:M-1,J) + D(2:M)*PT(2:M,J)
+            CALL CGEMV( 'No transpose', M, M, -CMPLX( 1.0E+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
          ENDDO
       END IF
@@ -246,21 +233,17 @@
       IF( M >= N ) THEN
          DO J = 1, N
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, N
-               WORK( M+I ) = D( I )*PT( I, J )
-            ENDDO
-            CALL CGEMV( 'No transpose', M, N, -CMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( ONE ), WORK, 1 )
+            WORK(M+1:M+N) = D(1:N)*PT(1:N,J)
+            CALL CGEMV( 'No transpose', M, N, -CMPLX( 1.0E+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
          DO J = 1, N
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, M
-               WORK( M+I ) = D( I )*PT( I, J )
-            ENDDO
-            CALL CGEMV( 'No transpose', M, M, -CMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( ONE ), WORK, 1 )
+            WORK(M+1:2*M) = D(1:M)*PT(1:M,J)
+            CALL CGEMV( 'No transpose', M, M, -CMPLX( 1.0E+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
             ENDDO
       END IF
@@ -271,14 +254,14 @@
    ANORM = CLANGE( '1', M, N, A, LDA, RWORK )
    EPS = SLAMCH( 'Precision' )
 !
-   IF( ANORM <= ZERO ) THEN
-      IF( RESID /= ZERO ) &
-         RESID = ONE / EPS
+   IF( ANORM <= 0.0E+0 ) THEN
+      IF( RESID /= 0.0E+0 ) &
+         RESID = 1.0E+0 / EPS
    ELSE
       IF( ANORM >= RESID ) THEN
          RESID = ( RESID / ANORM ) / ( REAL( N )*EPS )
       ELSE
-         IF( ANORM < ONE ) THEN
+         IF( ANORM < 1.0E+0 ) THEN
             RESID = ( MIN( RESID, REAL( N )*ANORM ) / ANORM ) / &
                     ( REAL( N )*EPS )
          ELSE
@@ -293,4 +276,4 @@
 !     End of CBDT01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

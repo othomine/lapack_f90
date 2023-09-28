@@ -250,9 +250,6 @@
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, CGQRTS, CGRQTS, CLATMS, &
                       SLATB9
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize constants.
@@ -286,8 +283,7 @@
 !
 !                 Do the tests only if DOTYPE( IMAT ) is true.
 !
-               IF( .NOT.DOTYPE( IMAT ) ) &
-                  GO TO 30
+               IF (DOTYPE( IMAT ) ) THEN
 !
 !                 Test CGGRQF
 !
@@ -304,8 +300,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
-               END IF
+               ELSE
 !
                CALL CLATMS( P, N, DISTB, ISEED, TYPE, RWORK, MODEB, &
                             CNDNMB, BNORM, KLB, KUB, 'No packing', B, &
@@ -313,8 +308,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
-               END IF
+               ELSE
 !
                NT = 4
 !
@@ -353,8 +347,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
-               END IF
+               ELSE
 !
                CALL CLATMS( N, P, DISTB, ISEED, TYPE, RWORK, MODEA, &
                             CNDNMA, BNORM, KLB, KUB, 'No packing', B, &
@@ -362,8 +355,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
-               END IF
+               ELSE
 !
                NT = 4
 !
@@ -387,7 +379,11 @@
                ENDDO
                NRUN = NRUN + NT
 !
-30          CONTINUE
+               END IF
+               END IF
+               END IF
+               END IF
+            ENDIF
             ENDDO
          ENDDO
       ENDDO
@@ -407,4 +403,4 @@
 !     End of CCKGQR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

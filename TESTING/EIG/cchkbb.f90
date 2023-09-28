@@ -320,7 +320,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0E+0, 1.0E+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -380,11 +380,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -434,21 +429,14 @@
    MNMAX = 1
    DO J = 1, NSIZES
       MMAX = MAX( MMAX, MVAL( J ) )
-      IF( MVAL( J ) < 0 ) &
-         BADMM = .TRUE.
+      IF( MVAL( J ) < 0 ) BADMM = .TRUE.
       NMAX = MAX( NMAX, NVAL( J ) )
-      IF( NVAL( J ) < 0 ) &
-         BADNN = .TRUE.
+      IF( NVAL( J ) < 0 ) BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MVAL( J ), NVAL( J ) ) )
    ENDDO
 !
-   BADNNB = .FALSE.
-   KMAX = 0
-   DO J = 1, NWDTHS
-      KMAX = MAX( KMAX, KK( J ) )
-      IF( KK( J ) < 0 ) &
-         BADNNB = .TRUE.
-   ENDDO
+   KMAX = MAXVAL(KK(1:NWDTHS))
+   BADNNB = (ANY(KK(1:NWDTHS) < 0 ))
 !
 !     Check for errors
 !
@@ -493,9 +481,9 @@
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -508,12 +496,11 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / REAL( MAX( 1, M, N ) )
+      AMNINV = 1.0E+0 / REAL( MAX( 1, M, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K >= M .AND. K >= N ) &
-            GO TO 150
+         IF( K < M .OR. K < N ) THEN
          KL = MAX( 0, MIN( M-1, K ) )
          KU = MAX( 0, MIN( N-1, K ) )
 !
@@ -524,14 +511,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 140
+            IF (DOTYPE( JTYPE ) ) THEN
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !
@@ -548,32 +532,24 @@
 !              =8                      (none)
 !              =9                      random nonhermitian
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 90
+            IF( MTYPES <= MAXTYP ) THEN
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0E+0
+             case (2)
+              ANORM = ( RTOVFL*ULP )*AMNINV
+             case (3)
+              ANORM = RTUNFL*MAX( M, N )*ULPINV
+            END SELECT
 !
-40          CONTINUE
-            ANORM = ONE
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*AMNINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*MAX( M, N )*ULPINV
-            GO TO 70
-!
-70          CONTINUE
-!
-            CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
-            CALL CLASET( 'Full', LDAB, N, CZERO, CZERO, AB, LDAB )
+            CALL CLASET( 'Full', LDA, N, (0.0E+0, 0.0E+0), (0.0E+0, 0.0E+0), A, LDA )
+            CALL CLASET( 'Full', LDAB, N, (0.0E+0, 0.0E+0), (0.0E+0, 0.0E+0), AB, LDAB )
             IINFO = 0
             COND = ULPINV
 !
@@ -588,9 +564,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( JCOL, JCOL ) = ANORM
-               ENDDO
+               FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -612,10 +586,10 @@
 !
 !                 Nonhermitian, random entries
 !
-               CALL CLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, &
-                            CONE, 'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, KL, &
-                            KU, ZERO, ANORM, 'N', A, LDA, IDUMMA, &
+               CALL CLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0E+0, &
+                            (1.0E+0, 0.0E+0), 'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                            WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, KL, &
+                            KU, 0.0E+0, ANORM, 'N', A, LDA, IDUMMA, &
                             IINFO )
 !
             ELSE
@@ -625,10 +599,10 @@
 !
 !              Generate Right-Hand Side
 !
-            CALL CLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, &
-                         CONE, 'T', 'N', WORK( M+1 ), 1, ONE, &
-                         WORK( 2*M+1 ), 1, ONE, 'N', IDUMMA, M, NRHS, &
-                         ZERO, ONE, 'NO', C, LDC, IDUMMA, IINFO )
+            CALL CLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0E+0, &
+                         (1.0E+0, 0.0E+0), 'T', 'N', WORK( M+1 ), 1, 1.0E+0, &
+                         WORK( 2*M+1 ), 1, 1.0E+0, 'N', IDUMMA, M, NRHS, &
+                         0.0E+0, 1.0E+0, 'NO', C, LDC, IDUMMA, IINFO )
 !
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'Generator', IINFO, N, &
@@ -637,15 +611,15 @@
                RETURN
             END IF
 !
-90          CONTINUE
+            ENDIF
 !
 !              Copy A to band storage.
 !
             DO J = 1, N
                DO I = MAX( 1, J-KU ), MIN( M, J+KL )
                   AB( KU+1+I-J, J ) = A( I, J )
-                  ENDDO
                ENDDO
+            ENDDO
 !
 !              Copy C
 !
@@ -701,9 +675,9 @@
                END IF
                ENDDO
 !
-  140       CONTINUE
+            ENDIF
             ENDDO
-  150    CONTINUE
+            ENDIF
          ENDDO
       ENDDO
 !
@@ -721,4 +695,3 @@
 !     End of CCHKBB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

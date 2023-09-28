@@ -205,9 +205,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, CGLMTS, CLATMS, SLATB9
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize constants.
@@ -244,15 +241,13 @@
       M = MVAL( IK )
       P = PVAL( IK )
       N = NVAL( IK )
-      IF( M > N .OR. N > M+P ) &
-         GO TO 40
+      IF( M <= N .OR. N <= M+P ) THEN
 !
       DO IMAT = 1, NTYPES
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 30
+         IF (DOTYPE( IMAT ) ) THEN
 !
 !           Set up parameters with SLATB9 and generate test
 !           matrices A and B with CLATMS.
@@ -267,8 +262,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
-         END IF
+         ELSE
 !
          CALL CLATMS( N, P, DISTB, ISEED, TYPE, RWORK, MODEB, CNDNMB, &
                       BNORM, KLB, KUB, 'No packing', B, LDB, WORK, &
@@ -276,8 +270,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
-         END IF
+         ELSE
 !
 !           Generate random left hand side vector of GLM
 !
@@ -302,9 +295,11 @@
          END IF
          NRUN = NRUN + 1
 !
-30    CONTINUE
+         END IF
+         END IF
+      ENDIF
       ENDDO
-40 CONTINUE
+   ENDIF
    ENDDO
 !
 !     Print a summary of the results.
@@ -322,4 +317,4 @@
 !     End of CCKGLM
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

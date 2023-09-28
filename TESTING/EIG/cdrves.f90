@@ -340,7 +340,7 @@
 !>
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0E+0, 1.0E+0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     NMAX            Largest value in NN.
 !>     NERRS           The number of tests which have exceeded THRESH
@@ -395,12 +395,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -440,9 +434,6 @@
    EXTERNAL           CGEES, CHST01, CLACPY, CLATME, CLATMR, CLATMS, &
                       CLASET, SLASUM, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 3, 5*4, 4*6, 6*6, 3*9 /
    DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, &
@@ -465,13 +456,8 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -481,7 +467,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0E+0 ) THEN
       INFO = -6
    ELSE IF( NOUNIT <= 0 ) THEN
       INFO = -7
@@ -500,17 +486,16 @@
 !
 !     Quick return if nothing to do
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTULP = SQRT( ULP )
-   RTULPI = ONE / RTULP
+   RTULPI = 1.0E+0 / RTULP
 !
 !     Loop over sizes, types
 !
@@ -525,14 +510,11 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 230
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 230
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
@@ -550,8 +532,7 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
@@ -561,7 +542,7 @@
          GO TO ( 30, 40, 50 )KMAGN( JTYPE )
 !
 30       CONTINUE
-         ANORM = ONE
+         ANORM = 1.0E+0
          GO TO 60
 !
 40       CONTINUE
@@ -574,7 +555,7 @@
 !
 60       CONTINUE
 !
-         CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+         CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -590,9 +571,7 @@
 !
 !              Identity
 !
-            DO JCOL = 1, N
-               A( JCOL, JCOL ) = CMPLX( ANORM )
-            ENDDO
+            FORALL (JCOL = 1:N) A( JCOL, JCOL ) = CMPLX( ANORM )
 !
          ELSE IF( ITYPE == 3 ) THEN
 !
@@ -600,8 +579,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = CMPLX( ANORM )
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = CONE
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = (1.0E+0,0.0E+0)
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN
@@ -625,14 +603,14 @@
 !              General, eigenvalues specified
 !
             IF( KCONDS( JTYPE ) == 1 ) THEN
-               CONDS = ONE
+               CONDS = 1.0E+0
             ELSE IF( KCONDS( JTYPE ) == 2 ) THEN
                CONDS = RTULPI
             ELSE
-               CONDS = ZERO
+               CONDS = 0.0E+0
             END IF
 !
-            CALL CLATME( N, 'D', ISEED, WORK, IMODE, COND, CONE, &
+            CALL CLATME( N, 'D', ISEED, WORK, IMODE, COND, (1.0E+0,0.0E+0), &
                          'T', 'T', 'T', RWORK, 4, CONDS, N, N, ANORM, &
                          A, LDA, WORK( 2*N+1 ), IINFO )
 !
@@ -640,35 +618,35 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'H', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'H', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              General, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
             IF( N >= 4 ) THEN
-               CALL CLASET( 'Full', 2, N, CZERO, CZERO, A, LDA )
-               CALL CLASET( 'Full', N-3, 1, CZERO, CZERO, A( 3, 1 ), &
+               CALL CLASET( 'Full', 2, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
+               CALL CLASET( 'Full', N-3, 1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 3, 1 ), &
                             LDA )
-               CALL CLASET( 'Full', N-3, 2, CZERO, CZERO, &
+               CALL CLASET( 'Full', N-3, 2, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                             A( 3, N-1 ), LDA )
-               CALL CLASET( 'Full', 1, N, CZERO, CZERO, A( N, 1 ), &
+               CALL CLASET( 'Full', 1, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( N, 1 ), &
                             LDA )
             END IF
 !
@@ -676,10 +654,10 @@
 !
 !              Triangular, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE
 !
@@ -707,9 +685,7 @@
 !
 !              Initialize RESULT
 !
-            DO J = 1, 13
-               RESULT( J ) = -ONE
-               ENDDO
+            RESULT(1:13) = -1.0E+0
 !
 !              Test with and without sorting of eigenvalues
 !
@@ -729,18 +705,17 @@
                            LDVS, WORK, NNWORK, RWORK, BWORK, IINFO )
                IF( IINFO /= 0 ) THEN
                   RESULT( 1+RSUB ) = ULPINV
-                  WRITE( NOUNIT, FMT = 9992 )'CGEES1', IINFO, N, &
-                     JTYPE, IOLDSD
+                  WRITE( NOUNIT, FMT = 9992 )'CGEES1', IINFO, N, JTYPE, IOLDSD
                   INFO = ABS( IINFO )
                   GO TO 190
                END IF
 !
 !                 Do Test (1) or Test (7)
 !
-               RESULT( 1+RSUB ) = ZERO
+               RESULT( 1+RSUB ) = 0.0E+0
                DO J = 1, N - 1
                   DO I = J + 1, N
-                     IF( H( I, J ) /= ZERO ) &
+                     IF( H( I, J ) /= 0.0E+0 ) &
                         RESULT( 1+RSUB ) = ULPINV
                      ENDDO
                   ENDDO
@@ -750,16 +725,14 @@
                LWORK = MAX( 1, 2*N*N )
                CALL CHST01( N, 1, N, A, LDA, H, LDA, VS, LDVS, WORK, &
                             LWORK, RWORK, RES )
-               RESULT( 2+RSUB ) = RES( 1 )
-               RESULT( 3+RSUB ) = RES( 2 )
+               RESULT( 2+RSUB:3+RSUB ) = RES( 1:2 )
 !
 !                 Do Test (4) or Test (10)
 !
-               RESULT( 4+RSUB ) = ZERO
+               RESULT( 4+RSUB ) = 0.0E+0
                DO I = 1, N
-                  IF( H( I, I ) /= W( I ) ) &
-                     RESULT( 4+RSUB ) = ULPINV
-                  ENDDO
+                  IF( H( I, I ) /= W( I ) ) RESULT( 4+RSUB ) = ULPINV
+               ENDDO
 !
 !                 Do Test (5) or Test (11)
 !
@@ -775,38 +748,33 @@
                   GO TO 190
                END IF
 !
-               RESULT( 5+RSUB ) = ZERO
+               RESULT( 5+RSUB ) = 0.0E+0
                DO J = 1, N
                   DO I = 1, N
-                     IF( H( I, J ) /= HT( I, J ) ) &
-                        RESULT( 5+RSUB ) = ULPINV
-                     ENDDO
+                     IF( H( I, J ) /= HT( I, J ) ) RESULT( 5+RSUB ) = ULPINV
                   ENDDO
+               ENDDO
 !
 !                 Do Test (6) or Test (12)
 !
-               RESULT( 6+RSUB ) = ZERO
+               RESULT( 6+RSUB ) = 0.0E+0
                DO I = 1, N
-                  IF( W( I ) /= WT( I ) ) &
-                     RESULT( 6+RSUB ) = ULPINV
-                  ENDDO
+                  IF( W( I ) /= WT( I ) ) RESULT( 6+RSUB ) = ULPINV
+               ENDDO
 !
 !                 Do Test (13)
 !
                IF( ISORT == 1 ) THEN
-                  RESULT( 13 ) = ZERO
+                  RESULT( 13 ) = 0.0E+0
                   KNTEIG = 0
                   DO I = 1, N
-                     IF( CSLECT( W( I ) ) ) &
-                        KNTEIG = KNTEIG + 1
+                     IF( CSLECT( W( I ) ) ) KNTEIG = KNTEIG + 1
                      IF( I < N ) THEN
                         IF( CSLECT( W( I+1 ) ) .AND. &
-                            ( .NOT.CSLECT( W( I ) ) ) )RESULT( 13 ) &
-                            = ULPINV
+                            ( .NOT.CSLECT( W( I ) ) ) )RESULT( 13 ) = ULPINV
                      END IF
                      ENDDO
-                  IF( SDIM /= KNTEIG ) &
-                     RESULT( 13 ) = ULPINV
+                  IF( SDIM /= KNTEIG ) RESULT( 13 ) = ULPINV
                END IF
 !
                ENDDO
@@ -815,17 +783,10 @@
 !
   190          CONTINUE
 !
-            NTEST = 0
-            NFAIL = 0
-            DO J = 1, 13
-               IF( RESULT( J ) >= ZERO ) &
-                  NTEST = NTEST + 1
-               IF( RESULT( J ) >= THRESH ) &
-                  NFAIL = NFAIL + 1
-               ENDDO
+            NTEST = COUNT(RESULT(1:13) >= 0.0E+0)
+            NFAIL = COUNT(RESULT(1:13) >= THRESH)
 !
-            IF( NFAIL > 0 ) &
-               NTESTF = NTESTF + 1
+            IF( NFAIL > 0 ) NTESTF = NTESTF + 1
             IF( NTESTF == 1 ) THEN
                WRITE( NOUNIT, FMT = 9999 )PATH
                WRITE( NOUNIT, FMT = 9998 )
@@ -838,10 +799,9 @@
 !
             DO J = 1, 13
                IF( RESULT( J ) >= THRESH ) THEN
-                  WRITE( NOUNIT, FMT = 9993 )N, IWK, IOLDSD, JTYPE, &
-                     J, RESULT( J )
+                  WRITE( NOUNIT, FMT = 9993 )N, IWK, IOLDSD, JTYPE, J, RESULT( J )
                END IF
-               ENDDO
+            ENDDO
 !
             NERRS = NERRS + NFAIL
             NTESTT = NTESTT + NTEST
@@ -909,4 +869,4 @@
 !     End of CDRVES
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

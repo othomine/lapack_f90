@@ -94,9 +94,6 @@
    COMMON             / INFOC / INFOT, NOUT, OK, LERR
    COMMON             / SRNAMC / SRNAMT
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL
-!     ..
 !     .. Executable Statements ..
 !
    NOUT = NUNIT
@@ -187,56 +184,43 @@
 !
       SRNAMT = 'CUNMBR'
       INFOT = 1
-      CALL CUNMBR( '/', 'L', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( '/', 'L', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL CUNMBR( 'Q', '/', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', '/', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL CUNMBR( 'Q', 'L', '/', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', '/', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL CUNMBR( 'Q', 'L', 'C', -1, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', 'C', -1, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL CUNMBR( 'Q', 'L', 'C', 0, -1, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', 'C', 0, -1, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 6
-      CALL CUNMBR( 'Q', 'L', 'C', 0, 0, -1, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', 'C', 0, 0, -1, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL CUNMBR( 'Q', 'L', 'C', 2, 0, 0, A, 1, TQ, U, 2, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', 'C', 2, 0, 0, A, 1, TQ, U, 2, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL CUNMBR( 'Q', 'R', 'C', 0, 2, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'R', 'C', 0, 2, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL CUNMBR( 'P', 'L', 'C', 2, 0, 2, A, 1, TQ, U, 2, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'P', 'L', 'C', 2, 0, 2, A, 1, TQ, U, 2, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL CUNMBR( 'P', 'R', 'C', 0, 2, 2, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'P', 'R', 'C', 0, 2, 2, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL CUNMBR( 'Q', 'R', 'C', 2, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'R', 'C', 2, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 13
-      CALL CUNMBR( 'Q', 'L', 'C', 0, 2, 0, A, 1, TQ, U, 1, W, 0, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'L', 'C', 0, 2, 0, A, 1, TQ, U, 1, W, 0, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       INFOT = 13
-      CALL CUNMBR( 'Q', 'R', 'C', 2, 0, 0, A, 1, TQ, U, 2, W, 0, &
-                   INFO )
+      CALL CUNMBR( 'Q', 'R', 'C', 2, 0, 0, A, 1, TQ, U, 2, W, 0, INFO )
       CALL CHKXER( 'CUNMBR', INFOT, NOUT, LERR, OK )
       NT = NT + 13
 !
@@ -244,36 +228,28 @@
 !
       SRNAMT = 'CBDSQR'
       INFOT = 1
-      CALL CBDSQR( '/', 0, 0, 0, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( '/', 0, 0, 0, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL CBDSQR( 'U', -1, 0, 0, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', -1, 0, 0, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL CBDSQR( 'U', 0, -1, 0, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 0, -1, 0, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL CBDSQR( 'U', 0, 0, -1, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 0, 0, -1, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL CBDSQR( 'U', 0, 0, 0, -1, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 0, 0, 0, -1, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL CBDSQR( 'U', 2, 1, 0, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 2, 1, 0, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL CBDSQR( 'U', 0, 0, 2, 0, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 0, 0, 2, 0, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 13
-      CALL CBDSQR( 'U', 2, 0, 0, 1, D, E, V, 1, U, 1, A, 1, RW, &
-                   INFO )
+      CALL CBDSQR( 'U', 2, 0, 0, 1, D, E, V, 1, U, 1, A, 1, RW, INFO )
       CALL CHKXER( 'CBDSQR', INFOT, NOUT, LERR, OK )
       NT = NT + 8
    END IF
@@ -286,14 +262,12 @@
       WRITE( NOUT, FMT = 9998 )PATH
    END IF
 !
- 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits (', &
-           I3, ' tests done)' )
- 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ', &
-           'exits ***' )
+ 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits (', I3, ' tests done)' )
+ 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ', 'exits ***' )
 !
    RETURN
 !
 !     End of CERRBD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

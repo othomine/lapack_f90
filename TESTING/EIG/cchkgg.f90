@@ -526,11 +526,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 26 )
 !     ..
@@ -598,12 +593,8 @@
    INFO = 0
 !
    BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = (any(NN(1:NSIZES) < 0 ))
 !
    LWKOPT = MAX( 2*NMAX*NMAX, 4*NMAX, 1 )
 !
@@ -615,7 +606,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0E+0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -10
@@ -638,13 +629,13 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
    SAFMIN = SAFMIN / ULP
-   SAFMAX = ONE / SAFMIN
-   ULPINV = ONE / ULP
+   SAFMAX = 1.0E+0 / SAFMIN
+   ULPINV = 1.0E+0 / ULP
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = ZERO
-   RMAGN( 1 ) = ONE
+   RMAGN( 0 ) = 0.0E+0
+   RMAGN( 1 ) = 1.0E+0
 !
 !     Loop over sizes, types
 !
@@ -665,22 +656,17 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 230
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 230
          NMATS = NMATS + 1
          NTEST = 0
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Initialize RESULT
 !
-         DO J = 1, 15
-            RESULT( J ) = ZERO
-         ENDDO
+         RESULT(1:15) = 0.0E+0
 !
 !           Compute A and B
 !
@@ -703,8 +689,7 @@
 !           KZ1, KZ2, KADD: used to implement KAZERO and KBZERO.
 !           RMAGN:  used to implement KAMAGN and KBMAGN.
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 110
+         IF( MTYPES > MAXTYP ) GO TO 110
          IINFO = 0
          IF( KCLASS( JTYPE ) < 3 ) THEN
 !
@@ -713,7 +698,7 @@
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL CLASET( 'Full', N, N, CZERO, CZERO, A, LDA )
+                  CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
             ELSE
                IN = N
             END IF
@@ -723,26 +708,24 @@
                          RMAGN( KTRIAN( JTYPE )*KAMAGN( JTYPE ) ), 4, &
                          ISEED, A, LDA )
             IADD = KADD( KAZERO( JTYPE ) )
-            IF( IADD > 0 .AND. IADD <= N ) &
-               A( IADD, IADD ) = RMAGN( KAMAGN( JTYPE ) )
+            IF( IADD > 0 .AND. IADD <= N ) A( IADD, IADD ) = RMAGN( KAMAGN( JTYPE ) )
 !
 !              Generate B (w/o rotation)
 !
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL CLASET( 'Full', N, N, CZERO, CZERO, B, LDA )
+                  CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), B, LDA )
             ELSE
                IN = N
             END IF
             CALL CLATM4( KBTYPE( JTYPE ), IN, KZ1( KBZERO( JTYPE ) ), &
                          KZ2( KBZERO( JTYPE ) ), LBSIGN( JTYPE ), &
-                         RMAGN( KBMAGN( JTYPE ) ), ONE, &
+                         RMAGN( KBMAGN( JTYPE ) ), 1.0E+0, &
                          RMAGN( KTRIAN( JTYPE )*KBMAGN( JTYPE ) ), 4, &
                          ISEED, B, LDA )
             IADD = KADD( KBZERO( JTYPE ) )
-            IF( IADD /= 0 ) &
-               B( IADD, IADD ) = RMAGN( KBMAGN( JTYPE ) )
+            IF( IADD /= 0 ) B( IADD, IADD ) = RMAGN( KBMAGN( JTYPE ) )
 !
             IF( KCLASS( JTYPE ) == 2 .AND. N > 0 ) THEN
 !
@@ -759,50 +742,39 @@
                   ENDDO
                   CALL CLARFG( N+1-JC, U( JC, JC ), U( JC+1, JC ), 1, &
                                WORK( JC ) )
-                  WORK( 2*N+JC ) = SIGN( ONE, REAL( U( JC, JC ) ) )
-                  U( JC, JC ) = CONE
+                  WORK( 2*N+JC ) = SIGN( 1.0E+0, REAL( U( JC, JC ) ) )
+                  U( JC, JC ) = (1.0E+0,0.0E+0)
                   CALL CLARFG( N+1-JC, V( JC, JC ), V( JC+1, JC ), 1, &
                                WORK( N+JC ) )
-                  WORK( 3*N+JC ) = SIGN( ONE, REAL( V( JC, JC ) ) )
-                  V( JC, JC ) = CONE
+                  WORK( 3*N+JC ) = SIGN( 1.0E+0, REAL( V( JC, JC ) ) )
+                  V( JC, JC ) = (1.0E+0,0.0E+0)
                ENDDO
                CTEMP = CLARND( 3, ISEED )
-               U( N, N ) = CONE
-               WORK( N ) = CZERO
+               U( N, N ) = (1.0E+0,0.0E+0)
+               WORK( N ) = (0.0E+0,0.0E+0)
                WORK( 3*N ) = CTEMP / ABS( CTEMP )
                CTEMP = CLARND( 3, ISEED )
-               V( N, N ) = CONE
-               WORK( 2*N ) = CZERO
+               V( N, N ) = (1.0E+0,0.0E+0)
+               WORK( 2*N ) = (0.0E+0,0.0E+0)
                WORK( 4*N ) = CTEMP / ABS( CTEMP )
 !
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
-                  DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )* &
-                                   CONJG( WORK( 3*N+JC ) )* &
-                                   A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )* &
-                                   CONJG( WORK( 3*N+JC ) )* &
-                                   B( JR, JC )
-                  ENDDO
+                  A(1:N,JC) = WORK(2*N+1:3*N)*CONJG(WORK(3*N+JC))*A(1:N,JC)
+                  B(1:N,JC) = WORK(2*N+1:3*N)*CONJG(WORK(3*N+JC))*B(1:N,JC)
                ENDDO
-               CALL CUNM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, A, &
-                            LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               CALL CUNM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, A, LDA, WORK( 2*N+1 ), IINFO )
+               IF( IINFO /= 0 ) GO TO 100
                CALL CUNM2R( 'R', 'C', N, N, N-1, V, LDU, WORK( N+1 ), &
                             A, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL CUNM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, B, &
                             LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL CUNM2R( 'R', 'C', N, N, N-1, V, LDU, WORK( N+1 ), &
                             B, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
             END IF
          ELSE
 !
@@ -856,7 +828,7 @@
             GO TO 210
          END IF
 !
-         CALL CLASET( 'Full', N, N, CZERO, CONE, U, LDU )
+         CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU )
          CALL CUNM2R( 'R', 'N', N, N, N, T, LDA, WORK, U, LDU, &
                       WORK( N+1 ), IINFO )
          IF( IINFO /= 0 ) THEN
@@ -963,12 +935,8 @@
 !           in one call, and half in another
 !
          I1 = N / 2
-         DO J = 1, I1
-            LLWORK( J ) = .TRUE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .FALSE.
-            ENDDO
+         LLWORK(1:I1) = .TRUE.
+         LLWORK(I1+1:N) = .FALSE.
 !
          CALL CTGEVC( 'L', 'S', LLWORK, N, S1, LDA, P1, LDA, EVECTL, &
                       LDU, CDUMMA, LDU, N, IN, WORK, RWORK, IINFO )
@@ -980,12 +948,8 @@
          END IF
 !
          I1 = IN
-         DO J = 1, I1
-            LLWORK( J ) = .FALSE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .TRUE.
-            ENDDO
+         LLWORK(1:I1) = .FALSE.
+         LLWORK(I1+1:N) = .TRUE.
 !
          CALL CTGEVC( 'L', 'S', LLWORK, N, S1, LDA, P1, LDA, &
                       EVECTL( 1, I1+1 ), LDU, CDUMMA, LDU, N, IN, &
@@ -1038,12 +1002,8 @@
 !           in one call, and half in another
 !
          I1 = N / 2
-         DO J = 1, I1
-            LLWORK( J ) = .TRUE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .FALSE.
-            ENDDO
+         LLWORK(1:I1) = .TRUE.
+         LLWORK(I1+1:N) = .FALSE.
 !
          CALL CTGEVC( 'R', 'S', LLWORK, N, S1, LDA, P1, LDA, CDUMMA, &
                       LDU, EVECTR, LDU, N, IN, WORK, RWORK, IINFO )
@@ -1055,12 +1015,8 @@
          END IF
 !
          I1 = IN
-         DO J = 1, I1
-            LLWORK( J ) = .FALSE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .TRUE.
-            ENDDO
+         LLWORK(1:I1) = .FALSE.
+         LLWORK(I1+1:N) = .TRUE.
 !
          CALL CTGEVC( 'R', 'S', LLWORK, N, S1, LDA, P1, LDA, CDUMMA, &
                       LDU, EVECTR( 1, I1+1 ), LDU, N, IN, WORK, &
@@ -1116,21 +1072,17 @@
 !
 !              Do Test 15
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( ALPHA1( J )-ALPHA3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( BETA1( J )-BETA3( J ) ) )
-               ENDDO
+            TEMP1 = MAXVAL(ABS(ALPHA1(1:N)-ALPHA3(1:N)))
+            TEMP2 = MAXVAL(ABS(BETA1(1:N)-BETA3(1:N)))
 !
             TEMP1 = TEMP1 / MAX( SAFMIN, ULP*MAX( TEMP1, ANORM ) )
             TEMP2 = TEMP2 / MAX( SAFMIN, ULP*MAX( TEMP2, BNORM ) )
             RESULT( 15 ) = MAX( TEMP1, TEMP2 )
             NTEST = 15
          ELSE
-            RESULT( 13 ) = ZERO
-            RESULT( 14 ) = ZERO
-            RESULT( 15 ) = ZERO
+            RESULT( 13 ) = 0.0E+0
+            RESULT( 14 ) = 0.0E+0
+            RESULT( 15 ) = 0.0E+0
             NTEST = 12
          END IF
 !
@@ -1165,11 +1117,9 @@
                END IF
                NERRS = NERRS + 1
                IF( RESULT( JR ) < 10000.0 ) THEN
-                  WRITE( NOUNIT, FMT = 9992 )N, JTYPE, IOLDSD, JR, &
-                     RESULT( JR )
+                  WRITE( NOUNIT, FMT = 9992 )N, JTYPE, IOLDSD, JR, RESULT( JR )
                ELSE
-                  WRITE( NOUNIT, FMT = 9991 )N, JTYPE, IOLDSD, JR, &
-                     RESULT( JR )
+                  WRITE( NOUNIT, FMT = 9991 )N, JTYPE, IOLDSD, JR, RESULT( JR )
                END IF
             END IF
             ENDDO
@@ -1239,4 +1189,3 @@
 !     End of CCHKGG
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

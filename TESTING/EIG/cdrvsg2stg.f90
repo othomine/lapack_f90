@@ -13,7 +13,7 @@
 !                              BB, AP, BP, WORK, NWORK, RWORK, LRWORK,
 !                              IWORK, LIWORK, RESULT, INFO )
 !
-!       IMPLICIT NONE
+!       IMPLICIT N1.0E+0
 !
 !       .. Scalar Arguments ..
 !       INTEGER            INFO, LDA, LDB, LDZ, LIWORK, LRWORK, NOUNIT,
@@ -335,7 +335,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0E+0, 1.0E+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests that have been run
 !>                       on this matrix.
@@ -397,11 +397,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TEN = 10.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -431,15 +426,10 @@
                       CHPGVX, CLACPY, CLASET, CLATMR, CLATMS, CSGT01, &
                       CHEGV_2STAGE
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8, 6*9 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3, 6*1 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 6*4 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3, 6*1 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 6*4 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -448,13 +438,8 @@
    NTESTT = 0
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -483,21 +468,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
    OVFL = SLAMCH( 'Overflow' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
-   DO I = 1, 4
-      ISEED2( I ) = ISEED( I )
-   ENDDO
+   ISEED2(1:4) = ISEED(1:4)
 !
 !     Loop over sizes, types
 !
@@ -506,7 +488,7 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      ANINV = ONE / REAL( MAX( 1, N ) )
+      ANINV = 1.0E+0 / REAL( MAX( 1, N ) )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -517,14 +499,11 @@
       KA9 = 0
       KB9 = 0
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 640
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 640
          NMATS = NMATS + 1
          NTEST = 0
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           2)      Compute "A"
 !
@@ -541,29 +520,21 @@
 !           =8                      random hermitian
 !           =9                      banded, w/ eigenvalues
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
+         SELECT CASE (KMAGN( JTYPE ))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
          IINFO = 0
          COND = ULPINV
@@ -576,7 +547,7 @@
 !
             KA = 0
             KB = 0
-            CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+            CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
 !
          ELSE IF( ITYPE == 2 ) THEN
 !
@@ -584,7 +555,7 @@
 !
             KA = 0
             KB = 0
-            CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+            CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
             ENDDO
@@ -613,10 +584,10 @@
 !
             KA = 0
             KB = 0
-            CALL CLATMR( N, N, 'S', ISEED, 'H', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'S', ISEED, 'H', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
@@ -624,10 +595,10 @@
 !
             KA = MAX( 0, N-1 )
             KB = KA
-            CALL CLATMR( N, N, 'S', ISEED, 'H', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'S', ISEED, 'H', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
@@ -693,16 +664,14 @@
 !              loop over the setting UPLO
 !
             DO IBUPLO = 1, 2
-               IF( IBUPLO == 1 ) &
-                  UPLO = 'U'
-               IF( IBUPLO == 2 ) &
-                  UPLO = 'L'
+               IF( IBUPLO == 1 ) UPLO = 'U'
+               IF( IBUPLO == 2 ) UPLO = 'L'
 !
 !                 Generate random well-conditioned positive definite
 !                 matrix B, of bandwidth not greater than that of A.
 !
-               CALL CLATMS( N, N, 'U', ISEED, 'P', RWORK, 5, TEN, &
-                            ONE, KB, KB, UPLO, B, LDB, WORK( N+1 ), &
+               CALL CLATMS( N, N, 'U', ISEED, 'P', RWORK, 5, 10.0E+0, &
+                            1.0E+0, KB, KB, UPLO, B, LDB, WORK( N+1 ), &
                             IINFO )
 !
 !                 Test CHEGV
@@ -742,8 +711,7 @@
                                   BB, LDB, D2, WORK, NWORK, RWORK, &
                                   IINFO )
                IF( IINFO /= 0 ) THEN
-                  WRITE( NOUNIT, FMT = 9999 ) &
-                     'CHEGV_2STAGE(V,' // UPLO // &
+                  WRITE( NOUNIT, FMT = 9999 ) 'CHEGV_2STAGE(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
                   INFO = ABS( IINFO )
                   IF( IINFO < 0 ) THEN
@@ -763,14 +731,8 @@
 !                 D1 computed using the standard 1-stage reduction as reference
 !                 D2 computed using the 2-stage reduction
 !
-               TEMP1 = ZERO
-               TEMP2 = ZERO
-               DO J = 1, N
-                  TEMP1 = MAX( TEMP1, ABS( D( J ) ), &
-                                      ABS( D2( J ) ) )
-                  TEMP2 = MAX( TEMP2, ABS( D( J )-D2( J ) ) )
-                  ENDDO
-!
+               TEMP1 = MAX(MAXVAL(ABS(D(1:N))), MAXVAL(ABS(D2(1:N))))
+               TEMP2 = MAXVAL(ABS(D(1:N)-D2(1:N)))
                RESULT( NTEST ) = TEMP2 / &
                                  MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -839,7 +801,7 @@
 !                 It is quite possible that there are no eigenvalues
 !                 in this interval.
 !
-               VL = ZERO
+               VL = 0.0E+0
                VU = ANORM
                CALL CHEGVX( IBTYPE, 'V', 'V', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
@@ -903,8 +865,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -912,8 +874,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL CHPGV( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
@@ -948,8 +910,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -957,8 +919,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL CHPGVD( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
@@ -994,8 +956,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -1003,8 +965,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL CHPGVX( IBTYPE, 'V', 'A', UPLO, N, AP, BP, VL, &
@@ -1038,8 +1000,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -1047,11 +1009,11 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
-               VL = ZERO
+               VL = 0.0E+0
                VU = ANORM
                CALL CHPGVX( IBTYPE, 'V', 'V', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
@@ -1084,8 +1046,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -1093,8 +1055,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL CHPGVX( IBTYPE, 'V', 'I', UPLO, N, AP, BP, VL, &
@@ -1131,20 +1093,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL CHBGV( 'V', UPLO, N, KA, KB, AB, LDA, BB, LDB, &
@@ -1176,20 +1138,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL CHBGVD( 'V', UPLO, N, KA, KB, AB, LDA, BB, &
@@ -1222,20 +1184,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL CHBGVX( 'V', 'A', UPLO, N, KA, KB, AB, LDA, &
@@ -1267,23 +1229,23 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
-                  VL = ZERO
+                  VL = 0.0E+0
                   VU = ANORM
                   CALL CHBGVX( 'V', 'V', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
@@ -1314,20 +1276,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL CHBGVX( 'V', 'I', UPLO, N, KA, KB, AB, LDA, &
@@ -1378,4 +1340,4 @@
 !     End of CDRVSG2STG
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

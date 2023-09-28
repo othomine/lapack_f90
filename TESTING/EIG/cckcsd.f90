@@ -205,14 +205,9 @@
    PARAMETER          ( NTESTS = 15 )
    INTEGER            NTYPES
    PARAMETER          ( NTYPES = 4 )
-   REAL               GAPDIGIT, ORTH, REALONE, REALZERO, TEN
-   PARAMETER          ( GAPDIGIT = 10.0E0, ORTH = 1.0E-4, &
-                        REALONE = 1.0E0, REALZERO = 0.0E0, &
-                        TEN = 10.0E0 )
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = (1.0E0,0.0E0), ZERO = (0.0E0,0.0E0) )
-   REAL               PIOVER2
-   PARAMETER ( PIOVER2 = 1.57079632679489661923132169163975144210E0 )
+   REAL               GAPDIGIT, ORTH
+   PARAMETER          ( GAPDIGIT = 10.0E0, ORTH = 1.0E-4)
+   REAL, PARAMETER :: PIOVER2 = 1.57079632679489661923132169163975144210E0
 !     ..
 !     .. Local Scalars ..
    LOGICAL            FIRSTT
@@ -227,9 +222,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, CCSDTS, CLACSG, CLAROR, &
                       CLASET, CSROT
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MIN
 !     ..
 !     .. External Functions ..
    REAL               SLARAN, SLARND
@@ -263,8 +255,7 @@
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 20
+         IF( .NOT.DOTYPE( IMAT ) ) GO TO 20
 !
 !           Generate X
 !
@@ -290,22 +281,19 @@
          ELSE IF( IMAT == 3 ) THEN
             R = MIN( P, M-P, Q, M-Q )
             DO I = 1, R+1
-               THETA(I) = TEN**(-SLARND(1,ISEED)*GAPDIGIT)
+               THETA(I) = 10.0E0**(-SLARND(1,ISEED)*GAPDIGIT)
             END DO
             DO I = 2, R+1
                THETA(I) = THETA(I-1) + THETA(I)
             END DO
-            DO I = 1, R
-               THETA(I) = PIOVER2 * THETA(I) / THETA(R+1)
-            END DO
+            THETA(1:R) = PIOVER2 * THETA(1:R) / THETA(R+1)
             CALL CLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
          ELSE
-            CALL CLASET( 'F', M, M, ZERO, ONE, X, LDX )
+            CALL CLASET( 'F', M, M, (0.0E0,0.0E0), (1.0E0,0.0E0), X, LDX )
             DO I = 1, M
                J = INT( SLARAN( ISEED ) * M ) + 1
                IF( J  /=  I ) THEN
-                  CALL CSROT( M, X(1+(I-1)*LDX), 1, X(1+(J-1)*LDX), &
-                    1, REALZERO, REALONE )
+                  CALL CSROT( M, X(1+(I-1)*LDX), 1, X(1+(J-1)*LDX), 1, 0.0E0, 1.0E0 )
                END IF
             END DO
          END IF
@@ -358,37 +346,34 @@
    REAL               THETA( * )
    COMPLEX            WORK( * ), X( LDX, * )
 !
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = (1.0E0,0.0E0), ZERO = (0.0E0,0.0E0) )
-!
    INTEGER            I, INFO, R
 !
    R = MIN( P, M-P, Q, M-Q )
 !
-   CALL CLASET( 'Full', M, M, ZERO, ZERO, X, LDX )
+   CALL CLASET( 'Full', M, M, (0.0E0,0.0E0), (0.0E0,0.0E0), X, LDX )
 !
    DO I = 1, MIN(P,Q)-R
-      X(I,I) = ONE
+      X(I,I) = (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       X(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = CMPLX ( COS(THETA(I)), 0.0E0 )
    END DO
    DO I = 1, MIN(P,M-Q)-R
-      X(P-I+1,M-I+1) = -ONE
+      X(P-I+1,M-I+1) = -(1.0E0,0.0E0)
    END DO
    DO I = 1, R
       X(P-(MIN(P,M-Q)-R)+1-I,M-(MIN(P,M-Q)-R)+1-I) = &
          CMPLX( -SIN(THETA(R-I+1)), 0.0E0 )
    END DO
    DO I = 1, MIN(M-P,Q)-R
-      X(M-I+1,Q-I+1) = ONE
+      X(M-I+1,Q-I+1) = (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       X(M-(MIN(M-P,Q)-R)+1-I,Q-(MIN(M-P,Q)-R)+1-I) = &
          CMPLX( SIN(THETA(R-I+1)), 0.0E0 )
    END DO
    DO I = 1, MIN(M-P,M-Q)-R
-      X(P+I,Q+I) = ONE
+      X(P+I,Q+I) = (1.0E0,0.0E0)
    END DO
    DO I = 1, R
       X(P+(MIN(M-P,M-Q)-R)+I,Q+(MIN(M-P,M-Q)-R)+I) = &
@@ -404,4 +389,3 @@
 !
    END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

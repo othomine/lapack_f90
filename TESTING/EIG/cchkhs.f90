@@ -368,7 +368,7 @@
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
 !>
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0E+0, 1.0E+0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     MTEST           The number of tests defined: care must be taken
 !>                     that (1) the size of RESULT, (2) the number of
@@ -442,11 +442,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -475,15 +470,10 @@
                       CLATMS, CTREVC, CTREVC3, CUNGHR, CUNMHR, &
                       SLAFTS, SLASUM, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 3, 5*4, 4*6, 6*6, 3*9 /
-   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, &
-                      3, 1, 2, 3 /
-   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, &
-                      1, 5, 5, 5, 4, 3, 1 /
+   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, 1, 5, 5, 5, 4, 3, 1 /
    DATA               KCONDS / 3*0, 5*0, 4*1, 6*2, 3*0 /
 !     ..
 !     .. Executable Statements ..
@@ -493,13 +483,8 @@
    NTESTT = 0
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -509,7 +494,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0E+0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -9
@@ -534,11 +519,11 @@
    UNFL = SLAMCH( 'Safe minimum' )
    OVFL = SLAMCH( 'Overflow' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
    RTULP = SQRT( ULP )
-   RTULPI = ONE / RTULP
+   RTULPI = 1.0E+0 / RTULP
 !
 !     Loop over sizes, types
 !
@@ -547,10 +532,9 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      IF( N == 0 ) &
-         GO TO 260
+      IF( N == 0 ) GO TO 260
       N1 = MAX( 1, N )
-      ANINV = ONE / REAL( N1 )
+      ANINV = 1.0E+0 / REAL( N1 )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -559,22 +543,17 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 250
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 250
          NMATS = NMATS + 1
          NTEST = 0
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Initialize RESULT
 !
-         DO J = 1, 14
-            RESULT( J ) = ZERO
-         ENDDO
+         RESULT(1:14) = 0.0E+0
 !
 !           Compute "A"
 !
@@ -592,8 +571,7 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
@@ -603,7 +581,7 @@
          GO TO ( 40, 50, 60 )KMAGN( JTYPE )
 !
 40       CONTINUE
-         ANORM = ONE
+         ANORM = 1.0E+0
          GO TO 70
 !
 50       CONTINUE
@@ -616,7 +594,7 @@
 !
 70       CONTINUE
 !
-         CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+         CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -641,8 +619,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = ONE
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = 1.0E+0
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN
@@ -650,9 +627,9 @@
 !              Diagonal Matrix, [Eigen]values Specified
 !
             CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, IMODE, COND, &
-                         CONE, 'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+                         (1.0E+0,0.0E+0), 'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 5 ) THEN
 !
@@ -666,14 +643,14 @@
 !              General, eigenvalues specified
 !
             IF( KCONDS( JTYPE ) == 1 ) THEN
-               CONDS = ONE
+               CONDS = 1.0E+0
             ELSE IF( KCONDS( JTYPE ) == 2 ) THEN
                CONDS = RTULPI
             ELSE
-               CONDS = ZERO
+               CONDS = 0.0E+0
             END IF
 !
-            CALL CLATME( N, 'D', ISEED, WORK, IMODE, COND, CONE, &
+            CALL CLATME( N, 'D', ISEED, WORK, IMODE, COND, (1.0E+0,0.0E+0), &
                          'T', 'T', 'T', RWORK, 4, CONDS, N, N, ANORM, &
                          A, LDA, WORK( N+1 ), IINFO )
 !
@@ -681,37 +658,37 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Hermitian, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'H', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'H', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              General, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 10 ) THEN
 !
 !              Triangular, random eigenvalues
 !
-            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL CLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0E+0, (1.0E+0,0.0E+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE
 !
@@ -747,11 +724,11 @@
          END IF
 !
          DO J = 1, N - 1
-            UU( J+1, J ) = CZERO
+            UU( J+1, J ) = (0.0E+0,0.0E+0)
             DO I = J + 2, N
                U( I, J ) = H( I, J )
                UU( I, J ) = H( I, J )
-               H( I, J ) = CZERO
+               H( I, J ) = (0.0E+0,0.0E+0)
                ENDDO
             ENDDO
          CALL CCOPY( N-1, WORK, 1, TAU, 1 )
@@ -810,7 +787,7 @@
 !
 !           Compute Z = U' UZ
 !
-         CALL CGEMM( 'C', 'N', N, N, N, CONE, U, LDU, UZ, LDU, CZERO, &
+         CALL CGEMM( 'C', 'N', N, N, N, (1.0E+0,0.0E+0), U, LDU, UZ, LDU, (0.0E+0,0.0E+0), &
                      Z, LDU )
          NTEST = 8
 !
@@ -833,12 +810,8 @@
 !
 !           Do Test 8: | W3 - W1 | / ( max(|W1|,|W3|) ulp )
 !
-         TEMP1 = ZERO
-         TEMP2 = ZERO
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( W1( J ) ), ABS( W3( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( W1( J )-W3( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(W1(1:N))),MAXVAL(ABS(W3(1:N))))
+         TEMP2 = MAXVAL(ABS(W1(1:N)-W3(1:N)))
 !
          RESULT( 8 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -851,12 +824,8 @@
 !
 !           Select every other eigenvector
 !
-         DO J = 1, N
-            SELECT( J ) = .FALSE.
-            ENDDO
-         DO J = 1, N, 2
-            SELECT( J ) = .TRUE.
-            ENDDO
+         SELECT(1:N) = .FALSE.
+         SELECT(1:N:2) = .TRUE.
          CALL CTREVC( 'Right', 'All', SELECT, N, T1, LDA, CDUMMA, &
                       LDU, EVECTR, LDU, N, IN, WORK, RWORK, IINFO )
          IF( IINFO /= 0 ) THEN
@@ -892,19 +861,15 @@
          MATCH = .TRUE.
          DO J = 1, N
             IF( SELECT( J ) ) THEN
-               DO JJ = 1, N
-                  IF( EVECTR( JJ, J ) /= EVECTL( JJ, K ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 180
-                  END IF
-                  ENDDO
+               IF (ANY(EVECTR(1:N,J) /= EVECTL(1:N,K))) THEN
+                  MATCH = .FALSE.
+                  GO TO 180
+               END IF
                K = K + 1
             END IF
             ENDDO
   180       CONTINUE
-         IF( .NOT.MATCH ) &
-            WRITE( NOUNIT, FMT = 9997 )'Right', 'CTREVC', N, JTYPE, &
-            IOLDSD
+         IF( .NOT.MATCH ) WRITE( NOUNIT, FMT = 9997 )'Right', 'CTREVC', N, JTYPE, IOLDSD
 !
 !           Compute the Left eigenvector Matrix:
 !
@@ -913,8 +878,7 @@
          CALL CTREVC( 'Left', 'All', SELECT, N, T1, LDA, EVECTL, LDU, &
                       CDUMMA, LDU, N, IN, WORK, RWORK, IINFO )
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUNIT, FMT = 9999 )'CTREVC(L,A)', IINFO, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'CTREVC(L,A)', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             GO TO 240
          END IF
@@ -945,12 +909,10 @@
          MATCH = .TRUE.
          DO J = 1, N
             IF( SELECT( J ) ) THEN
-               DO JJ = 1, N
-                  IF( EVECTL( JJ, J ) /= EVECTR( JJ, K ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 210
-                  END IF
-                  ENDDO
+               IF (ANY(EVECTL(1:N,J) /= EVECTR(1:N,K))) THEN
+                  MATCH = .FALSE.
+                  GO TO 210
+               END IF
                K = K + 1
             END IF
             ENDDO
@@ -963,9 +925,7 @@
 !
          NTEST = 11
          RESULT( 11 ) = ULPINV
-         DO J = 1, N
-            SELECT( J ) = .TRUE.
-            ENDDO
+         SELECT(1:N) = .TRUE.
 !
          CALL CHSEIN( 'Right', 'Qr', 'Ninitv', SELECT, N, H, LDA, W3, &
                       CDUMMA, LDU, EVECTX, LDU, N1, IN, WORK, RWORK, &
@@ -974,8 +934,7 @@
             WRITE( NOUNIT, FMT = 9999 )'CHSEIN(R)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 240
+            IF( IINFO < 0 ) GO TO 240
          ELSE
 !
 !              Test 11:  | HX - XW | / ( |H| |X| ulp )
@@ -996,9 +955,7 @@
 !
          NTEST = 12
          RESULT( 12 ) = ULPINV
-         DO J = 1, N
-            SELECT( J ) = .TRUE.
-            ENDDO
+         SELECT(1:N) = .TRUE.
 !
          CALL CHSEIN( 'Left', 'Qr', 'Ninitv', SELECT, N, H, LDA, W3, &
                       EVECTY, LDU, CDUMMA, LDU, N1, IN, WORK, RWORK, &
@@ -1007,8 +964,7 @@
             WRITE( NOUNIT, FMT = 9999 )'CHSEIN(L)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 240
+            IF( IINFO < 0 ) GO TO 240
          ELSE
 !
 !              Test 12:  | YH - WY | / ( |H| |Y| ulp )
@@ -1036,8 +992,7 @@
             WRITE( NOUNIT, FMT = 9999 )'CUNMHR(L)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 240
+            IF( IINFO < 0 ) GO TO 240
          ELSE
 !
 !              Test 13:  | AX - XW | / ( |A| |X| ulp )
@@ -1046,8 +1001,7 @@
 !
             CALL CGET22( 'N', 'N', 'N', N, A, LDA, EVECTX, LDU, W3, &
                          WORK, RWORK, DUMMA( 1 ) )
-            IF( DUMMA( 1 ) < ULPINV ) &
-               RESULT( 13 ) = DUMMA( 1 )*ANINV
+            IF( DUMMA( 1 ) < ULPINV ) RESULT( 13 ) = DUMMA( 1 )*ANINV
          END IF
 !
 !           Call CUNMHR for Left eigenvectors of A, do test 14
@@ -1061,8 +1015,7 @@
             WRITE( NOUNIT, FMT = 9999 )'CUNMHR(L)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 240
+            IF( IINFO < 0 ) GO TO 240
          ELSE
 !
 !              Test 14:  | YA - WY | / ( |A| |Y| ulp )
@@ -1071,8 +1024,7 @@
 !
             CALL CGET22( 'C', 'N', 'C', N, A, LDA, EVECTY, LDU, W3, &
                          WORK, RWORK, DUMMA( 3 ) )
-            IF( DUMMA( 3 ) < ULPINV ) &
-               RESULT( 14 ) = DUMMA( 3 )*ANINV
+            IF( DUMMA( 3 ) < ULPINV ) RESULT( 14 ) = DUMMA( 3 )*ANINV
          END IF
 !
 !           Compute Left and Right Eigenvectors of A
@@ -1167,4 +1119,3 @@
 !     End of CCHKHS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

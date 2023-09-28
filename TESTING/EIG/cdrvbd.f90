@@ -422,12 +422,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TWO, HALF
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0, &
-                      HALF = 0.5E0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 5 )
 !     ..
@@ -459,9 +453,6 @@
                       CGESVD, CGESVDQ, CGESVJ, CGEJSV, CGESVDX, &
                       CLACPY, CLASET, CLATMS, CUNT01, CUNT03
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, MAX, MIN
-!     ..
 !     .. Scalars in Common ..
    CHARACTER*32       SRNAMT
 !     ..
@@ -492,11 +483,9 @@
    MINWRK = 1
    DO J = 1, NSIZES
       MMAX = MAX( MMAX, MM( J ) )
-      IF( MM( J ) < 0 ) &
-         BADMM = .TRUE.
+      IF( MM( J ) < 0 ) BADMM = .TRUE.
       NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
+      IF( NN( J ) < 0 ) BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MM( J ), NN( J ) ) )
       MINWRK = MAX( MINWRK, MAX( 3*MIN( MM( J ), &
                NN( J ) )+MAX( MM( J ), NN( J ) )**2, 5*MIN( MM( J ), &
@@ -530,15 +519,14 @@
 !
 !     Quick return if nothing to do
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'S' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'E' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
 !
 !     Loop over sizes, types
@@ -557,47 +545,40 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 300
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 300
          NTEST = 0
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 50
+         IF( MTYPES > MAXTYP ) GO TO 50
 !
          IF( JTYPE == 1 ) THEN
 !
 !              Zero matrix
 !
-            CALL CLASET( 'Full', M, N, CZERO, CZERO, A, LDA )
+            CALL CLASET( 'Full', M, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
             DO I = 1, MIN( M, N )
-               S( I ) = ZERO
+               S( I ) = 0.0E+0
             ENDDO
 !
          ELSE IF( JTYPE == 2 ) THEN
 !
 !              Identity matrix
 !
-            CALL CLASET( 'Full', M, N, CZERO, CONE, A, LDA )
+            CALL CLASET( 'Full', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), A, LDA )
             DO I = 1, MIN( M, N )
-               S( I ) = ONE
+               S( I ) = 1.0E+0
             ENDDO
 !
          ELSE
 !
 !              (Scaled) random matrix
 !
-            IF( JTYPE == 3 ) &
-               ANORM = ONE
-            IF( JTYPE == 4 ) &
-               ANORM = UNFL / ULP
-            IF( JTYPE == 5 ) &
-               ANORM = OVFL*ULP
+            IF( JTYPE == 3 ) ANORM = 1.0E+0
+            IF( JTYPE == 4 ) ANORM = UNFL / ULP
+            IF( JTYPE == 5 ) ANORM = OVFL*ULP
             CALL CLATMS( M, N, 'U', ISEED, 'N', S, 4, REAL( MNMIN ), &
                          ANORM, M-1, N-1, 'N', A, LDA, WORK, IINFO )
             IF( IINFO /= 0 ) THEN
@@ -624,14 +605,11 @@
             IF( IWSPC == 4 ) &
                LSWORK = LWORK
 !
-            DO J = 1, 35
-               RESULT( J ) = -ONE
-            ENDDO
+            RESULT(1:35) = -1.0E+0
 !
 !              Factorize A
 !
-            IF( IWSPC > 1 ) &
-               CALL CLACPY( 'F', M, N, ASAV, LDA, A, LDA )
+            IF( IWSPC > 1 ) CALL CLACPY( 'F', M, N, ASAV, LDA, A, LDA )
             SRNAMT = 'CGESVD'
             CALL CGESVD( 'A', 'A', M, N, A, LDA, SSAV, USAV, LDU, &
                          VTSAV, LDVT, WORK, LSWORK, RWORK, IINFO )
@@ -654,21 +632,16 @@
             END IF
             RESULT( 4 ) = 0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 4 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 4 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 4 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 4 ) = ULPINV
             ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 4 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 4 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 5 ) = ZERO
-            RESULT( 6 ) = ZERO
-            RESULT( 7 ) = ZERO
+            RESULT( 5:7 ) = 0.0E+0
             DO IJU = 0, 3
                DO IJVT = 0, 3
                   IF( ( IJU == 3 .AND. IJVT == 3 ) .OR. &
@@ -682,7 +655,7 @@
 !
 !                    Compare U
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJU == 1 ) THEN
                         CALL CUNT03( 'C', M, MNMIN, M, MNMIN, USAV, &
@@ -702,7 +675,7 @@
 !
 !                    Compare VT
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJVT == 1 ) THEN
                         CALL CUNT03( 'R', N, MNMIN, N, MNMIN, VTSAV, &
@@ -722,14 +695,11 @@
 !
 !                    Compare S
 !
-                  DIF = ZERO
-                  DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), &
-                        SLAMCH( 'Safe minimum' ) )
+                  DIF = 0.0E+0
+                  DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), SLAMCH( 'Safe minimum' ) )
                   DO I = 1, MNMIN - 1
-                     IF( SSAV( I ) < SSAV( I+1 ) ) &
-                        DIF = ULPINV
-                     IF( SSAV( I ) < ZERO ) &
-                        DIF = ULPINV
+                     IF( SSAV( I ) < SSAV( I+1 ) ) DIF = ULPINV
+                     IF( SSAV( I ) < 0.0E+0 ) DIF = ULPINV
                      DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
                   ENDDO
                   RESULT( 7 ) = MAX( RESULT( 7 ), DIF )
@@ -743,8 +713,7 @@
             LSWORK = IWTMP + ( IWSPC-1 )*( LWORK-IWTMP ) / 3
             LSWORK = MIN( LSWORK, LWORK )
             LSWORK = MAX( LSWORK, 1 )
-            IF( IWSPC == 4 ) &
-               LSWORK = LWORK
+            IF( IWSPC == 4 ) LSWORK = LWORK
 !
 !              Factorize A
 !
@@ -771,21 +740,16 @@
             END IF
             RESULT( 11 ) = 0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 11 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 11 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 11 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 11 ) = ULPINV
                ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 11 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 11 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 12 ) = ZERO
-            RESULT( 13 ) = ZERO
-            RESULT( 14 ) = ZERO
+            RESULT( 12:14 ) = 0.0E+0
             DO IJQ = 0, 2
                JOBQ = CJOB( IJQ+1 )
                CALL CLACPY( 'F', M, N, ASAV, LDA, A, LDA )
@@ -795,7 +759,7 @@
 !
 !                 Compare U
 !
-               DIF = ZERO
+               DIF = 0.0E+0
                IF( M > 0 .AND. N > 0 ) THEN
                   IF( IJQ == 1 ) THEN
                      IF( M >= N ) THEN
@@ -817,7 +781,7 @@
 !
 !                 Compare VT
 !
-               DIF = ZERO
+               DIF = 0.0E+0
                IF( M > 0 .AND. N > 0 ) THEN
                   IF( IJQ == 1 ) THEN
                      IF( M >= N ) THEN
@@ -839,14 +803,11 @@
 !
 !                 Compare S
 !
-               DIF = ZERO
-               DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), &
-                     SLAMCH( 'Safe minimum' ) )
+               DIF = 0.0E+0
+               DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), SLAMCH( 'Safe minimum' ) )
                DO I = 1, MNMIN - 1
-                  IF( SSAV( I ) < SSAV( I+1 ) ) &
-                     DIF = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
-                     DIF = ULPINV
+                  IF( SSAV( I ) < SSAV( I+1 ) ) DIF = ULPINV
+                  IF( SSAV( I ) < 0.0E+0 ) DIF = ULPINV
                   DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
                   ENDDO
                RESULT( 14 ) = MAX( RESULT( 14 ), DIF )
@@ -856,18 +817,14 @@
 !              Test CGESVDQ
 !              Note: CGESVDQ only works for M >= N
 !
-            RESULT( 36 ) = ZERO
-            RESULT( 37 ) = ZERO
-            RESULT( 38 ) = ZERO
-            RESULT( 39 ) = ZERO
+            RESULT( 36:39 ) = 0.0E+0
 !
             IF( M >= N ) THEN
                IWTMP = 2*MNMIN*MNMIN + 2*MNMIN + MAX( M, N )
                LSWORK = IWTMP + ( IWSPC-1 )*( LWORK-IWTMP ) / 3
                LSWORK = MIN( LSWORK, LWORK )
                LSWORK = MAX( LSWORK, 1 )
-               IF( IWSPC == 4 ) &
-                  LSWORK = LWORK
+               IF( IWSPC == 4 ) LSWORK = LWORK
 !
                CALL CLACPY( 'F', M, N, ASAV, LDA, A, LDA )
                SRNAMT = 'CGESVDQ'
@@ -896,26 +853,20 @@
                   CALL CUNT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RWORK, RESULT( 38 ) )
                END IF
-               RESULT( 39 ) = ZERO
+               RESULT( 39 ) = 0.0E+0
                DO I = 1, MNMIN - 1
-                  IF( SSAV( I ) < SSAV( I+1 ) ) &
-                     RESULT( 39 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
-                     RESULT( 39 ) = ULPINV
+                  IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 39 ) = ULPINV
+                  IF( SSAV( I ) < 0.0E+0 ) RESULT( 39 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
-                     RESULT( 39 ) = ULPINV
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 39 ) = ULPINV
                END IF
             END IF
 !
 !              Test CGESVJ
 !              Note: CGESVJ only works for M >= N
 !
-            RESULT( 15 ) = ZERO
-            RESULT( 16 ) = ZERO
-            RESULT( 17 ) = ZERO
-            RESULT( 18 ) = ZERO
+            RESULT( 15:18 ) = 0.0E+0
 !
             IF( M >= N ) THEN
                IWTMP = 2*MNMIN*MNMIN + 2*MNMIN + MAX( M, N )
@@ -923,8 +874,7 @@
                LSWORK = MIN( LSWORK, LWORK )
                LSWORK = MAX( LSWORK, 1 )
                LRWORK = MAX(6,N)
-               IF( IWSPC == 4 ) &
-                  LSWORK = LWORK
+               IF( IWSPC == 4 ) LSWORK = LWORK
 !
                CALL CLACPY( 'F', M, N, ASAV, LDA, USAV, LDA )
                SRNAMT = 'CGESVJ'
@@ -935,9 +885,7 @@
 !                 CGESVJ returns V not VH
 !
                DO J=1,N
-                  DO I=1,N
-                     VTSAV(J,I) = CONJG (A(I,J))
-                  END DO
+                  VTSAV(J,1:N) = CONJG(A(1:N,J))
                END DO
 !
                IF( IINFO /= 0 ) THEN
@@ -957,15 +905,15 @@
                   CALL CUNT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RWORK, RESULT( 17 ) )
                END IF
-               RESULT( 18 ) = ZERO
+               RESULT( 18 ) = 0.0E+0
                DO I = 1, MNMIN - 1
                   IF( SSAV( I ) < SSAV( I+1 ) ) &
                      RESULT( 18 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
+                  IF( SSAV( I ) < 0.0E+0 ) &
                      RESULT( 18 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) &
                      RESULT( 18 ) = ULPINV
                END IF
             END IF
@@ -973,17 +921,13 @@
 !              Test CGEJSV
 !              Note: CGEJSV only works for M >= N
 !
-            RESULT( 19 ) = ZERO
-            RESULT( 20 ) = ZERO
-            RESULT( 21 ) = ZERO
-            RESULT( 22 ) = ZERO
+            RESULT( 19:22 ) = 0.0E+0
             IF( M >= N ) THEN
                IWTMP = 2*MNMIN*MNMIN + 2*MNMIN + MAX( M, N )
                LSWORK = IWTMP + ( IWSPC-1 )*( LWORK-IWTMP ) / 3
                LSWORK = MIN( LSWORK, LWORK )
                LSWORK = MAX( LSWORK, 1 )
-               IF( IWSPC == 4 ) &
-                  LSWORK = LWORK
+               IF( IWSPC == 4 ) LSWORK = LWORK
                LRWORK = MAX( 7, N + 2*M)
 !
                CALL CLACPY( 'F', M, N, ASAV, LDA, VTSAV, LDA )
@@ -996,10 +940,8 @@
 !                 CGEJSV returns V not VH
 !
                DO J=1,N
-                  DO I=1,N
-                     VTSAV(J,I) = CONJG (A(I,J))
-  132                END DO
-  133             END DO
+                  VTSAV(J,1:N) = CONJG (A(1:N,J))
+               END DO
 !
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9995 )'GEJSV', IINFO, M, N, &
@@ -1018,16 +960,13 @@
                   CALL CUNT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RWORK, RESULT( 21 ) )
                END IF
-               RESULT( 22 ) = ZERO
+               RESULT( 22 ) = 0.0E+0
                DO I = 1, MNMIN - 1
-                  IF( SSAV( I ) < SSAV( I+1 ) ) &
-                     RESULT( 22 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
-                     RESULT( 22 ) = ULPINV
+                  IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 22 ) = ULPINV
+                  IF( SSAV( I ) < 0.0E+0 ) RESULT( 22 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
-                     RESULT( 22 ) = ULPINV
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 22 ) = ULPINV
                END IF
             END IF
 !
@@ -1050,9 +989,7 @@
 !
 !              Do tests 1--4
 !
-            RESULT( 23 ) = ZERO
-            RESULT( 24 ) = ZERO
-            RESULT( 25 ) = ZERO
+            RESULT( 23:25 ) = 0.0E+0
             CALL CBDT01( M, N, 0, ASAV, LDA, USAV, LDU, SSAV, E, &
                          VTSAV, LDVT, WORK, RWORK, RESULT( 23 ) )
             IF( M /= 0 .AND. N /= 0 ) THEN
@@ -1061,23 +998,18 @@
                CALL CUNT01( 'Rows', MNMIN, N, VTSAV, LDVT, WORK, &
                             LWORK, RWORK, RESULT( 25 ) )
             END IF
-            RESULT( 26 ) = ZERO
+            RESULT( 26 ) = 0.0E+0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 26 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 26 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 26 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 26 ) = ULPINV
                ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 26 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 26 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 27 ) = ZERO
-            RESULT( 28 ) = ZERO
-            RESULT( 29 ) = ZERO
+            RESULT( 27:29 ) = 0.0E+0
             DO IJU = 0, 1
                DO IJVT = 0, 1
                   IF( ( IJU == 0 .AND. IJVT == 0 ) .OR. &
@@ -1094,7 +1026,7 @@
 !
 !                    Compare U
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJU == 1 ) THEN
                         CALL CUNT03( 'C', M, MNMIN, M, MNMIN, USAV, &
@@ -1106,7 +1038,7 @@
 !
 !                    Compare VT
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJVT == 1 ) THEN
                         CALL CUNT03( 'R', N, MNMIN, N, MNMIN, VTSAV, &
@@ -1118,16 +1050,13 @@
 !
 !                    Compare S
 !
-                  DIF = ZERO
-                  DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), &
-                        SLAMCH( 'Safe minimum' ) )
+                  DIF = 0.0E+0
+                  DIV = MAX( REAL( MNMIN )*ULP*S( 1 ), SLAMCH( 'Safe minimum' ) )
                   DO I = 1, MNMIN - 1
-                     IF( SSAV( I ) < SSAV( I+1 ) ) &
-                        DIF = ULPINV
-                     IF( SSAV( I ) < ZERO ) &
-                        DIF = ULPINV
+                     IF( SSAV( I ) < SSAV( I+1 ) ) DIF = ULPINV
+                     IF( SSAV( I ) < 0.0E+0 ) DIF = ULPINV
                      DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
-                     ENDDO
+                  ENDDO
                   RESULT( 29) = MAX( RESULT( 29 ), DIF )
   160             CONTINUE
                   ENDDO
@@ -1135,9 +1064,7 @@
 !
 !              Do tests 8--10
 !
-            DO I = 1, 4
-               ISEED2( I ) = ISEED( I )
-               ENDDO
+            ISEED2(1:4) = ISEED(1:4)
             IF( MNMIN <= 1 ) THEN
                IL = 1
                IU = MAX( 1, MNMIN )
@@ -1163,16 +1090,12 @@
                RETURN
             END IF
 !
-            RESULT( 30 ) = ZERO
-            RESULT( 31 ) = ZERO
-            RESULT( 32 ) = ZERO
+            RESULT( 30:32 ) = 0.0E+0
             CALL CBDT05( M, N, ASAV, LDA, S, NSI, U, LDU, &
                          VT, LDVT, WORK, RESULT( 30 ) )
             IF( M /= 0 .AND. N /= 0 ) THEN
-               CALL CUNT01( 'Columns', M, NSI, U, LDU, WORK, &
-                            LWORK, RWORK, RESULT( 31 ) )
-               CALL CUNT01( 'Rows', NSI, N, VT, LDVT, WORK, &
-                            LWORK, RWORK, RESULT( 32 ) )
+               CALL CUNT01( 'Columns', M, NSI, U, LDU, WORK, LWORK, RWORK, RESULT( 31 ) )
+               CALL CUNT01( 'Rows', NSI, N, VT, LDVT, WORK, LWORK, RWORK, RESULT( 32 ) )
             END IF
 !
 !              Do tests 11--13
@@ -1180,26 +1103,24 @@
             IF( MNMIN > 0 .AND. NSI > 1 ) THEN
                IF( IL /= 1 ) THEN
                   VU = SSAV( IL ) + &
-                       MAX( HALF*ABS( SSAV( IL )-SSAV( IL-1 ) ), &
-                       ULP*ANORM, TWO*RTUNFL )
+                       MAX( 0.5E+0*ABS( SSAV( IL )-SSAV( IL-1 ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                ELSE
                   VU = SSAV( 1 ) + &
-                       MAX( HALF*ABS( SSAV( NS )-SSAV( 1 ) ), &
-                       ULP*ANORM, TWO*RTUNFL )
+                       MAX( 0.5E+0*ABS( SSAV( NS )-SSAV( 1 ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                END IF
                IF( IU /= NS ) THEN
-                  VL = SSAV( IU ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                       HALF*ABS( SSAV( IU+1 )-SSAV( IU ) ) )
+                  VL = SSAV( IU ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                       0.5E+0*ABS( SSAV( IU+1 )-SSAV( IU ) ) )
                ELSE
-                  VL = SSAV( NS ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                       HALF*ABS( SSAV( NS )-SSAV( 1 ) ) )
+                  VL = SSAV( NS ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                       0.5E+0*ABS( SSAV( NS )-SSAV( 1 ) ) )
                END IF
-               VL = MAX( VL,ZERO )
-               VU = MAX( VU,ZERO )
-               IF( VL >= VU ) VU = MAX( VU*2, VU+VL+HALF )
+               VL = MAX( VL,0.0E+0 )
+               VU = MAX( VU,0.0E+0 )
+               IF( VL >= VU ) VU = MAX( VU*2, VU+VL+0.5E+0 )
             ELSE
-               VL = ZERO
-               VU = ONE
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
             CALL CLACPY( 'F', M, N, ASAV, LDA, A, LDA )
             SRNAMT = 'CGESVDX'
@@ -1214,31 +1135,19 @@
                RETURN
             END IF
 !
-            RESULT( 33 ) = ZERO
-            RESULT( 34 ) = ZERO
-            RESULT( 35 ) = ZERO
-            CALL CBDT05( M, N, ASAV, LDA, S, NSV, U, LDU, &
-                         VT, LDVT, WORK, RESULT( 33 ) )
+            RESULT( 33:35 ) = 0.0E+0
+            CALL CBDT05( M, N, ASAV, LDA, S, NSV, U, LDU, VT, LDVT, WORK, RESULT( 33 ) )
             IF( M /= 0 .AND. N /= 0 ) THEN
-               CALL CUNT01( 'Columns', M, NSV, U, LDU, WORK, &
-                            LWORK, RWORK, RESULT( 34 ) )
-               CALL CUNT01( 'Rows', NSV, N, VT, LDVT, WORK, &
-                            LWORK, RWORK, RESULT( 35 ) )
+               CALL CUNT01( 'Columns', M, NSV, U, LDU, WORK, LWORK, RWORK, RESULT( 34 ) )
+               CALL CUNT01( 'Rows', NSV, N, VT, LDVT, WORK, LWORK, RWORK, RESULT( 35 ) )
             END IF
 !
 !              End of Loop -- Check for RESULT(j) > THRESH
 !
-            NTEST = 0
-            NFAIL = 0
-            DO J = 1, 39
-               IF( RESULT( J ) >= ZERO ) &
-                  NTEST = NTEST + 1
-               IF( RESULT( J ) >= THRESH ) &
-                  NFAIL = NFAIL + 1
-               ENDDO
+            NTEST = COUNT(RESULT(1:39) >= 0.0E+0)
+            NFAIL = COUNT(RESULT(1:39) >= THRESH)
 !
-            IF( NFAIL > 0 ) &
-               NTESTF = NTESTF + 1
+            IF( NFAIL > 0 ) NTESTF = NTESTF + 1
             IF( NTESTF == 1 ) THEN
                WRITE( NOUNIT, FMT = 9999 )
                WRITE( NOUNIT, FMT = 9998 )THRESH
@@ -1250,7 +1159,7 @@
                   WRITE( NOUNIT, FMT = 9997 )M, N, JTYPE, IWSPC, &
                      IOLDSD, J, RESULT( J )
                END IF
-               ENDDO
+            ENDDO
 !
             NERRS = NERRS + NFAIL
             NTESTT = NTESTT + NTEST
@@ -1343,4 +1252,4 @@
 !     End of CDRVBD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
