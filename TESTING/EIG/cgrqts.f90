@@ -192,11 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    COMPLEX            CROGUE
    PARAMETER          ( CROGUE = ( -1.0E+10, 0.0E+0 ) )
 !     ..
@@ -211,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CGGRQF, CLACPY, CLASET, CUNGQR, &
                       CUNGRQ, CHERK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -230,84 +222,74 @@
 !
 !     Factorize the matrices A and B in the arrays AF and BF.
 !
-   CALL CGGRQF( M, P, N, AF, LDA, TAUA, BF, LDB, TAUB, WORK, &
-                LWORK, INFO )
+   CALL CGGRQF( M, P, N, AF, LDA, TAUA, BF, LDB, TAUB, WORK, LWORK, INFO )
 !
 !     Generate the N-by-N matrix Q
 !
    CALL CLASET( 'Full', N, N, CROGUE, CROGUE, Q, LDA )
    IF( M <= N ) THEN
-      IF( M > 0 .AND. M < N ) &
-         CALL CLACPY( 'Full', M, N-M, AF, LDA, Q( N-M+1, 1 ), LDA )
-      IF( M > 1 ) &
-         CALL CLACPY( 'Lower', M-1, M-1, AF( 2, N-M+1 ), LDA, &
-                      Q( N-M+2, N-M+1 ), LDA )
+      IF( M > 0 .AND. M < N ) CALL CLACPY( 'Full', M, N-M, AF, LDA, Q( N-M+1, 1 ), LDA )
+      IF( M > 1 ) CALL CLACPY( 'Lower', M-1, M-1, AF( 2, N-M+1 ), LDA, Q( N-M+2, N-M+1 ), LDA )
    ELSE
-      IF( N > 1 ) &
-         CALL CLACPY( 'Lower', N-1, N-1, AF( M-N+2, 1 ), LDA, &
-                      Q( 2, 1 ), LDA )
+      IF( N > 1 ) CALL CLACPY( 'Lower', N-1, N-1, AF( M-N+2, 1 ), LDA, Q( 2, 1 ), LDA )
    END IF
    CALL CUNGRQ( N, N, MIN( M, N ), Q, LDA, TAUA, WORK, LWORK, INFO )
 !
 !     Generate the P-by-P matrix Z
 !
    CALL CLASET( 'Full', P, P, CROGUE, CROGUE, Z, LDB )
-   IF( P > 1 ) &
-      CALL CLACPY( 'Lower', P-1, N, BF( 2,1 ), LDB, Z( 2,1 ), LDB )
+   IF( P > 1 ) CALL CLACPY( 'Lower', P-1, N, BF( 2,1 ), LDB, Z( 2,1 ), LDB )
    CALL CUNGQR( P, P, MIN( P,N ), Z, LDB, TAUB, WORK, LWORK, INFO )
 !
 !     Copy R
 !
-   CALL CLASET( 'Full', M, N, CZERO, CZERO, R, LDA )
+   CALL CLASET( 'Full', M, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), R, LDA )
    IF( M <= N )THEN
-      CALL CLACPY( 'Upper', M, M, AF( 1, N-M+1 ), LDA, R( 1, N-M+1 ), &
-                   LDA )
+      CALL CLACPY( 'Upper', M, M, AF( 1, N-M+1 ), LDA, R( 1, N-M+1 ), LDA )
    ELSE
       CALL CLACPY( 'Full', M-N, N, AF, LDA, R, LDA )
-      CALL CLACPY( 'Upper', N, N, AF( M-N+1, 1 ), LDA, R( M-N+1, 1 ), &
-                   LDA )
+      CALL CLACPY( 'Upper', N, N, AF( M-N+1, 1 ), LDA, R( M-N+1, 1 ), LDA )
    END IF
 !
 !     Copy T
 !
-   CALL CLASET( 'Full', P, N, CZERO, CZERO, T, LDB )
+   CALL CLASET( 'Full', P, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), T, LDB )
    CALL CLACPY( 'Upper', P, N, BF, LDB, T, LDB )
 !
 !     Compute R - A*Q'
 !
-   CALL CGEMM( 'No transpose', 'Conjugate transpose', M, N, N, -CONE, &
-               A, LDA, Q, LDA, CONE, R, LDA )
+   CALL CGEMM( 'No transpose', 'Conjugate transpose', M, N, N, -(1.0E+0,0.0E+0), &
+               A, LDA, Q, LDA, (1.0E+0,0.0E+0), R, LDA )
 !
 !     Compute norm( R - A*Q' ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = CLANGE( '1', M, N, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0E+0 ) THEN
       RESULT( 1 ) = ( ( RESID / REAL(MAX(1,M,N) ) ) / ANORM ) / ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0E+0
    END IF
 !
 !     Compute T*Q - Z'*B
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, N, P, CONE, &
-              Z, LDB, B, LDB, CZERO, BWK, LDB )
-   CALL CGEMM( 'No transpose', 'No transpose', P, N, N, CONE, T, LDB, &
-               Q, LDA, -CONE, BWK, LDB )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, N, P, (1.0E+0,0.0E+0), &
+              Z, LDB, B, LDB, (0.0E+0,0.0E+0), BWK, LDB )
+   CALL CGEMM( 'No transpose', 'No transpose', P, N, N, (1.0E+0,0.0E+0), T, LDB, &
+               Q, LDA, -(1.0E+0,0.0E+0), BWK, LDB )
 !
 !     Compute norm( T*Q - Z'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = CLANGE( '1', P, N, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0E+0 ) THEN
       RESULT( 2 ) = ( ( RESID / REAL( MAX( 1,P,M ) ) )/BNORM ) / ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0E+0
    END IF
 !
 !     Compute I - Q*Q'
 !
-   CALL CLASET( 'Full', N, N, CZERO, CONE, R, LDA )
-   CALL CHERK( 'Upper', 'No Transpose', N, N, -ONE, Q, LDA, ONE, R, &
-               LDA )
+   CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), R, LDA )
+   CALL CHERK( 'Upper', 'No Transpose', N, N, -1.0E+0, Q, LDA, 1.0E+0, R, LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
 !
@@ -316,9 +298,8 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL CLASET( 'Full', P, P, CZERO, CONE, T, LDB )
-   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -ONE, Z, LDB, &
-               ONE, T, LDB )
+   CALL CLASET( 'Full', P, P, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), T, LDB )
+   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E+0, Z, LDB, 1.0E+0, T, LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
 !
@@ -330,4 +311,4 @@
 !     End of CGRQTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

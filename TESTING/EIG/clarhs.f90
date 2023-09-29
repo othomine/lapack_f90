@@ -221,11 +221,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BAND, GEN, NOTRAN, QRS, SYM, TRAN, TRI
@@ -241,9 +236,6 @@
    EXTERNAL           CGBMV, CGEMM, CHBMV, CHEMM, CHPMV, CLACPY, &
                       CLARNV, CSBMV, CSPMV, CSYMM, CTBMV, CTPMV, &
                       CTRMM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -321,21 +313,21 @@
 !
 !        General matrix
 !
-      CALL CGEMM( TRANS, 'N', MB, NRHS, NX, ONE, A, LDA, X, LDX, &
-                  ZERO, B, LDB )
+      CALL CGEMM( TRANS, 'N', MB, NRHS, NX, (1.0E+0,0.0E+0), A, LDA, X, LDX, &
+                  (0.0E+0,0.0E+0), B, LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'PO' ) .OR. LSAMEN( 2, C2, 'HE' ) ) THEN
 !
 !        Hermitian matrix, 2-D storage
 !
-      CALL CHEMM( 'Left', UPLO, N, NRHS, ONE, A, LDA, X, LDX, ZERO, &
+      CALL CHEMM( 'Left', UPLO, N, NRHS, (1.0E+0,0.0E+0), A, LDA, X, LDX, (0.0E+0,0.0E+0), &
                   B, LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'SY' ) ) THEN
 !
 !        Symmetric matrix, 2-D storage
 !
-      CALL CSYMM( 'Left', UPLO, N, NRHS, ONE, A, LDA, X, LDX, ZERO, &
+      CALL CSYMM( 'Left', UPLO, N, NRHS, (1.0E+0,0.0E+0), A, LDA, X, LDX, (0.0E+0,0.0E+0), &
                   B, LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'GB' ) ) THEN
@@ -343,8 +335,8 @@
 !        General matrix, band storage
 !
       DO J = 1, NRHS
-         CALL CGBMV( TRANS, M, N, KL, KU, ONE, A, LDA, X( 1, J ), 1, &
-                     ZERO, B( 1, J ), 1 )
+         CALL CGBMV( TRANS, M, N, KL, KU, (1.0E+0,0.0E+0), A, LDA, X( 1, J ), 1, &
+                     (0.0E+0,0.0E+0), B( 1, J ), 1 )
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'PB' ) .OR. LSAMEN( 2, C2, 'HB' ) ) THEN
@@ -352,7 +344,7 @@
 !        Hermitian matrix, band storage
 !
       DO J = 1, NRHS
-         CALL CHBMV( UPLO, N, KL, ONE, A, LDA, X( 1, J ), 1, ZERO, &
+         CALL CHBMV( UPLO, N, KL, (1.0E+0,0.0E+0), A, LDA, X( 1, J ), 1, (0.0E+0,0.0E+0), &
                      B( 1, J ), 1 )
       ENDDO
 !
@@ -361,7 +353,7 @@
 !        Symmetric matrix, band storage
 !
       DO J = 1, NRHS
-         CALL CSBMV( UPLO, N, KL, ONE, A, LDA, X( 1, J ), 1, ZERO, &
+         CALL CSBMV( UPLO, N, KL, (1.0E+0,0.0E+0), A, LDA, X( 1, J ), 1, (0.0E+0,0.0E+0), &
                      B( 1, J ), 1 )
       ENDDO
 !
@@ -370,7 +362,7 @@
 !        Hermitian matrix, packed storage
 !
       DO J = 1, NRHS
-         CALL CHPMV( UPLO, N, ONE, A, X( 1, J ), 1, ZERO, B( 1, J ), &
+         CALL CHPMV( UPLO, N, (1.0E+0,0.0E+0), A, X( 1, J ), 1, (0.0E+0,0.0E+0), B( 1, J ), &
                      1 )
       ENDDO
 !
@@ -379,7 +371,7 @@
 !        Symmetric matrix, packed storage
 !
       DO J = 1, NRHS
-         CALL CSPMV( UPLO, N, ONE, A, X( 1, J ), 1, ZERO, B( 1, J ), &
+         CALL CSPMV( UPLO, N, (1.0E+0,0.0E+0), A, X( 1, J ), 1, (0.0E+0,0.0E+0), B( 1, J ), &
                      1 )
       ENDDO
 !
@@ -395,7 +387,7 @@
       ELSE
          DIAG = 'N'
       END IF
-      CALL CTRMM( 'Left', UPLO, TRANS, DIAG, N, NRHS, ONE, A, LDA, B, &
+      CALL CTRMM( 'Left', UPLO, TRANS, DIAG, N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, &
                   LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'TP' ) ) THEN
@@ -439,4 +431,4 @@
 !     End of CLARHS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

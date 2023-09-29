@@ -104,10 +104,6 @@
 !  =====================================================================
 !     ..
 !     .. Parameters ..
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ONE, ZERO
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            MAXM, MAXN, LDSWORK
    PARAMETER          ( MAXM = 101, MAXN = 138, LDSWORK = 18 )
 !     ..
@@ -138,9 +134,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLATMR, CLACPY, CGEMM, CTRSYL, CTRSYL3
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, MAX
-!     ..
 !     .. Allocate memory dynamically ..
    ALLOCATE ( A( MAXM, MAXM ), STAT = AllocateStatus )
    IF( AllocateStatus /= 0 ) STOP "*** Not enough memory ***"
@@ -161,78 +154,60 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Expect INFO = 0
-   VM( 1 ) = ONE
+   VM( 1 ) = 1.0E+0
 !     Expect INFO = 1
    VM( 2 ) = 0.5E+0
 !
 !     Begin test loop
 !
-   NINFO( 1 ) = 0
-   NINFO( 2 ) = 0
-   NFAIL( 1 ) = 0
-   NFAIL( 2 ) = 0
-   NFAIL( 3 ) = 0
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
+   NINFO( 1:2 ) = 0
+   NFAIL( 1:3 ) = 0
+   RMAX( 1:2 ) = 0.0E+0
    KNT = 0
-   ISEED( 1 ) = 1
-   ISEED( 2 ) = 1
-   ISEED( 3 ) = 1
-   ISEED( 4 ) = 1
-   SCALE = ONE
-   SCALE3 = ONE
+   ISEED( 1:4 ) = 1
+   SCALE = 1.0E+0
+   SCALE3 = 1.0E+0
    DO J = 1, 2
       DO ISGN = -1, 1, 2
 !           Reset seed (overwritten by LATMR)
-         ISEED( 1 ) = 1
-         ISEED( 2 ) = 1
-         ISEED( 3 ) = 1
-         ISEED( 4 ) = 1
+         ISEED( 1:4 ) = 1
          DO M = 32, MAXM, 23
             KLA = 0
             KUA = M - 1
             CALL CLATMR( M, M, 'S', ISEED, 'N', D, &
-                         6, ONE, CONE, 'T', 'N', &
-                         DUML, 1, ONE, DUMR, 1, ONE, &
-                         'N', IWORK, KLA, KUA, ZERO, &
-                         ONE, 'NO', A, MAXM, IWORK, &
+                         6, 1.0E+0, (1.0E+0,0.0E+0), 'T', 'N', &
+                         DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                         'N', IWORK, KLA, KUA, 0.0E+0, &
+                         1.0E+0, 'NO', A, MAXM, IWORK, &
                          IINFO )
-            DO I = 1, M
-               A( I, I ) = A( I, I ) * VM( J )
-            END DO
+            FORALL (I = 1:M) A( I, I ) = A( I, I ) * VM( J )
             ANRM = CLANGE( 'M', M, M, A, MAXM, DUM )
             DO N = 51, MAXN, 29
                KLB = 0
                KUB = N - 1
                CALL CLATMR( N, N, 'S', ISEED, 'N', D, &
-                            6, ONE, CONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, KLB, KUB, ZERO, &
-                            ONE, 'NO', B, MAXN, IWORK, &
+                            6, 1.0E+0, (1.0E+0,0.0E+0), 'T', 'N', &
+                            DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                            'N', IWORK, KLB, KUB, 0.0E+0, &
+                            1.0E+0, 'NO', B, MAXN, IWORK, &
                             IINFO )
-               DO I = 1, N
-                  B( I, I ) = B( I, I ) * VM ( J )
-               END DO
+               FORALL (I = 1:N) B( I, I ) = B( I, I ) * VM ( J )
                BNRM = CLANGE( 'M', N, N, B, MAXN, DUM )
                TNRM = MAX( ANRM, BNRM )
                CALL CLATMR( M, N, 'S', ISEED, 'N', D, &
-                            6, ONE, CONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, M, N, ZERO, ONE, &
+                            6, 1.0E+0, (1.0E+0,0.0E+0), 'T', 'N', &
+                            DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                            'N', IWORK, M, N, 0.0E+0, 1.0E+0, &
                             'NO', C, MAXM, IWORK, IINFO )
                DO ITRANA = 1, 2
-                  IF( ITRANA == 1 ) &
-                      TRANA = 'N'
-                  IF( ITRANA == 2 ) &
-                      TRANA = 'C'
+                  IF( ITRANA == 1 ) TRANA = 'N'
+                  IF( ITRANA == 2 ) TRANA = 'C'
                   DO ITRANB = 1, 2
-                     IF( ITRANB == 1 ) &
-                        TRANB = 'N'
-                     IF( ITRANB == 2 ) &
-                        TRANB = 'C'
+                     IF( ITRANB == 1 ) TRANB = 'N'
+                     IF( ITRANB == 2 ) TRANB = 'C'
                      KNT = KNT + 1
 !
                      CALL CLACPY( 'All', M, N, C, MAXM, X, MAXM)
@@ -240,41 +215,36 @@
                      CALL CTRSYL( TRANA, TRANB, ISGN, M, N, &
                                   A, MAXM, B, MAXN, X, MAXM, &
                                   SCALE, IINFO )
-                     IF( IINFO /= 0 ) &
-                        NINFO( 1 ) = NINFO( 1 ) + 1
+                     IF( IINFO /= 0 ) NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = CLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = CONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = (1.0E+0,0.0E+0)
+                     IF( XNRM > 1.0E+0 .AND. TNRM > 1.0E+0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = CONE / MAX( XNRM, TNRM )
+                           RMUL = (1.0E+0,0.0E+0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL CGEMM( TRANA, 'N', M, N, M, RMUL, &
-                                 A, MAXM, X, MAXM, -SCALE*RMUL, &
-                                 CC, MAXM )
+                                 A, MAXM, X, MAXM, -SCALE*RMUL, CC, MAXM )
                      CALL CGEMM( 'N', TRANB, M, N, N, &
                                  REAL( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, CONE, CC, MAXM )
+                                 MAXN, (1.0E+0,0.0E+0), CC, MAXM )
                      RES1 = CLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                            ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
-                     IF( RES > THRESH ) &
-                        NFAIL( 1 ) = NFAIL( 1 ) + 1
-                     IF( RES > RMAX( 1 ) ) &
-                        RMAX( 1 ) = RES
+                     IF( RES > THRESH ) NFAIL( 1 ) = NFAIL( 1 ) + 1
+                     IF( RES > RMAX( 1 ) ) RMAX( 1 ) = RES
 !
                      CALL CLACPY( 'All', M, N, C, MAXM, X, MAXM )
                      CALL CLACPY( 'All', M, N, C, MAXM, CC, MAXM )
                      CALL CTRSYL3( TRANA, TRANB, ISGN, M, N, &
                                    A, MAXM, B, MAXN, X, MAXM, &
                                    SCALE3, SWORK, LDSWORK, INFO)
-                     IF( INFO /= 0 ) &
-                        NINFO( 2 ) = NINFO( 2 ) + 1
+                     IF( INFO /= 0 ) NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = CLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = CONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = (1.0E+0,0.0E+0)
+                     IF( XNRM > 1.0E+0 .AND. TNRM > 1.0E+0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = CONE / MAX( XNRM, TNRM )
+                           RMUL = (1.0E+0,0.0E+0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL CGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -282,13 +252,13 @@
                                  CC, MAXM )
                      CALL CGEMM( 'N', TRANB, M, N, N, &
                                  REAL( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, CONE, CC, MAXM )
+                                 MAXN, (1.0E+0,0.0E+0), CC, MAXM )
                      RES1 = CLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
 !                       Verify that TRSYL3 only flushes if TRSYL flushes (but
 !                       there may be cases where TRSYL3 avoid flushing).
-                     IF( SCALE3 == ZERO .AND. SCALE > ZERO .OR. &
+                     IF( SCALE3 == 0.0E+0 .AND. SCALE > 0.0E+0 .OR. &
                          IINFO /= INFO ) THEN
                         NFAIL( 3 ) = NFAIL( 3 ) + 1
                      END IF
@@ -315,4 +285,4 @@
 !     End of CSYL01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

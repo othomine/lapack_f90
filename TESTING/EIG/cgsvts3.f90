@@ -223,13 +223,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J, K, L
@@ -242,13 +235,10 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CGGSVD3, CHERK, CLACPY, CLASET, SCOPY
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
    ULP = SLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    UNFL = SLAMCH( 'Safe minimum' )
 !
 !     Copy the matrix A to the array AF.
@@ -268,26 +258,22 @@
 !     Copy R
 !
    DO I = 1, MIN( K+L, M )
-      DO J = I, K + L
-         R( I, J ) = AF( I, N-K-L+J )
-      ENDDO
+      R(I,I:K+L) = AF(I,N-K-L+I:N)
    ENDDO
 !
    IF( M-K-L < 0 ) THEN
       DO I = M + 1, K + L
-         DO J = I, K + L
-            R( I, J ) = BF( I-K, N-K-L+J )
-         ENDDO
+         R(I,I:K+L) = BF(I-K,N-K-L+I:N)
       ENDDO
    END IF
 !
 !     Compute A:= U'*A*Q - D1*R
 !
-   CALL CGEMM( 'No transpose', 'No transpose', M, N, N, CONE, A, LDA, &
-               Q, LDQ, CZERO, WORK, LDA )
+   CALL CGEMM( 'No transpose', 'No transpose', M, N, N, (1.0E+0,0.0E+0), A, LDA, &
+               Q, LDQ, (0.0E+0,0.0E+0), WORK, LDA )
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', M, N, M, CONE, &
-               U, LDU, WORK, LDA, CZERO, A, LDA )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', M, N, M, (1.0E+0,0.0E+0), &
+               U, LDU, WORK, LDA, (0.0E+0,0.0E+0), A, LDA )
 !
    DO I = 1, K
       DO J = I, K + L
@@ -296,50 +282,43 @@
    ENDDO
 !
    DO I = K + 1, MIN( K+L, M )
-      DO J = I, K + L
-         A( I, N-K-L+J ) = A( I, N-K-L+J ) - ALPHA( I )*R( I, J )
-      ENDDO
+      A(I,N-K-L+I:N-K-L+K+L) = A(I,N-K-L+I:N)-ALPHA(I)*R(I,I:K+L)
    ENDDO
 !
 !     Compute norm( U'*A*Q - D1*R ) / ( MAX(1,M,N)*norm(A)*ULP ) .
 !
    RESID = CLANGE( '1', M, N, A, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
-      RESULT( 1 ) = ( ( RESID / REAL( MAX( 1, M, N ) ) ) / ANORM ) / &
-                    ULP
+   IF( ANORM > 0.0E+0 ) THEN
+      RESULT( 1 ) = ( ( RESID / REAL( MAX( 1, M, N ) ) ) / ANORM ) / ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0E+0
    END IF
 !
 !     Compute B := V'*B*Q - D2*R
 !
-   CALL CGEMM( 'No transpose', 'No transpose', P, N, N, CONE, B, LDB, &
-               Q, LDQ, CZERO, WORK, LDB )
+   CALL CGEMM( 'No transpose', 'No transpose', P, N, N, (1.0E+0,0.0E+0), B, LDB, &
+               Q, LDQ, (0.0E+0,0.0E+0), WORK, LDB )
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, N, P, CONE, &
-               V, LDV, WORK, LDB, CZERO, B, LDB )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', P, N, P, (1.0E+0,0.0E+0), &
+               V, LDV, WORK, LDB, (0.0E+0,0.0E+0), B, LDB )
 !
    DO I = 1, L
-      DO J = I, L
-         B( I, N-L+J ) = B( I, N-L+J ) - BETA( K+I )*R( K+I, K+J )
-      ENDDO
-      ENDDO
+      B(I,N-L+I:N) = B(I,N-L+I:N) - BETA(K+I)*R(K+I,K+I:K+L)
+   ENDDO
 !
 !     Compute norm( V'*B*Q - D2*R ) / ( MAX(P,N)*norm(B)*ULP ) .
 !
    RESID = CLANGE( '1', P, N, B, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
-      RESULT( 2 ) = ( ( RESID / REAL( MAX( 1, P, N ) ) ) / BNORM ) / &
-                    ULP
+   IF( BNORM > 0.0E+0 ) THEN
+      RESULT( 2 ) = ( ( RESID / REAL( MAX( 1, P, N ) ) ) / BNORM ) / ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0E+0
    END IF
 !
 !     Compute I - U'*U
 !
-   CALL CLASET( 'Full', M, M, CZERO, CONE, WORK, LDQ )
-   CALL CHERK( 'Upper', 'Conjugate transpose', M, M, -ONE, U, LDU, &
-               ONE, WORK, LDU )
+   CALL CLASET( 'Full', M, M, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, LDQ )
+   CALL CHERK( 'Upper', 'Conjugate transpose', M, M, -1.0E+0, U, LDU, 1.0E+0, WORK, LDU )
 !
 !     Compute norm( I - U'*U ) / ( M * ULP ) .
 !
@@ -348,9 +327,8 @@
 !
 !     Compute I - V'*V
 !
-   CALL CLASET( 'Full', P, P, CZERO, CONE, WORK, LDV )
-   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -ONE, V, LDV, &
-               ONE, WORK, LDV )
+   CALL CLASET( 'Full', P, P, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, LDV )
+   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E+0, V, LDV, 1.0E+0, WORK, LDV )
 !
 !     Compute norm( I - V'*V ) / ( P * ULP ) .
 !
@@ -359,9 +337,8 @@
 !
 !     Compute I - Q'*Q
 !
-   CALL CLASET( 'Full', N, N, CZERO, CONE, WORK, LDQ )
-   CALL CHERK( 'Upper', 'Conjugate transpose', N, N, -ONE, Q, LDQ, &
-               ONE, WORK, LDQ )
+   CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, LDQ )
+   CALL CHERK( 'Upper', 'Conjugate transpose', N, N, -1.0E+0, Q, LDQ, 1.0E+0, WORK, LDQ )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
 !
@@ -380,15 +357,14 @@
       END IF
       ENDDO
 !
-   RESULT( 6 ) = ZERO
+   RESULT( 6 ) = 0.0E+0
    DO I = K + 1, MIN( K+L, M ) - 1
-      IF( RWORK( I ) < RWORK( I+1 ) ) &
-         RESULT( 6 ) = ULPINV
-      ENDDO
+      IF( RWORK( I ) < RWORK( I+1 ) ) RESULT( 6 ) = ULPINV
+   ENDDO
 !
    RETURN
 !
 !     End of CGSVTS3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

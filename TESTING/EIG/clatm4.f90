@@ -184,13 +184,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, ISDB, ISDE, JC, JD, JR, K, KBEG, KEND, KLEN
@@ -205,19 +198,14 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, EXP, LOG, MAX, MIN, MOD, REAL
-!     ..
 !     .. Executable Statements ..
 !
-   IF( N <= 0 ) &
-      RETURN
-   CALL CLASET( 'Full', N, N, CZERO, CZERO, A, LDA )
+   IF( N <= 0 ) RETURN
+   CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
 !
 !     Insure a correct ISEED
 !
-   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) &
-      ISEED( 4 ) = ISEED( 4 ) + 1
+   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) ISEED( 4 ) = ISEED( 4 ) + 1
 !
 !     Compute diagonal and subdiagonal according to ITYPE, NZ1, NZ2,
 !     and RCOND
@@ -234,137 +222,109 @@
       END IF
       ISDB = 1
       ISDE = 0
-      GO TO ( 10, 30, 50, 80, 100, 120, 140, 160, &
-              180, 200 )ABS( ITYPE )
+      SELECT CASE (ABS( ITYPE ))
+       CASE (1)
 !
 !        abs(ITYPE) = 1: Identity
 !
-10    CONTINUE
-      DO JD = 1, N
-         A( JD, JD ) = CONE
-      ENDDO
-      GO TO 220
+        FORALL (JD = 1:N) A( JD, JD ) = (1.0E+0,0.0E+0)
+       CASE (2)
 !
 !        abs(ITYPE) = 2: Transposed Jordan block
 !
-30    CONTINUE
-      DO JD = 1, N - 1
-         A( JD+1, JD ) = CONE
-      ENDDO
-      ISDB = 1
-      ISDE = N - 1
-      GO TO 220
+        FORALL (JD = 1:N-1) A( JD+1, JD ) = (1.0E+0,0.0E+0)
+        ISDB = 1
+        ISDE = N - 1
+       CASE (3)
 !
 !        abs(ITYPE) = 3: Transposed Jordan block, followed by the
 !                        identity.
 !
-50    CONTINUE
-      K = ( N-1 ) / 2
-      DO JD = 1, K
-         A( JD+1, JD ) = CONE
-      ENDDO
-      ISDB = 1
-      ISDE = K
-      DO JD = K + 2, 2*K + 1
-         A( JD, JD ) = CONE
-      ENDDO
-      GO TO 220
+        K = ( N-1 ) / 2
+        FORALL (JD = 1:K) A( JD+1, JD ) = (1.0E+0,0.0E+0)
+        ISDB = 1
+        ISDE = K
+        FORALL (JD = K + 2:2*K + 1) A( JD, JD ) = (1.0E+0,0.0E+0)
+       CASE (4)
 !
 !        abs(ITYPE) = 4: 1,...,k
 !
-80    CONTINUE
-      DO JD = KBEG, KEND
-         A( JD, JD ) = CMPLX( JD-NZ1 )
-      ENDDO
-      GO TO 220
+        FORALL (JD = KBEG:KEND) A( JD, JD ) = CMPLX( JD-NZ1 )
+       CASE (5)
 !
 !        abs(ITYPE) = 5: One large D value:
 !
-  100    CONTINUE
-      DO JD = KBEG + 1, KEND
-         A( JD, JD ) = CMPLX( RCOND )
-         ENDDO
-      A( KBEG, KBEG ) = CONE
-      GO TO 220
+        FORALL (JD = KBEG+1:KEND) A( JD, JD ) = CMPLX(RCOND)
+        A( KBEG, KBEG ) = (1.0E+0,0.0E+0)
+       CASE (6)
 !
 !        abs(ITYPE) = 6: One small D value:
 !
-  120    CONTINUE
-      DO JD = KBEG, KEND - 1
-         A( JD, JD ) = CONE
-         ENDDO
-      A( KEND, KEND ) = CMPLX( RCOND )
-      GO TO 220
+        FORALL (JD = KBEG:KEND-1) A( JD, JD ) = (1.0E+0,0.0E+0)
+        A( KEND, KEND ) = CMPLX( RCOND )
+       CASE (7)
 !
 !        abs(ITYPE) = 7: Exponentially distributed D values:
 !
-  140    CONTINUE
-      A( KBEG, KBEG ) = CONE
+      A( KBEG, KBEG ) = (1.0E+0,0.0E+0)
       IF( KLEN > 1 ) THEN
-         ALPHA = RCOND**( ONE / REAL( KLEN-1 ) )
+         ALPHA = RCOND**( 1.0E+0 / REAL( KLEN-1 ) )
          DO I = 2, KLEN
             A( NZ1+I, NZ1+I ) = CMPLX( ALPHA**REAL( I-1 ) )
-            ENDDO
+         ENDDO
       END IF
-      GO TO 220
+       CASE (8)
 !
 !        abs(ITYPE) = 8: Arithmetically distributed D values:
 !
-  160    CONTINUE
-      A( KBEG, KBEG ) = CONE
+      A( KBEG, KBEG ) = (1.0E+0,0.0E+0)
       IF( KLEN > 1 ) THEN
-         ALPHA = ( ONE-RCOND ) / REAL( KLEN-1 )
+         ALPHA = ( 1.0E+0-RCOND ) / REAL( KLEN-1 )
          DO I = 2, KLEN
             A( NZ1+I, NZ1+I ) = CMPLX( REAL( KLEN-I )*ALPHA+RCOND )
-            ENDDO
+         ENDDO
       END IF
-      GO TO 220
+       CASE (9)
 !
 !        abs(ITYPE) = 9: Randomly distributed D values on ( RCOND, 1):
 !
-  180    CONTINUE
       ALPHA = LOG( RCOND )
       DO JD = KBEG, KEND
          A( JD, JD ) = EXP( ALPHA*SLARAN( ISEED ) )
-         ENDDO
-      GO TO 220
+      ENDDO
+       CASE (10)
 !
 !        abs(ITYPE) = 10: Randomly distributed D values from DIST
 !
-  200    CONTINUE
       DO JD = KBEG, KEND
          A( JD, JD ) = CLARND( IDIST, ISEED )
-         ENDDO
+      ENDDO
 !
-  220    CONTINUE
+       END SELECT
 !
 !        Scale by AMAGN
 !
-      DO JD = KBEG, KEND
-         A( JD, JD ) = AMAGN*REAL( A( JD, JD ) )
-         ENDDO
-      DO JD = ISDB, ISDE
-         A( JD+1, JD ) = AMAGN*REAL( A( JD+1, JD ) )
-         ENDDO
+      FORALL (JD = KBEG:KEND) A( JD, JD ) = AMAGN*REAL( A( JD, JD ) )
+      FORALL (JD = ISDB:ISDE) A( JD+1, JD ) = AMAGN*REAL( A( JD+1, JD ) )
 !
 !        If RSIGN = .TRUE., assign random signs to diagonal and
 !        subdiagonal
 !
       IF( RSIGN ) THEN
          DO JD = KBEG, KEND
-            IF( REAL( A( JD, JD ) ) /= ZERO ) THEN
+            IF( REAL( A( JD, JD ) ) /= 0.0E+0 ) THEN
                CTEMP = CLARND( 3, ISEED )
                CTEMP = CTEMP / ABS( CTEMP )
                A( JD, JD ) = CTEMP*REAL( A( JD, JD ) )
             END IF
-            ENDDO
+         ENDDO
          DO JD = ISDB, ISDE
-            IF( REAL( A( JD+1, JD ) ) /= ZERO ) THEN
+            IF( REAL( A( JD+1, JD ) ) /= 0.0E+0 ) THEN
                CTEMP = CLARND( 3, ISEED )
                CTEMP = CTEMP / ABS( CTEMP )
                A( JD+1, JD ) = CTEMP*REAL( A( JD+1, JD ) )
             END IF
-            ENDDO
+         ENDDO
       END IF
 !
 !        Reverse if ITYPE < 0
@@ -374,19 +334,19 @@
             CTEMP = A( JD, JD )
             A( JD, JD ) = A( KBEG+KEND-JD, KBEG+KEND-JD )
             A( KBEG+KEND-JD, KBEG+KEND-JD ) = CTEMP
-            ENDDO
+         ENDDO
          DO JD = 1, ( N-1 ) / 2
             CTEMP = A( JD+1, JD )
             A( JD+1, JD ) = A( N+1-JD, N-JD )
             A( N+1-JD, N-JD ) = CTEMP
-            ENDDO
+         ENDDO
       END IF
 !
    END IF
 !
 !     Fill in upper triangle
 !
-   IF( TRIANG /= ZERO ) THEN
+   IF( TRIANG /= 0.0E+0 ) THEN
       DO JC = 2, N
          DO JR = 1, JC - 1
             A( JR, JC ) = TRIANG*CLARND( IDIST, ISEED )
@@ -399,4 +359,4 @@
 !     End of CLATM4
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

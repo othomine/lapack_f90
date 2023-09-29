@@ -192,11 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
    COMPLEX            CROGUE
    PARAMETER          ( CROGUE = ( -1.0E+10, 0.0E+0 ) )
 !     ..
@@ -211,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CLACPY, CLASET, CUNGQR, &
                       CUNGRQ, CHERK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -230,8 +222,7 @@
 !
 !     Factorize the matrices A and B in the arrays AF and BF.
 !
-   CALL CGGQRF( N, M, P, AF, LDA, TAUA, BF, LDB, TAUB, WORK, &
-                LWORK, INFO )
+   CALL CGGQRF( N, M, P, AF, LDA, TAUA, BF, LDB, TAUB, WORK, LWORK, INFO )
 !
 !     Generate the N-by-N matrix Q
 !
@@ -257,56 +248,53 @@
 !
 !     Copy R
 !
-   CALL CLASET( 'Full', N, M, CZERO, CZERO, R, LDA )
+   CALL CLASET( 'Full', N, M, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), R, LDA )
    CALL CLACPY( 'Upper', N, M, AF, LDA, R, LDA )
 !
 !     Copy T
 !
-   CALL CLASET( 'Full', N, P, CZERO, CZERO, T, LDB )
+   CALL CLASET( 'Full', N, P, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), T, LDB )
    IF( N <= P ) THEN
-      CALL CLACPY( 'Upper', N, N, BF( 1, P-N+1 ), LDB, T( 1, P-N+1 ), &
-                   LDB )
+      CALL CLACPY( 'Upper', N, N, BF( 1, P-N+1 ), LDB, T( 1, P-N+1 ), LDB )
    ELSE
       CALL CLACPY( 'Full', N-P, P, BF, LDB, T, LDB )
-      CALL CLACPY( 'Upper', P, P, BF( N-P+1, 1 ), LDB, T( N-P+1, 1 ), &
-                   LDB )
+      CALL CLACPY( 'Upper', P, P, BF( N-P+1, 1 ), LDB, T( N-P+1, 1 ), LDB )
    END IF
 !
 !     Compute R - Q'*A
 !
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', N, M, N, -CONE, &
-               Q, LDA, A, LDA, CONE, R, LDA )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', N, M, N, -(1.0E+0,0.0E+0), &
+               Q, LDA, A, LDA, (1.0E+0,0.0E+0), R, LDA )
 !
 !     Compute norm( R - Q'*A ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = CLANGE( '1', N, M, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0E+0 ) THEN
       RESULT( 1 ) = ( ( RESID / REAL( MAX(1,M,N) ) ) / ANORM ) / ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0E+0
    END IF
 !
 !     Compute T*Z - Q'*B
 !
-   CALL CGEMM( 'No Transpose', 'No transpose', N, P, P, CONE, T, LDB, &
-               Z, LDB, CZERO, BWK, LDB )
-   CALL CGEMM( 'Conjugate transpose', 'No transpose', N, P, N, -CONE, &
-               Q, LDA, B, LDB, CONE, BWK, LDB )
+   CALL CGEMM( 'No Transpose', 'No transpose', N, P, P, (1.0E+0,0.0E+0), T, LDB, &
+               Z, LDB, (0.0E+0,0.0E+0), BWK, LDB )
+   CALL CGEMM( 'Conjugate transpose', 'No transpose', N, P, N, -(1.0E+0,0.0E+0), &
+               Q, LDA, B, LDB, (1.0E+0,0.0E+0), BWK, LDB )
 !
 !     Compute norm( T*Z - Q'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = CLANGE( '1', N, P, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0E+0 ) THEN
       RESULT( 2 ) = ( ( RESID / REAL( MAX(1,P,N ) ) )/BNORM ) / ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0E+0
    END IF
 !
 !     Compute I - Q'*Q
 !
-   CALL CLASET( 'Full', N, N, CZERO, CONE, R, LDA )
-   CALL CHERK( 'Upper', 'Conjugate transpose', N, N, -ONE, Q, LDA, &
-               ONE, R, LDA )
+   CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), R, LDA )
+   CALL CHERK( 'Upper', 'Conjugate transpose', N, N, -1.0E+0, Q, LDA, 1.0E+0, R, LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
 !
@@ -315,9 +303,8 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL CLASET( 'Full', P, P, CZERO, CONE, T, LDB )
-   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -ONE, Z, LDB, &
-               ONE, T, LDB )
+   CALL CLASET( 'Full', P, P, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), T, LDB )
+   CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E+0, Z, LDB, 1.0E+0, T, LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
 !
@@ -329,4 +316,4 @@
 !     End of CGQRTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

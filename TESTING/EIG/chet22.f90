@@ -174,13 +174,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            J, JJ, JJ1, JJ2, NN, NNP1
@@ -193,15 +186,10 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CHEMM
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 .OR. M <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0E0
+   IF( N <= 0 .OR. M <= 0 ) RETURN
 !
    UNFL = SLAMCH( 'Safe minimum' )
    ULP = SLAMCH( 'Precision' )
@@ -216,12 +204,10 @@
 !
 !     ITYPE=1: error = U**H A U - S
 !
-   CALL CHEMM( 'L', UPLO, N, M, CONE, A, LDA, U, LDU, CZERO, WORK, &
-               N )
+   CALL CHEMM( 'L', UPLO, N, M, (1.0E0,0.0E0), A, LDA, U, LDU, (0.0E0,0.0E0), WORK, N )
    NN = N*N
    NNP1 = NN + 1
-   CALL CGEMM( 'C', 'N', M, M, N, CONE, U, LDU, WORK, N, CZERO, &
-               WORK( NNP1 ), N )
+   CALL CGEMM( 'C', 'N', M, M, N, (1.0E0,0.0E0), U, LDU, WORK, N, (0.0E0,0.0E0), WORK( NNP1 ), N )
    DO J = 1, M
       JJ = NN + ( J-1 )*N + J
       WORK( JJ ) = WORK( JJ ) - D( J )
@@ -239,7 +225,7 @@
    IF( ANORM > WNORM ) THEN
       RESULT( 1 ) = ( WNORM / ANORM ) / ( M*ULP )
    ELSE
-      IF( ANORM < ONE ) THEN
+      IF( ANORM < 1.0E0 ) THEN
          RESULT( 1 ) = ( MIN( WNORM, M*ANORM ) / ANORM ) / ( M*ULP )
       ELSE
          RESULT( 1 ) = MIN( WNORM / ANORM, REAL( M ) ) / ( M*ULP )
@@ -251,12 +237,11 @@
 !     Compute  U**H U - I
 !
    IF( ITYPE == 1 ) &
-      CALL CUNT01( 'Columns', N, M, U, LDU, WORK, 2*N*N, RWORK, &
-                   RESULT( 2 ) )
+      CALL CUNT01( 'Columns', N, M, U, LDU, WORK, 2*N*N, RWORK, RESULT( 2 ) )
 !
    RETURN
 !
 !     End of CHET22
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

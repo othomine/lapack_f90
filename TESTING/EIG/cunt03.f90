@@ -176,10 +176,6 @@
 !
 !  =====================================================================
 !
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IRC, J, LMX
@@ -191,9 +187,6 @@
    INTEGER            ICAMAX
    REAL               SLAMCH
    EXTERNAL           LSAME, ICAMAX, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, MAX, MIN, REAL
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CUNT01, XERBLA
@@ -234,7 +227,7 @@
 !
 !     Initialize result
 !
-   RESULT = ZERO
+   RESULT = 0.0E0
    IF( MU == 0 .OR. MV == 0 .OR. N == 0 ) &
       RETURN
 !
@@ -246,16 +239,16 @@
 !
 !        Compare rows
 !
-      RES1 = ZERO
+      RES1 = 0.0E0
       DO I = 1, K
          LMX = ICAMAX( N, U( I, 1 ), LDU )
-         IF( V( I, LMX ) == CMPLX( ZERO ) ) THEN
-            SV = ONE
+         IF( V( I, LMX ) == CMPLX( 0.0E0 ) ) THEN
+            SV = 1.0E0
          ELSE
             SV = ABS( V( I, LMX ) ) / V( I, LMX )
          END IF
-         IF( U( I, LMX ) == CMPLX( ZERO ) ) THEN
-            SU = ONE
+         IF( U( I, LMX ) == CMPLX( 0.0E0 ) ) THEN
+            SU = 1.0E0
          ELSE
             SU = ABS( U( I, LMX ) ) / U( I, LMX )
          END IF
@@ -274,16 +267,16 @@
 !
 !        Compare columns
 !
-      RES1 = ZERO
+      RES1 = 0.0E0
       DO I = 1, K
          LMX = ICAMAX( N, U( 1, I ), 1 )
-         IF( V( LMX, I ) == CMPLX( ZERO ) ) THEN
-            SV = ONE
+         IF( V( LMX, I ) == CMPLX( 0.0E0 ) ) THEN
+            SV = 1.0E0
          ELSE
             SV = ABS( V( LMX, I ) ) / V( LMX, I )
          END IF
-         IF( U( LMX, I ) == CMPLX( ZERO ) ) THEN
-            SU = ONE
+         IF( U( LMX, I ) == CMPLX( 0.0E0 ) ) THEN
+            SU = 1.0E0
          ELSE
             SU = ABS( U( LMX, I ) ) / U( LMX, I )
          END IF
@@ -300,10 +293,10 @@
                    RES2 )
    END IF
 !
-   RESULT = MIN( MAX( RES1, RES2 ), ONE / ULP )
+   RESULT = MIN( MAX( RES1, RES2 ), 1.0E0 / ULP )
    RETURN
 !
 !     End of CUNT03
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
