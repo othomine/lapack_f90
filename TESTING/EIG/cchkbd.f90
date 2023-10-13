@@ -483,20 +483,13 @@
 !
    INFO = 0
 !
-   BADMM = .FALSE.
-   BADNN = .FALSE.
-   MMAX = 1
-   NMAX = 1
-   MNMAX = 1
+   BADMM = ANY(MVAL(1:NSIZES) < 0)
+   BADNN = ANY(NVAL(1:NSIZES) < 0)
+   MMAX = MAX(1, MAXVAL(MVAL(1:NSIZES)))
+   NMAX = MAX(1, MAXVAL(NVAL(1:NSIZES)))
+   MNMAX = MAX(1, MINVAL(MVAL(1:NSIZES)), MINVAL(NVAL(1:NSIZES)))
    MINWRK = 1
    DO J = 1, NSIZES
-      MMAX = MAX( MMAX, MVAL( J ) )
-      IF( MVAL( J ) < 0 ) &
-         BADMM = .TRUE.
-      NMAX = MAX( NMAX, NVAL( J ) )
-      IF( NVAL( J ) < 0 ) &
-         BADNN = .TRUE.
-      MNMAX = MAX( MNMAX, MIN( MVAL( J ), NVAL( J ) ) )
       MINWRK = MAX( MINWRK, 3*( MVAL( J )+NVAL( J ) ), &
                MVAL( J )*( MVAL( J )+MAX( MVAL( J ), NVAL( J ), &
                NRHS )+1 )+NVAL( J )*MIN( NVAL( J ), MVAL( J ) ) )
@@ -561,8 +554,7 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 170
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 170
 !
          IOLDSD(1:4) = ISEED(1:4)
 !

@@ -198,8 +198,7 @@
 !     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = 0.0E+0
-   RESULT( 2 ) = 0.0E+0
+   RESULT( 1:2 ) = 0.0E+0
    IF( N <= 0 ) RETURN
 !
    SAFMIN = SLAMCH( 'Safe minimum' )

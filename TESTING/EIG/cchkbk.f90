@@ -84,9 +84,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEBAK
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
-!     ..
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..

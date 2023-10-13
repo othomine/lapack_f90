@@ -89,8 +89,6 @@
       INTEGER  ICAMAX
       EXTERNAL LSAME
       LOGICAL  LSAME
-
-      INTRINSIC ABS, INT, MIN, MAX, SIGN
 !............................................................
 
 

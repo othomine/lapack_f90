@@ -452,21 +452,14 @@
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40          CONTINUE
-            ANORM = 1.0E+0
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*ANINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*N*ULPINV
-            GO TO 70
-!
-70          CONTINUE
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0E+0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*ANINV
+             CASE (3)
+              ANORM = RTUNFL*N*ULPINV
+            END SELECT
 !
             CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
             IINFO = 0
@@ -621,8 +614,7 @@
 !
 !              Do tests 3 and 4
 !
-            CALL CHBT21( 'Lower', N, K, 1, A, LDA, SD, SE, U, LDU, &
-                         WORK, RWORK, RESULT( 3 ) )
+            CALL CHBT21( 'Lower', N, K, 1, A, LDA, SD, SE, U, LDU, WORK, RWORK, RESULT( 3 ) )
 !
 !              End of Loop -- Check for RESULT(j) > THRESH
 !

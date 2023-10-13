@@ -81,9 +81,8 @@
 !     ..
 !     .. Executable Statements ..
 !
-   IF( IOUNIT <= 0 ) &
-      RETURN
-   C2 = PATH( 1: 3 )
+   IF( IOUNIT <= 0 ) RETURN
+   C2 = PATH(1:3)
 !
 !     First line describing matrices in this path
 !

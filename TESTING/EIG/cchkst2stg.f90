@@ -582,7 +582,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       0.0E+0, 1.0E+0       Real 0 and 1.
+!>       ZERO, ONE       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -680,9 +680,6 @@
                       CLASET, CLATMR, CLATMS, CPTEQR, CSTEDC, CSTEMR, &
                       CSTEIN, CSTEQR, CSTT21, CSTT22, CUNGTR, &
                       CUPGTR, CHETRD_2STAGE, SLASET
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, CONJG, INT, LOG, MAX, MIN, SQRT
 !     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 8, 8, 8, 9, 9, 9, 9, 9, 10 /
@@ -802,21 +799,14 @@
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40       CONTINUE
-         ANORM = 1.0E+0
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0E+0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*ANINV
+             CASE (3)
+              ANORM = RTUNFL*N*ULPINV
+            END SELECT
 !
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
@@ -1042,17 +1032,10 @@
 !           D1 computed using the standard 1-stage reduction as reference
 !
          NTEST = 4
-         TEMP1 = 0.0E+0
-         TEMP2 = 0.0E+0
-         TEMP3 = 0.0E+0
-         TEMP4 = 0.0E+0
-!
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-            TEMP3 = MAX( TEMP3, ABS( D1( J ) ), ABS( D3( J ) ) )
-            TEMP4 = MAX( TEMP4, ABS( D1( J )-D3( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D2(1:N))))
+         TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
+         TEMP3 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+         TEMP4 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
 !
          RESULT( 3 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
          RESULT( 4 ) = TEMP4 / MAX( UNFL, ULP*MAX( TEMP3, TEMP4 ) )
@@ -1064,8 +1047,8 @@
             DO JR = 1, JC
                I = I + 1
                AP( I ) = A( JR, JC )
-               ENDDO
             ENDDO
+         ENDDO
 !
 !           Call CHPTRD and CUPGTR to compute S and U from AP
 !
@@ -1114,8 +1097,8 @@
             DO JR = JC, N
                I = I + 1
                AP( I ) = A( JR, JC )
-               ENDDO
             ENDDO
+         ENDDO
 !
 !           Call CHPTRD and CUPGTR to compute S and U from AP
 !
@@ -1227,17 +1210,11 @@
 !
 !           Do Tests 11 and 12
 !
-         TEMP1 = 0.0E+0
-         TEMP2 = 0.0E+0
-         TEMP3 = 0.0E+0
-         TEMP4 = 0.0E+0
 !
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-            TEMP3 = MAX( TEMP3, ABS( D1( J ) ), ABS( D3( J ) ) )
-            TEMP4 = MAX( TEMP4, ABS( D1( J )-D3( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D2(1:N))))
+         TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
+         TEMP3 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+         TEMP4 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
 !
          RESULT( 11 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
          RESULT( 12 ) = TEMP4 / MAX( UNFL, ULP*MAX( TEMP3, TEMP4 ) )
@@ -1250,10 +1227,9 @@
 !
          DO J = 0, LOG2UI
             CALL SSTECH( N, SD, SE, D1, TEMP1, RWORK, IINFO )
-            IF( IINFO == 0 ) &
-               GO TO 170
+            IF( IINFO == 0 ) GO TO 170
             TEMP1 = TEMP1*2.0E+0
-            ENDDO
+         ENDDO
 !
   170       CONTINUE
          RESULT( 13 ) = TEMP1
@@ -1266,16 +1242,13 @@
 !              Compute D4 and Z4
 !
             CALL SCOPY( N, SD, 1, D4, 1 )
-            IF( N > 0 ) &
-               CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+            IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
             CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDU )
 !
             NTEST = 14
-            CALL CPTEQR( 'V', N, D4, RWORK, Z, LDU, RWORK( N+1 ), &
-                         IINFO )
+            CALL CPTEQR( 'V', N, D4, RWORK, Z, LDU, RWORK( N+1 ), IINFO )
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 )'CPTEQR(V)', IINFO, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUNIT, FMT = 9999 )'CPTEQR(V)', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
                   RETURN
@@ -1287,14 +1260,12 @@
 !
 !              Do Tests 14 and 15
 !
-            CALL CSTT21( N, 0, SD, SE, D4, DUMMA, Z, LDU, WORK, &
-                         RWORK, RESULT( 14 ) )
+            CALL CSTT21( N, 0, SD, SE, D4, DUMMA, Z, LDU, WORK, RWORK, RESULT( 14 ) )
 !
 !              Compute D5
 !
             CALL SCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+            IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
 !
             NTEST = 16
             CALL CPTEQR( 'N', N, D5, RWORK, Z, LDU, RWORK( N+1 ), &
@@ -1313,19 +1284,12 @@
 !
 !              Do Test 16
 !
-            TEMP1 = 0.0E+0
-            TEMP2 = 0.0E+0
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D4( J ) ), ABS( D5( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D4( J )-D5( J ) ) )
-               ENDDO
+            TEMP1 = MAX(MAXVAL(ABS(D4(1:N))), MAXVAL(ABS(D5(1:N))))
+            TEMP2 = MAXVAL(ABS(D4(1:N)-D5(1:N)))
 !
-            RESULT( 16 ) = TEMP2 / MAX( UNFL, &
-                           100.0E+0*ULP*MAX( TEMP1, TEMP2 ) )
+            RESULT( 16 ) = TEMP2 / MAX( UNFL, 100.0E+0*ULP*MAX( TEMP1, TEMP2 ) )
          ELSE
-            RESULT( 14 ) = 0.0E+0
-            RESULT( 15 ) = 0.0E+0
-            RESULT( 16 ) = 0.0E+0
+            RESULT( 14:16 ) = 0.0E+0
          END IF
 !
 !           Call SSTEBZ with different options and do tests 17-18.
@@ -1362,9 +1326,8 @@
 !
             TEMP1 = 0.0E+0
             DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / &
-                       ( ABSTOL+ABS( D4( J ) ) ) )
-               ENDDO
+               TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / ( ABSTOL+ABS( D4( J ) ) ) )
+            ENDDO
 !
             RESULT( 17 ) = TEMP1 / TEMP2
          ELSE
@@ -1392,12 +1355,8 @@
 !
 !           Do test 18
 !
-         TEMP1 = 0.0E+0
-         TEMP2 = 0.0E+0
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D3( J ) ), ABS( WA1( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D3( J )-WA1( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D3(1:N))), MAXVAL(ABS(WA1(1:N))))
+         TEMP2 = MAXVAL(ABS(D3(1:N)-WA1(1:N)))
 !
          RESULT( 18 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -1566,8 +1525,7 @@
 !           Compute D1 and Z
 !
          CALL SCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
-            CALL SCOPY( N-1, SE, 1, RWORK( INDE ), 1 )
+         IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK( INDE ), 1 )
          CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDU )
 !
          NTEST = 24
@@ -1616,13 +1574,8 @@
 !
 !           Do Test 26
 !
-         TEMP1 = 0.0E+0
-         TEMP2 = 0.0E+0
-!
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D2(1:N))))
+         TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
 !
          RESULT( 26 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -1668,7 +1621,7 @@
                DO J = 1, N
                   TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / &
                           ( ABSTOL+ABS( D4( J ) ) ) )
-                  ENDDO
+               ENDDO
 !
                RESULT( 27 ) = TEMP1 / TEMP2
 !
@@ -1716,8 +1669,7 @@
                   RESULT( 28 ) = 0.0E+0
                END IF
             ELSE
-               RESULT( 27 ) = 0.0E+0
-               RESULT( 28 ) = 0.0E+0
+               RESULT( 27:28 ) = 0.0E+0
             END IF
 !
 !           Call CSTEMR(V,I) to compute D1 and Z, do tests.
@@ -1725,8 +1677,7 @@
 !           Compute D1 and Z
 !
             CALL SCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+            IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
             CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDU )
 !
             IF( CRANGE ) THEN
@@ -1761,8 +1712,7 @@
 !           Compute D2
 !
                CALL SCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
-                  CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+               IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
 !
                NTEST = 31
                CALL CSTEMR( 'N', 'I', N, D5, RWORK, VL, VU, IL, IU, &
@@ -1783,17 +1733,10 @@
 !
 !           Do Test 31
 !
-               TEMP1 = 0.0E+0
-               TEMP2 = 0.0E+0
+               TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))), MAXVAL(ABS(D2(1:IU-IL+1))))
+               TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
-               DO J = 1, IU - IL + 1
-                  TEMP1 = MAX( TEMP1, ABS( D1( J ) ), &
-                          ABS( D2( J ) ) )
-                  TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-                  ENDDO
-!
-               RESULT( 31 ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+               RESULT( 31 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
 !           Call CSTEMR(V,V) to compute D1 and Z, do tests.
 !
@@ -1809,19 +1752,15 @@
                IF( N > 0 ) THEN
                   IF( IL /= 1 ) THEN
                      VL = D2( IL ) - MAX( 0.5E+0* &
-                          ( D2( IL )-D2( IL-1 ) ), ULP*ANORM, &
-                          2.0E+0*RTUNFL )
+                          ( D2( IL )-D2( IL-1 ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                   ELSE
-                     VL = D2( 1 ) - MAX( 0.5E+0*( D2( N )-D2( 1 ) ), &
-                          ULP*ANORM, 2.0E+0*RTUNFL )
+                     VL = D2( 1 ) - MAX( 0.5E+0*( D2( N )-D2( 1 ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                   END IF
                   IF( IU /= N ) THEN
                      VU = D2( IU ) + MAX( 0.5E+0* &
-                          ( D2( IU+1 )-D2( IU ) ), ULP*ANORM, &
-                          2.0E+0*RTUNFL )
+                          ( D2( IU+1 )-D2( IU ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                   ELSE
-                     VU = D2( N ) + MAX( 0.5E+0*( D2( N )-D2( 1 ) ), &
-                          ULP*ANORM, 2.0E+0*RTUNFL )
+                     VU = D2( N ) + MAX( 0.5E+0*( D2( N )-D2( 1 ) ), ULP*ANORM, 2.0E+0*RTUNFL )
                   END IF
                ELSE
                   VL = 0.0E+0
@@ -1854,8 +1793,7 @@
 !           Compute D2
 !
                CALL SCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
-                  CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+               IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
 !
                NTEST = 34
                CALL CSTEMR( 'N', 'V', N, D5, RWORK, VL, VU, IL, IU, &
@@ -1876,24 +1814,13 @@
 !
 !           Do Test 34
 !
-               TEMP1 = 0.0E+0
-               TEMP2 = 0.0E+0
-!
-               DO J = 1, IU - IL + 1
-                  TEMP1 = MAX( TEMP1, ABS( D1( J ) ), &
-                          ABS( D2( J ) ) )
-                  TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-                  ENDDO
+               TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))), MAXVAL(ABS(D2(1:IU-IL+1))))
+               TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
                RESULT( 34 ) = TEMP2 / MAX( UNFL, &
                               ULP*MAX( TEMP1, TEMP2 ) )
             ELSE
-               RESULT( 29 ) = 0.0E+0
-               RESULT( 30 ) = 0.0E+0
-               RESULT( 31 ) = 0.0E+0
-               RESULT( 32 ) = 0.0E+0
-               RESULT( 33 ) = 0.0E+0
-               RESULT( 34 ) = 0.0E+0
+               RESULT(29:34) = 0.0E+0
             END IF
 !
 !           Call CSTEMR(V,A) to compute D1 and Z, do tests.
@@ -1901,8 +1828,7 @@
 !           Compute D1 and Z
 !
             CALL SCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+            IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
 !
             NTEST = 35
 !
@@ -1932,8 +1858,7 @@
 !           Compute D2
 !
             CALL SCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+            IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
 !
             NTEST = 37
             CALL CSTEMR( 'N', 'A', N, D5, RWORK, VL, VU, IL, IU, &
@@ -1954,16 +1879,11 @@
 !
 !           Do Test 37
 !
-            TEMP1 = 0.0E+0
-            TEMP2 = 0.0E+0
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D2(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
 !
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-               ENDDO
 !
-            RESULT( 37 ) = TEMP2 / MAX( UNFL, &
-                           ULP*MAX( TEMP1, TEMP2 ) )
+            RESULT( 37 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
          END IF
   270       CONTINUE
   280       CONTINUE
@@ -2050,4 +1970,3 @@
 !     End of CCHKST2STG
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

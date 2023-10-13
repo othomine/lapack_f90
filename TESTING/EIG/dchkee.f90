@@ -1116,9 +1116,6 @@
                       DDRGES3, DDRGEV3, &
                       DCHKST2STG, DDRVST2STG, DCHKSB2STG, DDRVSG2STG
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN, MIN
-!     ..
 !     .. Scalars in Common ..
    LOGICAL            LERR, OK
    CHARACTER*32       SRNAMT
@@ -1164,7 +1161,7 @@
 !
 !     Return to here to read multiple sets of data
 !
-10 CONTINUE
+   DO
 !
 !     Read the first line and set the 3-character test path
 !
@@ -1197,9 +1194,8 @@
 !
 !     Report values of parameters.
 !
-   IF( PATH == '   ' ) THEN
-      GO TO 10
-   ELSE IF( NEP ) THEN
+   IF( PATH == '   ' ) CYCLE
+   IF( NEP ) THEN
       WRITE( NOUT, FMT = 9987 )
    ELSE IF( SEP ) THEN
       WRITE( NOUT, FMT = 9986 )
@@ -1248,7 +1244,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKBL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( DBK ) THEN
 !
 !        DGEBAK:  Back transformation
@@ -1260,7 +1256,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKBK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( DGL ) THEN
 !
 !        DGGBAL:  Balancing
@@ -1272,7 +1268,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKGL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( DGK ) THEN
 !
 !        DGGBAK:  Back transformation
@@ -1284,7 +1280,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKGK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( LSAMEN( 3, PATH, 'DEC' ) ) THEN
 !
 !        DEC:  Eigencondition estimation
@@ -1304,10 +1300,10 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKEC : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE
       WRITE( NOUT, FMT = 9992 )PATH
-      GO TO 10
+      CYCLE
    END IF
    CALL ILAVER( VERS_MAJOR, VERS_MINOR, VERS_PATCH )
    WRITE( NOUT, FMT = 9972 ) VERS_MAJOR, VERS_MINOR, VERS_PATCH
@@ -1378,9 +1374,7 @@
          END IF
       ENDDO
    ELSE
-      DO I = 1, NN
-         NVAL( I ) = MVAL( I )
-      ENDDO
+      NVAL(1:NN) = MVAL(1:NN)
    END IF
    IF( .NOT.( DGX .OR. DXV ) ) THEN
       WRITE( NOUT, FMT = 9983 )'N:    ', ( NVAL( I ), I = 1, NN )
@@ -1518,8 +1512,7 @@
                FATAL = .TRUE.
             END IF
          ENDDO
-         WRITE( NOUT, FMT = 9983 )'NB:   ', &
-            ( NBVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NB:   ', NBVAL(1:NPARMS)
       END IF
 !
 !        Read the values of NBMIN
@@ -1535,12 +1528,9 @@
                FATAL = .TRUE.
             END IF
          ENDDO
-         WRITE( NOUT, FMT = 9983 )'NBMIN:', &
-            ( NBMIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NBMIN:', ( NBMIN( I ), I = 1, NPARMS )
       ELSE
-         DO I = 1, NPARMS
-            NBMIN( I ) = 1
-         ENDDO
+         NBMIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values of NX
@@ -1556,12 +1546,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NX:   ', &
-            ( NXVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NX:   ', NXVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NXVAL( I ) = 1
-            ENDDO
+         NXVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values of NSHIFT (if DGG) or NRHS (if SVD
@@ -1578,12 +1565,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NS:   ', &
-            ( NSVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NS:   ', NSVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NSVAL( I ) = 1
-            ENDDO
+         NSVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for MAXB.
@@ -1602,9 +1586,7 @@
          WRITE( NOUT, FMT = 9983 )'MAXB: ', &
             ( MXBVAL( I ), I = 1, NPARMS )
       ELSE
-         DO I = 1, NPARMS
-            MXBVAL( I ) = 1
-            ENDDO
+         MXBVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INMIN.
@@ -1617,12 +1599,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INMIN: ', &
-            ( INMIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INMIN: ', INMIN(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INMIN( I ) = 1
-            ENDDO
+         INMIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INWIN.
@@ -1635,12 +1614,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INWIN: ', &
-            ( INWIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INWIN: ', INWIN(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INWIN( I ) = 1
-            ENDDO
+         INWIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INIBL.
@@ -1653,12 +1629,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INIBL: ', &
-            ( INIBL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INIBL: ', INIBL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INIBL( I ) = 1
-            ENDDO
+         INIBL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for ISHFTS.
@@ -1671,12 +1644,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', &
-            ( ISHFTS( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', ( ISHFTS( I ), I = 1, NPARMS )
       ELSE
-         DO I = 1, NPARMS
-            ISHFTS( I ) = 1
-            ENDDO
+         ISHFTS(1:NPARMS) = 1
       END IF
 !
 !        Read the values for IACC22.
@@ -1689,12 +1659,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'IACC22: ', &
-            ( IACC22( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'IACC22: ', IACC22(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            IACC22( I ) = 1
-            ENDDO
+         IACC22(1:NPARMS) = 1
       END IF
 !
 !        Read the values for NBCOL.
@@ -1711,7 +1678,7 @@
             END IF
             ENDDO
          WRITE( NOUT, FMT = 9983 )'NBCOL:', &
-            ( NBCOL( I ), I = 1, NPARMS )
+            ( NBCOL(1:NPARMS), I = 1, NPARMS )
       ELSE
          DO I = 1, NPARMS
             NBCOL( I ) = 1
@@ -1754,12 +1721,9 @@
 !
 !     If NEWSD = 2, read another line with 4 integers for the seed.
 !
-   IF( NEWSD == 2 ) &
-      READ( NIN, FMT = * )( IOLDSD( I ), I = 1, 4 )
+   IF( NEWSD == 2 ) READ( NIN, FMT = * )( IOLDSD( I ), I = 1, 4 )
 !
-   DO I = 1, 4
-      ISEED( I ) = IOLDSD( I )
-      ENDDO
+   ISEED(1:4) = IOLDSD(1:4)
 !
    IF( FATAL ) THEN
       WRITE( NOUT, FMT = 9999 )
@@ -1826,18 +1790,14 @@
       END IF
 !
    ELSE
-      IF( DXV ) &
-         C3 = 'DXV'
-      IF( DGX ) &
-         C3 = 'DGX'
+      IF( DXV ) C3 = 'DXV'
+      IF( DGX ) C3 = 'DGX'
    END IF
 !
 !     Reset the random number seed.
 !
    IF( NEWSD == 0 ) THEN
-      DO K = 1, 4
-         ISEED( K ) = IOLDSD( K )
-         ENDDO
+      ISEED(1:4) = IOLDSD(1:4)
    END IF
 !
    IF( LSAMEN( 3, C3, 'DHS' ) .OR. LSAMEN( 3, C3, 'NEP' ) ) THEN
@@ -1875,11 +1835,7 @@
          CALL XLAENV(15, ISHFTS( I ) )
          CALL XLAENV(16, IACC22( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9961 )C3, NBVAL( I ), NBMIN( I ), &
             NXVAL( I ), MAX( 11, INMIN(I)), &
             INWIN( I ), INIBL( I ), ISHFTS( I ), IACC22( I )
@@ -1897,8 +1853,7 @@
          write(10,'(A,F16.10,A)') 'Total time : DCHKHS : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DCHKHS', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKHS', INFO
          ENDDO
 !
    ELSE IF( LSAMEN( 3, C3, 'DST' ) .OR. LSAMEN( 3, C3, 'SEP' ) &
@@ -1933,13 +1888,8 @@
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I )
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
             IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -1970,8 +1920,7 @@
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
             ENDIF
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'DCHKST', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKST', INFO
          END IF
          IF( TSTDRV ) THEN
             IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
@@ -2001,8 +1950,7 @@
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
             ENDIF
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'DDRVST', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRVST', INFO
          END IF
          ENDDO
 !
@@ -2025,13 +1973,8 @@
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I )
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
 !               CALL DDRVSG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 !     $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
@@ -2050,8 +1993,7 @@
             write(10,'(A,F16.10,A)') 'Total time : DDRVSG2STG : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'DDRVSG', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRVSG', INFO
          END IF
          ENDDO
 !
@@ -2074,23 +2016,16 @@
 !
 !        Test the error exits
 !
-      IF( TSTERR .AND. TSTCHK ) &
-         CALL DERRBD( 'DBD', NOUT )
-      IF( TSTERR .AND. TSTDRV ) &
-         CALL DERRED( 'DBD', NOUT )
+      IF( TSTERR .AND. TSTCHK ) CALL DERRBD( 'DBD', NOUT )
+      IF( TSTERR .AND. TSTDRV ) CALL DERRED( 'DBD', NOUT )
 !
       DO I = 1, NPARMS
          NRHS = NSVAL( I )
          CALL XLAENV( 1, NBVAL( I ) )
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I ), NRHS
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I ), NRHS
          IF( TSTCHK ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL DCHKBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, NRHS, ISEED, &
@@ -2104,8 +2039,7 @@
             write(10,'(A,F16.10,A)') 'Total time : DCHKBD : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'DCHKBD', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKBD', INFO
          END IF
          IF( TSTDRV ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -2134,8 +2068,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRED( C3, NOUT )
+         IF( TSTERR ) CALL DERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRVEV( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2148,11 +2081,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRVEV : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DGEEV', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DGEEV', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DES' ) ) THEN
 !
@@ -2166,8 +2098,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRED( C3, NOUT )
+         IF( TSTERR ) CALL DERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRVES( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2180,11 +2111,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRVES : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DGEES', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DGEES', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DVX' ) ) THEN
 !
@@ -2198,8 +2128,7 @@
       IF( NTYPES < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRED( C3, NOUT )
+         IF( TSTERR ) CALL DERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRVVX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN, &
@@ -2214,11 +2143,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRVVX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DGEEVX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DGEEVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DSX' ) ) THEN
 !
@@ -2232,8 +2160,7 @@
       IF( NTYPES < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRED( C3, NOUT )
+         IF( TSTERR ) CALL DERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRVSX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN, &
@@ -2247,11 +2174,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRVSX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DGEESX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DGEESX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DGG' ) ) THEN
 !
@@ -2270,8 +2196,7 @@
       NTYPES = MIN( MAXTYP, NTYPES )
       CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
       CALL XLAENV(1,1)
-      IF( TSTCHK .AND. TSTERR ) &
-         CALL DERRGG( C3, NOUT )
+      IF( TSTCHK .AND. TSTERR ) CALL DERRGG( C3, NOUT )
       DO I = 1, NPARMS
          CALL XLAENV( 1, NBVAL( I ) )
          CALL XLAENV( 2, NBMIN( I ) )
@@ -2280,11 +2205,7 @@
          CALL XLAENV( 16, IACC22( I ) )
          CALL XLAENV( 5, NBCOL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9996 )C3, NBVAL( I ), NBMIN( I ), &
             NSVAL( I ), MXBVAL( I ), IACC22( I ), NBCOL( I )
          TSTDIF = .FALSE.
@@ -2305,8 +2226,7 @@
             write(10,'(A,F16.10,A)') 'Total time : DCHKGG : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'DCHKGG', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKGG', INFO
          END IF
          ENDDO
 !
@@ -2322,8 +2242,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRGG( C3, NOUT )
+         IF( TSTERR ) CALL DERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRGES( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2336,8 +2255,7 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRGES : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-             WRITE( NOUT, FMT = 9980 )'DDRGES', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGES', INFO
 !
 !     Blocked version
 !
@@ -2353,11 +2271,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRGES3 : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-             WRITE( NOUT, FMT = 9980 )'DDRGES3', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGES3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( DGX ) THEN
 !
@@ -2371,8 +2288,7 @@
       IF( NN < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRGG( C3, NOUT )
+         IF( TSTERR ) CALL DERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          CALL XLAENV( 5, 2 )
          call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -2386,11 +2302,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRGSX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DDRGSX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGSX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DGV' ) ) THEN
 !
@@ -2404,8 +2319,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRGG( C3, NOUT )
+         IF( TSTERR ) CALL DERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRGEV( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2419,8 +2333,7 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRGEV : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DDRGEV', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGEV', INFO
 !
 !     Blocked version
 !
@@ -2436,11 +2349,10 @@
          write(10,'(A,F16.10,A)') 'Total time : DDRGEV3 : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DDRGEV3', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGEV3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( DXV ) THEN
 !
@@ -2454,8 +2366,7 @@
       IF( NN < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL DERRGG( C3, NOUT )
+         IF( TSTERR ) CALL DERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DDRGVX( NN, THRESH, NIN, NOUT, A( 1, 1 ), NMAX, &
@@ -2471,11 +2382,10 @@
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
 !
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DDRGVX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DDRGVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( LSAMEN( 3, C3, 'DSB' ) ) THEN
 !
@@ -2486,8 +2396,7 @@
       MAXTYP = 15
       NTYPES = MIN( MAXTYP, NTYPES )
       CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
-      IF( TSTERR ) &
-         CALL DERRST( 'DSB', NOUT )
+      IF( TSTERR ) CALL DERRST( 'DSB', NOUT )
 !         CALL DCHKSB( NN, NVAL, NK, KVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 !     $                NOUT, A( 1, 1 ), NMAX, D( 1, 1 ), D( 1, 2 ),
 !     $                A( 1, 2 ), NMAX, WORK, LWORK, RESULT, INFO )
@@ -2501,8 +2410,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCHKSB2STG : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCHKSB', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKSB', INFO
 !
    ELSE IF( LSAMEN( 3, C3, 'DBB' ) ) THEN
 !
@@ -2516,11 +2424,7 @@
       DO I = 1, NPARMS
          NRHS = NSVAL( I )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9966 )C3, NRHS
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL DCHKBB( NN, MVAL, NVAL, NK, KVAL, MAXTYP, DOTYPE, NRHS, &
@@ -2533,8 +2437,7 @@
          write(10,'(A,F16.10,A)') 'Total time : DCHKBB : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'DCHKBB', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCHKBB', INFO
          ENDDO
 !
    ELSE IF( LSAMEN( 3, C3, 'GLM' ) ) THEN
@@ -2544,8 +2447,7 @@
 !        -----------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL DERRGG( 'GLM', NOUT )
+      IF( TSTERR ) CALL DERRGG( 'GLM', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL DCKGLM( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X, &
@@ -2555,8 +2457,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCKGLM : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCKGLM', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKGLM', INFO
 !
    ELSE IF( LSAMEN( 3, C3, 'GQR' ) ) THEN
 !
@@ -2565,8 +2466,7 @@
 !        ------------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL DERRGG( 'GQR', NOUT )
+      IF( TSTERR ) CALL DERRGG( 'GQR', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL DCKGQR( NN, MVAL, NN, PVAL, NN, NVAL, NTYPES, ISEED, &
                    THRESH, NMAX, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), &
@@ -2578,8 +2478,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCKGQR : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCKGQR', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKGQR', INFO
 !
    ELSE IF( LSAMEN( 3, C3, 'GSV' ) ) THEN
 !
@@ -2588,8 +2487,7 @@
 !        ----------------------------------------------
 !
       CALL XLAENV(1,1)
-      IF( TSTERR ) &
-         CALL DERRGG( 'GSV', NOUT )
+      IF( TSTERR ) CALL DERRGG( 'GSV', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL DCKGSV( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), &
@@ -2601,8 +2499,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCKGSV : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCKGSV', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKGSV', INFO
 !
    ELSE IF( LSAMEN( 3, C3, 'CSD' ) ) THEN
 !
@@ -2611,8 +2508,7 @@
 !        ----------------------------------------------
 !
       CALL XLAENV(1,1)
-      IF( TSTERR ) &
-         CALL DERRGG( 'CSD', NOUT )
+      IF( TSTERR ) CALL DERRGG( 'CSD', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL DCKCSD( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), &
@@ -2623,8 +2519,7 @@
       write(10,'(A,F16.10,A)') 'Total time : DCKCSD : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCKCSD', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKCSD', INFO
 !
    ELSE IF( LSAMEN( 3, C3, 'LSE' ) ) THEN
 !
@@ -2633,8 +2528,7 @@
 !        --------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL DERRGG( 'LSE', NOUT )
+      IF( TSTERR ) CALL DERRGG( 'LSE', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL DCKLSE( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X, &
@@ -2644,16 +2538,15 @@
       write(10,'(A,F16.10,A)') 'Total time : DCKLSE : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'DCKLSE', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKLSE', INFO
 !
    ELSE
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = 9992 )C3
    END IF
-   IF( .NOT.( DGX .OR. DXV ) ) &
-      GO TO 190
+   ENDDO
+   IF( .NOT.( DGX .OR. DXV ) ) GO TO 190
   380 CONTINUE
    WRITE( NOUT, FMT = 9994 )
    call system_clock(count_rate=nb_periods_sec,count=S2T)

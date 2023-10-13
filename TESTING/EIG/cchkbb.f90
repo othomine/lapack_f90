@@ -404,9 +404,6 @@
    EXTERNAL           CBDT01, CBDT02, CGBBRD, CLACPY, CLASET, CLATMR, &
                       CLATMS, CUNT01, SLAHD2, SLASUM, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*6, 3*9 /
    DATA               KMAGN / 2*1, 3*1, 2, 3, 3*1, 2, 3, 1, 2, 3 /
@@ -422,16 +419,12 @@
 !
 !     Important constants
 !
-   BADMM = .FALSE.
-   BADNN = .FALSE.
-   MMAX = 1
-   NMAX = 1
+   BADMM = ANY(MVAL(1:NSIZES) < 0)
+   BADNN = ANY(NVAL(1:NSIZES) < 0)
+   MMAX = MAX(1, MAXVAL(MVAL(1:NSIZES)))
+   NMAX = MAX(1, MAXVAL(NVAL(1:NSIZES)))
    MNMAX = 1
    DO J = 1, NSIZES
-      MMAX = MAX( MMAX, MVAL( J ) )
-      IF( MVAL( J ) < 0 ) BADMM = .TRUE.
-      NMAX = MAX( NMAX, NVAL( J ) )
-      IF( NVAL( J ) < 0 ) BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MVAL( J ), NVAL( J ) ) )
    ENDDO
 !
@@ -475,8 +468,7 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !

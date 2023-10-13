@@ -492,21 +492,14 @@
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40          CONTINUE
-            ANORM = 1.0E+0
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*ANINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*N*ULPINV
-            GO TO 70
-!
-70          CONTINUE
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0E+0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*ANINV
+             CASE (3)
+              ANORM = RTUNFL*N*ULPINV
+            END SELECT
 !
             CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
             IINFO = 0
@@ -534,16 +527,14 @@
 !                 Diagonal Matrix, [Eigen]values Specified
 !
                CALL CLATMS( N, N, 'S', ISEED, 'H', RWORK, IMODE, &
-                            COND, ANORM, 0, 0, 'Q', A( K+1, 1 ), LDA, &
-                            WORK, IINFO )
+                            COND, ANORM, 0, 0, 'Q', A( K+1, 1 ), LDA, WORK, IINFO )
 !
             ELSE IF( ITYPE == 5 ) THEN
 !
 !                 Hermitian, eigenvalues specified
 !
                CALL CLATMS( N, N, 'S', ISEED, 'H', RWORK, IMODE, &
-                            COND, ANORM, K, K, 'Q', A, LDA, WORK, &
-                            IINFO )
+                            COND, ANORM, K, K, 'Q', A, LDA, WORK, IINFO )
 !
             ELSE IF( ITYPE == 7 ) THEN
 !
@@ -747,8 +738,7 @@
 !
             CALL CSTEQR( 'N', N, D3, RWORK, WORK, LDU, RWORK( N+1 ), IINFO )
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 )'CSTEQR(N)', IINFO, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUNIT, FMT = 9999 )'CSTEQR(N)', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
                   RETURN

@@ -145,9 +145,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible

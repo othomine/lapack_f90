@@ -98,34 +98,27 @@
 !     ..
 !     .. Executable Statements ..
 !
-   LMAX( 1 ) = 0
-   LMAX( 2 ) = 0
-   LMAX( 3 ) = 0
-   LMAX( 4 ) = 0
+   LMAX(1:4) = 0
    NINFO = 0
    KNT = 0
    RMAX = 0.0E+0
 !
    EPS = SLAMCH( 'Precision' )
 !
-10 CONTINUE
+   DO
    READ( NIN, FMT = * )N, M
    IF( N == 0 ) GO TO 100
-!
    DO I = 1, N
-      READ( NIN, FMT = * )( A( I, J ), J = 1, N )
+      READ( NIN, FMT = * ) A(I,1:N)
    ENDDO
-!
    DO I = 1, N
-      READ( NIN, FMT = * )( B( I, J ), J = 1, N )
+      READ( NIN, FMT = * ) B(I,1:N)
    ENDDO
-!
    DO I = 1, N
-      READ( NIN, FMT = * )( VL( I, J ), J = 1, M )
+     READ( NIN, FMT = * ) VL( I,1:M)
    ENDDO
-!
    DO I = 1, N
-      READ( NIN, FMT = * )( VR( I, J ), J = 1, M )
+     READ( NIN, FMT = * ) VR( I,1:M)
    ENDDO
 !
    KNT = KNT + 1
@@ -211,7 +204,7 @@
       RMAX = VMAX
    END IF
 !
-   GO TO 10
+   ENDDO
 !
   100 CONTINUE
 !

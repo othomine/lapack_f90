@@ -162,16 +162,12 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
    RESID = 0.0E+0
-   IF( N <= 0 ) &
-      RETURN
+   IF( N <= 0 ) RETURN
 !
 !     Compute B - U * S * V' one column at a time.
 !

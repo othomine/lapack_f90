@@ -90,9 +90,6 @@
    REAL STEMP
    INTEGER I,NINCX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS,AIMAG,REAL
-!     ..
    SCASUM = 0.0e0
    IF (N <= 0 .OR. INCX <= 0) RETURN
    IF (INCX == 1) THEN

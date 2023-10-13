@@ -1102,9 +1102,8 @@
    REAL, DIMENSION(:,:), ALLOCATABLE :: A, B, C
 !     ..
 !     .. External Functions ..
-   LOGICAL            LSAMEN
    REAL               SECOND, SLAMCH
-   EXTERNAL           LSAMEN, SECOND, SLAMCH
+   EXTERNAL           SECOND, SLAMCH
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           ALAREQ, SCHKBB, SCHKBD, SCHKBK, SCHKBL, SCHKEC, &
@@ -1115,9 +1114,6 @@
                       SERRED, SERRGG, SERRHS, SERRST, ILAVER, XLAENV, &
                       SDRGES3, SDRGEV3, &
                       SCHKST2STG, SDRVST2STG, SCHKSB2STG, SDRVSG2STG
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN, MIN
 !     ..
 !     .. Scalars in Common ..
    LOGICAL            LERR, OK
@@ -1169,32 +1165,31 @@
 !     Read the first line and set the 3-character test path
 !
    READ( NIN, FMT = '(A80)', END = 380 )LINE
-   PATH = LINE( 1: 3 )
-   NEP = LSAMEN( 3, PATH, 'NEP' ) .OR. LSAMEN( 3, PATH, 'SHS' )
-   SEP = LSAMEN( 3, PATH, 'SEP' ) .OR. LSAMEN( 3, PATH, 'SST' ) .OR. &
-         LSAMEN( 3, PATH, 'SSG' ) .OR. LSAMEN( 3, PATH, 'SE2' )
-   SVD = LSAMEN( 3, PATH, 'SVD' ) .OR. LSAMEN( 3, PATH, 'DBD' )
-   SVD = LSAMEN( 3, PATH, 'SVD' ) .OR. LSAMEN( 3, PATH, 'SBD' )
-   SEV = LSAMEN( 3, PATH, 'SEV' )
-   SES = LSAMEN( 3, PATH, 'SES' )
-   SVX = LSAMEN( 3, PATH, 'SVX' )
-   SSX = LSAMEN( 3, PATH, 'SSX' )
-   SGG = LSAMEN( 3, PATH, 'SGG' )
-   SGS = LSAMEN( 3, PATH, 'SGS' )
-   SGX = LSAMEN( 3, PATH, 'SGX' )
-   SGV = LSAMEN( 3, PATH, 'SGV' )
-   SXV = LSAMEN( 3, PATH, 'SXV' )
-   SSB = LSAMEN( 3, PATH, 'SSB' )
-   SBB = LSAMEN( 3, PATH, 'SBB' )
-   GLM = LSAMEN( 3, PATH, 'GLM' )
-   GQR = LSAMEN( 3, PATH, 'GQR' ) .OR. LSAMEN( 3, PATH, 'GRQ' )
-   GSV = LSAMEN( 3, PATH, 'GSV' )
-   CSD = LSAMEN( 3, PATH, 'CSD' )
-   LSE = LSAMEN( 3, PATH, 'LSE' )
-   SBL = LSAMEN( 3, PATH, 'SBL' )
-   SBK = LSAMEN( 3, PATH, 'SBK' )
-   SGL = LSAMEN( 3, PATH, 'SGL' )
-   SGK = LSAMEN( 3, PATH, 'SGK' )
+   PATH = LINE(1: 3)
+   NEP = PATH == 'NEP' .OR. PATH == 'SHS'
+   SEP = PATH == 'SEP' .OR. PATH == 'SST' .OR. &
+         PATH == 'SSG' .OR. PATH == 'SE2'
+   SVD = PATH == 'SVD' .OR. PATH == 'SBD'
+   SEV = PATH == 'SEV'
+   SES = PATH == 'SES'
+   SVX = PATH == 'SVX'
+   SSX = PATH == 'SSX'
+   SGG = PATH == 'SGG'
+   SGS = PATH == 'SGS'
+   SGX = PATH == 'SGX'
+   SGV = PATH == 'SGV'
+   SXV = PATH == 'SXV'
+   SSB = PATH == 'SSB'
+   SBB = PATH == 'SBB'
+   GLM = PATH == 'GLM'
+   GQR = PATH == 'GQR' .OR. PATH == 'GRQ'
+   GSV = PATH == 'GSV'
+   CSD = PATH == 'CSD'
+   LSE = PATH == 'LSE'
+   SBL = PATH == 'SBL'
+   SBK = PATH == 'SBK'
+   SGL = PATH == 'SGL'
+   SGK = PATH == 'SGK'
 !
 !     Report values of parameters.
 !
@@ -1286,11 +1281,11 @@
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
       GO TO 10
-   ELSE IF( LSAMEN( 3, PATH, 'SEC' ) ) THEN
+   ELSE IF( PATH == 'SEC' ) THEN
 !
 !        SEC:  Eigencondition estimation
 !
-      READ( NIN, FMT = * )THRESH
+      READ( NIN,*)THRESH
       CALL XLAENV( 1, 1 )
       CALL XLAENV( 12, 11 )
       CALL XLAENV( 13, 2 )
@@ -1316,7 +1311,7 @@
 !
 !     Read the number of values of M, P, and N.
 !
-   READ( NIN, FMT = * )NN
+   READ( NIN,*)NN
    IF( NN < 0 ) THEN
       WRITE( NOUT, FMT = 9989 )'   NN ', NN, 1
       NN = 0
@@ -1330,7 +1325,7 @@
 !     Read the values of M
 !
    IF( .NOT.( SGX .OR. SXV ) ) THEN
-      READ( NIN, FMT = * )( MVAL( I ), I = 1, NN )
+      READ( NIN,*)( MVAL( I ), I = 1, NN )
       IF( SVD ) THEN
          VNAME = '    M '
       ELSE
@@ -1351,7 +1346,7 @@
 !     Read the values of P
 !
    IF( GLM .OR. GQR .OR. GSV .OR. CSD .OR. LSE ) THEN
-      READ( NIN, FMT = * )( PVAL( I ), I = 1, NN )
+      READ( NIN,*)( PVAL( I ), I = 1, NN )
       DO I = 1, NN
          IF( PVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )' P  ', PVAL( I ), 0
@@ -1368,7 +1363,7 @@
 !
    IF( SVD .OR. SBB .OR. GLM .OR. GQR .OR. GSV .OR. CSD .OR. &
        LSE ) THEN
-      READ( NIN, FMT = * )( NVAL( I ), I = 1, NN )
+      READ( NIN,*)( NVAL( I ), I = 1, NN )
       DO I = 1, NN
          IF( NVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )'    N ', NVAL( I ), 0
@@ -1392,8 +1387,8 @@
 !     Read the number of values of K, followed by the values of K
 !
    IF( SSB .OR. SBB ) THEN
-      READ( NIN, FMT = * )NK
-      READ( NIN, FMT = * )( KVAL( I ), I = 1, NK )
+      READ( NIN,*)NK
+      READ( NIN,*)( KVAL( I ), I = 1, NK )
       DO I = 1, NK
          IF( KVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )'    K ', KVAL( I ), 0
@@ -1411,7 +1406,7 @@
 !        For the nonsymmetric QR driver routines, only one set of
 !        parameters is allowed.
 !
-      READ( NIN, FMT = * )NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
+      READ( NIN,*)NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
          INMIN( 1 ), INWIN( 1 ), INIBL(1), ISHFTS(1), IACC22(1)
       IF( NBVAL( 1 ) < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( 1 ), 1
@@ -1460,7 +1455,7 @@
 !        For the nonsymmetric generalized driver routines, only one set
 !        of parameters is allowed.
 !
-      READ( NIN, FMT = * )NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
+      READ( NIN,*)NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
          NSVAL( 1 ), MXBVAL( 1 )
       IF( NBVAL( 1 ) < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( 1 ), 1
@@ -1495,7 +1490,7 @@
 !        For the other paths, the number of parameters can be varied
 !        from the input file.  Read the number of parameter values.
 !
-      READ( NIN, FMT = * )NPARMS
+      READ( NIN,*)NPARMS
       IF( NPARMS < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'NPARMS', NPARMS, 1
          NPARMS = 0
@@ -1509,7 +1504,7 @@
 !        Read the values of NB
 !
       IF( .NOT.SBB ) THEN
-         READ( NIN, FMT = * )( NBVAL( I ), I = 1, NPARMS )
+         READ( NIN,*)( NBVAL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( NBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( I ), 0
@@ -1526,7 +1521,7 @@
 !        Read the values of NBMIN
 !
       IF( NEP .OR. SEP .OR. SVD .OR. SGG ) THEN
-         READ( NIN, FMT = * )( NBMIN( I ), I = 1, NPARMS )
+         READ( NIN,*)( NBMIN( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( NBMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBMIN ', NBMIN( I ), 0
@@ -1547,7 +1542,7 @@
 !        Read the values of NX
 !
       IF( NEP .OR. SEP .OR. SVD ) THEN
-         READ( NIN, FMT = * )( NXVAL( I ), I = 1, NPARMS )
+         READ( NIN,*)( NXVAL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( NXVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NX ', NXVAL( I ), 0
@@ -1569,7 +1564,7 @@
 !        or SBB).
 !
       IF( SVD .OR. SBB .OR. SGG ) THEN
-         READ( NIN, FMT = * )( NSVAL( I ), I = 1, NPARMS )
+         READ( NIN,*)( NSVAL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( NSVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NS ', NSVAL( I ), 0
@@ -1590,7 +1585,7 @@
 !        Read the values for MAXB.
 !
       IF( SGG ) THEN
-         READ( NIN, FMT = * )( MXBVAL( I ), I = 1, NPARMS )
+         READ( NIN,*)( MXBVAL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( MXBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' MAXB ', MXBVAL( I ), 0
@@ -1611,7 +1606,7 @@
 !        Read the values for INMIN.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INMIN( I ), I = 1, NPARMS )
+         READ( NIN,*)( INMIN( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( INMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INMIN ', INMIN( I ), 0
@@ -1629,7 +1624,7 @@
 !        Read the values for INWIN.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INWIN( I ), I = 1, NPARMS )
+         READ( NIN,*)( INWIN( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( INWIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INWIN ', INWIN( I ), 0
@@ -1647,7 +1642,7 @@
 !        Read the values for INIBL.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INIBL( I ), I = 1, NPARMS )
+         READ( NIN,*)( INIBL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( INIBL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INIBL ', INIBL( I ), 0
@@ -1665,7 +1660,7 @@
 !        Read the values for ISHFTS.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( ISHFTS( I ), I = 1, NPARMS )
+         READ( NIN,*)( ISHFTS( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( ISHFTS( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' ISHFTS ', ISHFTS( I ), 0
@@ -1683,7 +1678,7 @@
 !        Read the values for IACC22.
 !
       IF( NEP .OR. SGG ) THEN
-         READ( NIN, FMT = * )( IACC22( I ), I = 1, NPARMS )
+         READ( NIN,*)( IACC22( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( IACC22( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' IACC22 ', IACC22( I ), 0
@@ -1701,7 +1696,7 @@
 !        Read the values for NBCOL.
 !
       IF( SGG ) THEN
-         READ( NIN, FMT = * )( NBCOL( I ), I = 1, NPARMS )
+         READ( NIN,*)( NBCOL( I ), I = 1, NPARMS )
          DO I = 1, NPARMS
             IF( NBCOL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBCOL ', NBCOL( I ), 0
@@ -1732,35 +1727,32 @@
 !
 !     Read the threshold value for the test ratios.
 !
-   READ( NIN, FMT = * )THRESH
+   READ( NIN,*)THRESH
    WRITE( NOUT, FMT = 9982 )THRESH
    IF( SEP .OR. SVD .OR. SGG ) THEN
 !
 !        Read the flag that indicates whether to test LAPACK routines.
 !
-      READ( NIN, FMT = * )TSTCHK
+      READ( NIN,*)TSTCHK
 !
 !        Read the flag that indicates whether to test driver routines.
 !
-      READ( NIN, FMT = * )TSTDRV
+      READ( NIN,*)TSTDRV
    END IF
 !
 !     Read the flag that indicates whether to test the error exits.
 !
-   READ( NIN, FMT = * )TSTERR
+   READ( NIN,*)TSTERR
 !
 !     Read the code describing how to set the random number seed.
 !
-   READ( NIN, FMT = * )NEWSD
+   READ( NIN,*)NEWSD
 !
 !     If NEWSD = 2, read another line with 4 integers for the seed.
 !
-   IF( NEWSD == 2 ) &
-      READ( NIN, FMT = * )( IOLDSD( I ), I = 1, 4 )
+   IF( NEWSD == 2 ) READ( NIN,*) IOLDSD(1:4)
 !
-   DO I = 1, 4
-      ISEED( I ) = IOLDSD( I )
-      ENDDO
+   ISEED(1:4) = IOLDSD(1:4)
 !
    IF( FATAL ) THEN
       WRITE( NOUT, FMT = 9999 )
@@ -1841,7 +1833,7 @@
          ENDDO
    END IF
 !
-   IF( LSAMEN( 3, C3, 'SHS' ) .OR. LSAMEN( 3, C3, 'NEP' ) ) THEN
+   IF( C3 == 'SHS' .OR. C3 == 'NEP' ) THEN
 !
 !        -------------------------------------
 !        NEP:  Nonsymmetric Eigenvalue Problem
@@ -1902,8 +1894,7 @@
             WRITE( NOUT, FMT = 9980 )'SCHKHS', INFO
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SST' ) .OR. LSAMEN( 3, C3, 'SEP' ) &
-                                   .OR. LSAMEN( 3, C3, 'SE2' ) ) THEN
+   ELSE IF( C3 == 'SST' .OR. C3 == 'SEP' .OR. C3 == 'SE2' ) THEN
 !
 !        ----------------------------------
 !        SEP:  Symmetric Eigenvalue Problem
@@ -1942,7 +1933,7 @@
          WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
             NXVAL( I )
          IF( TSTCHK ) THEN
-            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+            IF( C3 == 'SE2' ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL SCHKST2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, &
                          NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ), &
@@ -1975,7 +1966,7 @@
                WRITE( NOUT, FMT = 9980 )'SCHKST', INFO
          END IF
          IF( TSTDRV ) THEN
-            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
+            IF( C3 == 'SE2' ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL SDRVST2STG( NN, NVAL, 18, DOTYPE, ISEED, THRESH, &
                          NOUT, A( 1, 1 ), NMAX, D( 1, 3 ), D( 1, 4 ), &
@@ -2002,12 +1993,11 @@
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
             ENDIF
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'SDRVST', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRVST', INFO
          END IF
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SSG' ) ) THEN
+   ELSE IF( C3 == 'SSG' ) THEN
 !
 !        ----------------------------------------------
 !        SSG:  Symmetric Generalized Eigenvalue Problem
@@ -2056,7 +2046,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SBD' ) .OR. LSAMEN( 3, C3, 'SVD' ) ) THEN
+   ELSE IF( C3 == 'SBD' .OR. C3 == 'SVD' ) THEN
 !
 !        ----------------------------------
 !        SVD:  Singular Value Decomposition
@@ -2123,7 +2113,7 @@
     ENDIF
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SEV' ) ) THEN
+   ELSE IF( C3 == 'SEV' ) THEN
 !
 !        --------------------------------------------
 !        SEV:  Nonsymmetric Eigenvalue Problem Driver
@@ -2155,7 +2145,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SES' ) ) THEN
+   ELSE IF( C3 == 'SES' ) THEN
 !
 !        --------------------------------------------
 !        SES:  Nonsymmetric Eigenvalue Problem Driver
@@ -2187,7 +2177,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SVX' ) ) THEN
+   ELSE IF( C3 == 'SVX' ) THEN
 !
 !        --------------------------------------------------------------
 !        SVX:  Nonsymmetric Eigenvalue Problem Expert Driver
@@ -2221,7 +2211,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SSX' ) ) THEN
+   ELSE IF( C3 == 'SSX' ) THEN
 !
 !        ---------------------------------------------------
 !        SSX:  Nonsymmetric Eigenvalue Problem Expert Driver
@@ -2254,7 +2244,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SGG' ) ) THEN
+   ELSE IF( C3 == 'SGG' ) THEN
 !
 !        -------------------------------------------------
 !        SGG:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2311,7 +2301,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SGS' ) ) THEN
+   ELSE IF( C3 == 'SGS' ) THEN
 !
 !        -------------------------------------------------
 !        SGS:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2395,7 +2385,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SGV' ) ) THEN
+   ELSE IF( C3 == 'SGV' ) THEN
 !
 !        -------------------------------------------------
 !        SGV:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2480,7 +2470,7 @@
       WRITE( NOUT, FMT = 9973 )
       GO TO 10
 !
-   ELSE IF( LSAMEN( 3, C3, 'SSB' ) ) THEN
+   ELSE IF( C3 == 'SSB' ) THEN
 !
 !        ------------------------------
 !        SSB:  Symmetric Band Reduction
@@ -2507,7 +2497,7 @@
       IF( INFO /= 0 ) &
          WRITE( NOUT, FMT = 9980 )'SCHKSB', INFO
 !
-   ELSE IF( LSAMEN( 3, C3, 'SBB' ) ) THEN
+   ELSE IF( C3 == 'SBB' ) THEN
 !
 !        ------------------------------
 !        SBB:  General Band Reduction
@@ -2540,7 +2530,7 @@
             WRITE( NOUT, FMT = 9980 )'SCHKBB', INFO
          ENDDO
 !
-   ELSE IF( LSAMEN( 3, C3, 'GLM' ) ) THEN
+   ELSE IF( C3 == 'GLM' ) THEN
 !
 !        -----------------------------------------
 !        GLM:  Generalized Linear Regression Model
@@ -2561,7 +2551,7 @@
       IF( INFO /= 0 ) &
          WRITE( NOUT, FMT = 9980 )'SCKGLM', INFO
 !
-   ELSE IF( LSAMEN( 3, C3, 'GQR' ) ) THEN
+   ELSE IF( C3 == 'GQR' ) THEN
 !
 !        ------------------------------------------
 !        GQR:  Generalized QR and RQ factorizations
@@ -2584,7 +2574,7 @@
       IF( INFO /= 0 ) &
          WRITE( NOUT, FMT = 9980 )'SCKGQR', INFO
 !
-   ELSE IF( LSAMEN( 3, C3, 'GSV' ) ) THEN
+   ELSE IF( C3 == 'GSV' ) THEN
 !
 !        ----------------------------------------------
 !        GSV:  Generalized Singular Value Decomposition
@@ -2607,7 +2597,7 @@
       IF( INFO /= 0 ) &
          WRITE( NOUT, FMT = 9980 )'SCKGSV', INFO
 !
-   ELSE IF( LSAMEN( 3, C3, 'CSD' ) ) THEN
+   ELSE IF( C3 == 'CSD' ) THEN
 !
 !        ----------------------------------------------
 !        CSD:  CS Decomposition
@@ -2629,7 +2619,7 @@
       IF( INFO /= 0 ) &
          WRITE( NOUT, FMT = 9980 )'SCKCSD', INFO
 !
-   ELSE IF( LSAMEN( 3, C3, 'LSE' ) ) THEN
+   ELSE IF( C3 == 'LSE' ) THEN
 !
 !        --------------------------------------
 !        LSE:  Constrained Linear Least Squares
@@ -2655,8 +2645,7 @@
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = 9992 )C3
    END IF
-   IF( .NOT.( SGX .OR. SXV ) ) &
-      GO TO 190
+   IF( .NOT.( SGX .OR. SXV ) ) GO TO 190
   380 CONTINUE
    WRITE( NOUT, FMT = 9994 )
    call system_clock(count_rate=nb_periods_sec,count=S2T)

@@ -86,16 +86,14 @@
 !     ..
 !     .. Executable Statements ..
 !
-   LMAX( 1 ) = 0
-   LMAX( 2 ) = 0
-   LMAX( 3 ) = 0
+   LMAX(1:3) = 0
    NINFO = 0
    KNT = 0
    RMAX = 0.0E+0
 !
    EPS = SLAMCH( 'Precision' )
 !
-10 CONTINUE
+   DO
 !
    READ( NIN, FMT = * )N
    IF( N == 0 ) GO TO 90
@@ -146,7 +144,7 @@
       RMAX = VMAX
    END IF
 !
-   GO TO 10
+   ENDDO
 !
 90 CONTINUE
 !

@@ -1280,9 +1280,7 @@
                IF( IINFO < 0 ) THEN
                   RETURN
                ELSE
-                  RESULT( NTEST ) = ULPINV
-                  RESULT( NTEST+1 ) = ULPINV
-                  RESULT( NTEST+2 ) = ULPINV
+                  RESULT( NTEST:NTEST+2 ) = ULPINV
                   GO TO 650
                END IF
             END IF
@@ -1820,9 +1818,7 @@
                IF( IINFO < 0 ) THEN
                   RETURN
                ELSE
-                  RESULT( NTEST ) = ULPINV
-                  RESULT( NTEST+1 ) = ULPINV
-                  RESULT( NTEST+2 ) = ULPINV
+                  RESULT( NTEST:NTEST+2 ) = ULPINV
                   GO TO 1170
                END IF
             END IF

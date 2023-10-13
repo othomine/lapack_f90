@@ -419,11 +419,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 26 )
 !     ..
@@ -453,9 +448,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALASVM, XERBLA, ZGET52, ZGGEV3, ZLACPY, ZLARFG, &
                       ZLASET, ZLATM4, ZUNM2R
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, MAX, MIN, SIGN
 !     ..
 !     .. Data statements ..
    DATA               KCLASS / 15*1, 10*2, 1*3 /
@@ -488,13 +480,8 @@
 !
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   NMAX = maxval(NN(1:NSIZES))
+   BADNN = ANY(NN(1:NSIZES) < 0 )
 !
    IF( NSIZES < 0 ) THEN
       INFO = -1
@@ -502,7 +489,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D+0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -9
@@ -529,8 +516,7 @@
       WORK( 1 ) = MAXWRK
    END IF
 !
-   IF( LWORK < MINWRK ) &
-      INFO = -23
+   IF( LWORK < MINWRK ) INFO = -23
 !
    IF( INFO /= 0 ) THEN
       CALL XERBLA( 'ZDRGEV3', -INFO )
@@ -539,19 +525,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
    ULP = DLAMCH( 'Precision' )
    SAFMIN = DLAMCH( 'Safe minimum' )
    SAFMIN = SAFMIN / ULP
-   SAFMAX = ONE / SAFMIN
-   ULPINV = ONE / ULP
+   SAFMAX = 1.0D+0 / SAFMIN
+   ULPINV = 1.0D+0 / ULP
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = ZERO
-   RMAGN( 1 ) = ONE
+   RMAGN( 0 ) = 0.0D+0
+   RMAGN( 1 ) = 1.0D+0
 !
 !     Loop over sizes, types
 !
@@ -572,15 +557,12 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 210
+         IF (DOTYPE( JTYPE ) ) THEN
          NMATS = NMATS + 1
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Generate test matrices A and B
 !
@@ -603,8 +585,7 @@
 !           KZ1, KZ2, KADD: used to implement KAZERO and KBZERO.
 !           RMAGN: used to implement KAMAGN and KBMAGN.
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
          IERR = 0
          IF( KCLASS( JTYPE ) < 3 ) THEN
 !
@@ -613,7 +594,7 @@
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL ZLASET( 'Full', N, N, CZERO, CZERO, A, LDA )
+                  CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
             ELSE
                IN = N
             END IF
@@ -631,13 +612,13 @@
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL ZLASET( 'Full', N, N, CZERO, CZERO, B, LDA )
+                  CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), B, LDA )
             ELSE
                IN = N
             END IF
             CALL ZLATM4( KBTYPE( JTYPE ), IN, KZ1( KBZERO( JTYPE ) ), &
                          KZ2( KBZERO( JTYPE ) ), LBSIGN( JTYPE ), &
-                         RMAGN( KBMAGN( JTYPE ) ), ONE, &
+                         RMAGN( KBMAGN( JTYPE ) ), 1.0D+0, &
                          RMAGN( KTRIAN( JTYPE )*KBMAGN( JTYPE ) ), 2, &
                          ISEED, B, LDA )
             IADD = KADD( KBZERO( JTYPE ) )
@@ -656,52 +637,38 @@
                      Q( JR, JC ) = ZLARND( 3, ISEED )
                      Z( JR, JC ) = ZLARND( 3, ISEED )
                   ENDDO
-                  CALL ZLARFG( N+1-JC, Q( JC, JC ), Q( JC+1, JC ), 1, &
-                               WORK( JC ) )
-                  WORK( 2*N+JC ) = SIGN( ONE, DBLE( Q( JC, JC ) ) )
-                  Q( JC, JC ) = CONE
-                  CALL ZLARFG( N+1-JC, Z( JC, JC ), Z( JC+1, JC ), 1, &
-                               WORK( N+JC ) )
-                  WORK( 3*N+JC ) = SIGN( ONE, DBLE( Z( JC, JC ) ) )
-                  Z( JC, JC ) = CONE
+                  CALL ZLARFG( N+1-JC, Q( JC, JC ), Q( JC+1, JC ), 1, WORK( JC ) )
+                  WORK( 2*N+JC ) = SIGN( 1.0D+0, DBLE( Q( JC, JC ) ) )
+                  Q( JC, JC ) = (1.0D+0,0.0D+0)
+                  CALL ZLARFG( N+1-JC, Z( JC, JC ), Z( JC+1, JC ), 1, WORK( N+JC ) )
+                  WORK( 3*N+JC ) = SIGN( 1.0D+0, DBLE( Z( JC, JC ) ) )
+                  Z( JC, JC ) = (1.0D+0,0.0D+0)
                ENDDO
                CTEMP = ZLARND( 3, ISEED )
-               Q( N, N ) = CONE
-               WORK( N ) = CZERO
+               Q( N, N ) = (1.0D+0,0.0D+0)
+               WORK( N ) = (0.0D+0,0.0D+0)
                WORK( 3*N ) = CTEMP / ABS( CTEMP )
                CTEMP = ZLARND( 3, ISEED )
-               Z( N, N ) = CONE
-               WORK( 2*N ) = CZERO
+               Z( N, N ) = (1.0D+0,0.0D+0)
+               WORK( 2*N ) = (0.0D+0,0.0D+0)
                WORK( 4*N ) = CTEMP / ABS( CTEMP )
 !
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
                   DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )* &
-                                   DCONJG( WORK( 3*N+JC ) )* &
-                                   A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )* &
-                                   DCONJG( WORK( 3*N+JC ) )* &
-                                   B( JR, JC )
+                     A( JR, JC ) = WORK( 2*N+JR )* DCONJG( WORK( 3*N+JC ) )* A( JR, JC )
+                     B( JR, JC ) = WORK( 2*N+JR )* DCONJG( WORK( 3*N+JC ) )* B( JR, JC )
                   ENDDO
                ENDDO
-               CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, &
-                            LDA, WORK( 2*N+1 ), IERR )
-               IF( IERR /= 0 ) &
-                  GO TO 90
-               CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), &
-                            A, LDA, WORK( 2*N+1 ), IERR )
-               IF( IERR /= 0 ) &
-                  GO TO 90
-               CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, B, &
-                            LDA, WORK( 2*N+1 ), IERR )
-               IF( IERR /= 0 ) &
-                  GO TO 90
-               CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), &
-                            B, LDA, WORK( 2*N+1 ), IERR )
-               IF( IERR /= 0 ) &
-                  GO TO 90
+               CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, LDA, WORK( 2*N+1 ), IERR )
+               IF( IERR /= 0 ) GO TO 90
+               CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), A, LDA, WORK( 2*N+1 ), IERR )
+               IF( IERR /= 0 ) GO TO 90
+               CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, B, LDA, WORK( 2*N+1 ), IERR )
+               IF( IERR /= 0 ) GO TO 90
+               CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), B, LDA, WORK( 2*N+1 ), IERR )
+               IF( IERR /= 0 ) GO TO 90
             END IF
          ELSE
 !
@@ -709,10 +676,8 @@
 !
             DO JC = 1, N
                DO JR = 1, N
-                  A( JR, JC ) = RMAGN( KAMAGN( JTYPE ) )* &
-                                ZLARND( 4, ISEED )
-                  B( JR, JC ) = RMAGN( KBMAGN( JTYPE ) )* &
-                                ZLARND( 4, ISEED )
+                  A( JR, JC ) = RMAGN( KAMAGN( JTYPE ) )* ZLARND( 4, ISEED )
+                  B( JR, JC ) = RMAGN( KBMAGN( JTYPE ) )* ZLARND( 4, ISEED )
                ENDDO
             ENDDO
          END IF
@@ -720,17 +685,14 @@
 90       CONTINUE
 !
          IF( IERR /= 0 ) THEN
-            WRITE( NOUNIT, FMT = 9999 )'Generator', IERR, N, JTYPE, &
-               IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'Generator', IERR, N, JTYPE, IOLDSD
             INFO = ABS( IERR )
             RETURN
          END IF
 !
   100       CONTINUE
 !
-         DO I = 1, 7
-            RESULT( I ) = -ONE
-            ENDDO
+         RESULT(1:7) = -1.0D+0
 !
 !           Call XLAENV to set the parameters used in ZLAQZ0
 !
@@ -748,25 +710,21 @@
                       LDQ, Z, LDQ, WORK, LWORK, RWORK, IERR )
          IF( IERR /= 0 .AND. IERR /= N+1 ) THEN
             RESULT( 1 ) = ULPINV
-            WRITE( NOUNIT, FMT = 9999 )'ZGGEV31', IERR, N, JTYPE, &
-               IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'ZGGEV31', IERR, N, JTYPE, IOLDSD
             INFO = ABS( IERR )
             GO TO 190
          END IF
 !
 !           Do the tests (1) and (2)
 !
-         CALL ZGET52( .TRUE., N, A, LDA, B, LDA, Q, LDQ, ALPHA, BETA, &
-                      WORK, RWORK, RESULT( 1 ) )
+         CALL ZGET52( .TRUE., N, A, LDA, B, LDA, Q, LDQ, ALPHA, BETA, WORK, RWORK, RESULT( 1 ) )
          IF( RESULT( 2 ) > THRESH ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'Left', 'ZGGEV31', &
-               RESULT( 2 ), N, JTYPE, IOLDSD
+            WRITE( NOUNIT, FMT = 9998 )'Left', 'ZGGEV31', RESULT( 2 ), N, JTYPE, IOLDSD
          END IF
 !
 !           Do the tests (3) and (4)
 !
-         CALL ZGET52( .FALSE., N, A, LDA, B, LDA, Z, LDQ, ALPHA, &
-                      BETA, WORK, RWORK, RESULT( 3 ) )
+         CALL ZGET52( .FALSE., N, A, LDA, B, LDA, Z, LDQ, ALPHA, BETA, WORK, RWORK, RESULT( 3 ) )
          IF( RESULT( 4 ) > THRESH ) THEN
             WRITE( NOUNIT, FMT = 9998 )'Right', 'ZGGEV31', &
                RESULT( 4 ), N, JTYPE, IOLDSD
@@ -786,10 +744,7 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHA( J ) /= ALPHA1( J ) .OR. BETA( J ) /= &
-                BETA1( J ) )RESULT( 5 ) = ULPINV
-            ENDDO
+         IF (ANY(ALPHA(1:N) /= ALPHA1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 5 ) = ULPINV
 !
 !           Do test (6): Compute eigenvalues and left eigenvectors,
 !           and test them
@@ -806,17 +761,9 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHA( J ) /= ALPHA1( J ) .OR. BETA( J ) /= &
-                BETA1( J ) )RESULT( 6 ) = ULPINV
-            ENDDO
+         IF (ANY(ALPHA(1:N) /= ALPHA1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 6 ) = ULPINV
 !
-         DO J = 1, N
-            DO JC = 1, N
-               IF( Q( J, JC ) /= QE( J, JC ) ) &
-                  RESULT( 6 ) = ULPINV
-               ENDDO
-            ENDDO
+         IF (ANY(Q(1:N,1:N) /= QE(1:N,1:N))) RESULT( 6 ) = ULPINV
 !
 !           Do test (7): Compute eigenvalues and right eigenvectors,
 !           and test them
@@ -836,14 +783,14 @@
          DO J = 1, N
             IF( ALPHA( J ) /= ALPHA1( J ) .OR. BETA( J ) /= &
                 BETA1( J ) )RESULT( 7 ) = ULPINV
-            ENDDO
+        ENDDO
 !
          DO J = 1, N
             DO JC = 1, N
                IF( Z( J, JC ) /= QE( J, JC ) ) &
                   RESULT( 7 ) = ULPINV
-               ENDDO
-            ENDDO
+           ENDDO
+        ENDDO
 !
 !           End of Loop -- Check for RESULT(j) > THRESH
 !
@@ -882,11 +829,12 @@
                      RESULT( JR )
                END IF
             END IF
-            ENDDO
+         ENDDO
 !
   210    CONTINUE
-         ENDDO
+         ENDIF
       ENDDO
+   ENDDO
 !
 !     Summary
 !
@@ -942,4 +890,3 @@
 !     End of ZDRGEV3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

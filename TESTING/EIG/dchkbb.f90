@@ -373,8 +373,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -399,14 +397,10 @@
    EXTERNAL           DBDT01, DBDT02, DGBBRD, DLACPY, DLAHD2, DLASET, &
                       DLASUM, DLATMR, DLATMS, DORT01, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*6, 3*9 /
    DATA               KMAGN / 2*1, 3*1, 2, 3, 3*1, 2, 3, 1, 2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -417,28 +411,17 @@
 !
 !     Important constants
 !
-   BADMM = .FALSE.
-   BADNN = .FALSE.
-   MMAX = 1
-   NMAX = 1
+   BADMM = ANY(MVAL(1:NSIZES) < 0)
+   BADNN = ANY(NVAL(1:NSIZES) < 0)
+   MMAX = MAX(1, MAXVAL(MVAL(1:NSIZES)))
+   NMAX = MAX(1, MAXVAL(NVAL(1:NSIZES)))
    MNMAX = 1
    DO J = 1, NSIZES
-      MMAX = MAX( MMAX, MVAL( J ) )
-      IF( MVAL( J ) < 0 ) &
-         BADMM = .TRUE.
-      NMAX = MAX( NMAX, NVAL( J ) )
-      IF( NVAL( J ) < 0 ) &
-         BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MVAL( J ), NVAL( J ) ) )
    ENDDO
 !
-   BADNNB = .FALSE.
-   KMAX = 0
-   DO J = 1, NWDTHS
-      KMAX = MAX( KMAX, KK( J ) )
-      IF( KK( J ) < 0 ) &
-         BADNNB = .TRUE.
-   ENDDO
+   KMAX = MAXVAL(KK(1:NWDTHS))
+   BADNNB = (ANY(KK(1:NWDTHS) < 0 ))
 !
 !     Check for errors
 !
@@ -477,15 +460,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -498,12 +480,11 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / DBLE( MAX( 1, M, N ) )
+      AMNINV = 1.0D0 / DBLE( MAX( 1, M, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K >= M .AND. K >= N ) &
-            GO TO 150
+         IF( K >= M .AND. K >= N ) GO TO 150
          KL = MAX( 0, MIN( M-1, K ) )
          KU = MAX( 0, MIN( N-1, K ) )
 !
@@ -514,14 +495,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 140
+            IF( .NOT.DOTYPE( JTYPE ) ) GO TO 140
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !
@@ -538,32 +516,24 @@
 !              =8                      (none)
 !              =9                      random nonhermitian
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 90
+            IF( MTYPES > MAXTYP ) GO TO 90
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+            SELECT CASE (KMAGN( JTYPE ))
+             CASE (1)
+              ANORM = 1.0D0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*AMNINV
+             CASE (3)
+              ANORM = RTUNFL*MAX( M, N )*ULPINV
+            END SELECT
 !
-40          CONTINUE
-            ANORM = ONE
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*AMNINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*MAX( M, N )*ULPINV
-            GO TO 70
-!
-70          CONTINUE
-!
-            CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
-            CALL DLASET( 'Full', LDAB, N, ZERO, ZERO, AB, LDAB )
+            CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
+            CALL DLASET( 'Full', LDAB, N, 0.0D0, 0.0D0, AB, LDAB )
             IINFO = 0
             COND = ULPINV
 !
@@ -602,10 +572,10 @@
 !
 !                 Nonhermitian, random entries
 !
-               CALL DLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, KL, &
-                            KU, ZERO, ANORM, 'N', A, LDA, IDUMMA, &
+               CALL DLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                            WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, KL, &
+                            KU, 0.0D0, ANORM, 'N', A, LDA, IDUMMA, &
                             IINFO )
 !
             ELSE
@@ -615,10 +585,10 @@
 !
 !              Generate Right-Hand Side
 !
-            CALL DLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( M+1 ), 1, ONE, &
-                         WORK( 2*M+1 ), 1, ONE, 'N', IDUMMA, M, NRHS, &
-                         ZERO, ONE, 'NO', C, LDC, IDUMMA, IINFO )
+            CALL DLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( M+1 ), 1, 1.0D0, &
+                         WORK( 2*M+1 ), 1, 1.0D0, 'N', IDUMMA, M, NRHS, &
+                         0.0D0, 1.0D0, 'NO', C, LDC, IDUMMA, IINFO )
 !
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'Generator', IINFO, N, &
@@ -647,8 +617,7 @@
                          Q, LDQ, P, LDP, CC, LDC, WORK, IINFO )
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 )'DGBBRD', IINFO, N, JTYPE, &
-                  IOLDSD
+               WRITE( NOUNIT, FMT = 9999 )'DGBBRD', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
                   RETURN
@@ -663,14 +632,10 @@
 !                   3:  Check the orthogonality of P
 !                   4:  Check the computation of Q' * C
 !
-            CALL DBDT01( M, N, -1, A, LDA, Q, LDQ, BD, BE, P, LDP, &
-                         WORK, RESULT( 1 ) )
-            CALL DORT01( 'Columns', M, M, Q, LDQ, WORK, LWORK, &
-                         RESULT( 2 ) )
-            CALL DORT01( 'Rows', N, N, P, LDP, WORK, LWORK, &
-                         RESULT( 3 ) )
-            CALL DBDT02( M, NRHS, C, LDC, CC, LDC, Q, LDQ, WORK, &
-                         RESULT( 4 ) )
+            CALL DBDT01( M, N, -1, A, LDA, Q, LDQ, BD, BE, P, LDP, WORK, RESULT( 1 ) )
+            CALL DORT01( 'Columns', M, M, Q, LDQ, WORK, LWORK, RESULT( 2 ) )
+            CALL DORT01( 'Rows', N, N, P, LDP, WORK, LWORK, RESULT( 3 ) )
+            CALL DBDT02( M, NRHS, C, LDC, CC, LDC, Q, LDQ, WORK, RESULT( 4 ) )
 !
 !              End of Loop -- Check for RESULT(j) > THRESH
 !
@@ -682,11 +647,9 @@
 !
             DO JR = 1, NTEST
                IF( RESULT( JR ) >= THRESH ) THEN
-                  IF( NERRS == 0 ) &
-                     CALL DLAHD2( NOUNIT, 'DBB' )
+                  IF( NERRS == 0 ) CALL DLAHD2( NOUNIT, 'DBB' )
                   NERRS = NERRS + 1
-                  WRITE( NOUNIT, FMT = 9998 )M, N, K, IOLDSD, JTYPE, &
-                     JR, RESULT( JR )
+                  WRITE( NOUNIT, FMT = 9998 )M, N, K, IOLDSD, JTYPE, JR, RESULT( JR )
                END IF
                ENDDO
 !
@@ -702,12 +665,11 @@
    RETURN
 !
  9999 FORMAT( ' DCHKBB: ', A, ' returned INFO=', I5, '.', / 9X, 'M=', &
-         I5, ' N=', I5, ' K=', I5, ', JTYPE=', I5, ', ISEED=(', &
-         3( I5, ',' ), I5, ')' )
+         I5, ' N=', I5, ' K=', I5, ', JTYPE=', I5, ', ISEED=(', 3( I5, ',' ), I5, ')' )
  9998 FORMAT( ' M =', I4, ' N=', I4, ', K=', I3, ', seed=', &
          4( I4, ',' ), ' type ', I2, ', test(', I2, ')=', G10.3 )
 !
 !     End of DCHKBB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

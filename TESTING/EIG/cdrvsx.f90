@@ -590,8 +590,7 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
@@ -631,8 +630,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = (1.0E+0,0.0E+0)
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = (1.0E+0,0.0E+0)
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN

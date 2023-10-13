@@ -154,16 +154,12 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEMM
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible.
 !
    RESID = 0.0E+0
-   IF( MIN( M, N ) <= 0 .OR. NS <= 0 ) &
-      RETURN
+   IF( MIN( M, N ) <= 0 .OR. NS <= 0 ) RETURN
 !
    EPS = SLAMCH( 'Precision' )
    ANORM = CLANGE( 'M', M, N, A, LDA, DUM )
@@ -185,8 +181,7 @@
    ENDDO
 !
    IF( ANORM <= 0.0E+0 ) THEN
-      IF( RESID /= 0.0E+0 ) &
-         RESID = 1.E+0 / EPS
+      IF( RESID /= 0.0E+0 ) RESID = 1.E+0 / EPS
    ELSE
       IF( ANORM >= RESID ) THEN
          RESID = ( RESID / ANORM ) / ( REAL( N )*EPS )

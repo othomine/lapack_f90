@@ -153,10 +153,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -169,21 +165,18 @@
 !     .. External Subroutines ..
    EXTERNAL           DCOPY, DGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
    IF( M <= 0 .OR. N <= 0 ) THEN
-      RESID = ZERO
+      RESID = 0.0D+0
       RETURN
    END IF
 !
 !     Compute A - Q * B * P**T one column at a time.
 !
-   RESID = ZERO
+   RESID = 0.0D+0
    IF( KD /= 0 ) THEN
 !
 !        B is bidiagonal.
@@ -198,8 +191,7 @@
                WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
             ENDDO
             WORK( M+N ) = D( N )*PT( N, J )
-            CALL DGEMV( 'No transpose', M, N, -ONE, Q, LDQ, &
-                        WORK( M+1 ), 1, ONE, WORK, 1 )
+            CALL DGEMV( 'No transpose', M, N, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -208,12 +200,9 @@
 !
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, M - 1
-               WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
-            ENDDO
-            WORK( M+M ) = D( M )*PT( M, J )
-            CALL DGEMV( 'No transpose', M, M, -ONE, Q, LDQ, &
-                        WORK( M+1 ), 1, ONE, WORK, 1 )
+            WORK(M+1:2*M-1) = D(1:M-1)*PT(1:M-1,J) + E(1:M-1)*PT(2:M, J )
+            WORK( 2*M ) = D( M )*PT( M, J )
+            CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -223,12 +212,8 @@
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
             WORK( M+1 ) = D( 1 )*PT( 1, J )
-            DO I = 2, M
-               WORK( M+I ) = E( I-1 )*PT( I-1, J ) + &
-                             D( I )*PT( I, J )
-            ENDDO
-            CALL DGEMV( 'No transpose', M, M, -ONE, Q, LDQ, &
-                        WORK( M+1 ), 1, ONE, WORK, 1 )
+            WORK(M+2:2*M) = E(1:M-1)*PT(1:M-1,J) + D(2:M)*PT(2:M,J)
+            CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       END IF
@@ -239,21 +224,15 @@
       IF( M >= N ) THEN
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, N
-               WORK( M+I ) = D( I )*PT( I, J )
-            ENDDO
-            CALL DGEMV( 'No transpose', M, N, -ONE, Q, LDQ, &
-                        WORK( M+1 ), 1, ONE, WORK, 1 )
+            WORK(M+1:M+N) = D(1:N)*PT(1:N,J)
+            CALL DGEMV( 'No transpose', M, N, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, M
-               WORK( M+I ) = D( I )*PT( I, J )
-            ENDDO
-            CALL DGEMV( 'No transpose', M, M, -ONE, Q, LDQ, &
-                        WORK( M+1 ), 1, ONE, WORK, 1 )
+            WORK(M+1:M+N) = D(1:N)*PT(1:N,J)
+            CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
             ENDDO
       END IF
@@ -264,19 +243,16 @@
    ANORM = DLANGE( '1', M, N, A, LDA, WORK )
    EPS = DLAMCH( 'Precision' )
 !
-   IF( ANORM <= ZERO ) THEN
-      IF( RESID /= ZERO ) &
-         RESID = ONE / EPS
+   IF( ANORM <= 0.0D+0 ) THEN
+      IF( RESID /= 0.0D+0 ) RESID = 1.0D+0 / EPS
    ELSE
       IF( ANORM >= RESID ) THEN
          RESID = ( RESID / ANORM ) / ( DBLE( N )*EPS )
       ELSE
-         IF( ANORM < ONE ) THEN
-            RESID = ( MIN( RESID, DBLE( N )*ANORM ) / ANORM ) / &
-                    ( DBLE( N )*EPS )
+         IF( ANORM < 1.0D+0 ) THEN
+            RESID = ( MIN( RESID, DBLE( N )*ANORM ) / ANORM ) / ( DBLE( N )*EPS )
          ELSE
-            RESID = MIN( RESID / ANORM, DBLE( N ) ) / &
-                    ( DBLE( N )*EPS )
+            RESID = MIN( RESID / ANORM, DBLE( N ) ) / ( DBLE( N )*EPS )
          END IF
       END IF
    END IF
@@ -286,4 +262,3 @@
 !     End of DBDT01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

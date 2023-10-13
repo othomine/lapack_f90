@@ -558,9 +558,6 @@
                       CLARFG, CLASET, CLATM4, CTGEVC, CUNM2R, SLASUM, &
                       XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN, REAL, SIGN
-!     ..
 !     .. Data statements ..
    DATA               KCLASS / 15*1, 10*2, 1*3 /
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
