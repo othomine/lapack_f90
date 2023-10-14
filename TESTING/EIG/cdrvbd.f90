@@ -475,17 +475,13 @@
    NERRS = 0
    NTESTT = 0
    NTESTF = 0
-   BADMM = .FALSE.
-   BADNN = .FALSE.
-   MMAX = 1
-   NMAX = 1
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = any(NN(1:NSIZES) < 0 )
+   MMAX = MAXVAL(MM(1:NSIZES))
+   BADMM = any(MM(1:NSIZES) < 0 )
    MNMAX = 1
    MINWRK = 1
    DO J = 1, NSIZES
-      MMAX = MAX( MMAX, MM( J ) )
-      IF( MM( J ) < 0 ) BADMM = .TRUE.
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MM( J ), NN( J ) ) )
       MINWRK = MAX( MINWRK, MAX( 3*MIN( MM( J ), &
                NN( J ) )+MAX( MM( J ), NN( J ) )**2, 5*MIN( MM( J ), &
@@ -559,18 +555,14 @@
 !              Zero matrix
 !
             CALL CLASET( 'Full', M, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
-            DO I = 1, MIN( M, N )
-               S( I ) = 0.0E+0
-            ENDDO
+            S(1:MIN( M, N )) = 0.0E+0
 !
          ELSE IF( JTYPE == 2 ) THEN
 !
 !              Identity matrix
 !
             CALL CLASET( 'Full', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), A, LDA )
-            DO I = 1, MIN( M, N )
-               S( I ) = 1.0E+0
-            ENDDO
+            S(1:MIN( M, N )) = 1.0E+0
 !
          ELSE
 !
@@ -602,8 +594,7 @@
             LSWORK = IWTMP + ( IWSPC-1 )*( LWORK-IWTMP ) / 3
             LSWORK = MIN( LSWORK, LWORK )
             LSWORK = MAX( LSWORK, 1 )
-            IF( IWSPC == 4 ) &
-               LSWORK = LWORK
+            IF( IWSPC == 4 ) LSWORK = LWORK
 !
             RESULT(1:35) = -1.0E+0
 !
@@ -1252,4 +1243,3 @@
 !     End of CDRVBD
 !
 END
-

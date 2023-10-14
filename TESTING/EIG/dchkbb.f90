@@ -484,7 +484,7 @@
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K >= M .AND. K >= N ) GO TO 150
+         IF( K < M .OR. K < N ) THEN
          KL = MAX( 0, MIN( M-1, K ) )
          KU = MAX( 0, MIN( N-1, K ) )
 !
@@ -495,7 +495,7 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) GO TO 140
+            IF(DOTYPE( JTYPE ) ) THEN
             NMATS = NMATS + 1
             NTEST = 0
 !
@@ -516,7 +516,7 @@
 !              =8                      (none)
 !              =9                      random nonhermitian
 !
-            IF( MTYPES > MAXTYP ) GO TO 90
+            IF( MTYPES <= MAXTYP ) THEN
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
@@ -548,9 +548,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( JCOL, JCOL ) = ANORM
-               ENDDO
+               FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -597,15 +595,15 @@
                RETURN
             END IF
 !
-90          CONTINUE
+            ENDIF
 !
 !              Copy A to band storage.
 !
             DO J = 1, N
                DO I = MAX( 1, J-KU ), MIN( M, J+KL )
                   AB( KU+1+I-J, J ) = A( I, J )
-                  ENDDO
                ENDDO
+            ENDDO
 !
 !              Copy C
 !
@@ -651,11 +649,11 @@
                   NERRS = NERRS + 1
                   WRITE( NOUNIT, FMT = 9998 )M, N, K, IOLDSD, JTYPE, JR, RESULT( JR )
                END IF
-               ENDDO
-!
-  140       CONTINUE
             ENDDO
-  150    CONTINUE
+!
+            ENDIF
+            ENDDO
+         ENDIF
          ENDDO
       ENDDO
 !

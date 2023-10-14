@@ -511,8 +511,7 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More important constants
 !
@@ -578,21 +577,14 @@
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40       CONTINUE
-         ANORM = 1.0E+0
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
@@ -724,16 +716,13 @@
          END IF
 !
          DO J = 1, N - 1
-            UU( J+1, J ) = (0.0E+0,0.0E+0)
-            DO I = J + 2, N
-               U( I, J ) = H( I, J )
-               UU( I, J ) = H( I, J )
-               H( I, J ) = (0.0E+0,0.0E+0)
-               ENDDO
+            UU(J+1, J ) = (0.0E+0,0.0E+0)
+            UU(J+2:N,J) = H(J+2:N,J)
+            U(J+2:N,J) = H(J+2:N,J)
+            H(J+2:N,J) = (0.0E+0,0.0E+0)
             ENDDO
          CALL CCOPY( N-1, WORK, 1, TAU, 1 )
-         CALL CUNGHR( N, ILO, IHI, U, LDU, WORK, WORK( N+1 ), &
-                      NWORK-N, IINFO )
+         CALL CUNGHR( N, ILO, IHI, U, LDU, WORK, WORK( N+1 ), NWORK-N, IINFO )
          NTEST = 2
 !
          CALL CHST01( N, ILO, IHI, A, LDA, H, LDA, U, LDU, WORK, &
@@ -794,19 +783,16 @@
 !           Do Tests 3: | H - Z T Z' | / ( |H| n ulp )
 !                and 4: | I - Z Z' | / ( n ulp )
 !
-         CALL CHST01( N, ILO, IHI, H, LDA, T1, LDA, Z, LDU, WORK, &
-                      NWORK, RWORK, RESULT( 3 ) )
+         CALL CHST01( N, ILO, IHI, H, LDA, T1, LDA, Z, LDU, WORK, NWORK, RWORK, RESULT( 3 ) )
 !
 !           Do Tests 5: | A - UZ T (UZ)' | / ( |A| n ulp )
 !                and 6: | I - UZ (UZ)' | / ( n ulp )
 !
-         CALL CHST01( N, ILO, IHI, A, LDA, T1, LDA, UZ, LDU, WORK, &
-                      NWORK, RWORK, RESULT( 5 ) )
+         CALL CHST01( N, ILO, IHI, A, LDA, T1, LDA, UZ, LDU, WORK, NWORK, RWORK, RESULT( 5 ) )
 !
 !           Do Test 7: | T2 - T1 | / ( |T| n ulp )
 !
-         CALL CGET10( N, N, T2, LDA, T1, LDA, WORK, RWORK, &
-                      RESULT( 7 ) )
+         CALL CGET10( N, N, T2, LDA, T1, LDA, WORK, RWORK, RESULT( 7 ) )
 !
 !           Do Test 8: | W3 - W1 | / ( max(|W1|,|W3|) ulp )
 !
@@ -917,8 +903,7 @@
             END IF
             ENDDO
   210       CONTINUE
-         IF( .NOT.MATCH ) &
-            WRITE( NOUNIT, FMT = 9997 )'Left', 'CTREVC', N, JTYPE, &
+         IF( .NOT.MATCH ) WRITE( NOUNIT, FMT = 9997 )'Left', 'CTREVC', N, JTYPE, &
             IOLDSD
 !
 !           Call CHSEIN for Right eigenvectors of H, do test 11

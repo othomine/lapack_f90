@@ -122,8 +122,7 @@
 !> \ingroup double_eig
 !
 !  =====================================================================
-   SUBROUTINE DBDT05( M, N, A, LDA, S, NS, U, LDU, &
-                       VT, LDVT, WORK, RESID )
+   SUBROUTINE DBDT05( M, N, A, LDA, S, NS, U, LDU, VT, LDVT, WORK, RESID )
 !
 !  -- LAPACK test routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -134,8 +133,7 @@
    DOUBLE PRECISION   RESID
 !     ..
 !     .. Array Arguments ..
-   DOUBLE PRECISION   A( LDA, * ), S( * ), U( LDU, * ), &
-                      VT( LDVT, * ), WORK( * )
+   DOUBLE PRECISION   A( LDA, * ), S( * ), U( LDU, * ), VT( LDVT, * ), WORK( * )
 !     ..
 !
 ! ======================================================================

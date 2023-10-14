@@ -601,7 +601,7 @@
 !
 !     If nothing to do check on NIUNIT
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) GO TO 160
+   IF( NSIZES /= 0 .AND. NTYPES /= 0 ) THEN
 !
 !     More Important constants
 !
@@ -625,7 +625,7 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 140
+         IF (DOTYPE( JTYPE ) ) THEN
 !
 !           Save ISEED in case of an error.
 !
@@ -834,11 +834,11 @@
 !
                ENDDO
             ENDDO
-  140    CONTINUE
+         END IF
          ENDDO
       ENDDO
 !
-  160 CONTINUE
+      END IF
 !
 !     Read in data from file to check accuracy of condition estimation.
 !     Assume input eigenvalues are sorted lexicographically (increasing
@@ -846,7 +846,7 @@
 !
    JTYPE = 0
   170 CONTINUE
-   READ( NIUNIT, FMT = *, END = 220 ) N, ISRT
+   READ(NIUNIT,*, END = 220 ) N, ISRT
 !
 !     Read input data until N=0
 !
@@ -854,10 +854,10 @@
    JTYPE = JTYPE + 1
    ISEED( 1 ) = JTYPE
    DO I = 1, N
-      READ( NIUNIT, FMT = * ) A(I,1:N)
+      READ(NIUNIT,* ) A(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIUNIT, FMT = * )WR, WI, RCDEIN( I ), RCDVIN( I )
+      READ(NIUNIT,* )WR, WI, RCDEIN( I ), RCDVIN( I )
       W1( I ) = CMPLX( WR, WI )
    ENDDO
    CALL CGET23( .TRUE., ISRT, 'N', 22, THRESH, ISEED, NOUNIT, N, A, &

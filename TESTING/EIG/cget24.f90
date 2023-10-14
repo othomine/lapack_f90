@@ -585,13 +585,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute both RCONDE and RCONDV without VS, and compare
@@ -619,13 +615,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDE with VS, and compare
@@ -651,13 +643,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDE without VS, and compare
@@ -683,13 +671,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDV with VS, and compare
@@ -715,13 +699,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDV without VS, and compare
@@ -746,13 +726,9 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) RESULT( 12 ) = ULPINV
-         ENDDO
-      ENDDO
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
       IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
    END IF

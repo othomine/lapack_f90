@@ -449,9 +449,6 @@
    EXTERNAL           ALASVM, CGET52, CGGEV3, CLACPY, CLARFG, CLASET, &
                       CLATM4, CUNM2R, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN, REAL, SIGN
-!     ..
 !     .. Data statements ..
    DATA               KCLASS / 15*1, 10*2, 1*3 /
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
@@ -534,8 +531,7 @@
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = 0.0E+0
-   RMAGN( 1 ) = 1.0E+0
+   RMAGN( 0:1 ) = 0.0E+0
 !
 !     Loop over sizes, types
 !

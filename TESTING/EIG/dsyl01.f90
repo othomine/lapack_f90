@@ -104,8 +104,6 @@
 !  =====================================================================
 !     ..
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
    INTEGER            MAXM, MAXN, LDSWORK
    PARAMETER          ( MAXM = 245, MAXN = 192, LDSWORK = 36 )
 !     ..
@@ -135,9 +133,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DLATMR, DLACPY, DGEMM, DTRSYL, DTRSYL3
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX
-!     ..
 !     .. Allocate memory dynamically ..
    ALLOCATE ( A( MAXM, MAXM ), STAT = AllocateStatus )
    IF( AllocateStatus /= 0 ) STOP "*** Not enough memory ***"
@@ -158,9 +153,9 @@
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
-   VM( 1 ) = ONE
+   VM( 1 ) = 1.0D0
    VM( 2 ) = 0.000001D+0
 !
 !     Begin test loop
@@ -170,14 +165,14 @@
    NFAIL( 1 ) = 0
    NFAIL( 2 ) = 0
    NFAIL( 3 ) = 0
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
+   RMAX( 1 ) = 0.0D+0
+   RMAX( 2 ) = 0.0D+0
    KNT = 0
    DO I = 1, 4
       ISEED( I ) = 1
    END DO
-   SCALE = ONE
-   SCALE3 = ONE
+   SCALE = 1.0D0
+   SCALE3 = 1.0D0
    LIWORK = MAXM + MAXN + 2
    DO J = 1, 2
       DO ISGN = -1, 1, 2
@@ -189,10 +184,10 @@
             KLA = 0
             KUA = M - 1
             CALL DLATMR( M, M, 'S', ISEED, 'N', D, &
-                         6, ONE, ONE, 'T', 'N', &
-                         DUML, 1, ONE, DUMR, 1, ONE, &
-                         'N', IWORK, KLA, KUA, ZERO, &
-                         ONE, 'NO', A, MAXM, IWORK, IINFO )
+                         6, 1.0D0, 1.0D0, 'T', 'N', &
+                         DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                         'N', IWORK, KLA, KUA, 0.0D+0, &
+                         1.0D0, 'NO', A, MAXM, IWORK, IINFO )
             DO I = 1, M
                A( I, I ) = A( I, I ) * VM( J )
             END DO
@@ -201,16 +196,16 @@
                KLB = 0
                KUB = N - 1
                CALL DLATMR( N, N, 'S', ISEED, 'N', D, &
-                            6, ONE, ONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, KLB, KUB, ZERO, &
-                            ONE, 'NO', B, MAXN, IWORK, IINFO )
+                            6, 1.0D0, 1.0D0, 'T', 'N', &
+                            DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                            'N', IWORK, KLB, KUB, 0.0D+0, &
+                            1.0D0, 'NO', B, MAXN, IWORK, IINFO )
                BNRM = DLANGE( 'M', N, N, B, MAXN, DUM )
                TNRM = MAX( ANRM, BNRM )
                CALL DLATMR( M, N, 'S', ISEED, 'N', D, &
-                            6, ONE, ONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, M, N, ZERO, ONE, &
+                            6, 1.0D0, 1.0D0, 'T', 'N', &
+                            DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                            'N', IWORK, M, N, 0.0D+0, 1.0D0, &
                             'NO', C, MAXM, IWORK, IINFO )
                DO ITRANA = 1, 2
                   IF( ITRANA == 1 ) THEN
@@ -236,10 +231,10 @@
                      IF( IINFO /= 0 ) &
                         NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = DLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = ONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = 1.0D0
+                     IF( XNRM > 1.0D0 .AND. TNRM > 1.0D0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = ONE / MAX( XNRM, TNRM )
+                           RMUL = 1.0D0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -247,7 +242,7 @@
                                  CC, MAXM )
                      CALL DGEMM( 'N', TRANB, M, N, N, &
                                   DBLE( ISGN )*RMUL, X, MAXM, B, &
-                                  MAXN, ONE, CC, MAXM )
+                                  MAXN, 1.0D0, CC, MAXM )
                      RES1 = DLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                  ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -265,10 +260,10 @@
                      IF( INFO /= 0 ) &
                         NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = DLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = ONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = 1.0D0
+                     IF( XNRM > 1.0D0 .AND. TNRM > 1.0D0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = ONE / MAX( XNRM, TNRM )
+                           RMUL = 1.0D0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -276,13 +271,13 @@
                                  CC, MAXM )
                      CALL DGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, ONE, CC, MAXM )
+                                 MAXN, 1.0D0, CC, MAXM )
                      RES1 = DLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( RMUL*TNRM )*EPS )*XNRM )
 !                       Verify that TRSYL3 only flushes if TRSYL flushes (but
 !                       there may be cases where TRSYL3 avoid flushing).
-                     IF( SCALE3 == ZERO .AND. SCALE > ZERO .OR. &
+                     IF( SCALE3 == 0.0D+0 .AND. SCALE > 0.0D+0 .OR. &
                          IINFO /= INFO ) THEN
                         NFAIL( 3 ) = NFAIL( 3 ) + 1
                      END IF
@@ -309,4 +304,4 @@
 !     End of DSYL01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

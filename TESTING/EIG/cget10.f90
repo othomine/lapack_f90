@@ -123,9 +123,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CCOPY
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible

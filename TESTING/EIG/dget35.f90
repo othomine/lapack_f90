@@ -86,12 +86,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
-   DOUBLE PRECISION   TWO, FOUR
-   PARAMETER          ( TWO = 2.0D0, FOUR = 4.0D0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          TRANA, TRANB
@@ -112,9 +106,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEMM, DTRSYL
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, SIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               IDIM / 1, 2, 3, 4, 3, 3, 6, 4 /
    DATA               IVAL / 1, 35*0, 1, 2, 4*0, -2, 0, 28*0, 1, 5*0, &
@@ -131,22 +122,22 @@
 !     Get machine parameters
 !
    EPS = DLAMCH( 'P' )
-   SMLNUM = DLAMCH( 'S' )*FOUR / EPS
-   BIGNUM = ONE / SMLNUM
+   SMLNUM = DLAMCH( 'S' )*4.0D0 / EPS
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Set up test case parameters
 !
    VM1( 1 ) = SQRT( SMLNUM )
-   VM1( 2 ) = ONE
+   VM1( 2 ) = 1.0D0
    VM1( 3 ) = SQRT( BIGNUM )
-   VM2( 1 ) = ONE
-   VM2( 2 ) = ONE + TWO*EPS
-   VM2( 3 ) = TWO
+   VM2( 1 ) = 1.0D0
+   VM2( 2 ) = 1.0D0 + 2.0D0*EPS
+   VM2( 3 ) = 2.0D0
 !
    KNT = 0
    NINFO = 0
    LMAX = 0
-   RMAX = ZERO
+   RMAX = 0.0D0
 !
 !     Begin test loop
 !
@@ -169,7 +160,7 @@
                                  TRANB = 'T'
                               M = IDIM( IMA )
                               N = IDIM( IMB )
-                              TNRM = ZERO
+                              TNRM = 0.0D0
                               DO I = 1, M
                                  DO J = 1, M
                                     A( I, J ) = IVAL( I, J, IMA )
@@ -200,7 +191,7 @@
                                            ABS( B( I, J ) ) )
                                  ENDDO
                               ENDDO
-                              CNRM = ZERO
+                              CNRM = 0.0D0
                               DO I = 1, M
                                  DO J = 1, N
                                     C( I, J ) = SIN( DBLE( I*J ) )
@@ -215,11 +206,11 @@
                               IF( INFO /= 0 ) &
                                  NINFO = NINFO + 1
                               XNRM = DLANGE( 'M', M, N, C, 6, DUM )
-                              RMUL = ONE
-                              IF( XNRM > ONE .AND. TNRM > ONE ) &
+                              RMUL = 1.0D0
+                              IF( XNRM > 1.0D0 .AND. TNRM > 1.0D0 ) &
                                    THEN
                                  IF( XNRM > BIGNUM / TNRM ) THEN
-                                    RMUL = ONE / MAX( XNRM, TNRM )
+                                    RMUL = 1.0D0 / MAX( XNRM, TNRM )
                                  END IF
                               END IF
                               CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -227,7 +218,7 @@
                                           CC, 6 )
                               CALL DGEMM( 'N', TRANB, M, N, N, &
                                           DBLE( ISGN )*RMUL, C, 6, B, &
-                                          6, ONE, CC, 6 )
+                                          6, 1.0D0, CC, 6 )
                               RES1 = DLANGE( 'M', M, N, CC, 6, DUM )
                               RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                     ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -250,4 +241,4 @@
 !     End of DGET35
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

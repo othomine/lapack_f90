@@ -399,10 +399,6 @@
 !
 !  =====================================================================
 !
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0 )
    DOUBLE PRECISION   EPSIN
    PARAMETER          ( EPSIN = 5.9605D-8 )
 !     ..
@@ -427,9 +423,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEEVX, DGET22, DLACPY, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN
-!     ..
 !     .. Data statements ..
    DATA               SENS / 'N', 'V' /
 !     ..
@@ -443,7 +436,7 @@
    INFO = 0
    IF( .NOT.BALOK ) THEN
       INFO = -2
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D0 ) THEN
       INFO = -4
    ELSE IF( NOUNIT <= 0 ) THEN
       INFO = -6
@@ -468,18 +461,15 @@
 !
 !     Quick return if nothing to do
 !
-   DO I = 1, 11
-      RESULT( I ) = -ONE
-   ENDDO
+   RESULT(1:11) = -1.0D0
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     More Important constants
 !
    ULP = DLAMCH( 'Precision' )
    SMLNUM = DLAMCH( 'S' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
 !
 !     Compute eigenvalues and eigenvectors, and test them
 !
@@ -508,39 +498,37 @@
 !
 !     Do Test (1)
 !
-   CALL DGET22( 'N', 'N', 'N', N, A, LDA, VR, LDVR, WR, WI, WORK, &
-                RES )
+   CALL DGET22( 'N', 'N', 'N', N, A, LDA, VR, LDVR, WR, WI, WORK, RES )
    RESULT( 1 ) = RES( 1 )
 !
 !     Do Test (2)
 !
-   CALL DGET22( 'T', 'N', 'T', N, A, LDA, VL, LDVL, WR, WI, WORK, &
-                RES )
+   CALL DGET22( 'T', 'N', 'T', N, A, LDA, VL, LDVL, WR, WI, WORK, RES )
    RESULT( 2 ) = RES( 1 )
 !
 !     Do Test (3)
 !
    DO J = 1, N
-      TNRM = ONE
-      IF( WI( J ) == ZERO ) THEN
+      TNRM = 1.0D0
+      IF( WI( J ) == 0.0D0 ) THEN
          TNRM = DNRM2( N, VR( 1, J ), 1 )
-      ELSE IF( WI( J ) > ZERO ) THEN
+      ELSE IF( WI( J ) > 0.0D0 ) THEN
          TNRM = DLAPY2( DNRM2( N, VR( 1, J ), 1 ), &
                 DNRM2( N, VR( 1, J+1 ), 1 ) )
       END IF
       RESULT( 3 ) = MAX( RESULT( 3 ), &
-                    MIN( ULPINV, ABS( TNRM-ONE ) / ULP ) )
-      IF( WI( J ) > ZERO ) THEN
-         VMX = ZERO
-         VRMX = ZERO
+                    MIN( ULPINV, ABS( TNRM-1.0D0 ) / ULP ) )
+      IF( WI( J ) > 0.0D0 ) THEN
+         VMX = 0.0D0
+         VRMX = 0.0D0
          DO JJ = 1, N
             VTST = DLAPY2( VR( JJ, J ), VR( JJ, J+1 ) )
             IF( VTST > VMX ) &
                VMX = VTST
-            IF( VR( JJ, J+1 ) == ZERO .AND. ABS( VR( JJ, J ) ) > &
+            IF( VR( JJ, J+1 ) == 0.0D0 .AND. ABS( VR( JJ, J ) ) > &
                 VRMX )VRMX = ABS( VR( JJ, J ) )
          ENDDO
-         IF( VRMX / VMX < ONE-TWO*ULP ) &
+         IF( VRMX / VMX < 1.0D0-2.0D0*ULP ) &
             RESULT( 3 ) = ULPINV
       END IF
    ENDDO
@@ -548,26 +536,26 @@
 !     Do Test (4)
 !
    DO J = 1, N
-      TNRM = ONE
-      IF( WI( J ) == ZERO ) THEN
+      TNRM = 1.0D0
+      IF( WI( J ) == 0.0D0 ) THEN
          TNRM = DNRM2( N, VL( 1, J ), 1 )
-      ELSE IF( WI( J ) > ZERO ) THEN
+      ELSE IF( WI( J ) > 0.0D0 ) THEN
          TNRM = DLAPY2( DNRM2( N, VL( 1, J ), 1 ), &
                 DNRM2( N, VL( 1, J+1 ), 1 ) )
       END IF
       RESULT( 4 ) = MAX( RESULT( 4 ), &
-                    MIN( ULPINV, ABS( TNRM-ONE ) / ULP ) )
-      IF( WI( J ) > ZERO ) THEN
-         VMX = ZERO
-         VRMX = ZERO
+                    MIN( ULPINV, ABS( TNRM-1.0D0 ) / ULP ) )
+      IF( WI( J ) > 0.0D0 ) THEN
+         VMX = 0.0D0
+         VRMX = 0.0D0
          DO JJ = 1, N
             VTST = DLAPY2( VL( JJ, J ), VL( JJ, J+1 ) )
             IF( VTST > VMX ) &
                VMX = VTST
-            IF( VL( JJ, J+1 ) == ZERO .AND. ABS( VL( JJ, J ) ) > &
+            IF( VL( JJ, J+1 ) == 0.0D0 .AND. ABS( VL( JJ, J ) ) > &
                 VRMX )VRMX = ABS( VL( JJ, J ) )
          ENDDO
-         IF( VRMX / VMX < ONE-TWO*ULP ) &
+         IF( VRMX / VMX < 1.0D0-2.0D0*ULP ) &
             RESULT( 4 ) = ULPINV
       END IF
    ENDDO
@@ -587,11 +575,9 @@
       IF( IINFO /= 0 ) THEN
          RESULT( 1 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'DGEEVX2', IINFO, N, JTYPE, &
-               BALANC, ISEED
+            WRITE( NOUNIT, FMT = 9998 )'DGEEVX2', IINFO, N, JTYPE, BALANC, ISEED
          ELSE
-            WRITE( NOUNIT, FMT = 9999 )'DGEEVX2', IINFO, N, &
-               ISEED( 1 )
+            WRITE( NOUNIT, FMT = 9999 )'DGEEVX2', IINFO, N, ISEED( 1 )
          END IF
          INFO = ABS( IINFO )
          GO TO 190
@@ -599,33 +585,21 @@
 !
 !        Do Test (5)
 !
-      DO J = 1, N
-         IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-            RESULT( 5 ) = ULPINV
-      ENDDO
+      IF (ANY(WR(1:N) /= WR1(1:N).OR. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !        Do Test (8)
 !
       IF( .NOT.NOBAL ) THEN
-         DO J = 1, N
-            IF( SCALE( J ) /= SCALE1( J ) ) &
-               RESULT( 8 ) = ULPINV
-         ENDDO
-         IF( ILO /= ILO1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( IHI /= IHI1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( ABNRM /= ABNRM1 ) &
-            RESULT( 8 ) = ULPINV
+         IF (ANY(SCALE(1:N) /= SCALE1(1:N))) RESULT( 8 ) = ULPINV
+         IF( ILO /= ILO1 ) RESULT( 8 ) = ULPINV
+         IF( IHI /= IHI1 ) RESULT( 8 ) = ULPINV
+         IF( ABNRM /= ABNRM1 ) RESULT( 8 ) = ULPINV
       END IF
 !
 !        Do Test (9)
 !
       IF( ISENS == 2 .AND. N > 1 ) THEN
-         DO J = 1, N
-            IF( RCONDV( J ) /= RCNDV1( J ) ) &
-               RESULT( 9 ) = ULPINV
-         ENDDO
+         IF (ANY(RCONDV(1:N) /= RCNDV1(1:N))) RESULT( 9 ) = ULPINV
       END IF
 !
 !        Compute eigenvalues and right eigenvectors, and test them
@@ -649,42 +623,25 @@
 !
 !        Do Test (5) again
 !
-      DO J = 1, N
-         IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-            RESULT( 5 ) = ULPINV
-      ENDDO
+      IF (ANY(WR(1:N) /= WR1(1:N) .OR. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !        Do Test (6)
 !
-      DO J = 1, N
-         DO JJ = 1, N
-            IF( VR( J, JJ ) /= LRE( J, JJ ) ) &
-               RESULT( 6 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(VR(1:N,1:N) /= LRE(1:N,1:N))) RESULT( 6 ) = ULPINV
 !
 !        Do Test (8) again
 !
       IF( .NOT.NOBAL ) THEN
-         DO J = 1, N
-            IF( SCALE( J ) /= SCALE1( J ) ) &
-               RESULT( 8 ) = ULPINV
-            ENDDO
-         IF( ILO /= ILO1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( IHI /= IHI1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( ABNRM /= ABNRM1 ) &
-            RESULT( 8 ) = ULPINV
+         IF (ANY(SCALE(1:N) /= SCALE1(1:N))) RESULT( 8 ) = ULPINV
+         IF( ILO /= ILO1 ) RESULT( 8 ) = ULPINV
+         IF( IHI /= IHI1 ) RESULT( 8 ) = ULPINV
+         IF( ABNRM /= ABNRM1 ) RESULT( 8 ) = ULPINV
       END IF
 !
 !        Do Test (9) again
 !
       IF( ISENS == 2 .AND. N > 1 ) THEN
-         DO J = 1, N
-            IF( RCONDV( J ) /= RCNDV1( J ) ) &
-               RESULT( 9 ) = ULPINV
-            ENDDO
+         IF (ANY(RCONDV(1:N) /= RCNDV1(1:N))) RESULT( 9 ) = ULPINV
       END IF
 !
 !        Compute eigenvalues and left eigenvectors, and test them
@@ -708,42 +665,25 @@
 !
 !        Do Test (5) again
 !
-      DO J = 1, N
-         IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-            RESULT( 5 ) = ULPINV
-         ENDDO
+      IF (ANY(WR(1:N) /= WR1(1:N) .OR. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !        Do Test (7)
 !
-      DO J = 1, N
-         DO JJ = 1, N
-            IF( VL( J, JJ ) /= LRE( J, JJ ) ) &
-               RESULT( 7 ) = ULPINV
-            ENDDO
-         ENDDO
+      IF (ANY(VL(1:N,1:N) /= LRE(1:N,1:N))) RESULT( 7 ) = ULPINV
 !
 !        Do Test (8) again
 !
       IF( .NOT.NOBAL ) THEN
-         DO J = 1, N
-            IF( SCALE( J ) /= SCALE1( J ) ) &
-               RESULT( 8 ) = ULPINV
-            ENDDO
-         IF( ILO /= ILO1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( IHI /= IHI1 ) &
-            RESULT( 8 ) = ULPINV
-         IF( ABNRM /= ABNRM1 ) &
-            RESULT( 8 ) = ULPINV
+         IF (ANY(SCALE(1:N) /= SCALE1(1:N))) RESULT( 8 ) = ULPINV
+         IF( ILO /= ILO1 ) RESULT( 8 ) = ULPINV
+         IF( IHI /= IHI1 ) RESULT( 8 ) = ULPINV
+         IF( ABNRM /= ABNRM1 ) RESULT( 8 ) = ULPINV
       END IF
 !
 !        Do Test (9) again
 !
       IF( ISENS == 2 .AND. N > 1 ) THEN
-         DO J = 1, N
-            IF( RCONDV( J ) /= RCNDV1( J ) ) &
-               RESULT( 9 ) = ULPINV
-            ENDDO
+         IF (ANY(RCONDV(1:N) /= RCNDV1(1:N))) RESULT( 9 ) = ULPINV
       END IF
 !
   190    CONTINUE
@@ -793,11 +733,11 @@
 !        Compare condition numbers for eigenvectors
 !        taking their condition numbers into account
 !
-      RESULT( 10 ) = ZERO
+      RESULT( 10 ) = 0.0D0
       EPS = MAX( EPSIN, ULP )
       V = MAX( DBLE( N )*EPS*ABNRM, SMLNUM )
-      IF( ABNRM == ZERO ) &
-         V = ONE
+      IF( ABNRM == 0.0D0 ) &
+         V = 1.0D0
       DO I = 1, N
          IF( V > RCONDV( I )*RCONDE( I ) ) THEN
             TOL = RCONDV( I )
@@ -812,15 +752,15 @@
          TOL = MAX( TOL, SMLNUM / EPS )
          TOLIN = MAX( TOLIN, SMLNUM / EPS )
          IF( EPS*( RCDVIN( I )-TOLIN ) > RCONDV( I )+TOL ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0D0 / EPS
          ELSE IF( RCDVIN( I )-TOLIN > RCONDV( I )+TOL ) THEN
             VMAX = ( RCDVIN( I )-TOLIN ) / ( RCONDV( I )+TOL )
          ELSE IF( RCDVIN( I )+TOLIN < EPS*( RCONDV( I )-TOL ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0D0 / EPS
          ELSE IF( RCDVIN( I )+TOLIN < RCONDV( I )-TOL ) THEN
             VMAX = ( RCONDV( I )-TOL ) / ( RCDVIN( I )+TOLIN )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0D0
          END IF
          RESULT( 10 ) = MAX( RESULT( 10 ), VMAX )
          ENDDO
@@ -828,30 +768,30 @@
 !        Compare condition numbers for eigenvalues
 !        taking their condition numbers into account
 !
-      RESULT( 11 ) = ZERO
+      RESULT( 11 ) = 0.0D0
       DO I = 1, N
          IF( V > RCONDV( I ) ) THEN
-            TOL = ONE
+            TOL = 1.0D0
          ELSE
             TOL = V / RCONDV( I )
          END IF
          IF( V > RCDVIN( I ) ) THEN
-            TOLIN = ONE
+            TOLIN = 1.0D0
          ELSE
             TOLIN = V / RCDVIN( I )
          END IF
          TOL = MAX( TOL, SMLNUM / EPS )
          TOLIN = MAX( TOLIN, SMLNUM / EPS )
          IF( EPS*( RCDEIN( I )-TOLIN ) > RCONDE( I )+TOL ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0D0 / EPS
          ELSE IF( RCDEIN( I )-TOLIN > RCONDE( I )+TOL ) THEN
             VMAX = ( RCDEIN( I )-TOLIN ) / ( RCONDE( I )+TOL )
          ELSE IF( RCDEIN( I )+TOLIN < EPS*( RCONDE( I )-TOL ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0D0 / EPS
          ELSE IF( RCDEIN( I )+TOLIN < RCONDE( I )-TOL ) THEN
             VMAX = ( RCONDE( I )-TOL ) / ( RCDEIN( I )+TOLIN )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0D0
          END IF
          RESULT( 11 ) = MAX( RESULT( 11 ), VMAX )
          ENDDO
@@ -870,4 +810,4 @@
 !     End of DGET23
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

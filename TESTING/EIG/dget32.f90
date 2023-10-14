@@ -90,12 +90,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
-   DOUBLE PRECISION   TWO, FOUR, EIGHT
-   PARAMETER          ( TWO = 2.0D0, FOUR = 4.0D0, EIGHT = 8.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LTRANL, LTRANR
@@ -116,9 +110,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DLASY2
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               ITVAL / 8, 4, 2, 1, 4, 8, 1, 2, 2, 1, 8, 4, 1, &
                       2, 4, 8, 9, 4, 2, 1, 4, 9, 1, 2, 2, 1, 9, 4, 1, &
@@ -130,18 +121,18 @@
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Set up test case parameters
 !
    VAL( 1 ) = SQRT( SMLNUM )
-   VAL( 2 ) = ONE
+   VAL( 2 ) = 1.0D0
    VAL( 3 ) = SQRT( BIGNUM )
 !
    KNT = 0
    NINFO = 0
    LMAX = 0
-   RMAX = ZERO
+   RMAX = 0.0D0
 !
 !     Begin test loop
 !
@@ -173,15 +164,15 @@
                               1 ) )+ABS( TL( 1, 1 ) ) )*ABS( X( 1, &
                               1 ) ) ), SMLNUM )
                      ELSE
-                        DEN = SMLNUM*MAX( ABS( X( 1, 1 ) ), ONE )
+                        DEN = SMLNUM*MAX( ABS( X( 1, 1 ) ), 1.0D0 )
                      END IF
                      RES = RES / DEN
-                     IF( SCALE > ONE ) &
-                        RES = RES + ONE / EPS
+                     IF( SCALE > 1.0D0 ) &
+                        RES = RES + 1.0D0 / EPS
                      RES = RES + ABS( XNORM-ABS( X( 1, 1 ) ) ) / &
                            MAX( SMLNUM, XNORM ) / EPS
                      IF( INFO /= 0 .AND. INFO /= 1 ) &
-                        RES = RES + ONE / EPS
+                        RES = RES + 1.0D0 / EPS
                      IF( RES > RMAX ) THEN
                         LMAX = KNT
                         RMAX = RES
@@ -198,7 +189,7 @@
                      DO IB1 = 1, 3
                         DO IB2 = 1, 3
                            B( 1, 1 ) = VAL( IB1 )
-                           B( 2, 1 ) = -FOUR*VAL( IB2 )
+                           B( 2, 1 ) = -4.0D0*VAL( IB2 )
                            TL( 1, 1 ) = ITVAL( 1, 1, ITL )* &
                                         VAL( ITLSCL )
                            TL( 2, 1 ) = ITVAL( 2, 1, ITL )* &
@@ -235,8 +226,8 @@
                            DEN = MAX( SMLNUM, SMLNUM*XNRM, &
                                  ( TNRM*EPS )*XNRM )
                            RES = RES / DEN
-                           IF( SCALE > ONE ) &
-                              RES = RES + ONE / EPS
+                           IF( SCALE > 1.0D0 ) &
+                              RES = RES + 1.0D0 / EPS
                            RES = RES + ABS( XNORM-XNRM ) / &
                                  MAX( SMLNUM, XNORM ) / EPS
                            IF( RES > RMAX ) THEN
@@ -257,7 +248,7 @@
                      DO IB1 = 1, 3
                         DO IB2 = 1, 3
                            B( 1, 1 ) = VAL( IB1 )
-                           B( 1, 2 ) = -TWO*VAL( IB2 )
+                           B( 1, 2 ) = -2.0D0*VAL( IB2 )
                            TR( 1, 1 ) = ITVAL( 1, 1, ITR )* &
                                         VAL( ITRSCL )
                            TR( 2, 1 ) = ITVAL( 2, 1, ITR )* &
@@ -295,8 +286,8 @@
                            DEN = MAX( SMLNUM, SMLNUM*XNRM, &
                                  ( TNRM*EPS )*XNRM )
                            RES = RES / DEN
-                           IF( SCALE > ONE ) &
-                              RES = RES + ONE / EPS
+                           IF( SCALE > 1.0D0 ) &
+                              RES = RES + 1.0D0 / EPS
                            RES = RES + ABS( XNORM-XNRM ) / &
                                  MAX( SMLNUM, XNORM ) / EPS
                            IF( RES > RMAX ) THEN
@@ -319,9 +310,9 @@
                            DO IB2 = 1, 3
                               DO IB3 = 1, 3
                                  B( 1, 1 ) = VAL( IB1 )
-                                 B( 2, 1 ) = -FOUR*VAL( IB2 )
-                                 B( 1, 2 ) = -TWO*VAL( IB3 )
-                                 B( 2, 2 ) = EIGHT* &
+                                 B( 2, 1 ) = -4.0D0*VAL( IB2 )
+                                 B( 1, 2 ) = -2.0D0*VAL( IB3 )
+                                 B( 2, 2 ) = 8.0D0* &
                                              MIN( VAL( IB1 ), VAL &
                                              ( IB2 ), VAL( IB3 ) )
                                  TR( 1, 1 ) = ITVAL( 1, 1, ITR )* &
@@ -401,8 +392,8 @@
                                  DEN = MAX( SMLNUM, SMLNUM*XNRM, &
                                        ( TNRM*EPS )*XNRM )
                                  RES = RES / DEN
-                                 IF( SCALE > ONE ) &
-                                    RES = RES + ONE / EPS
+                                 IF( SCALE > 1.0D0 ) &
+                                    RES = RES + 1.0D0 / EPS
                                  RES = RES + ABS( XNORM-XNRM ) / &
                                        MAX( SMLNUM, XNORM ) / EPS
                                  IF( RES > RMAX ) THEN
@@ -425,4 +416,4 @@
 !     End of DGET32
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -512,9 +512,6 @@
 ! ======================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO, HALF
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0, &
-                      HALF = 0.5D0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 16 )
 !     ..
@@ -639,7 +636,7 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 290
+         IF(DOTYPE( JTYPE ) ) THEN
 !
          IOLDSD(1:4) = ISEED(1:4)
 !
@@ -932,7 +929,7 @@
          DO I = 1, MNMIN - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 8 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0D0 ) &
                RESULT( 8 ) = ULPINV
             ENDDO
          IF( MNMIN >= 1 ) THEN
@@ -1048,7 +1045,7 @@
          DO I = 1, MNMIN - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 18 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0D0 ) &
                RESULT( 18 ) = ULPINV
             ENDDO
          IF( MNMIN >= 1 ) THEN
@@ -1171,11 +1168,9 @@
 !
          RESULT( 23 ) = 0.0D0
          DO I = 1, MNMIN - 1
-            IF( S1( I ) < S1( I+1 ) ) &
-               RESULT( 23 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
-               RESULT( 23 ) = ULPINV
-            ENDDO
+            IF( S1( I ) < S1( I+1 ) ) RESULT( 23 ) = ULPINV
+            IF( S1( I ) < 0.0D0 ) RESULT( 23 ) = ULPINV
+         ENDDO
          IF( MNMIN >= 1 ) THEN
             IF( S1( MNMIN ) < 0.0D0 ) RESULT( 23 ) = ULPINV
          END IF
@@ -1281,7 +1276,7 @@
          DO I = 1, NS1 - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 28 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0D0 ) &
                RESULT( 28 ) = ULPINV
             ENDDO
          IF( NS1 >= 1 ) THEN
@@ -1399,7 +1394,7 @@
          DO I = 1, NS1 - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 28 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0D0 ) &
                RESULT( 28 ) = ULPINV
             ENDDO
          IF( NS1 >= 1 ) THEN
@@ -1432,7 +1427,7 @@
             NTEST = NTEST + 30
          END IF
 !
-  290    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !

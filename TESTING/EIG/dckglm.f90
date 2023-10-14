@@ -203,9 +203,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, DGLMTS, DLATB9, DLATMS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize constants.
@@ -242,15 +239,13 @@
       M = MVAL( IK )
       P = PVAL( IK )
       N = NVAL( IK )
-      IF( M > N .OR. N > M+P ) &
-         GO TO 40
+      IF( M <= N .and. N <= M+P ) THEN
 !
       DO IMAT = 1, NTYPES
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 30
+         IF (DOTYPE( IMAT ) ) THEN
 !
 !           Set up parameters with DLATB9 and generate test
 !           matrices A and B with DLATMS.
@@ -265,7 +260,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
+            CYCLE
          END IF
 !
          CALL DLATMS( N, P, DISTB, ISEED, TYPE, RWORK, MODEB, CNDNMB, &
@@ -274,7 +269,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
+            CYCLE
          END IF
 !
 !           Generate random left hand side vector of GLM
@@ -300,9 +295,9 @@
          END IF
          NRUN = NRUN + 1
 !
-30    CONTINUE
+      ENDIF
       ENDDO
-40 CONTINUE
+   ENDIF
    ENDDO
 !
 !     Print a summary of the results.
@@ -320,4 +315,3 @@
 !     End of DCKGLM
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

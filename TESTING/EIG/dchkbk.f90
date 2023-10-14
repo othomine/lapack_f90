@@ -66,8 +66,6 @@
 !     .. Parameters ..
    INTEGER            LDE
    PARAMETER          ( LDE = 20 )
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IHI, ILO, INFO, J, KNT, N, NINFO
@@ -84,32 +82,28 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEBAK
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
-!     ..
 !     .. Executable Statements ..
 !
    LMAX( 1 ) = 0
    LMAX( 2 ) = 0
    NINFO = 0
    KNT = 0
-   RMAX = ZERO
+   RMAX = 0.0D0
    EPS = DLAMCH( 'E' )
    SAFMIN = DLAMCH( 'S' )
 !
-10 CONTINUE
+   DO
 !
-   READ( NIN, FMT = * )N, ILO, IHI
-   IF( N == 0 ) &
-      GO TO 60
+   READ(NIN,*) N, ILO, IHI
+   IF( N == 0 ) EXIT
 !
-   READ( NIN, FMT = * )( SCALE( I ), I = 1, N )
+   READ(NIN,*) SCALE(1:N)
    DO I = 1, N
-      READ( NIN, FMT = * )( E( I, J ), J = 1, N )
+      READ(NIN,*) E(I,1:N)
    ENDDO
 !
    DO I = 1, N
-      READ( NIN, FMT = * )( EIN( I, J ), J = 1, N )
+      READ(NIN,*) EIN(I,1:N)
    ENDDO
 !
    KNT = KNT + 1
@@ -120,12 +114,11 @@
       LMAX( 1 ) = KNT
    END IF
 !
-   VMAX = ZERO
+   VMAX = 0.0D0
    DO I = 1, N
       DO J = 1, N
          X = ABS( E( I, J )-EIN( I, J ) ) / EPS
-         IF( ABS( E( I, J ) ) > SAFMIN ) &
-            X = X / ABS( E( I, J ) )
+         IF( ABS( E( I, J ) ) > SAFMIN ) X = X / ABS( E( I, J ) )
          VMAX = MAX( VMAX, X )
       ENDDO
    ENDDO
@@ -135,9 +128,8 @@
       RMAX = VMAX
    END IF
 !
-   GO TO 10
+   ENDDO
 !
-60 CONTINUE
 !
    WRITE( NOUT, FMT = 9999 )
  9999 FORMAT( 1X, '.. test output of DGEBAK .. ' )

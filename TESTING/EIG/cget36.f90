@@ -125,12 +125,12 @@
 !
 !     Read input data until N=0
 !
-10 CONTINUE
-   READ( NIN, FMT = * )N, IFST, ILST
+   DO
+   READ(NIN,*) N, IFST, ILST
    IF( N == 0 ) RETURN
    KNT = KNT + 1
    DO I = 1, N
-      READ( NIN, FMT = * )( TMP( I, J ), J = 1, N )
+      READ(NIN,*) TMP(I,1:N)
    ENDDO
    CALL CLACPY( 'F', N, N, TMP, LDT, T1, LDT )
    CALL CLACPY( 'F', N, N, TMP, LDT, T2, LDT )
@@ -199,7 +199,7 @@
       RMAX = RES
       LMAX = KNT
    END IF
-   GO TO 10
+   ENDDO
 !
 !     End of CGET36
 !

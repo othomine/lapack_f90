@@ -154,13 +154,13 @@
 !     increasing by imaginary part if ISRT = 1)
 !
    DO
-   READ( NIN, FMT = * )N, ISRT
+   READ(NIN,*)N, ISRT
    IF( N == 0 ) RETURN
    DO I = 1, N
-      READ( NIN, FMT = * )( TMP( I, J ), J = 1, N )
+      READ(NIN,*) TMP(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )WRIN( I ), WIIN( I ), SIN( I ), SEPIN( I )
+      READ(NIN,*) WRIN( I ), WIIN( I ), SIN( I ), SEPIN( I )
    ENDDO
    TNRM = CLANGE( 'M', N, N, TMP, LDT, RWORK )
    DO ISCL = 1, 3
@@ -384,10 +384,8 @@
          GO TO 260
       END IF
       DO I = 1, N
-         IF( STMP( I ) /= S( I ) ) &
-            VMAX = 1.0E0 / EPS
-         IF( SEPTMP( I ) /= DUM( 1 ) ) &
-            VMAX = 1.0E0 / EPS
+         IF( STMP( I ) /= S( I ) ) VMAX = 1.0E0 / EPS
+         IF( SEPTMP( I ) /= DUM( 1 ) ) VMAX = 1.0E0 / EPS
       ENDDO
 !
 !        Compute eigenvector condition numbers only and compare
@@ -402,10 +400,8 @@
          GO TO 260
       END IF
       DO I = 1, N
-         IF( STMP( I ) /= DUM( 1 ) ) &
-            VMAX = 1.0E0 / EPS
-         IF( SEPTMP( I ) /= SEP( I ) ) &
-            VMAX = 1.0E0 / EPS
+         IF( STMP( I ) /= DUM( 1 ) ) VMAX = 1.0E0 / EPS
+         IF( SEPTMP( I ) /= SEP( I ) ) VMAX = 1.0E0 / EPS
       ENDDO
 !
 !        Compute all condition numbers using SELECT and compare

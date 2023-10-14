@@ -292,7 +292,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0D0, 1.0D0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -350,11 +350,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO, TEN
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0, &
-                      TEN = 10.0D0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = ONE / TWO )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -378,15 +373,10 @@
    EXTERNAL           DLACPY, DLASET, DLASUM, DLATMR, DLATMS, DSBT21, &
                       DSBTRD, XERBLA, DSYTRD_SB2ST, DSTEQR
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -397,21 +387,11 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
-   BADNNB = .FALSE.
-   KMAX = 0
-   DO J = 1, NSIZES
-      KMAX = MAX( KMAX, KK( J ) )
-      IF( KK( J ) < 0 ) &
-         BADNNB = .TRUE.
-   ENDDO
+   BADNNB = ANY(KK(1:NSIZES) < 0)
+   KMAX = MAXVAL(KK(1:NSIZES))
    KMAX = MIN( NMAX-1, KMAX )
 !
 !     Check for errors
@@ -441,15 +421,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -460,12 +439,11 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      ANINV = ONE / DBLE( MAX( 1, N ) )
+      ANINV = 1.0D0 / DBLE( MAX( 1, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K > N ) &
-            GO TO 180
+         IF( K > N ) GO TO 180
          K = MAX( 0, MIN( N-1, K ) )
 !
          IF( NSIZES /= 1 ) THEN
@@ -501,13 +479,12 @@
 !              =9                      positive definite
 !              =10                     diagonally dominant tridiagonal
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
 !
-            ITYPE = KTYPE( JTYPE )
-            IMODE = KMODE( JTYPE )
+         ITYPE = KTYPE( JTYPE )
+         IMODE = KMODE( JTYPE )
 !
-!              Compute norm
+!           Compute norm
 !
             SELECT CASE (KMAGN(JTYPE))
              CASE (1)
@@ -518,12 +495,12 @@
               ANORM = RTUNFL*N*ULPINV
             END SELECT
 !
-            CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+            CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
             IINFO = 0
             IF( JTYPE <= 15 ) THEN
                COND = ULPINV
             ELSE
-               COND = ULPINV*ANINV / TEN
+               COND = ULPINV*ANINV / 10.0D0
             END IF
 !
 !              Special Matrices -- Identity & Jordan block
@@ -537,9 +514,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( K+1, JCOL ) = ANORM
-               ENDDO
+               A(K+1,1:N) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -561,20 +536,20 @@
 !
 !                 Diagonal, random eigenvalues
 !
-               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                            ZERO, ANORM, 'Q', A( K+1, 1 ), LDA, &
+               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                            WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                            0.0D0, ANORM, 'Q', A( K+1, 1 ), LDA, &
                             IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 8 ) THEN
 !
 !                 Symmetric, random eigenvalues
 !
-               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, K, K, &
-                            ZERO, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
+               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                            WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, K, K, &
+                            0.0D0, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 9 ) THEN
 !
@@ -596,8 +571,8 @@
                DO I = 2, N
                   TEMP1 = ABS( A( K, I ) ) / &
                           SQRT( ABS( A( K+1, I-1 )*A( K+1, I ) ) )
-                  IF( TEMP1 > HALF ) THEN
-                     A( K, I ) = HALF*SQRT( ABS( A( K+1, &
+                  IF( TEMP1 > 0.5D0 ) THEN
+                     A( K, I ) = 0.5D0*SQRT( ABS( A( K+1, &
                                  I-1 )*A( K+1, I ) ) )
                   END IF
                ENDDO
@@ -654,8 +629,7 @@
 !              DSYTRD_SB2ST
 !
             CALL DCOPY( N, SD, 1, D1, 1 )
-            IF( N > 0 ) &
-               CALL DCOPY( N-1, SE, 1, WORK, 1 )
+            IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
             CALL DSTEQR( 'N', N, D1, WORK, WORK( N+1 ), LDU, &
                          WORK( N+1 ), IINFO )
@@ -676,8 +650,8 @@
 !              the one from above. Compare it with D1 computed
 !              using the DSBTRD.
 !
-            CALL DLASET( 'Full', N, 1, ZERO, ZERO, SD, N )
-            CALL DLASET( 'Full', N, 1, ZERO, ZERO, SE, N )
+            CALL DLASET( 'Full', N, 1, 0.0D0, 0.0D0, SD, N )
+            CALL DLASET( 'Full', N, 1, 0.0D0, 0.0D0, SE, N )
             CALL DLACPY( ' ', K+1, N, A, LDA, U, LDU )
             LH = MAX(1, 4*N)
             LW = LWORK - LH
@@ -687,8 +661,7 @@
 !              Compute D2 from the DSYTRD_SB2ST Upper case
 !
             CALL DCOPY( N, SD, 1, D2, 1 )
-            IF( N > 0 ) &
-               CALL DCOPY( N-1, SE, 1, WORK, 1 )
+            IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
             CALL DSTEQR( 'N', N, D2, WORK, WORK( N+1 ), LDU, &
                          WORK( N+1 ), IINFO )
@@ -710,13 +683,13 @@
             DO JC = 1, N
                DO JR = 0, MIN( K, N-JC )
                   A( JR+1, JC ) = A( K+1-JR, JC+JR )
-                  ENDDO
                ENDDO
+            ENDDO
             DO JC = N + 1 - K, N
                DO JR = MIN( K, N-JC ) + 1, K
-                  A( JR+1, JC ) = ZERO
-                  ENDDO
+                  A( JR+1, JC ) = 0.0D0
                ENDDO
+            ENDDO
 !
 !              Call DSBTRD to compute S and U from lower triangle
 !
@@ -749,8 +722,8 @@
 !              the one from above. Compare it with D1 computed
 !              using the DSBTRD.
 !
-            CALL DLASET( 'Full', N, 1, ZERO, ZERO, SD, N )
-            CALL DLASET( 'Full', N, 1, ZERO, ZERO, SE, N )
+            CALL DLASET( 'Full', N, 1, 0.0D0, 0.0D0, SD, N )
+            CALL DLASET( 'Full', N, 1, 0.0D0, 0.0D0, SE, N )
             CALL DLACPY( ' ', K+1, N, A, LDA, U, LDU )
             LH = MAX(1, 4*N)
             LW = LWORK - LH
@@ -782,17 +755,10 @@
 !              D1 computed using the standard 1-stage reduction as reference
 !
             NTEST = 6
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            TEMP3 = ZERO
-            TEMP4 = ZERO
-!
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-               TEMP3 = MAX( TEMP3, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP4 = MAX( TEMP4, ABS( D1( J )-D3( J ) ) )
-               ENDDO
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D2(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
+            TEMP3 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP4 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
 !
             RESULT(5) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
             RESULT(6) = TEMP4 / MAX( UNFL, ULP*MAX( TEMP3, TEMP4 ) )

@@ -428,8 +428,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 27 )
 !     ..
@@ -458,29 +456,19 @@
    EXTERNAL           ALASVM, DGET52, DGGEV3, DLACPY, DLARFG, DLASET, &
                       DLATM4, DORM2R, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN, SIGN
-!     ..
 !     .. Data statements ..
    DATA               KCLASS / 15*1, 10*2, 1*3, 1*4 /
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
    DATA               KZ2 / 0, 0, 1, 2, 1, 1 /
    DATA               KADD / 0, 0, 0, 0, 3, 2 /
-   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, &
-                      4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0, 0 /
-   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, &
-                      1, 1, -4, 2, -4, 8*8, 0, 0 /
-   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, &
-                      4*5, 4*3, 1, 1 /
-   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, &
-                      4*6, 4*4, 1, 1 /
-   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, &
-                      2, 1, 3 /
-   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, &
-                      2, 1, 3 /
+   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, 4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0, 0 /
+   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, 1, 1, -4, 2, -4, 8*8, 0, 0 /
+   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, 4*5, 4*3, 1, 1 /
+   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, 4*6, 4*4, 1, 1 /
+   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, 2, 1, 3 /
+   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, 2, 1, 3 /
    DATA               KTRIAN / 16*0, 11*1 /
-   DATA               IASIGN / 6*0, 2, 0, 2*2, 2*0, 3*2, 0, 2, 3*0, &
-                      5*2, 2*0 /
+   DATA               IASIGN / 6*0, 2, 0, 2*2, 2*0, 3*2, 0, 2, 3*0, 5*2, 2*0 /
    DATA               IBSIGN / 7*0, 2, 2*0, 2*2, 2*0, 2, 0, 2, 10*0 /
 !     ..
 !     .. Executable Statements ..
@@ -489,13 +477,8 @@
 !
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
    IF( NSIZES < 0 ) THEN
       INFO = -1
@@ -503,7 +486,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D+0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -9
@@ -529,8 +512,7 @@
       WORK( 1 ) = MAXWRK
    END IF
 !
-   IF( LWORK < MINWRK ) &
-      INFO = -25
+   IF( LWORK < MINWRK ) INFO = -25
 !
    IF( INFO /= 0 ) THEN
       CALL XERBLA( 'DDRGEV3', -INFO )
@@ -539,19 +521,17 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
    SAFMIN = DLAMCH( 'Safe minimum' )
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
    SAFMIN = SAFMIN / ULP
-   SAFMAX = ONE / SAFMIN
-   ULPINV = ONE / ULP
+   SAFMAX = 1.0D+0 / SAFMIN
+   ULPINV = 1.0D+0 / ULP
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = ZERO
-   RMAGN( 1 ) = ONE
+   RMAGN( 0:1 ) = 0.0D+0
 !
 !     Loop over sizes, types
 !
@@ -572,15 +552,12 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 210
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 210
          NMATS = NMATS + 1
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Generate test matrices A and B
 !
@@ -606,8 +583,7 @@
 !           KZ1, KZ2, KADD: used to implement KAZERO and KBZERO.
 !           RMAGN: used to implement KAMAGN and KBMAGN.
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
          IERR = 0
          IF( KCLASS( JTYPE ) < 3 ) THEN
 !
@@ -615,8 +591,7 @@
 !
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
-               IF( IN /= N ) &
-                  CALL DLASET( 'Full', N, N, ZERO, ZERO, A, LDA )
+               IF( IN /= N ) CALL DLASET( 'Full', N, N, 0.0D+0, 0.0D+0, A, LDA )
             ELSE
                IN = N
             END IF
@@ -626,26 +601,23 @@
                          RMAGN( KTRIAN( JTYPE )*KAMAGN( JTYPE ) ), 2, &
                          ISEED, A, LDA )
             IADD = KADD( KAZERO( JTYPE ) )
-            IF( IADD > 0 .AND. IADD <= N ) &
-               A( IADD, IADD ) = ONE
+            IF( IADD > 0 .AND. IADD <= N ) A( IADD, IADD ) = 1.0D+0
 !
 !              Generate B (w/o rotation)
 !
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
-               IF( IN /= N ) &
-                  CALL DLASET( 'Full', N, N, ZERO, ZERO, B, LDA )
+               IF( IN /= N ) CALL DLASET( 'Full', N, N, 0.0D+0, 0.0D+0, B, LDA )
             ELSE
                IN = N
             END IF
             CALL DLATM4( KBTYPE( JTYPE ), IN, KZ1( KBZERO( JTYPE ) ), &
                          KZ2( KBZERO( JTYPE ) ), IBSIGN( JTYPE ), &
-                         RMAGN( KBMAGN( JTYPE ) ), ONE, &
+                         RMAGN( KBMAGN( JTYPE ) ), 1.0D+0, &
                          RMAGN( KTRIAN( JTYPE )*KBMAGN( JTYPE ) ), 2, &
                          ISEED, B, LDA )
             IADD = KADD( KBZERO( JTYPE ) )
-            IF( IADD /= 0 .AND. IADD <= N ) &
-               B( IADD, IADD ) = ONE
+            IF( IADD /= 0 .AND. IADD <= N ) B( IADD, IADD ) = 1.0D+0
 !
             IF( KCLASS( JTYPE ) == 2 .AND. N > 0 ) THEN
 !
@@ -661,29 +633,25 @@
                   ENDDO
                   CALL DLARFG( N+1-JC, Q( JC, JC ), Q( JC+1, JC ), 1, &
                                WORK( JC ) )
-                  WORK( 2*N+JC ) = SIGN( ONE, Q( JC, JC ) )
-                  Q( JC, JC ) = ONE
+                  WORK( 2*N+JC ) = SIGN( 1.0D+0, Q( JC, JC ) )
+                  Q( JC, JC ) = 1.0D+0
                   CALL DLARFG( N+1-JC, Z( JC, JC ), Z( JC+1, JC ), 1, &
                                WORK( N+JC ) )
-                  WORK( 3*N+JC ) = SIGN( ONE, Z( JC, JC ) )
-                  Z( JC, JC ) = ONE
+                  WORK( 3*N+JC ) = SIGN( 1.0D+0, Z( JC, JC ) )
+                  Z( JC, JC ) = 1.0D+0
                ENDDO
-               Q( N, N ) = ONE
-               WORK( N ) = ZERO
-               WORK( 3*N ) = SIGN( ONE, DLARND( 2, ISEED ) )
-               Z( N, N ) = ONE
-               WORK( 2*N ) = ZERO
-               WORK( 4*N ) = SIGN( ONE, DLARND( 2, ISEED ) )
+               Q( N, N ) = 1.0D+0
+               WORK( N ) = 0.0D+0
+               WORK( 3*N ) = SIGN( 1.0D+0, DLARND( 2, ISEED ) )
+               Z( N, N ) = 1.0D+0
+               WORK( 2*N ) = 0.0D+0
+               WORK( 4*N ) = SIGN( 1.0D+0, DLARND( 2, ISEED ) )
 !
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
-                  DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )*WORK( 3*N+JC )* &
-                                   A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )*WORK( 3*N+JC )* &
-                                   B( JR, JC )
-                  ENDDO
+                  A(1:N,JC) = WORK(2*N+1:2*N+N)*WORK(3*N+JC)*A(1:N,JC)
+                  B(1:N,JC) = WORK(2*N+1:2*N+N)*WORK(3*N+JC)*B(1:N,JC)
                ENDDO
                CALL DORM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, &
                             LDA, WORK( 2*N+1 ), IERR )
@@ -724,7 +692,7 @@
                                 DLARND( 2, ISEED )
                ENDDO
                DO JR = JC + 2, N
-                  A( JR, JC ) = ZERO
+                  A( JR, JC ) = 0.0D+0
                ENDDO
             ENDDO
             DO JC = 1, N
@@ -733,11 +701,11 @@
                                 DLARND( 2, ISEED )
                ENDDO
                DO JR = JC + 1, N
-                  B( JR, JC ) = ZERO
+                  B( JR, JC ) = 0.0D+0
                ENDDO
             ENDDO
             DO JC = 1, N, 4
-               B( JC, JC ) = ZERO
+               B( JC, JC ) = 0.0D+0
             ENDDO
 
          END IF
@@ -753,9 +721,7 @@
 !
   100       CONTINUE
 !
-         DO I = 1, 7
-            RESULT( I ) = -ONE
-            ENDDO
+         RESULT(1:7) = -1.0D+0
 !
 !           Call XLAENV to set the parameters used in DLAQZ0
 !
@@ -811,11 +777,8 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHAR( J ) /= ALPHR1( J ) .OR. ALPHAI( J ) /= &
-                ALPHI1( J ) .OR. BETA( J ) /= BETA1( J ) )RESULT( 5 ) &
-                 = ULPINV
-            ENDDO
+         IF (ANY(ALPHAR(1:N) /= ALPHR1(1:N) .OR. ALPHAI(1:N) /= &
+             ALPHI1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 5 ) = ULPINV
 !
 !           Do the test (6): Compute eigenvalues and left eigenvectors,
 !           and test them
@@ -832,18 +795,10 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHAR( J ) /= ALPHR1( J ) .OR. ALPHAI( J ) /= &
-                ALPHI1( J ) .OR. BETA( J ) /= BETA1( J ) )RESULT( 6 ) &
-                 = ULPINV
-            ENDDO
+         IF (ANY(ALPHAR(1:N) /= ALPHR1(1:N) .OR. ALPHAI(1:N) /= &
+             ALPHI1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 6 ) = ULPINV
 !
-         DO J = 1, N
-            DO JC = 1, N
-               IF( Q( J, JC ) /= QE( J, JC ) ) &
-                  RESULT( 6 ) = ULPINV
-               ENDDO
-            ENDDO
+         IF (ANY(Q(1:N,1:N) /= QE(1:N,1:N))) RESULT( 6 ) = ULPINV
 !
 !           DO the test (7): Compute eigenvalues and right eigenvectors,
 !           and test them
@@ -860,18 +815,10 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHAR( J ) /= ALPHR1( J ) .OR. ALPHAI( J ) /= &
-                ALPHI1( J ) .OR. BETA( J ) /= BETA1( J ) )RESULT( 7 ) &
-                 = ULPINV
-            ENDDO
+         IF (ANY(ALPHAR(1:N) /= ALPHR1(1:N) .OR. ALPHAI(1:N) /= &
+             ALPHI1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 7 ) = ULPINV
 !
-         DO J = 1, N
-            DO JC = 1, N
-               IF( Z( J, JC ) /= QE( J, JC ) ) &
-                  RESULT( 7 ) = ULPINV
-               ENDDO
-            ENDDO
+         IF (ANY(Z(1:N,1:N) /= QE(1:N,1:N))) RESULT( 7 ) = ULPINV
 !
 !           End of Loop -- Check for RESULT(j) > THRESH
 !
@@ -970,4 +917,3 @@
 !     End of DDRGEV3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

@@ -539,21 +539,14 @@
 !
 !           Compute norm
 !
-         GO TO ( 30, 40, 50 )KMAGN( JTYPE )
-!
-30       CONTINUE
-         ANORM = 1.0E+0
-         GO TO 60
-!
-40       CONTINUE
-         ANORM = OVFL*ULP
-         GO TO 60
-!
-50       CONTINUE
-         ANORM = UNFL*ULPINV
-         GO TO 60
-!
-60       CONTINUE
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = OVFL*ULP
+          CASE (3)
+           ANORM = UNFL*ULPINV
+         END SELECT
 !
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
@@ -715,10 +708,9 @@
                RESULT( 1+RSUB ) = 0.0E+0
                DO J = 1, N - 1
                   DO I = J + 1, N
-                     IF( H( I, J ) /= 0.0E+0 ) &
-                        RESULT( 1+RSUB ) = ULPINV
-                     ENDDO
+                     IF( H( I, J ) /= 0.0E+0 ) RESULT( 1+RSUB ) = ULPINV
                   ENDDO
+               ENDDO
 !
 !                 Do Tests (2) and (3) or Tests (8) and (9)
 !
@@ -749,18 +741,12 @@
                END IF
 !
                RESULT( 5+RSUB ) = 0.0E+0
-               DO J = 1, N
-                  DO I = 1, N
-                     IF( H( I, J ) /= HT( I, J ) ) RESULT( 5+RSUB ) = ULPINV
-                  ENDDO
-               ENDDO
+               IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 5+RSUB ) = ULPINV
 !
 !                 Do Test (6) or Test (12)
 !
                RESULT( 6+RSUB ) = 0.0E+0
-               DO I = 1, N
-                  IF( W( I ) /= WT( I ) ) RESULT( 6+RSUB ) = ULPINV
-               ENDDO
+               IF (ANY(W(1:N) /= WT(1:N))) RESULT( 6+RSUB ) = ULPINV
 !
 !                 Do Test (13)
 !

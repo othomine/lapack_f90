@@ -777,21 +777,14 @@
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40       CONTINUE
-         ANORM = 1.0E+0
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0
@@ -979,8 +972,8 @@
             DO JR = 1, JC
                I = I + 1
                AP( I ) = A( JR, JC )
-               ENDDO
             ENDDO
+         ENDDO
 !
 !           Call CHPTRD and CUPGTR to compute S and U from AP
 !
@@ -1153,7 +1146,7 @@
             CALL SSTECH( N, SD, SE, D1, TEMP1, RWORK, IINFO )
             IF( IINFO == 0 ) GO TO 170
             TEMP1 = TEMP1*2.0E+0
-            ENDDO
+         ENDDO
 !
   170       CONTINUE
          RESULT( 13 ) = TEMP1
@@ -1211,9 +1204,7 @@
 !
             RESULT( 16 ) = TEMP2 / MAX( UNFL, 100.0E+0*ULP*MAX( TEMP1, TEMP2 ) )
          ELSE
-            RESULT( 14 ) = 0.0E+0
-            RESULT( 15 ) = 0.0E+0
-            RESULT( 16 ) = 0.0E+0
+            RESULT( 14:16 ) = 0.0E+0
          END IF
 !
 !           Call SSTEBZ with different options and do tests 17-18.
@@ -1589,8 +1580,7 @@
                   RESULT( 28 ) = 0.0E+0
                END IF
             ELSE
-               RESULT( 27 ) = 0.0E+0
-               RESULT( 28 ) = 0.0E+0
+               RESULT(27:28) = 0.0E+0
             END IF
 !
 !           Call CSTEMR(V,I) to compute D1 and Z, do tests.
@@ -1742,8 +1732,7 @@
                TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))),MAXVAL(ABS( D2(1:IU-IL+1))))
                TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
-               RESULT(34) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+               RESULT(34) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
             ELSE
                RESULT(29:34) = 0.0E+0
             END IF
@@ -1896,4 +1885,3 @@
 !     End of CCHKST
 !
 END
-

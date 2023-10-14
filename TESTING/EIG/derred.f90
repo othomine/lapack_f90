@@ -81,8 +81,7 @@
 !
 !     .. Parameters ..
    INTEGER            NMAX
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( NMAX = 4, ONE = 1.0D0, ZERO = 0.0D0 )
+   PARAMETER          ( NMAX = 4 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER*2        C2
@@ -104,9 +103,6 @@
 !     .. External Functions ..
    LOGICAL            DSLECT, LSAMEN
    EXTERNAL           DSLECT, LSAMEN
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN_TRIM
 !     ..
 !     .. Arrays in Common ..
    LOGICAL            SELVAL( 20 )
@@ -130,14 +126,8 @@
 !
 !     Initialize A
 !
-   DO J = 1, NMAX
-      DO I = 1, NMAX
-         A( I, J ) = ZERO
-      ENDDO
-   ENDDO
-   DO I = 1, NMAX
-      A( I, I ) = ONE
-   ENDDO
+   A(1:NMAX,1:NMAX) = 0.0D0
+   FORALL (I = 1:NMAX) A( I, I ) = 1.0D0
    OK = .TRUE.
    NT = 0
 !
@@ -431,51 +421,51 @@
 !
       SRNAMT = 'DGESVDX'
       INFOT = 1
-      CALL DGESVDX( 'X', 'N', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'X', 'N', 'A', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL DGESVDX( 'N', 'X', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'X', 'A', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL DGESVDX( 'N', 'N', 'X', 0, 0, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'X', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL DGESVDX( 'N', 'N', 'A', -1, 0, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'A', -1, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL DGESVDX( 'N', 'N', 'A', 0, -1, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'A', 0, -1, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 7
-      CALL DGESVDX( 'N', 'N', 'A', 2, 1, A, 1, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'A', 2, 1, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL DGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -ONE, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -1.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL DGESVDX( 'N', 'N', 'V', 2, 1, A, 2, ONE, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'V', 2, 1, A, 2, 1.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 10
-      CALL DGESVDX( 'N', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'N', 'I', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 1, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL DGESVDX( 'V', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL DGESVDX( 'V', 'N', 'I', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     1, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 15
-      CALL DGESVDX( 'V', 'N', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL DGESVDX( 'V', 'N', 'A', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 17
-      CALL DGESVDX( 'N', 'V', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL DGESVDX( 'N', 'V', 'A', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'DGESVDX', INFOT, NOUT, LERR, OK )
       NT = 12
@@ -560,4 +550,4 @@
 !
 !     End of DERRED
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

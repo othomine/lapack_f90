@@ -204,9 +204,6 @@
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, DLARHS, DLATB9, DLATMS, &
                       DLSETS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize constants and the random number seed.
@@ -243,15 +240,13 @@
       M = MVAL( IK )
       P = PVAL( IK )
       N = NVAL( IK )
-      IF( P > N .OR. N > M+P ) &
-         GO TO 40
+      IF( P <= N .and. N <= M+P ) THEN
 !
       DO IMAT = 1, NTYPES
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 30
+         IF (DOTYPE( IMAT ) ) THEN
 !
 !           Set up parameters with DLATB9 and generate test
 !           matrices A and B with DLATMS.
@@ -266,7 +261,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
+            CYCLE
          END IF
 !
          CALL DLATMS( P, N, DISTB, ISEED, TYPE, RWORK, MODEB, CNDNMB, &
@@ -275,7 +270,7 @@
          IF( IINFO /= 0 ) THEN
             WRITE( NOUT, FMT = 9999 )IINFO
             INFO = ABS( IINFO )
-            GO TO 30
+            CYCLE
          END IF
 !
 !           Generate the right-hand sides C and D for the LSE.
@@ -313,9 +308,9 @@
          ENDDO
          NRUN = NRUN + NT
 !
-30    CONTINUE
+      ENDIF
       ENDDO
-40 CONTINUE
+   ENDIF
    ENDDO
 !
 !     Print a summary of the results.
@@ -333,4 +328,4 @@
 !     End of DCKLSE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

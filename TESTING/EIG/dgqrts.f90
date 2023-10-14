@@ -192,8 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    DOUBLE PRECISION   ROGUE
    PARAMETER          ( ROGUE = -1.0D+10 )
 !     ..
@@ -208,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEMM, DGGQRF, DLACPY, DLASET, DORGQR, DORGRQ, &
                       DSYRK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -254,12 +249,12 @@
 !
 !     Copy R
 !
-   CALL DLASET( 'Full', N, M, ZERO, ZERO, R, LDA )
+   CALL DLASET( 'Full', N, M, 0.0D+0, 0.0D+0, R, LDA )
    CALL DLACPY( 'Upper', N, M, AF, LDA, R, LDA )
 !
 !     Copy T
 !
-   CALL DLASET( 'Full', N, P, ZERO, ZERO, T, LDB )
+   CALL DLASET( 'Full', N, P, 0.0D+0, 0.0D+0, T, LDB )
    IF( N <= P ) THEN
       CALL DLACPY( 'Upper', N, N, BF( 1, P-N+1 ), LDB, T( 1, P-N+1 ), &
                    LDB )
@@ -271,40 +266,40 @@
 !
 !     Compute R - Q'*A
 !
-   CALL DGEMM( 'Transpose', 'No transpose', N, M, N, -ONE, Q, LDA, A, &
-               LDA, ONE, R, LDA )
+   CALL DGEMM( 'Transpose', 'No transpose', N, M, N, -1.0D+0, Q, LDA, A, &
+               LDA, 1.0D+0, R, LDA )
 !
 !     Compute norm( R - Q'*A ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = DLANGE( '1', N, M, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0D+0 ) THEN
       RESULT( 1 ) = ( ( RESID / DBLE( MAX( 1, M, N ) ) ) / ANORM ) / &
                     ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0D+0
    END IF
 !
 !     Compute T*Z - Q'*B
 !
-   CALL DGEMM( 'No Transpose', 'No transpose', N, P, P, ONE, T, LDB, &
-               Z, LDB, ZERO, BWK, LDB )
-   CALL DGEMM( 'Transpose', 'No transpose', N, P, N, -ONE, Q, LDA, B, &
-               LDB, ONE, BWK, LDB )
+   CALL DGEMM( 'No Transpose', 'No transpose', N, P, P, 1.0D+0, T, LDB, &
+               Z, LDB, 0.0D+0, BWK, LDB )
+   CALL DGEMM( 'Transpose', 'No transpose', N, P, N, -1.0D+0, Q, LDA, B, &
+               LDB, 1.0D+0, BWK, LDB )
 !
 !     Compute norm( T*Z - Q'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = DLANGE( '1', N, P, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0D+0 ) THEN
       RESULT( 2 ) = ( ( RESID / DBLE( MAX( 1, P, N ) ) ) / BNORM ) / &
                     ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0D+0
    END IF
 !
 !     Compute I - Q'*Q
 !
-   CALL DLASET( 'Full', N, N, ZERO, ONE, R, LDA )
-   CALL DSYRK( 'Upper', 'Transpose', N, N, -ONE, Q, LDA, ONE, R, &
+   CALL DLASET( 'Full', N, N, 0.0D+0, 1.0D+0, R, LDA )
+   CALL DSYRK( 'Upper', 'Transpose', N, N, -1.0D+0, Q, LDA, 1.0D+0, R, &
                LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
@@ -314,8 +309,8 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL DLASET( 'Full', P, P, ZERO, ONE, T, LDB )
-   CALL DSYRK( 'Upper', 'Transpose', P, P, -ONE, Z, LDB, ONE, T, &
+   CALL DLASET( 'Full', P, P, 0.0D+0, 1.0D+0, T, LDB )
+   CALL DSYRK( 'Upper', 'Transpose', P, P, -1.0D+0, Z, LDB, 1.0D+0, T, &
                LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
@@ -328,4 +323,4 @@
 !     End of DGQRTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -77,10 +77,6 @@
    COMPLEX            A( NMAX, NMAX ), TP( NMAX ), TQ( NMAX ), &
                       U( NMAX, NMAX ), V( NMAX, NMAX ), W( LW )
 !     ..
-!     .. External Functions ..
-   LOGICAL            LSAMEN
-   EXTERNAL           LSAMEN
-!     ..
 !     .. External Subroutines ..
    EXTERNAL           CHKXER, CBDSQR, CGEBD2, CGEBRD, CUNGBR, &
                       CUNMBR
@@ -112,7 +108,7 @@
 !
 !     Test error exits of the SVD routines.
 !
-   IF( LSAMEN( 2, C2, 'BD' ) ) THEN
+   IF( C2 == 'BD' ) THEN
 !
 !        CGEBRD
 !

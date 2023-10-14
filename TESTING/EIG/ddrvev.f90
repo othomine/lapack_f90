@@ -366,7 +366,7 @@
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
 !>
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0D0, 1.0D0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     NMAX            Largest value in NN.
 !>     NERRS           The number of tests which have exceeded THRESH
@@ -424,10 +424,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
-   DOUBLE PRECISION   TWO
-   PARAMETER          ( TWO = 2.0D0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -455,15 +451,10 @@
    EXTERNAL           DGEEV, DGET22, DLACPY, DLASET, DLASUM, &
                       DLATME, DLATMR, DLATMS, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 3, 5*4, 4*6, 6*6, 3*9 /
-   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, &
-                      3, 1, 2, 3 /
-   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, &
-                      1, 5, 5, 5, 4, 3, 1 /
+   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, 1, 5, 5, 5, 4, 3, 1 /
    DATA               KCONDS / 3*0, 5*0, 4*1, 6*2, 3*0 /
 !     ..
 !     .. Executable Statements ..
@@ -479,13 +470,8 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -495,7 +481,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D0 ) THEN
       INFO = -6
    ELSE IF( NOUNIT <= 0 ) THEN
       INFO = -7
@@ -518,17 +504,16 @@
 !
 !     Quick return if nothing to do
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTULP = SQRT( ULP )
-   RTULPI = ONE / RTULP
+   RTULPI = 1.0D0 / RTULP
 !
 !     Loop over sizes, types
 !
@@ -543,14 +528,11 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 260
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 260
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
@@ -568,31 +550,23 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 30, 40, 50 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0D+0
+          CASE (2)
+           ANORM = OVFL*ULP
+          CASE (3)
+           ANORM = UNFL*ULPINV
+         END SELECT
 !
-30       CONTINUE
-         ANORM = ONE
-         GO TO 60
-!
-40       CONTINUE
-         ANORM = OVFL*ULP
-         GO TO 60
-!
-50       CONTINUE
-         ANORM = UNFL*ULPINV
-         GO TO 60
-!
-60       CONTINUE
-!
-         CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+         CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -607,9 +581,7 @@
 !
 !              Identity
 !
-            DO JCOL = 1, N
-               A( JCOL, JCOL ) = ANORM
-            ENDDO
+            FORALL(JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
          ELSE IF( ITYPE == 3 ) THEN
 !
@@ -617,8 +589,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = ONE
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = 1.0D0
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN
@@ -642,15 +613,15 @@
 !              General, eigenvalues specified
 !
             IF( KCONDS( JTYPE ) == 1 ) THEN
-               CONDS = ONE
+               CONDS = 1.0D0
             ELSE IF( KCONDS( JTYPE ) == 2 ) THEN
                CONDS = RTULPI
             ELSE
-               CONDS = ZERO
+               CONDS = 0.0D0
             END IF
 !
             ADUMMA( 1 ) = ' '
-            CALL DLATME( N, 'S', ISEED, WORK, IMODE, COND, ONE, &
+            CALL DLATME( N, 'S', ISEED, WORK, IMODE, COND, 1.0D0, &
                          ADUMMA, 'T', 'T', 'T', WORK( N+1 ), 4, &
                          CONDS, N, N, ANORM, A, LDA, WORK( 2*N+1 ), &
                          IINFO )
@@ -659,35 +630,35 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              General, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
             IF( N >= 4 ) THEN
-               CALL DLASET( 'Full', 2, N, ZERO, ZERO, A, LDA )
-               CALL DLASET( 'Full', N-3, 1, ZERO, ZERO, A( 3, 1 ), &
+               CALL DLASET( 'Full', 2, N, 0.0D0, 0.0D0, A, LDA )
+               CALL DLASET( 'Full', N-3, 1, 0.0D0, 0.0D0, A( 3, 1 ), &
                             LDA )
-               CALL DLASET( 'Full', N-3, 2, ZERO, ZERO, A( 3, N-1 ), &
+               CALL DLASET( 'Full', N-3, 2, 0.0D0, 0.0D0, A( 3, N-1 ), &
                             LDA )
-               CALL DLASET( 'Full', 1, N, ZERO, ZERO, A( N, 1 ), &
+               CALL DLASET( 'Full', 1, N, 0.0D0, 0.0D0, A( N, 1 ), &
                             LDA )
             END IF
 !
@@ -695,10 +666,10 @@
 !
 !              Triangular, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE
 !
@@ -726,9 +697,7 @@
 !
 !              Initialize RESULT
 !
-            DO J = 1, 7
-               RESULT( J ) = -ONE
-               ENDDO
+            RESULT(1:7) = -1.0D+0
 !
 !              Compute eigenvalues and eigenvectors, and test them
 !
@@ -758,27 +727,27 @@
 !              Do Test (3)
 !
             DO J = 1, N
-               TNRM = ONE
-               IF( WI( J ) == ZERO ) THEN
+               TNRM = 1.0D0
+               IF( WI( J ) == 0.0D0 ) THEN
                   TNRM = DNRM2( N, VR( 1, J ), 1 )
-               ELSE IF( WI( J ) > ZERO ) THEN
+               ELSE IF( WI( J ) > 0.0D0 ) THEN
                   TNRM = DLAPY2( DNRM2( N, VR( 1, J ), 1 ), &
                          DNRM2( N, VR( 1, J+1 ), 1 ) )
                END IF
                RESULT( 3 ) = MAX( RESULT( 3 ), &
-                             MIN( ULPINV, ABS( TNRM-ONE ) / ULP ) )
-               IF( WI( J ) > ZERO ) THEN
-                  VMX = ZERO
-                  VRMX = ZERO
+                             MIN( ULPINV, ABS( TNRM-1.0D0 ) / ULP ) )
+               IF( WI( J ) > 0.0D0 ) THEN
+                  VMX = 0.0D0
+                  VRMX = 0.0D0
                   DO JJ = 1, N
                      VTST = DLAPY2( VR( JJ, J ), VR( JJ, J+1 ) )
                      IF( VTST > VMX ) &
                         VMX = VTST
-                     IF( VR( JJ, J+1 ) == ZERO .AND. &
+                     IF( VR( JJ, J+1 ) == 0.0D0 .AND. &
                          ABS( VR( JJ, J ) ) > VRMX ) &
                          VRMX = ABS( VR( JJ, J ) )
                      ENDDO
-                  IF( VRMX / VMX < ONE-TWO*ULP ) &
+                  IF( VRMX / VMX < 1.0D0-2.0D0*ULP ) &
                      RESULT( 3 ) = ULPINV
                END IF
                ENDDO
@@ -786,27 +755,27 @@
 !              Do Test (4)
 !
             DO J = 1, N
-               TNRM = ONE
-               IF( WI( J ) == ZERO ) THEN
+               TNRM = 1.0D0
+               IF( WI( J ) == 0.0D0 ) THEN
                   TNRM = DNRM2( N, VL( 1, J ), 1 )
-               ELSE IF( WI( J ) > ZERO ) THEN
+               ELSE IF( WI( J ) > 0.0D0 ) THEN
                   TNRM = DLAPY2( DNRM2( N, VL( 1, J ), 1 ), &
                          DNRM2( N, VL( 1, J+1 ), 1 ) )
                END IF
                RESULT( 4 ) = MAX( RESULT( 4 ), &
-                             MIN( ULPINV, ABS( TNRM-ONE ) / ULP ) )
-               IF( WI( J ) > ZERO ) THEN
-                  VMX = ZERO
-                  VRMX = ZERO
+                             MIN( ULPINV, ABS( TNRM-1.0D0 ) / ULP ) )
+               IF( WI( J ) > 0.0D0 ) THEN
+                  VMX = 0.0D0
+                  VRMX = 0.0D0
                   DO JJ = 1, N
                      VTST = DLAPY2( VL( JJ, J ), VL( JJ, J+1 ) )
                      IF( VTST > VMX ) &
                         VMX = VTST
-                     IF( VL( JJ, J+1 ) == ZERO .AND. &
+                     IF( VL( JJ, J+1 ) == 0.0D0 .AND. &
                          ABS( VL( JJ, J ) ) > VRMX ) &
                          VRMX = ABS( VL( JJ, J ) )
                      ENDDO
-                  IF( VRMX / VMX < ONE-TWO*ULP ) &
+                  IF( VRMX / VMX < 1.0D0-2.0D0*ULP ) &
                      RESULT( 4 ) = ULPINV
                END IF
                ENDDO
@@ -826,10 +795,7 @@
 !
 !              Do Test (5)
 !
-            DO J = 1, N
-               IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-                  RESULT( 5 ) = ULPINV
-               ENDDO
+            IF (ANY(WR(1:N) /= WR1(1:N) .or. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !              Compute eigenvalues and right eigenvectors, and test them
 !
@@ -846,19 +812,11 @@
 !
 !              Do Test (5) again
 !
-            DO J = 1, N
-               IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-                  RESULT( 5 ) = ULPINV
-               ENDDO
+            IF (ANY(WR(1:N) /= WR1(1:N) .or. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !              Do Test (6)
 !
-            DO J = 1, N
-               DO JJ = 1, N
-                  IF( VR( J, JJ ) /= LRE( J, JJ ) ) &
-                     RESULT( 6 ) = ULPINV
-                  ENDDO
-               ENDDO
+            IF (ANY(VR(1:N,1:N) /= LRE(1:N,1:N))) RESULT( 6 ) = ULPINV
 !
 !              Compute eigenvalues and left eigenvectors, and test them
 !
@@ -875,35 +833,20 @@
 !
 !              Do Test (5) again
 !
-            DO J = 1, N
-               IF( WR( J ) /= WR1( J ) .OR. WI( J ) /= WI1( J ) ) &
-                  RESULT( 5 ) = ULPINV
-               ENDDO
+            IF (ANY(WR(1:N) /= WR1(1:N) .or. WI(1:N) /= WI1(1:N))) RESULT( 5 ) = ULPINV
 !
 !              Do Test (7)
 !
-            DO J = 1, N
-               DO JJ = 1, N
-                  IF( VL( J, JJ ) /= LRE( J, JJ ) ) &
-                     RESULT( 7 ) = ULPINV
-                  ENDDO
-               ENDDO
+            IF (ANY(VL(1:N,1:N) /= LRE(1:N,1:N))) RESULT( 7 ) = ULPINV
 !
 !              End of Loop -- Check for RESULT(j) > THRESH
 !
   220          CONTINUE
 !
-            NTEST = 0
-            NFAIL = 0
-            DO J = 1, 7
-               IF( RESULT( J ) >= ZERO ) &
-                  NTEST = NTEST + 1
-               IF( RESULT( J ) >= THRESH ) &
-                  NFAIL = NFAIL + 1
-               ENDDO
+            NTEST = COUNT(RESULT(1:7) >= 0.0E+0)
+            NFAIL = COUNT(RESULT(1:7) >= THRESH)
 !
-            IF( NFAIL > 0 ) &
-               NTESTF = NTESTF + 1
+            IF( NFAIL > 0 ) NTESTF = NTESTF + 1
             IF( NTESTF == 1 ) THEN
                WRITE( NOUNIT, FMT = 9999 )PATH
                WRITE( NOUNIT, FMT = 9998 )
@@ -915,8 +858,7 @@
 !
             DO J = 1, 7
                IF( RESULT( J ) >= THRESH ) THEN
-                  WRITE( NOUNIT, FMT = 9994 )N, IWK, IOLDSD, JTYPE, &
-                     J, RESULT( J )
+                  WRITE( NOUNIT, FMT = 9994 )N, IWK, IOLDSD, JTYPE, J, RESULT( J )
                END IF
                ENDDO
 !
@@ -975,4 +917,4 @@
 !     End of DDRVEV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

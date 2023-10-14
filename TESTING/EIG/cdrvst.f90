@@ -659,8 +659,7 @@
 !
             TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
             TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   130          CONTINUE
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )

@@ -253,7 +253,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0D0, 1.0D0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -310,11 +310,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO, TEN
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0, &
-                      TEN = 10.0D0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = ONE / TWO )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -338,15 +333,10 @@
    EXTERNAL           DLACPY, DLASET, DLASUM, DLATMR, DLATMS, DSBT21, &
                       DSBTRD, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -357,21 +347,11 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
-   BADNNB = .FALSE.
-   KMAX = 0
-   DO J = 1, NSIZES
-      KMAX = MAX( KMAX, KK( J ) )
-      IF( KK( J ) < 0 ) &
-         BADNNB = .TRUE.
-   ENDDO
+   BADNNB = ANY(KK(1:NSIZES) < 0)
+   KMAX = MAXVAL(KK(1:NSIZES))
    KMAX = MIN( NMAX-1, KMAX )
 !
 !     Check for errors
@@ -401,15 +381,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -420,12 +399,11 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      ANINV = ONE / DBLE( MAX( 1, N ) )
+      ANINV = 1.0D0 / DBLE( MAX( 1, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K > N ) &
-            GO TO 180
+         IF( K <= N ) THEN
          K = MAX( 0, MIN( N-1, K ) )
 !
          IF( NSIZES /= 1 ) THEN
@@ -435,14 +413,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 170
+            IF (DOTYPE( JTYPE ) ) THEN
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !              Store as "Upper"; later, we will copy to other format.
@@ -461,36 +436,28 @@
 !              =9                      positive definite
 !              =10                     diagonally dominant tridiagonal
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 100
+            IF( MTYPES <= MAXTYP ) THEN
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0D+0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*ANINV
+             CASE (3)
+              ANORM = RTUNFL*N*ULPINV
+            END SELECT
 !
-40          CONTINUE
-            ANORM = ONE
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*ANINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*N*ULPINV
-            GO TO 70
-!
-70          CONTINUE
-!
-            CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+            CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
             IINFO = 0
             IF( JTYPE <= 15 ) THEN
                COND = ULPINV
             ELSE
-               COND = ULPINV*ANINV / TEN
+               COND = ULPINV*ANINV / 10.0D0
             END IF
 !
 !              Special Matrices -- Identity & Jordan block
@@ -528,20 +495,20 @@
 !
 !                 Diagonal, random eigenvalues
 !
-               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                            ZERO, ANORM, 'Q', A( K+1, 1 ), LDA, &
+               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                            WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                            0.0D0, ANORM, 'Q', A( K+1, 1 ), LDA, &
                             IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 8 ) THEN
 !
 !                 Symmetric, random eigenvalues
 !
-               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, K, K, &
-                            ZERO, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
+               CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                            WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, K, K, &
+                            0.0D0, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 9 ) THEN
 !
@@ -563,8 +530,8 @@
                DO I = 2, N
                   TEMP1 = ABS( A( K, I ) ) / &
                           SQRT( ABS( A( K+1, I-1 )*A( K+1, I ) ) )
-                  IF( TEMP1 > HALF ) THEN
-                     A( K, I ) = HALF*SQRT( ABS( A( K+1, &
+                  IF( TEMP1 > 0.5D0 ) THEN
+                     A( K, I ) = 0.5D0*SQRT( ABS( A( K+1, &
                                  I-1 )*A( K+1, I ) ) )
                   END IF
                ENDDO
@@ -581,7 +548,7 @@
                RETURN
             END IF
 !
-  100          CONTINUE
+            ENDIF
 !
 !              Call DSBTRD to compute S and U from upper triangle.
 !
@@ -605,8 +572,7 @@
 !
 !              Do tests 1 and 2
 !
-            CALL DSBT21( 'Upper', N, K, 1, A, LDA, SD, SE, U, LDU, &
-                         WORK, RESULT( 1 ) )
+            CALL DSBT21( 'Upper', N, K, 1, A, LDA, SD, SE, U, LDU, WORK, RESULT( 1 ) )
 !
 !              Convert A from Upper-Triangle-Only storage to
 !              Lower-Triangle-Only storage.
@@ -614,13 +580,13 @@
             DO JC = 1, N
                DO JR = 0, MIN( K, N-JC )
                   A( JR+1, JC ) = A( K+1-JR, JC+JR )
-                  ENDDO
                ENDDO
+            ENDDO
             DO JC = N + 1 - K, N
                DO JR = MIN( K, N-JC ) + 1, K
-                  A( JR+1, JC ) = ZERO
-                  ENDDO
+                  A( JR+1, JC ) = 0.0D0
                ENDDO
+            ENDDO
 !
 !              Call DSBTRD to compute S and U from lower triangle
 !
@@ -675,9 +641,9 @@
                END IF
                ENDDO
 !
-  170       CONTINUE
+            ENDIF
             ENDDO
-  180    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !
@@ -723,4 +689,4 @@
 !     End of DCHKSB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

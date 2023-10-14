@@ -355,7 +355,7 @@
          RWORK( I ) = RWORK( J )
          RWORK( J ) = TEMP
       END IF
-      ENDDO
+   ENDDO
 !
    RESULT( 6 ) = 0.0E+0
    DO I = K + 1, MIN( K+L, M ) - 1

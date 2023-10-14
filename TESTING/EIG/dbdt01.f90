@@ -153,6 +153,7 @@
 !     ..
 !
 !  =====================================================================
+!
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -187,9 +188,7 @@
 !
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
-            DO I = 1, N - 1
-               WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
-            ENDDO
+            WORK(M+1:M+N-1) = D(1:N-1)*PT(1:N-1,J) + E(1:N-1)*PT(2:N, J )
             WORK( M+N ) = D( N )*PT( N, J )
             CALL DGEMV( 'No transpose', M, N, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
@@ -201,7 +200,7 @@
          DO J = 1, N
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
             WORK(M+1:2*M-1) = D(1:M-1)*PT(1:M-1,J) + E(1:M-1)*PT(2:M, J )
-            WORK( 2*M ) = D( M )*PT( M, J )
+            WORK( M+M ) = D( M )*PT( M, J )
             CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO

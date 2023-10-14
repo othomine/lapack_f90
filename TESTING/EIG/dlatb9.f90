@@ -180,12 +180,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   SHRINK, TENTH
-   PARAMETER          ( SHRINK = 0.25D0, TENTH = 0.1D+0 )
-   DOUBLE PRECISION   ONE, TEN
-   PARAMETER          ( ONE = 1.0D+0, TEN = 1.0D+1 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            FIRST
@@ -212,12 +206,12 @@
    IF( FIRST ) THEN
       FIRST = .FALSE.
       EPS = DLAMCH( 'Precision' )
-      BADC2 = TENTH / EPS
+      BADC2 = 0.1D0 / EPS
       BADC1 = SQRT( BADC2 )
       SMALL = DLAMCH( 'Safe minimum' )
-      LARGE = ONE / SMALL
-      SMALL = SHRINK*( SMALL / EPS )
-      LARGE = ONE / SMALL
+      LARGE = 1.0D0 / SMALL
+      SMALL = 0.25D0*( SMALL / EPS )
+      LARGE = 1.0D0 / SMALL
    END IF
 !
 !     Set some parameters we don't plan to change.
@@ -318,8 +312,8 @@
 !
 !     Set the condition number and norm.
 !
-   CNDNMA = TEN*TEN
-   CNDNMB = TEN
+   CNDNMA = 10.0D0*10.0D0
+   CNDNMB = 10.0D0
    IF( LSAMEN( 3, PATH, 'GQR' ) .OR. LSAMEN( 3, PATH, 'GRQ' ) .OR. &
        LSAMEN( 3, PATH, 'GSV' ) ) THEN
       IF( IMAT == 5 ) THEN
@@ -337,8 +331,8 @@
       END IF
    END IF
 !
-   ANORM = TEN
-   BNORM = TEN*TEN*TEN
+   ANORM = 10.0D0
+   BNORM = 10.0D0*10.0D0*10.0D0
    IF( LSAMEN( 3, PATH, 'GQR' ) .OR. LSAMEN( 3, PATH, 'GRQ' ) ) THEN
       IF( IMAT == 7 ) THEN
          ANORM = SMALL
@@ -350,8 +344,8 @@
    END IF
 !
    IF( N <= 1 ) THEN
-      CNDNMA = ONE
-      CNDNMB = ONE
+      CNDNMA = 1.0D0
+      CNDNMB = 1.0D0
    END IF
 !
    RETURN
@@ -359,4 +353,4 @@
 !     End of DLATB9
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

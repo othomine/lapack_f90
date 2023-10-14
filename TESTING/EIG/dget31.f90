@@ -102,16 +102,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, HALF, ONE
-   PARAMETER          ( ZERO = 0.0D0, HALF = 0.5D0, ONE = 1.0D0 )
-   DOUBLE PRECISION   TWO, THREE, FOUR
-   PARAMETER          ( TWO = 2.0D0, THREE = 3.0D0, FOUR = 4.0D0 )
-   DOUBLE PRECISION   SEVEN, TEN
-   PARAMETER          ( SEVEN = 7.0D0, TEN = 10.0D0 )
-   DOUBLE PRECISION   TWNONE
-   PARAMETER          ( TWNONE = 21.0D0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            IA, IB, ICA, ID1, ID2, INFO, ISMIN, ITRANS, &
@@ -132,9 +122,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DLALN2
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
-!     ..
 !     .. Data statements ..
    DATA               LTRANS / .FALSE., .TRUE. /
 !     ..
@@ -145,40 +132,39 @@
    EPS = DLAMCH( 'P' )
    UNFL = DLAMCH( 'U' )
    SMLNUM = DLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Set up test case parameters
 !
    VSMIN( 1 ) = SMLNUM
    VSMIN( 2 ) = EPS
-   VSMIN( 3 ) = ONE / ( TEN*TEN )
-   VSMIN( 4 ) = ONE / EPS
+   VSMIN( 3 ) = 1.0D0 / ( 10.0D0*10.0D0 )
+   VSMIN( 4 ) = 1.0D0 / EPS
    VAB( 1 ) = SQRT( SMLNUM )
-   VAB( 2 ) = ONE
+   VAB( 2 ) = 1.0D0
    VAB( 3 ) = SQRT( BIGNUM )
-   VWR( 1 ) = ZERO
-   VWR( 2 ) = HALF
-   VWR( 3 ) = TWO
-   VWR( 4 ) = ONE
+   VWR( 1 ) = 0.0D0
+   VWR( 2 ) = 0.5D0
+   VWR( 3 ) = 2.0D0
+   VWR( 4 ) = 1.0D0
    VWI( 1 ) = SMLNUM
    VWI( 2 ) = EPS
-   VWI( 3 ) = ONE
-   VWI( 4 ) = TWO
+   VWI( 3 ) = 1.0D0
+   VWI( 4 ) = 2.0D0
    VDD( 1 ) = SQRT( SMLNUM )
-   VDD( 2 ) = ONE
-   VDD( 3 ) = TWO
+   VDD( 2 ) = 1.0D0
+   VDD( 3 ) = 2.0D0
    VDD( 4 ) = SQRT( BIGNUM )
-   VCA( 1 ) = ZERO
+   VCA( 1 ) = 0.0D0
    VCA( 2 ) = SQRT( SMLNUM )
    VCA( 3 ) = EPS
-   VCA( 4 ) = HALF
-   VCA( 5 ) = ONE
+   VCA( 4 ) = 0.5D0
+   VCA( 5 ) = 1.0D0
 !
    KNT = 0
-   NINFO( 1 ) = 0
-   NINFO( 2 ) = 0
+   NINFO( 1:2 ) = 0
    LMAX = 0
-   RMAX = ZERO
+   RMAX = 0.0D0
 !
 !     Begin test loop
 !
@@ -191,7 +177,6 @@
             DO ITRANS = 0, 1
                DO ISMIN = 1, 4
                   SMIN = VSMIN( ISMIN )
-!
                   NA = 1
                   NW = 1
                   DO IA = 1, 3
@@ -199,13 +184,13 @@
                      DO IB = 1, 3
                         B( 1, 1 ) = VAB( IB )
                         DO IWR = 1, 4
-                           IF( D1 == ONE .AND. D2 == ONE .AND. CA == &
-                               ONE ) THEN
+                           IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. CA == &
+                               1.0D0 ) THEN
                               WR = VWR( IWR )*A( 1, 1 )
                            ELSE
                               WR = VWR( IWR )
                            END IF
-                           WI = ZERO
+                           WI = 0.0D0
                            CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                         SMIN, CA, A, 2, D1, D2, B, 2, &
                                         WR, WI, X, 2, SCALE, XNORM, &
@@ -227,13 +212,13 @@
                            RES = RES / DEN
                            IF( ABS( X( 1, 1 ) ) < UNFL .AND. &
                                ABS( B( 1, 1 ) ) <= SMLNUM* &
-                               ABS( CA*A( 1, 1 )-WR*D1 ) )RES = ZERO
-                           IF( SCALE > ONE ) &
-                              RES = RES + ONE / EPS
+                               ABS( CA*A( 1, 1 )-WR*D1 ) )RES = 0.0D0
+                           IF( SCALE > 1.0D0 ) &
+                              RES = RES + 1.0D0 / EPS
                            RES = RES + ABS( XNORM-ABS( X( 1, 1 ) ) ) &
                                   / MAX( SMLNUM, XNORM ) / EPS
                            IF( INFO /= 0 .AND. INFO /= 1 ) &
-                              RES = RES + ONE / EPS
+                              RES = RES + 1.0D0 / EPS
                            KNT = KNT + 1
                            IF( RES > RMAX ) THEN
                               LMAX = KNT
@@ -249,17 +234,17 @@
                      A( 1, 1 ) = VAB( IA )
                      DO IB = 1, 3
                         B( 1, 1 ) = VAB( IB )
-                        B( 1, 2 ) = -HALF*VAB( IB )
+                        B( 1, 2 ) = -0.5D0*VAB( IB )
                         DO IWR = 1, 4
-                           IF( D1 == ONE .AND. D2 == ONE .AND. CA == &
-                               ONE ) THEN
+                           IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. CA == &
+                               1.0D0 ) THEN
                               WR = VWR( IWR )*A( 1, 1 )
                            ELSE
                               WR = VWR( IWR )
                            END IF
                            DO IWI = 1, 4
-                              IF( D1 == ONE .AND. D2 == ONE .AND. &
-                                  CA == ONE ) THEN
+                              IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. &
+                                  CA == 1.0D0 ) THEN
                                  WI = VWI( IWI )*A( 1, 1 )
                               ELSE
                                  WI = VWI( IWI )
@@ -268,10 +253,8 @@
                                            SMIN, CA, A, 2, D1, D2, B, &
                                            2, WR, WI, X, 2, SCALE, &
                                            XNORM, INFO )
-                              IF( INFO < 0 ) &
-                                 NINFO( 1 ) = NINFO( 1 ) + 1
-                              IF( INFO > 0 ) &
-                                 NINFO( 2 ) = NINFO( 2 ) + 1
+                              IF( INFO < 0 ) NINFO( 1 ) = NINFO( 1 ) + 1
+                              IF( INFO > 0 ) NINFO( 2 ) = NINFO( 2 ) + 1
                               RES = ABS( ( CA*A( 1, 1 )-WR*D1 )* &
                                     X( 1, 1 )+( WI*D1 )*X( 1, 2 )- &
                                     SCALE*B( 1, 1 ) )
@@ -293,15 +276,15 @@
                                   ABS( X( 1, 2 ) ) < UNFL .AND. &
                                   ABS( B( 1, 1 ) ) <= SMLNUM* &
                                   ABS( CA*A( 1, 1 )-WR*D1 ) ) &
-                                  RES = ZERO
-                              IF( SCALE > ONE ) &
-                                 RES = RES + ONE / EPS
+                                  RES = 0.0D0
+                              IF( SCALE > 1.0D0 ) &
+                                 RES = RES + 1.0D0 / EPS
                               RES = RES + ABS( XNORM- &
                                     ABS( X( 1, 1 ) )- &
                                     ABS( X( 1, 2 ) ) ) / &
                                     MAX( SMLNUM, XNORM ) / EPS
                               IF( INFO /= 0 .AND. INFO /= 1 ) &
-                                 RES = RES + ONE / EPS
+                                 RES = RES + 1.0D0 / EPS
                               KNT = KNT + 1
                               IF( RES > RMAX ) THEN
                                  LMAX = KNT
@@ -316,20 +299,20 @@
                   NW = 1
                   DO IA = 1, 3
                      A( 1, 1 ) = VAB( IA )
-                     A( 1, 2 ) = -THREE*VAB( IA )
-                     A( 2, 1 ) = -SEVEN*VAB( IA )
-                     A( 2, 2 ) = TWNONE*VAB( IA )
+                     A( 1, 2 ) = -3.0D0*VAB( IA )
+                     A( 2, 1 ) = -7.0D0*VAB( IA )
+                     A( 2, 2 ) = 21.0D0*VAB( IA )
                      DO IB = 1, 3
                         B( 1, 1 ) = VAB( IB )
-                        B( 2, 1 ) = -TWO*VAB( IB )
+                        B( 2, 1 ) = -2.0D0*VAB( IB )
                         DO IWR = 1, 4
-                           IF( D1 == ONE .AND. D2 == ONE .AND. CA == &
-                               ONE ) THEN
+                           IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. CA == &
+                               1.0D0 ) THEN
                               WR = VWR( IWR )*A( 1, 1 )
                            ELSE
                               WR = VWR( IWR )
                            END IF
-                           WI = ZERO
+                           WI = 0.0D0
                            CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                         SMIN, CA, A, 2, D1, D2, B, 2, &
                                         WR, WI, X, 2, SCALE, XNORM, &
@@ -373,15 +356,15 @@
                                1 )-WR*D1 )+ABS( CA*A( 1, &
                                2 ) )+ABS( CA*A( 2, &
                                1 ) )+ABS( CA*A( 2, 2 )-WR*D2 ) ) ) &
-                               RES = ZERO
-                           IF( SCALE > ONE ) &
-                              RES = RES + ONE / EPS
+                               RES = 0.0D0
+                           IF( SCALE > 1.0D0 ) &
+                              RES = RES + 1.0D0 / EPS
                            RES = RES + ABS( XNORM- &
                                  MAX( ABS( X( 1, 1 ) ), ABS( X( 2, &
                                  1 ) ) ) ) / MAX( SMLNUM, XNORM ) / &
                                  EPS
                            IF( INFO /= 0 .AND. INFO /= 1 ) &
-                              RES = RES + ONE / EPS
+                              RES = RES + 1.0D0 / EPS
                            KNT = KNT + 1
                            IF( RES > RMAX ) THEN
                               LMAX = KNT
@@ -394,25 +377,25 @@
                   NA = 2
                   NW = 2
                   DO IA = 1, 3
-                     A( 1, 1 ) = VAB( IA )*TWO
-                     A( 1, 2 ) = -THREE*VAB( IA )
-                     A( 2, 1 ) = -SEVEN*VAB( IA )
-                     A( 2, 2 ) = TWNONE*VAB( IA )
+                     A( 1, 1 ) = VAB( IA )*2.0D0
+                     A( 1, 2 ) = -3.0D0*VAB( IA )
+                     A( 2, 1 ) = -7.0D0*VAB( IA )
+                     A( 2, 2 ) = 21.0D0*VAB( IA )
                      DO IB = 1, 3
                         B( 1, 1 ) = VAB( IB )
-                        B( 2, 1 ) = -TWO*VAB( IB )
-                        B( 1, 2 ) = FOUR*VAB( IB )
-                        B( 2, 2 ) = -SEVEN*VAB( IB )
+                        B( 2, 1 ) = -2.0D0*VAB( IB )
+                        B( 1, 2 ) = 4.0D0*VAB( IB )
+                        B( 2, 2 ) = -7.0D0*VAB( IB )
                         DO IWR = 1, 4
-                           IF( D1 == ONE .AND. D2 == ONE .AND. CA == &
-                               ONE ) THEN
+                           IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. CA == &
+                               1.0D0 ) THEN
                               WR = VWR( IWR )*A( 1, 1 )
                            ELSE
                               WR = VWR( IWR )
                            END IF
                            DO IWI = 1, 4
-                              IF( D1 == ONE .AND. D2 == ONE .AND. &
-                                  CA == ONE ) THEN
+                              IF( D1 == 1.0D0 .AND. D2 == 1.0D0 .AND. &
+                                  CA == 1.0D0 ) THEN
                                  WI = VWI( IWI )*A( 1, 1 )
                               ELSE
                                  WI = VWI( IWI )
@@ -482,16 +465,16 @@
                                   ABS( CA*A( 1, 2 ) )+ABS( CA*A( 2, &
                                   1 ) )+ABS( CA*A( 2, &
                                   2 )-WR*D2 )+ABS( WI*D2 )+ABS( WI* &
-                                  D1 ) ) )RES = ZERO
-                              IF( SCALE > ONE ) &
-                                 RES = RES + ONE / EPS
+                                  D1 ) ) )RES = 0.0D0
+                              IF( SCALE > 1.0D0 ) &
+                                 RES = RES + 1.0D0 / EPS
                               RES = RES + ABS( XNORM- &
                                     MAX( ABS( X( 1, 1 ) )+ABS( X( 1, &
                                     2 ) ), ABS( X( 2, &
                                     1 ) )+ABS( X( 2, 2 ) ) ) ) / &
                                     MAX( SMLNUM, XNORM ) / EPS
                               IF( INFO /= 0 .AND. INFO /= 1 ) &
-                                 RES = RES + ONE / EPS
+                                 RES = RES + 1.0D0 / EPS
                               KNT = KNT + 1
                               IF( RES > RMAX ) THEN
                                  LMAX = KNT
@@ -512,4 +495,4 @@
 !     End of DGET31
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

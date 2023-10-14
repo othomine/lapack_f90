@@ -192,8 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    DOUBLE PRECISION   ROGUE
    PARAMETER          ( ROGUE = -1.0D+10 )
 !     ..
@@ -208,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEMM, DGGRQF, DLACPY, DLASET, DORGQR, DORGRQ, &
                       DSYRK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -227,8 +222,7 @@
 !
 !     Factorize the matrices A and B in the arrays AF and BF.
 !
-   CALL DGGRQF( M, P, N, AF, LDA, TAUA, BF, LDB, TAUB, WORK, LWORK, &
-                INFO )
+   CALL DGGRQF( M, P, N, AF, LDA, TAUA, BF, LDB, TAUB, WORK, LWORK, INFO )
 !
 !     Generate the N-by-N matrix Q
 !
@@ -237,12 +231,10 @@
       IF( M > 0 .AND. M < N ) &
          CALL DLACPY( 'Full', M, N-M, AF, LDA, Q( N-M+1, 1 ), LDA )
       IF( M > 1 ) &
-         CALL DLACPY( 'Lower', M-1, M-1, AF( 2, N-M+1 ), LDA, &
-                      Q( N-M+2, N-M+1 ), LDA )
+         CALL DLACPY( 'Lower', M-1, M-1, AF( 2, N-M+1 ), LDA, Q( N-M+2, N-M+1 ), LDA )
    ELSE
       IF( N > 1 ) &
-         CALL DLACPY( 'Lower', N-1, N-1, AF( M-N+2, 1 ), LDA, &
-                      Q( 2, 1 ), LDA )
+         CALL DLACPY( 'Lower', N-1, N-1, AF( M-N+2, 1 ), LDA, Q( 2, 1 ), LDA )
    END IF
    CALL DORGRQ( N, N, MIN( M, N ), Q, LDA, TAUA, WORK, LWORK, INFO )
 !
@@ -255,57 +247,55 @@
 !
 !     Copy R
 !
-   CALL DLASET( 'Full', M, N, ZERO, ZERO, R, LDA )
+   CALL DLASET( 'Full', M, N, 0.0D+0, 0.0D+0, R, LDA )
    IF( M <= N ) THEN
-      CALL DLACPY( 'Upper', M, M, AF( 1, N-M+1 ), LDA, R( 1, N-M+1 ), &
-                   LDA )
+      CALL DLACPY( 'Upper', M, M, AF( 1, N-M+1 ), LDA, R( 1, N-M+1 ), LDA )
    ELSE
       CALL DLACPY( 'Full', M-N, N, AF, LDA, R, LDA )
-      CALL DLACPY( 'Upper', N, N, AF( M-N+1, 1 ), LDA, R( M-N+1, 1 ), &
-                   LDA )
+      CALL DLACPY( 'Upper', N, N, AF( M-N+1, 1 ), LDA, R( M-N+1, 1 ), LDA )
    END IF
 !
 !     Copy T
 !
-   CALL DLASET( 'Full', P, N, ZERO, ZERO, T, LDB )
+   CALL DLASET( 'Full', P, N, 0.0D+0, 0.0D+0, T, LDB )
    CALL DLACPY( 'Upper', P, N, BF, LDB, T, LDB )
 !
 !     Compute R - A*Q'
 !
-   CALL DGEMM( 'No transpose', 'Transpose', M, N, N, -ONE, A, LDA, Q, &
-               LDA, ONE, R, LDA )
+   CALL DGEMM( 'No transpose', 'Transpose', M, N, N, -1.0D+0, A, LDA, Q, &
+               LDA, 1.0D+0, R, LDA )
 !
 !     Compute norm( R - A*Q' ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = DLANGE( '1', M, N, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0D+0 ) THEN
       RESULT( 1 ) = ( ( RESID / DBLE( MAX( 1, M, N ) ) ) / ANORM ) / &
                     ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0D+0
    END IF
 !
 !     Compute T*Q - Z'*B
 !
-   CALL DGEMM( 'Transpose', 'No transpose', P, N, P, ONE, Z, LDB, B, &
-               LDB, ZERO, BWK, LDB )
-   CALL DGEMM( 'No transpose', 'No transpose', P, N, N, ONE, T, LDB, &
-               Q, LDA, -ONE, BWK, LDB )
+   CALL DGEMM( 'Transpose', 'No transpose', P, N, P, 1.0D+0, Z, LDB, B, &
+               LDB, 0.0D+0, BWK, LDB )
+   CALL DGEMM( 'No transpose', 'No transpose', P, N, N, 1.0D+0, T, LDB, &
+               Q, LDA, -1.0D+0, BWK, LDB )
 !
 !     Compute norm( T*Q - Z'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = DLANGE( '1', P, N, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0D+0 ) THEN
       RESULT( 2 ) = ( ( RESID / DBLE( MAX( 1, P, M ) ) ) / BNORM ) / &
                     ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0D+0
    END IF
 !
 !     Compute I - Q*Q'
 !
-   CALL DLASET( 'Full', N, N, ZERO, ONE, R, LDA )
-   CALL DSYRK( 'Upper', 'No Transpose', N, N, -ONE, Q, LDA, ONE, R, &
+   CALL DLASET( 'Full', N, N, 0.0D+0, 1.0D+0, R, LDA )
+   CALL DSYRK( 'Upper', 'No Transpose', N, N, -1.0D+0, Q, LDA, 1.0D+0, R, &
                LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
@@ -315,8 +305,8 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL DLASET( 'Full', P, P, ZERO, ONE, T, LDB )
-   CALL DSYRK( 'Upper', 'Transpose', P, P, -ONE, Z, LDB, ONE, T, &
+   CALL DLASET( 'Full', P, P, 0.0D+0, 1.0D+0, T, LDB )
+   CALL DSYRK( 'Upper', 'Transpose', P, P, -1.0D+0, Z, LDB, 1.0D+0, T, &
                LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
@@ -329,4 +319,4 @@
 !     End of DGRQTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

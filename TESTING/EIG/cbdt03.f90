@@ -231,18 +231,15 @@
    EPS = SLAMCH( 'Precision' )
 !
    IF( BNORM <= 0.0E+0 ) THEN
-      IF( RESID /= 0.0E+0 ) &
-         RESID = 1.0E+0 / EPS
+      IF( RESID /= 0.0E+0 ) RESID = 1.0E+0 / EPS
    ELSE
       IF( BNORM >= RESID ) THEN
          RESID = ( RESID / BNORM ) / ( REAL( N )*EPS )
       ELSE
          IF( BNORM < 1.0E+0 ) THEN
-            RESID = ( MIN( RESID, REAL( N )*BNORM ) / BNORM ) / &
-                    ( REAL( N )*EPS )
+            RESID = ( MIN( RESID, REAL( N )*BNORM ) / BNORM ) / ( REAL( N )*EPS )
          ELSE
-            RESID = MIN( RESID / BNORM, REAL( N ) ) / &
-                    ( REAL( N )*EPS )
+            RESID = MIN( RESID / BNORM, REAL( N ) ) / ( REAL( N )*EPS )
          END IF
       END IF
    END IF

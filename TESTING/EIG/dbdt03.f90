@@ -130,8 +130,7 @@
 !> \ingroup double_eig
 !
 !  =====================================================================
-   SUBROUTINE DBDT03( UPLO, N, KD, D, E, U, LDU, S, VT, LDVT, WORK, &
-                      RESID )
+   SUBROUTINE DBDT03( UPLO, N, KD, D, E, U, LDU, S, VT, LDVT, WORK, RESID )
 !
 !  -- LAPACK test routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --

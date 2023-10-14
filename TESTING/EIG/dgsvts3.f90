@@ -225,10 +225,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J, K, L
@@ -247,7 +243,7 @@
 !     .. Executable Statements ..
 !
    ULP = DLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D+0 / ULP
    UNFL = DLAMCH( 'Safe minimum' )
 !
 !     Copy the matrix A to the array AF.
@@ -282,11 +278,11 @@
 !
 !     Compute A:= U'*A*Q - D1*R
 !
-   CALL DGEMM( 'No transpose', 'No transpose', M, N, N, ONE, A, LDA, &
-               Q, LDQ, ZERO, WORK, LDA )
+   CALL DGEMM( 'No transpose', 'No transpose', M, N, N, 1.0D+0, A, LDA, &
+               Q, LDQ, 0.0D+0, WORK, LDA )
 !
-   CALL DGEMM( 'Transpose', 'No transpose', M, N, M, ONE, U, LDU, &
-               WORK, LDA, ZERO, A, LDA )
+   CALL DGEMM( 'Transpose', 'No transpose', M, N, M, 1.0D+0, U, LDU, &
+               WORK, LDA, 0.0D+0, A, LDA )
 !
    DO I = 1, K
       DO J = I, K + L
@@ -304,41 +300,41 @@
 !
    RESID = DLANGE( '1', M, N, A, LDA, RWORK )
 !
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0D+0 ) THEN
       RESULT( 1 ) = ( ( RESID / DBLE( MAX( 1, M, N ) ) ) / ANORM ) / &
                     ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0D+0
    END IF
 !
 !     Compute B := V'*B*Q - D2*R
 !
-   CALL DGEMM( 'No transpose', 'No transpose', P, N, N, ONE, B, LDB, &
-               Q, LDQ, ZERO, WORK, LDB )
+   CALL DGEMM( 'No transpose', 'No transpose', P, N, N, 1.0D+0, B, LDB, &
+               Q, LDQ, 0.0D+0, WORK, LDB )
 !
-   CALL DGEMM( 'Transpose', 'No transpose', P, N, P, ONE, V, LDV, &
-               WORK, LDB, ZERO, B, LDB )
+   CALL DGEMM( 'Transpose', 'No transpose', P, N, P, 1.0D+0, V, LDV, &
+               WORK, LDB, 0.0D+0, B, LDB )
 !
    DO I = 1, L
       DO J = I, L
          B( I, N-L+J ) = B( I, N-L+J ) - BETA( K+I )*R( K+I, K+J )
       ENDDO
-      ENDDO
+   ENDDO
 !
 !     Compute norm( V'*B*Q - D2*R ) / ( MAX(P,N)*norm(B)*ULP ) .
 !
    RESID = DLANGE( '1', P, N, B, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0D+0 ) THEN
       RESULT( 2 ) = ( ( RESID / DBLE( MAX( 1, P, N ) ) ) / BNORM ) / &
                     ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0D+0
    END IF
 !
 !     Compute I - U'*U
 !
-   CALL DLASET( 'Full', M, M, ZERO, ONE, WORK, LDQ )
-   CALL DSYRK( 'Upper', 'Transpose', M, M, -ONE, U, LDU, ONE, WORK, &
+   CALL DLASET( 'Full', M, M, 0.0D+0, 1.0D+0, WORK, LDQ )
+   CALL DSYRK( 'Upper', 'Transpose', M, M, -1.0D+0, U, LDU, 1.0D+0, WORK, &
                LDU )
 !
 !     Compute norm( I - U'*U ) / ( M * ULP ) .
@@ -348,8 +344,8 @@
 !
 !     Compute I - V'*V
 !
-   CALL DLASET( 'Full', P, P, ZERO, ONE, WORK, LDV )
-   CALL DSYRK( 'Upper', 'Transpose', P, P, -ONE, V, LDV, ONE, WORK, &
+   CALL DLASET( 'Full', P, P, 0.0D+0, 1.0D+0, WORK, LDV )
+   CALL DSYRK( 'Upper', 'Transpose', P, P, -1.0D+0, V, LDV, 1.0D+0, WORK, &
                LDV )
 !
 !     Compute norm( I - V'*V ) / ( P * ULP ) .
@@ -359,8 +355,8 @@
 !
 !     Compute I - Q'*Q
 !
-   CALL DLASET( 'Full', N, N, ZERO, ONE, WORK, LDQ )
-   CALL DSYRK( 'Upper', 'Transpose', N, N, -ONE, Q, LDQ, ONE, WORK, &
+   CALL DLASET( 'Full', N, N, 0.0D+0, 1.0D+0, WORK, LDQ )
+   CALL DSYRK( 'Upper', 'Transpose', N, N, -1.0D+0, Q, LDQ, 1.0D+0, WORK, &
                LDQ )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
@@ -380,10 +376,9 @@
       END IF
       ENDDO
 !
-   RESULT( 6 ) = ZERO
+   RESULT( 6 ) = 0.0D+0
    DO I = K + 1, MIN( K+L, M ) - 1
-      IF( WORK( I ) < WORK( I+1 ) ) &
-         RESULT( 6 ) = ULPINV
+      IF( WORK( I ) < WORK( I+1 ) ) RESULT( 6 ) = ULPINV
       ENDDO
 !
    RETURN
@@ -391,4 +386,3 @@
 !     End of DGSVTS3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

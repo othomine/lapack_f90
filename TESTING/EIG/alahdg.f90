@@ -75,10 +75,6 @@
    CHARACTER*3       C2
    INTEGER           ITYPE
 !     ..
-!     .. External Functions ..
-   LOGICAL           LSAMEN
-   EXTERNAL          LSAMEN
-!     ..
 !     .. Executable Statements ..
 !
    IF( IOUNIT <= 0 ) RETURN
@@ -86,22 +82,22 @@
 !
 !     First line describing matrices in this path
 !
-   IF( LSAMEN( 3, C2, 'GQR' ) ) THEN
+   IF(C2 == 'GQR' ) THEN
       ITYPE = 1
       WRITE( IOUNIT, FMT = 9991 )PATH
-   ELSE IF( LSAMEN( 3, C2, 'GRQ' ) ) THEN
+   ELSE IF(C2 == 'GRQ' ) THEN
       ITYPE = 2
       WRITE( IOUNIT, FMT = 9992 )PATH
-   ELSE IF( LSAMEN( 3, C2, 'LSE' ) ) THEN
+   ELSE IF(C2 == 'LSE' ) THEN
       ITYPE = 3
       WRITE( IOUNIT, FMT = 9993 )PATH
-   ELSE IF( LSAMEN( 3, C2, 'GLM' ) ) THEN
+   ELSE IF(C2 == 'GLM' ) THEN
       ITYPE = 4
       WRITE( IOUNIT, FMT = 9994 )PATH
-   ELSE IF( LSAMEN( 3, C2, 'GSV' ) ) THEN
+   ELSE IF(C2 == 'GSV' ) THEN
       ITYPE = 5
       WRITE( IOUNIT, FMT = 9995 )PATH
-   ELSE IF( LSAMEN( 3, C2, 'CSD' ) ) THEN
+   ELSE IF(C2 == 'CSD' ) THEN
       ITYPE = 6
       WRITE( IOUNIT, FMT = 9996 )PATH
    END IF

@@ -218,10 +218,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BAND, GEN, NOTRAN, QRS, SYM, TRAN, TRI
@@ -236,9 +232,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGBMV, DGEMM, DLACPY, DLARNV, DSBMV, DSPMV, &
                       DSYMM, DTBMV, DTPMV, DTRMM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -315,14 +308,14 @@
 !
 !        General matrix
 !
-      CALL DGEMM( TRANS, 'N', MB, NRHS, NX, ONE, A, LDA, X, LDX, &
-                  ZERO, B, LDB )
+      CALL DGEMM( TRANS, 'N', MB, NRHS, NX, 1.0D+0, A, LDA, X, LDX, &
+                  0.0D+0, B, LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'PO' ) .OR. LSAMEN( 2, C2, 'SY' ) ) THEN
 !
 !        Symmetric matrix, 2-D storage
 !
-      CALL DSYMM( 'Left', UPLO, N, NRHS, ONE, A, LDA, X, LDX, ZERO, &
+      CALL DSYMM( 'Left', UPLO, N, NRHS, 1.0D+0, A, LDA, X, LDX, 0.0D+0, &
                   B, LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'GB' ) ) THEN
@@ -330,8 +323,8 @@
 !        General matrix, band storage
 !
       DO J = 1, NRHS
-         CALL DGBMV( TRANS, MB, NX, KL, KU, ONE, A, LDA, X( 1, J ), &
-                     1, ZERO, B( 1, J ), 1 )
+         CALL DGBMV( TRANS, MB, NX, KL, KU, 1.0D+0, A, LDA, X( 1, J ), &
+                     1, 0.0D+0, B( 1, J ), 1 )
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'PB' ) ) THEN
@@ -339,7 +332,7 @@
 !        Symmetric matrix, band storage
 !
       DO J = 1, NRHS
-         CALL DSBMV( UPLO, N, KL, ONE, A, LDA, X( 1, J ), 1, ZERO, &
+         CALL DSBMV( UPLO, N, KL, 1.0D+0, A, LDA, X( 1, J ), 1, 0.0D+0, &
                      B( 1, J ), 1 )
       ENDDO
 !
@@ -348,7 +341,7 @@
 !        Symmetric matrix, packed storage
 !
       DO J = 1, NRHS
-         CALL DSPMV( UPLO, N, ONE, A, X( 1, J ), 1, ZERO, B( 1, J ), &
+         CALL DSPMV( UPLO, N, 1.0D+0, A, X( 1, J ), 1, 0.0D+0, B( 1, J ), &
                      1 )
       ENDDO
 !
@@ -364,7 +357,7 @@
       ELSE
          DIAG = 'N'
       END IF
-      CALL DTRMM( 'Left', UPLO, TRANS, DIAG, N, NRHS, ONE, A, LDA, B, &
+      CALL DTRMM( 'Left', UPLO, TRANS, DIAG, N, NRHS, 1.0D+0, A, LDA, B, &
                   LDB )
 !
    ELSE IF( LSAMEN( 2, C2, 'TP' ) ) THEN
@@ -408,4 +401,4 @@
 !     End of DLARHS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

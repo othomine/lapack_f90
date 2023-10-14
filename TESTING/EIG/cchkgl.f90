@@ -95,26 +95,26 @@
 !
    DO
 !
-   READ( NIN, FMT = * )N
+   READ(NIN,*) N
    IF( N == 0 ) GO TO 90
    DO I = 1, N
-      READ( NIN, FMT = * ) A(I,1:N)
+      READ(NIN,*) A(I,1:N)
    ENDDO
 !
    DO I = 1, N
-      READ( NIN, FMT = * ) B(I,1:N)
+      READ(NIN,*) B(I,1:N)
    ENDDO
 !
-   READ( NIN, FMT = * )ILOIN, IHIIN
+   READ(NIN,*)ILOIN, IHIIN
    DO I = 1, N
-      READ( NIN, FMT = * ) AIN(I,1:N)
+      READ(NIN,*) AIN(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * ) BIN(I,1:N)
+      READ(NIN,*) BIN(I,1:N)
    ENDDO
 !
-   READ( NIN, FMT = * ) LSCLIN(1:N)
-   READ( NIN, FMT = * ) RSCLIN(1:N)
+   READ(NIN,*) LSCLIN(1:N)
+   READ(NIN,*) RSCLIN(1:N)
 !
    ANORM = CLANGE( 'M', N, N, A, LDA, WORK )
    BNORM = CLANGE( 'M', N, N, B, LDB, WORK )

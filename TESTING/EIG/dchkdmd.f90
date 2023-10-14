@@ -62,10 +62,6 @@
       use iso_fortran_env, only: real64
       IMPLICIT NONE
       integer, parameter :: WP = real64
-
-!............................................................
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
 !............................................................
       REAL(KIND=WP), ALLOCATABLE, DIMENSION(:,:) ::          &
                      A, AC, EIGA, LAMBDA, LAMBDAQ, F, F1, F2,&
@@ -170,12 +166,12 @@
       LDAU = MAX(M,N+1)
       LDS  = N
 
-      TMP_ZXW  = ZERO
-      TMP_AU   = ZERO
-      TMP_REZ  = ZERO
-      TMP_REZQ = ZERO
-      SVDIFF   = ZERO
-      TMP_EX   = ZERO
+      TMP_ZXW  = 0.0_WP
+      TMP_AU   = 0.0_WP
+      TMP_REZ  = 0.0_WP
+      TMP_REZQ = 0.0_WP
+      SVDIFF   = 0.0_WP
+      TMP_EX   = 0.0_WP
 
       !
       ! Test the subroutines on real data snapshots. All
@@ -244,7 +240,7 @@
       CALL DLATMR( M, M, 'S', ISEED, 'N', DA, MODE, COND, &
                    DMAX, RSIGN, GRADE, DL, MODEL,  CONDL, &
                    DR, MODER, CONDR, PIVTNG, IWORK, M, M, &
-                   ZERO, -ONE, 'N', A, LDA, IWORK(M+1), INFO )
+                   0.0_WP, -1.0_WP, 'N', A, LDA, IWORK(M+1), INFO )
       DEALLOCATE(IWORK)
       DEALLOCATE(DR)
 
@@ -254,7 +250,7 @@
       CALL DGEEV( 'N','V', M, AC, M, REIGA, IEIGA, VA, M, &
                   VA, M, WORK, LWORK, INFO ) ! LAPACK CALL
       DEALLOCATE(WORK)
-      TMP = ZERO
+      TMP = 0.0_WP
       DO i = 1, M
          EIGA(i,1) = REIGA(i)
          EIGA(i,2) = IEIGA(i)
@@ -262,8 +258,8 @@
       END DO
 
       ! Scale A to have the desirable spectral radius.
-      CALL DLASCL( 'G', 0, 0, TMP, ONE, M, M, A, M, INFO )
-      CALL DLASCL( 'G', 0, 0, TMP, ONE, M, 2, EIGA, M, INFO )
+      CALL DLASCL( 'G', 0, 0, TMP, 1.0_WP, M, M, A, M, INFO )
+      CALL DLASCL( 'G', 0, 0, TMP, 1.0_WP, M, 2, EIGA, M, INFO )
 
       ! Compute the norm of A
       ANORM = DLANGE( 'F', N, N, A, M, WDUMMY )
@@ -273,7 +269,7 @@
       CALL DLARNV(2, ISEED, M, F1(1,1) )
       F1(1:M,1) = 1.0E-10*F1(1:M,1)
       DO i = 1, N/2
-         CALL DGEMV( 'N', M, M, ONE, A, M, F1(1,i), 1, ZERO, &
+         CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F1(1,i), 1, 0.0_WP, &
               F1(1,i+1), 1 )
       END DO
       X0(1:M,1:N/2) = F1(1:M,1:N/2)
@@ -281,7 +277,7 @@
 
       CALL DLARNV(2, ISEED, M, F1(1,1) )
       DO i = 1, N-N/2
-         CALL DGEMV( 'N', M, M, ONE, A, M, F1(1,i), 1, ZERO, &
+         CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F1(1,i), 1, 0.0_WP, &
               F1(1,i+1), 1 )
       END DO
       X0(1:M,N/2+1:N) = F1(1:M,1:N-N/2)
@@ -289,7 +285,7 @@
       ELSE
       CALL DLARNV(2, ISEED, M, F(1,1) )
       DO i = 1, N
-         CALL DGEMV( 'N', M, M, ONE, A, M, F(1,i), 1, ZERO, &
+         CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F(1,i), 1, 0.0_WP, &
               F(1,i+1), 1 )
       END DO
       X0(1:M,1:N) = F(1:M,1:N)
@@ -386,11 +382,11 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the rayleigh quotient
           ! returned in W
-          CALL DGEMM( 'N', 'N', M, K, K, ONE, X, LDX, W, LDW, &
-                      ZERO, Z1, LDZ )
-          TMP = ZERO
+          CALL DGEMM( 'N', 'N', M, K, K, 1.0_WP, X, LDX, W, LDW, &
+                      0.0_WP, Z1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-             CALL DAXPY( M, -ONE, Z(1,i), 1, Z1(1,i), 1)
+             CALL DAXPY( M, -1.0_WP, Z(1,i), 1, Z1(1,i), 1)
              TMP = MAX(TMP, DNRM2( M, Z1(1,i), 1 ) )
           END DO
           TMP_ZXW = MAX(TMP_ZXW, TMP )
@@ -415,11 +411,11 @@
           ! See the paper for an error analysis.
           ! Note that the left singular vectors of the input matrix X
           ! are returned in the array X.
-          CALL DGEMM( 'N', 'N', M, K, M, ONE, A, LDA, X, LDX, &
-                     ZERO, Z1, LDZ )
-          TMP = ZERO
+          CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, X, LDX, &
+                     0.0_WP, Z1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-              CALL DAXPY( M, -ONE, AU(1,i), 1, Z1(1,i), 1)
+              CALL DAXPY( M, -1.0_WP, AU(1,i), 1, Z1(1,i), 1)
               TMP = MAX( TMP, DNRM2( M, Z1(1,i),1 ) * &
                        SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -442,10 +438,10 @@
       ! as the Ritz vectors. Here we just save the vectors
       ! and test them separately using a Matlab script.
 
-       CALL DGEMM( 'N', 'N', M, K, M, ONE, A, LDA, AU, LDAU, ZERO, Y1, M )
+       CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, AU, LDAU, 0.0_WP, Y1, M )
        i=1
        DO WHILE ( i <= K )
-           IF ( IEIG(i) == ZERO ) THEN
+           IF ( IEIG(i) == 0.0_WP ) THEN
            ! have a real eigenvalue with real eigenvector
            CALL DAXPY( M, -REIG(i), AU(1,i), 1, Y1(1,i), 1 )
            RESEX(i) = DNRM2( M, Y1(1,i), 1) / DNRM2(M,AU(1,i),1)
@@ -462,8 +458,8 @@
            AB(2,1) = -IEIG(i)
            AB(1,2) =  IEIG(i)
            AB(2,2) =  REIG(i)
-           CALL DGEMM( 'N', 'N', M, 2, 2, -ONE, AU(1,i), &
-                       M, AB, 2, ONE, Y1(1,i), M )
+           CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, AU(1,i), &
+                       M, AB, 2, 1.0_WP, Y1(1,i), M )
            RESEX(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                         WORK )/ DLANGE( 'F', M, 2, AU(1,i), M, &
                         WORK )
@@ -479,13 +475,13 @@
           ! Compare the residuals returned by DGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
-          CALL DGEMM( 'N', 'N', M, K, M, ONE, A, LDA, Z, LDZ, ZERO, Y1, M )
+          CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, Z, LDZ, 0.0_WP, Y1, M )
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in DGEDMD,)
           i = 1
           DO WHILE ( i <= K )
-              IF ( IEIG(i) == ZERO ) THEN
+              IF ( IEIG(i) == 0.0_WP ) THEN
                   ! have a real eigenvalue with real eigenvector
                   CALL DAXPY( M, -REIG(i), Z(1,i), 1, Y1(1,i), 1 )
                   RES1(i) = DNRM2( M, Y1(1,i), 1)
@@ -502,15 +498,15 @@
                   AB(2,1) = -IEIG(i)
                   AB(1,2) =  IEIG(i)
                   AB(2,2) =  REIG(i)
-                  CALL DGEMM( 'N', 'N', M, 2, 2, -ONE, Z(1,i), &
-                              M, AB, 2, ONE, Y1(1,i), M )
+                  CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, Z(1,i), &
+                              M, AB, 2, 1.0_WP, Y1(1,i), M )
                   RES1(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                                      WORK )
                   RES1(i+1) = RES1(i)
                   i = i + 2
               END IF
           END DO
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, K
               TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
                         SINGVX(K)/(ANORM*SINGVX(1)) )
@@ -527,7 +523,7 @@
           END IF
 
           IF ( LSAME(JOBREF,'E') ) THEN
-              TMP = ZERO
+              TMP = 0.0_WP
               DO i = 1, K
                   TMP = MAX( TMP, ABS(RES1(i) - RESEX(i))/(RES1(i)+RESEX(i)) )
               END DO
@@ -576,7 +572,7 @@
               KDIFF = KDIFF+1
           END IF
 
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, MIN(K, KQ)
               TMP = MAX(TMP, ABS(SINGVX(i)-SINGVQX(i)) / &
                                     SINGVX(1) )
@@ -597,8 +593,8 @@
               ! as requested. The residual ||F-Q*R||_F / ||F||_F
               ! is compared to M*N*EPS.
               F2 = F
-              CALL DGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -ONE, F1, &
-                          LDF, Y, LDY, ONE, F2, LDF )
+              CALL DGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -1.0_WP, F1, &
+                          LDF, Y, LDY, 1.0_WP, F2, LDF )
               TMP_FQR = DLANGE( 'F', M, N+1, F2, LDF, WORK ) / &
                     DLANGE( 'F', M, N+1, F,  LDF, WORK )
               IF ( TMP_FQR > TOL2 ) THEN
@@ -612,13 +608,13 @@
               ! Compare the residuals returned by DGEDMDQ with the
               ! explicitly computed residuals using the matrix A.
               ! Compute explicitly Y1 = A*Z
-              CALL DGEMM( 'N', 'N', M, KQ, M, ONE, A, M, Z, M, ZERO, Y1, M )
+              CALL DGEMM( 'N', 'N', M, KQ, M, 1.0_WP, A, M, Z, M, 0.0_WP, Y1, M )
               ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
               ! of the invariant subspaces that correspond to complex conjugate
               ! pairs of eigencalues. (See the description of Z in DGEDMDQ)
               i = 1
               DO WHILE ( i <= KQ )
-                  IF ( IEIGQ(i) == ZERO ) THEN
+                  IF ( IEIGQ(i) == 0.0_WP ) THEN
                       ! have a real eigenvalue with real eigenvector
                       CALL DAXPY( M, -REIGQ(i), Z(1,i), 1, Y1(1,i), 1 )
                       ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
@@ -636,8 +632,8 @@
                      AB(2,1) = -IEIGQ(i)
                      AB(1,2) =  IEIGQ(i)
                      AB(2,2) =  REIGQ(i)
-                     CALL DGEMM( 'N', 'N', M, 2, 2, -ONE, Z(1,i), &
-                                 M, AB, 2, ONE, Y1(1,i), M )             ! BLAS CALL
+                     CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, Z(1,i), &
+                                 M, AB, 2, 1.0_WP, Y1(1,i), M )             ! BLAS CALL
                      ! Y(1:M,i:i+1) = Y(1:M,i:i+1) - Z(1:M,i:i+1) * AB   ! INTRINSIC
                      RES1(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                                         WORK )                           ! LAPACK CALL
@@ -645,7 +641,7 @@
                      i = i + 2
                   END IF
               END DO
-              TMP = ZERO
+              TMP = 0.0_WP
               DO i = 1, KQ
                   TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
                       SINGVQX(K)/(ANORM*SINGVQX(1)) )
@@ -811,4 +807,4 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

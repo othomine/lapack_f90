@@ -143,7 +143,7 @@
    EXTERNAL           CLANGE, SCASUM, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMV
+   EXTERNAL           CGEMV
 !     ..
 !     .. Executable Statements ..
 !
@@ -158,7 +158,7 @@
 !     Compute norm(B - U * C)
 !
    DO J = 1, N
-      CALL CCOPY( M, B( 1, J ), 1, WORK, 1 )
+      WORK(1:M) = B(1:M,J)
       CALL CGEMV( 'No transpose', M, M, -CMPLX( 1.0E+0 ), U, LDU, &
                   C( 1, J ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
       RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )

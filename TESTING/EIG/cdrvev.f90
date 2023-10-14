@@ -545,21 +545,14 @@
 !
 !           Compute norm
 !
-         GO TO ( 30, 40, 50 )KMAGN( JTYPE )
-!
-30       CONTINUE
-         ANORM = 1.0E+0
-         GO TO 60
-!
-40       CONTINUE
-         ANORM = OVFL*ULP
-         GO TO 60
-!
-50       CONTINUE
-         ANORM = UNFL*ULPINV
-         GO TO 60
-!
-60       CONTINUE
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = OVFL*ULP
+          CASE (3)
+           ANORM = UNFL*ULPINV
+         END SELECT
 !
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
          IINFO = 0

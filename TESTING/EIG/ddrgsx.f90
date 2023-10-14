@@ -376,10 +376,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TEN = 1.0D+1 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILABAD
@@ -403,9 +399,6 @@
    EXTERNAL           ALASVM, DGESVD, DGET51, DGET53, DGGESX, &
                       DLACPY, DLAKF2, DLASET, DLATM5, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
-!     ..
 !     .. Scalars in Common ..
    LOGICAL            FS
    INTEGER            K, M, MPLUSN, N
@@ -419,7 +412,7 @@
 !
    IF( NSIZE < 0 ) THEN
       INFO = -1
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D+0 ) THEN
       INFO = -2
    ELSE IF( NIN <= 0 ) THEN
       INFO = -3
@@ -464,8 +457,7 @@
       WORK( 1 ) = MAXWRK
    END IF
 !
-   IF( LWORK < MINWRK ) &
-      INFO = -19
+   IF( LWORK < MINWRK ) INFO = -19
 !
    IF( INFO /= 0 ) THEN
       CALL XERBLA( 'DDRGSX', -INFO )
@@ -475,18 +467,17 @@
 !     Important constants
 !
    ULP = DLAMCH( 'P' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D+0 / ULP
    SMLNUM = DLAMCH( 'S' ) / ULP
-   BIGNUM = ONE / SMLNUM
-   THRSH2 = TEN*THRESH
+   BIGNUM = 1.0D+0 / SMLNUM
+   THRSH2 = 10.0D+0*THRESH
    NTESTT = 0
    NERRS = 0
 !
 !     Go to the tests for read-in matrix pairs
 !
    IFUNC = 0
-   IF( NSIZE == 0 ) &
-      GO TO 70
+   IF( NSIZE == 0 ) GO TO 70
 !
 !     Test the built-in matrix pairs.
 !     Loop over different functions (IFUNC) of DGGESX, types (PRTYPE)
@@ -502,7 +493,7 @@
          DO M = 1, NSIZE - 1
             DO N = 1, NSIZE - M
 !
-               WEIGHT = ONE / WEIGHT
+               WEIGHT = 1.0D+0 / WEIGHT
                MPLUSN = M + N
 !
 !                 Generate test matrices
@@ -510,9 +501,9 @@
                FS = .TRUE.
                K = 0
 !
-               CALL DLASET( 'Full', MPLUSN, MPLUSN, ZERO, ZERO, AI, &
+               CALL DLASET( 'Full', MPLUSN, MPLUSN, 0.0D+0, 0.0D+0, AI, &
                             LDA )
-               CALL DLASET( 'Full', MPLUSN, MPLUSN, ZERO, ZERO, BI, &
+               CALL DLASET( 'Full', MPLUSN, MPLUSN, 0.0D+0, 0.0D+0, BI, &
                             LDA )
 !
                CALL DLATM5( PRTYPE, M, N, AI, LDA, AI( M+1, M+1 ), &
@@ -575,13 +566,13 @@
 !                 Do tests (5) and (6): check Schur form of A and
 !                 compare eigenvalues with diagonals.
 !
-               TEMP1 = ZERO
-               RESULT( 5 ) = ZERO
-               RESULT( 6 ) = ZERO
+               TEMP1 = 0.0D+0
+               RESULT( 5 ) = 0.0D+0
+               RESULT( 6 ) = 0.0D+0
 !
                DO J = 1, MPLUSN
                   ILABAD = .FALSE.
-                  IF( ALPHAI( J ) == ZERO ) THEN
+                  IF( ALPHAI( J ) == 0.0D+0 ) THEN
                      TEMP2 = ( ABS( ALPHAR( J )-AI( J, J ) ) / &
                              MAX( SMLNUM, ABS( ALPHAR( J ) ), &
                              ABS( AI( J, J ) ) )+ &
@@ -589,19 +580,19 @@
                              MAX( SMLNUM, ABS( BETA( J ) ), &
                              ABS( BI( J, J ) ) ) ) / ULP
                      IF( J < MPLUSN ) THEN
-                        IF( AI( J+1, J ) /= ZERO ) THEN
+                        IF( AI( J+1, J ) /= 0.0D+0 ) THEN
                            ILABAD = .TRUE.
                            RESULT( 5 ) = ULPINV
                         END IF
                      END IF
                      IF( J > 1 ) THEN
-                        IF( AI( J, J-1 ) /= ZERO ) THEN
+                        IF( AI( J, J-1 ) /= 0.0D+0 ) THEN
                            ILABAD = .TRUE.
                            RESULT( 5 ) = ULPINV
                         END IF
                      END IF
                   ELSE
-                     IF( ALPHAI( J ) > ZERO ) THEN
+                     IF( ALPHAI( J ) > 0.0D+0 ) THEN
                         I1 = J
                      ELSE
                         I1 = J - 1
@@ -609,12 +600,12 @@
                      IF( I1 <= 0 .OR. I1 >= MPLUSN ) THEN
                         ILABAD = .TRUE.
                      ELSE IF( I1 < MPLUSN-1 ) THEN
-                        IF( AI( I1+2, I1+1 ) /= ZERO ) THEN
+                        IF( AI( I1+2, I1+1 ) /= 0.0D+0 ) THEN
                            ILABAD = .TRUE.
                            RESULT( 5 ) = ULPINV
                         END IF
                      ELSE IF( I1 > 1 ) THEN
-                        IF( AI( I1, I1-1 ) /= ZERO ) THEN
+                        IF( AI( I1, I1-1 ) /= 0.0D+0 ) THEN
                            ILABAD = .TRUE.
                            RESULT( 5 ) = ULPINV
                         END IF
@@ -642,7 +633,7 @@
 !
 !                 Test (7) (if sorting worked)
 !
-               RESULT( 7 ) = ZERO
+               RESULT( 7 ) = 0.0D+0
                IF( LINFO == MPLUSN+3 ) THEN
                   RESULT( 7 ) = ULPINV
                ELSE IF( MM /= N ) THEN
@@ -653,7 +644,7 @@
 !                 Test (8): compare the estimated value DIF and its
 !                 value. first, compute the exact DIF.
 !
-               RESULT( 8 ) = ZERO
+               RESULT( 8 ) = 0.0D+0
                MN2 = MM*( MPLUSN-MM )*2
                IF( IFUNC >= 2 .AND. MN2 <= NCMAX*NCMAX ) THEN
 !
@@ -669,10 +660,10 @@
                                INFO )
                   DIFTRU = S( MN2 )
 !
-                  IF( DIFEST( 2 ) == ZERO ) THEN
+                  IF( DIFEST( 2 ) == 0.0D+0 ) THEN
                      IF( DIFTRU > ABNRM*ULP ) &
                         RESULT( 8 ) = ULPINV
-                  ELSE IF( DIFTRU == ZERO ) THEN
+                  ELSE IF( DIFTRU == 0.0D+0 ) THEN
                      IF( DIFEST( 2 ) > ABNRM*ULP ) &
                         RESULT( 8 ) = ULPINV
                   ELSE IF( ( DIFTRU > THRSH2*DIFEST( 2 ) ) .OR. &
@@ -685,13 +676,13 @@
 !
 !                 Test (9)
 !
-               RESULT( 9 ) = ZERO
+               RESULT( 9 ) = 0.0D+0
                IF( LINFO == ( MPLUSN+2 ) ) THEN
                   IF( DIFTRU > ABNRM*ULP ) &
                      RESULT( 9 ) = ULPINV
-                  IF( ( IFUNC > 1 ) .AND. ( DIFEST( 2 ) /= ZERO ) ) &
+                  IF( ( IFUNC > 1 ) .AND. ( DIFEST( 2 ) /= 0.0D+0 ) ) &
                      RESULT( 9 ) = ULPINV
-                  IF( ( IFUNC == 1 ) .AND. ( PL( 1 ) /= ZERO ) ) &
+                  IF( ( IFUNC == 1 ) .AND. ( PL( 1 ) /= 0.0D+0 ) ) &
                      RESULT( 9 ) = ULPINV
                   NTEST = NTEST + 1
                END IF
@@ -746,17 +737,16 @@
    NPTKNT = 0
 !
 80 CONTINUE
-   READ( NIN, FMT = *, END = 140 )MPLUSN
-   IF( MPLUSN == 0 ) &
-      GO TO 140
-   READ( NIN, FMT = *, END = 140 )N
+   READ(NIN,*, END = 140 ) MPLUSN
+   IF( MPLUSN == 0 ) GO TO 140
+   READ(NIN,*, END = 140 ) N
    DO I = 1, MPLUSN
-      READ( NIN, FMT = * )( AI( I, J ), J = 1, MPLUSN )
+      READ(NIN,* ) AI( I,1:MPLUSN)
    ENDDO
    DO I = 1, MPLUSN
-      READ( NIN, FMT = * )( BI( I, J ), J = 1, MPLUSN )
-      ENDDO
-   READ( NIN, FMT = * )PLTRU, DIFTRU
+      READ(NIN,* ) BI(I,1:MPLUSN)
+   ENDDO
+   READ(NIN,* )PLTRU, DIFTRU
 !
    NPTKNT = NPTKNT + 1
    FS = .TRUE.
@@ -789,45 +779,41 @@
 !
 !     Do tests (1) to (4)
 !
-   CALL DGET51( 1, MPLUSN, A, LDA, AI, LDA, Q, LDA, Z, LDA, WORK, &
-                RESULT( 1 ) )
-   CALL DGET51( 1, MPLUSN, B, LDA, BI, LDA, Q, LDA, Z, LDA, WORK, &
-                RESULT( 2 ) )
-   CALL DGET51( 3, MPLUSN, B, LDA, BI, LDA, Q, LDA, Q, LDA, WORK, &
-                RESULT( 3 ) )
-   CALL DGET51( 3, MPLUSN, B, LDA, BI, LDA, Z, LDA, Z, LDA, WORK, &
-                RESULT( 4 ) )
+   CALL DGET51( 1, MPLUSN, A, LDA, AI, LDA, Q, LDA, Z, LDA, WORK, RESULT( 1 ) )
+   CALL DGET51( 1, MPLUSN, B, LDA, BI, LDA, Q, LDA, Z, LDA, WORK, RESULT( 2 ) )
+   CALL DGET51( 3, MPLUSN, B, LDA, BI, LDA, Q, LDA, Q, LDA, WORK, RESULT( 3 ) )
+   CALL DGET51( 3, MPLUSN, B, LDA, BI, LDA, Z, LDA, Z, LDA, WORK, RESULT( 4 ) )
 !
 !     Do tests (5) and (6): check Schur form of A and compare
 !     eigenvalues with diagonals.
 !
    NTEST = 6
-   TEMP1 = ZERO
-   RESULT( 5 ) = ZERO
-   RESULT( 6 ) = ZERO
+   TEMP1 = 0.0D+0
+   RESULT( 5 ) = 0.0D+0
+   RESULT( 6 ) = 0.0D+0
 !
    DO J = 1, MPLUSN
       ILABAD = .FALSE.
-      IF( ALPHAI( J ) == ZERO ) THEN
+      IF( ALPHAI( J ) == 0.0D+0 ) THEN
          TEMP2 = ( ABS( ALPHAR( J )-AI( J, J ) ) / &
                  MAX( SMLNUM, ABS( ALPHAR( J ) ), ABS( AI( J, &
                  J ) ) )+ABS( BETA( J )-BI( J, J ) ) / &
                  MAX( SMLNUM, ABS( BETA( J ) ), ABS( BI( J, J ) ) ) ) &
                   / ULP
          IF( J < MPLUSN ) THEN
-            IF( AI( J+1, J ) /= ZERO ) THEN
+            IF( AI( J+1, J ) /= 0.0D+0 ) THEN
                ILABAD = .TRUE.
                RESULT( 5 ) = ULPINV
             END IF
          END IF
          IF( J > 1 ) THEN
-            IF( AI( J, J-1 ) /= ZERO ) THEN
+            IF( AI( J, J-1 ) /= 0.0D+0 ) THEN
                ILABAD = .TRUE.
                RESULT( 5 ) = ULPINV
             END IF
          END IF
       ELSE
-         IF( ALPHAI( J ) > ZERO ) THEN
+         IF( ALPHAI( J ) > 0.0D+0 ) THEN
             I1 = J
          ELSE
             I1 = J - 1
@@ -835,12 +821,12 @@
          IF( I1 <= 0 .OR. I1 >= MPLUSN ) THEN
             ILABAD = .TRUE.
          ELSE IF( I1 < MPLUSN-1 ) THEN
-            IF( AI( I1+2, I1+1 ) /= ZERO ) THEN
+            IF( AI( I1+2, I1+1 ) /= 0.0D+0 ) THEN
                ILABAD = .TRUE.
                RESULT( 5 ) = ULPINV
             END IF
          ELSE IF( I1 > 1 ) THEN
-            IF( AI( I1, I1-1 ) /= ZERO ) THEN
+            IF( AI( I1, I1-1 ) /= 0.0D+0 ) THEN
                ILABAD = .TRUE.
                RESULT( 5 ) = ULPINV
             END IF
@@ -867,20 +853,17 @@
 !     Test (7) (if sorting worked)  <--------- need to be checked.
 !
    NTEST = 7
-   RESULT( 7 ) = ZERO
-   IF( LINFO == MPLUSN+3 ) &
-      RESULT( 7 ) = ULPINV
+   RESULT( 7 ) = 0.0D+0
+   IF( LINFO == MPLUSN+3 ) RESULT( 7 ) = ULPINV
 !
 !     Test (8): compare the estimated value of DIF and its true value.
 !
    NTEST = 8
-   RESULT( 8 ) = ZERO
-   IF( DIFEST( 2 ) == ZERO ) THEN
-      IF( DIFTRU > ABNRM*ULP ) &
-         RESULT( 8 ) = ULPINV
-   ELSE IF( DIFTRU == ZERO ) THEN
-      IF( DIFEST( 2 ) > ABNRM*ULP ) &
-         RESULT( 8 ) = ULPINV
+   RESULT( 8 ) = 0.0D+0
+   IF( DIFEST( 2 ) == 0.0D+0 ) THEN
+      IF( DIFTRU > ABNRM*ULP ) RESULT( 8 ) = ULPINV
+   ELSE IF( DIFTRU == 0.0D+0 ) THEN
+      IF( DIFEST( 2 ) > ABNRM*ULP ) RESULT( 8 ) = ULPINV
    ELSE IF( ( DIFTRU > THRSH2*DIFEST( 2 ) ) .OR. &
             ( DIFTRU*THRSH2 < DIFEST( 2 ) ) ) THEN
       RESULT( 8 ) = MAX( DIFTRU / DIFEST( 2 ), DIFEST( 2 ) / DIFTRU )
@@ -889,28 +872,22 @@
 !     Test (9)
 !
    NTEST = 9
-   RESULT( 9 ) = ZERO
+   RESULT( 9 ) = 0.0D+0
    IF( LINFO == ( MPLUSN+2 ) ) THEN
-      IF( DIFTRU > ABNRM*ULP ) &
-         RESULT( 9 ) = ULPINV
-      IF( ( IFUNC > 1 ) .AND. ( DIFEST( 2 ) /= ZERO ) ) &
-         RESULT( 9 ) = ULPINV
-      IF( ( IFUNC == 1 ) .AND. ( PL( 1 ) /= ZERO ) ) &
-         RESULT( 9 ) = ULPINV
+      IF( DIFTRU > ABNRM*ULP ) RESULT( 9 ) = ULPINV
+      IF( ( IFUNC > 1 ) .AND. ( DIFEST( 2 ) /= 0.0D+0 ) ) RESULT( 9 ) = ULPINV
+      IF( ( IFUNC == 1 ) .AND. ( PL( 1 ) /= 0.0D+0 ) ) RESULT( 9 ) = ULPINV
    END IF
 !
 !     Test (10): compare the estimated value of PL and it true value.
 !
    NTEST = 10
-   RESULT( 10 ) = ZERO
-   IF( PL( 1 ) == ZERO ) THEN
-      IF( PLTRU > ABNRM*ULP ) &
-         RESULT( 10 ) = ULPINV
-   ELSE IF( PLTRU == ZERO ) THEN
-      IF( PL( 1 ) > ABNRM*ULP ) &
-         RESULT( 10 ) = ULPINV
-   ELSE IF( ( PLTRU > THRESH*PL( 1 ) ) .OR. &
-            ( PLTRU*THRESH < PL( 1 ) ) ) THEN
+   RESULT( 10 ) = 0.0D+0
+   IF( PL( 1 ) == 0.0D+0 ) THEN
+      IF( PLTRU > ABNRM*ULP ) RESULT( 10 ) = ULPINV
+   ELSE IF( PLTRU == 0.0D+0 ) THEN
+      IF( PL( 1 ) > ABNRM*ULP ) RESULT( 10 ) = ULPINV
+   ELSE IF( ( PLTRU > THRESH*PL( 1 ) ) .OR. ( PLTRU*THRESH < PL( 1 ) ) ) THEN
       RESULT( 10 ) = ULPINV
    END IF
 !
@@ -1020,4 +997,4 @@
 !     End of DDRGSX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

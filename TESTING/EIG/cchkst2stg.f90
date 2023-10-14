@@ -769,8 +769,7 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 300
+         IF (DOTYPE(JTYPE)) THEN
          NMATS = NMATS + 1
          NTEST = 0
 !
@@ -1143,13 +1142,11 @@
 !           Compute D1 and Z
 !
          CALL SCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
-            CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+         IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
          CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDU )
 !
          NTEST = 9
-         CALL CSTEQR( 'V', N, D1, RWORK, Z, LDU, RWORK( N+1 ), &
-                      IINFO )
+         CALL CSTEQR( 'V', N, D1, RWORK, Z, LDU, RWORK( N+1 ), IINFO )
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'CSTEQR(V)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1736,15 +1733,14 @@
                TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))), MAXVAL(ABS(D2(1:IU-IL+1))))
                TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
-               RESULT( 31 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
+               RESULT(31) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
 !           Call CSTEMR(V,V) to compute D1 and Z, do tests.
 !
 !           Compute D1 and Z
 !
                CALL SCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
-                  CALL SCOPY( N-1, SE, 1, RWORK, 1 )
+               IF( N > 0 ) CALL SCOPY( N-1, SE, 1, RWORK, 1 )
                CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDU )
 !
                NTEST = 32
@@ -1920,7 +1916,7 @@
                END IF
             END IF
             ENDDO
-  300    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !

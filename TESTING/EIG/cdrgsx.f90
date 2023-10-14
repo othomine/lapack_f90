@@ -691,16 +691,16 @@
    NPTKNT = 0
 !
 80 CONTINUE
-   READ( NIN, FMT = *, END = 140 )MPLUSN
+   READ(NIN,*, END = 140 )MPLUSN
    IF( MPLUSN == 0 ) GO TO 140
-   READ( NIN, FMT = *, END = 140 ) N
+   READ(NIN,*, END = 140 ) N
    DO I = 1, MPLUSN
-      READ( NIN, FMT = * ) AI( I, 1:MPLUSN )
+      READ(NIN,*) AI( I, 1:MPLUSN )
    ENDDO
    DO I = 1, MPLUSN
-      READ( NIN, FMT = * ) BI( I, 1:MPLUSN )
+      READ(NIN,*) BI( I, 1:MPLUSN )
    ENDDO
-   READ( NIN, FMT = * )PLTRU, DIFTRU
+   READ(NIN,*)PLTRU, DIFTRU
 !
    NPTKNT = NPTKNT + 1
    FS = .TRUE.

@@ -67,8 +67,6 @@
    PARAMETER          ( LDA = 50, LDB = 50, LDVL = 50, LDVR = 50 )
    INTEGER            LDE, LDF, LDWORK
    PARAMETER          ( LDE = 50, LDF = 50, LDWORK = 50 )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IHI, ILO, INFO, J, KNT, M, N, NINFO
@@ -89,37 +87,29 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEMM, DGGBAK, DGGBAL, DLACPY
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
-!     ..
 !     .. Executable Statements ..
 !
-!     Initialization
-!
-   LMAX( 1 ) = 0
-   LMAX( 2 ) = 0
-   LMAX( 3 ) = 0
-   LMAX( 4 ) = 0
+   LMAX(1:4) = 0
    NINFO = 0
    KNT = 0
-   RMAX = ZERO
+   RMAX = 0.0D+0
 !
    EPS = DLAMCH( 'Precision' )
 !
-10 CONTINUE
-   READ( NIN, FMT = * )N, M
+   DO
+   READ(NIN,*) N, M
    IF( N == 0 ) GO TO 100
    DO I = 1, N
-      READ( NIN, FMT = * )( A( I, J ), J = 1, N )
+      READ(NIN,*) A(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( B( I, J ), J = 1, N )
+      READ(NIN,*) B(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( VL( I, J ), J = 1, M )
+     READ(NIN,*) VL( I,1:M)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( VR( I, J ), J = 1, M )
+     READ(NIN,*) VR( I,1:M)
    ENDDO
 !
    KNT = KNT + 1
@@ -159,23 +149,17 @@
 !     Check tilde(VL)'*A*tilde(VR) - VL'*tilde(A)*VR
 !     where tilde(A) denotes the transformed matrix.
 !
-   CALL DGEMM( 'N', 'N', N, M, N, ONE, AF, LDA, VR, LDVR, ZERO, WORK, &
+   CALL DGEMM( 'N', 'N', N, M, N, 1.0D+0, AF, LDA, VR, LDVR, 0.0D+0, WORK, &
                LDWORK )
-   CALL DGEMM( 'T', 'N', M, M, N, ONE, VL, LDVL, WORK, LDWORK, ZERO, &
+   CALL DGEMM( 'T', 'N', M, M, N, 1.0D+0, VL, LDVL, WORK, LDWORK, 0.0D+0, &
                E, LDE )
 !
-   CALL DGEMM( 'N', 'N', N, M, N, ONE, A, LDA, VRF, LDVR, ZERO, WORK, &
+   CALL DGEMM( 'N', 'N', N, M, N, 1.0D+0, A, LDA, VRF, LDVR, 0.0D+0, WORK, &
                LDWORK )
-   CALL DGEMM( 'T', 'N', M, M, N, ONE, VLF, LDVL, WORK, LDWORK, ZERO, &
+   CALL DGEMM( 'T', 'N', M, M, N, 1.0D+0, VLF, LDVL, WORK, LDWORK, 0.0D+0, &
                F, LDF )
 !
-   VMAX = ZERO
-   DO J = 1, M
-      DO I = 1, M
-         VMAX = MAX( VMAX, ABS( E( I, J )-F( I, J ) ) )
-      ENDDO
-   ENDDO
-   VMAX = VMAX / ( EPS*MAX( ANORM, BNORM ) )
+   VMAX = MAXVAL(ABS(E(1:M,1:M)-F(1:M,1:M))) / ( EPS*MAX( ANORM, BNORM ) )
    IF( VMAX > RMAX ) THEN
       LMAX( 4 ) = KNT
       RMAX = VMAX
@@ -183,29 +167,23 @@
 !
 !     Check tilde(VL)'*B*tilde(VR) - VL'*tilde(B)*VR
 !
-   CALL DGEMM( 'N', 'N', N, M, N, ONE, BF, LDB, VR, LDVR, ZERO, WORK, &
+   CALL DGEMM( 'N', 'N', N, M, N, 1.0D+0, BF, LDB, VR, LDVR, 0.0D+0, WORK, &
                LDWORK )
-   CALL DGEMM( 'T', 'N', M, M, N, ONE, VL, LDVL, WORK, LDWORK, ZERO, &
+   CALL DGEMM( 'T', 'N', M, M, N, 1.0D+0, VL, LDVL, WORK, LDWORK, 0.0D+0, &
                E, LDE )
 !
-   CALL DGEMM( 'N', 'N', N, M, N, ONE, B, LDB, VRF, LDVR, ZERO, WORK, &
+   CALL DGEMM( 'N', 'N', N, M, N, 1.0D+0, B, LDB, VRF, LDVR, 0.0D+0, WORK, &
                LDWORK )
-   CALL DGEMM( 'T', 'N', M, M, N, ONE, VLF, LDVL, WORK, LDWORK, ZERO, &
+   CALL DGEMM( 'T', 'N', M, M, N, 1.0D+0, VLF, LDVL, WORK, LDWORK, 0.0D+0, &
                F, LDF )
 !
-   VMAX = ZERO
-   DO J = 1, M
-      DO I = 1, M
-         VMAX = MAX( VMAX, ABS( E( I, J )-F( I, J ) ) )
-      ENDDO
-   ENDDO
-   VMAX = VMAX / ( EPS*MAX( ANORM, BNORM ) )
+   VMAX = MAXVAL(ABS(E(1:M,1:M)-F(1:M,1:M))) / ( EPS*MAX( ANORM, BNORM ) )
    IF( VMAX > RMAX ) THEN
       LMAX( 4 ) = KNT
       RMAX = VMAX
    END IF
 !
-   GO TO 10
+   ENDDO
 !
   100 CONTINUE
 !

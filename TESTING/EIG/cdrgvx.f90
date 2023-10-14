@@ -553,13 +553,13 @@
    READ( NIN, FMT = *, END = 150 )N
    IF( N == 0 ) GO TO 150
    DO I = 1, N
-      READ( NIN, FMT = * ) A( I,1:N)
+      READ(NIN,*) A( I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * ) B( I,1:N)
+      READ(NIN,*) B( I,1:N)
    ENDDO
-   READ( NIN, FMT = * ) STRU(1:N)
-   READ( NIN, FMT = * ) DIFTRU(1:N)
+   READ(NIN,*) STRU(1:N)
+   READ(NIN,*) DIFTRU(1:N)
 !
    NPTKNT = NPTKNT + 1
 !

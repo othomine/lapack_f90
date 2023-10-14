@@ -369,7 +369,7 @@
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
 !>
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0D0, 1.0D0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     MTEST           The number of tests defined: care must be taken
 !>                     that (1) the size of RESULT, (2) the number of
@@ -443,8 +443,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -473,15 +471,10 @@
                       DLATME, DLATMR, DLATMS, DORGHR, DORMHR, DTREVC, &
                       DTREVC3, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 3, 5*4, 4*6, 6*6, 3*9 /
-   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, &
-                      3, 1, 2, 3 /
-   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, &
-                      1, 5, 5, 5, 4, 3, 1 /
+   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, 1, 5, 5, 5, 4, 3, 1 /
    DATA               KCONDS / 3*0, 5*0, 4*1, 6*2, 3*0 /
 !     ..
 !     .. Executable Statements ..
@@ -491,13 +484,8 @@
    NTESTT = 0
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -507,7 +495,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -9
@@ -524,19 +512,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
    OVFL = DLAMCH( 'Overflow' )
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
    RTULP = SQRT( ULP )
-   RTULPI = ONE / RTULP
+   RTULPI = 1.0D0 / RTULP
 !
 !     Loop over sizes, types
 !
@@ -545,10 +532,9 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      IF( N == 0 ) &
-         GO TO 270
+      IF( N == 0 ) GO TO 270
       N1 = MAX( 1, N )
-      ANINV = ONE / DBLE( N1 )
+      ANINV = 1.0D0 / DBLE( N1 )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -557,22 +543,17 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 260
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 260
          NMATS = NMATS + 1
          NTEST = 0
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Initialize RESULT
 !
-         DO J = 1, 16
-            RESULT( J ) = ZERO
-         ENDDO
+         RESULT(1:14) = 0.0D+0
 !
 !           Compute "A"
 !
@@ -590,31 +571,23 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0D+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
-!
-         CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+         CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -625,7 +598,6 @@
 !              Zero
 !
             IINFO = 0
-!
          ELSE IF( ITYPE == 2 ) THEN
 !
 !              Identity
@@ -640,8 +612,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = ONE
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = 1.0D0
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN
@@ -665,15 +636,15 @@
 !              General, eigenvalues specified
 !
             IF( KCONDS( JTYPE ) == 1 ) THEN
-               CONDS = ONE
+               CONDS = 1.0D0
             ELSE IF( KCONDS( JTYPE ) == 2 ) THEN
                CONDS = RTULPI
             ELSE
-               CONDS = ZERO
+               CONDS = 0.0D0
             END IF
 !
             ADUMMA( 1 ) = ' '
-            CALL DLATME( N, 'S', ISEED, WORK, IMODE, COND, ONE, &
+            CALL DLATME( N, 'S', ISEED, WORK, IMODE, COND, 1.0D0, &
                          ADUMMA, 'T', 'T', 'T', WORK( N+1 ), 4, &
                          CONDS, N, N, ANORM, A, LDA, WORK( 2*N+1 ), &
                          IINFO )
@@ -682,37 +653,37 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              General, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 10 ) THEN
 !
 !              Triangular, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'N', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE
 !
@@ -749,16 +720,13 @@
          END IF
 !
          DO J = 1, N - 1
-            UU( J+1, J ) = ZERO
-            DO I = J + 2, N
-               U( I, J ) = H( I, J )
-               UU( I, J ) = H( I, J )
-               H( I, J ) = ZERO
-               ENDDO
+            UU(J+1, J ) = 0.0D+0
+            UU(J+2:N,J) = H(J+2:N,J)
+            U(J+2:N,J) = H(J+2:N,J)
+            H(J+2:N,J) = 0.0D+0
             ENDDO
          CALL DCOPY( N-1, WORK, 1, TAU, 1 )
-         CALL DORGHR( N, ILO, IHI, U, LDU, WORK, WORK( N+1 ), &
-                      NWORK-N, IINFO )
+         CALL DORGHR( N, ILO, IHI, U, LDU, WORK, WORK( N+1 ), NWORK-N, IINFO )
          NTEST = 2
 !
          CALL DHST01( N, ILO, IHI, A, LDA, H, LDA, U, LDU, WORK, &
@@ -813,7 +781,7 @@
 !
 !           Compute Z = U' UZ
 !
-         CALL DGEMM( 'T', 'N', N, N, N, ONE, U, LDU, UZ, LDU, ZERO, &
+         CALL DGEMM( 'T', 'N', N, N, N, 1.0D0, U, LDU, UZ, LDU, 0.0D0, &
                      Z, LDU )
          NTEST = 8
 !
@@ -835,14 +803,8 @@
 !
 !           Do Test 8: | W2 - W1 | / ( max(|W1|,|W2|) ulp )
 !
-         TEMP1 = ZERO
-         TEMP2 = ZERO
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( WR1( J ) )+ABS( WI1( J ) ), &
-                    ABS( WR2( J ) )+ABS( WI2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( WR1( J )-WR2( J ) )+ &
-                    ABS( WI1( J )-WI2( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(WR1(1:N))+ABS(WI1(1:N))),MAXVAL(ABS(WR2(1:N))+ABS(WI2(1:N))))
+         TEMP2 = MAXVAL(ABS(WR1(1:N)-WR2(1:N))+ABS(WI1(1:N)-WI2(1:N)))
 !
          RESULT( 8 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -859,7 +821,7 @@
          NSELR = 0
          J = N
   140       CONTINUE
-         IF( WI1( J ) == ZERO ) THEN
+         IF( WI1( J ) == 0.0D0 ) THEN
             IF( NSELR < MAX( N / 4, 1 ) ) THEN
                NSELR = NSELR + 1
                SELECT( J ) = .TRUE.
@@ -915,29 +877,22 @@
          K = 1
          MATCH = .TRUE.
          DO J = 1, N
-            IF( SELECT( J ) .AND. WI1( J ) == ZERO ) THEN
-               DO JJ = 1, N
-                  IF( EVECTR( JJ, J ) /= EVECTL( JJ, K ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 180
-                  END IF
-                  ENDDO
+            IF( SELECT( J ) .AND. WI1( J ) == 0.0D0 ) THEN
+               IF (ANY(EVECTR(1:N,J) /= EVECTL(1:N,K))) THEN
+                  MATCH = .FALSE.
+                  GO TO 180
+               END IF
                K = K + 1
-            ELSE IF( SELECT( J ) .AND. WI1( J ) /= ZERO ) THEN
-               DO JJ = 1, N
-                  IF( EVECTR( JJ, J ) /= EVECTL( JJ, K ) .OR. &
-                      EVECTR( JJ, J+1 ) /= EVECTL( JJ, K+1 ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 180
-                  END IF
-                  ENDDO
+            ELSE IF( SELECT( J ) .AND. WI1( J ) /= 0.0D0 ) THEN
+               IF (ANY(EVECTR(1:N,J) /= EVECTL(1:N,K)) .or. ANY(EVECTR(1:N, J+1 ) /= EVECTL(1:N,K+1))) THEN
+                  MATCH = .FALSE.
+                  GO TO 180
+               END IF
                K = K + 2
             END IF
             ENDDO
   180       CONTINUE
-         IF( .NOT.MATCH ) &
-            WRITE( NOUNIT, FMT = 9997 )'Right', 'DTREVC', N, JTYPE, &
-            IOLDSD
+         IF( .NOT.MATCH ) WRITE( NOUNIT, FMT = 9997 )'Right', 'DTREVC', N, JTYPE, IOLDSD
 !
 !           Compute the Left eigenvector Matrix:
 !
@@ -946,8 +901,7 @@
          CALL DTREVC( 'Left', 'All', SELECT, N, T1, LDA, EVECTL, LDU, &
                       DUMMA, LDU, N, IN, WORK, IINFO )
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUNIT, FMT = 9999 )'DTREVC(L,A)', IINFO, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'DTREVC(L,A)', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             GO TO 250
          END IF
@@ -977,37 +931,30 @@
          K = 1
          MATCH = .TRUE.
          DO J = 1, N
-            IF( SELECT( J ) .AND. WI1( J ) == ZERO ) THEN
-               DO JJ = 1, N
-                  IF( EVECTL( JJ, J ) /= EVECTR( JJ, K ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 220
-                  END IF
-                  ENDDO
+            IF( SELECT( J ) .AND. WI1( J ) == 0.0D0 ) THEN
+               IF (ANY(EVECTL(1:N,J) /= EVECTR(1:N,K))) THEN
+                  MATCH = .FALSE.
+                  GO TO 220
+               END IF
+
                K = K + 1
-            ELSE IF( SELECT( J ) .AND. WI1( J ) /= ZERO ) THEN
-               DO JJ = 1, N
-                  IF( EVECTL( JJ, J ) /= EVECTR( JJ, K ) .OR. &
-                      EVECTL( JJ, J+1 ) /= EVECTR( JJ, K+1 ) ) THEN
-                     MATCH = .FALSE.
-                     GO TO 220
-                  END IF
-                  ENDDO
+            ELSE IF( SELECT( J ) .AND. WI1( J ) /= 0.0D0 ) THEN
+               IF (ANY(EVECTL(1:N,J) /= EVECTR(1:N,K)) .or. ANY(EVECTL(1:N,J+1) /= EVECTR(1:N,K+1))) THEN
+                  MATCH = .FALSE.
+                  GO TO 220
+               END IF
                K = K + 2
             END IF
             ENDDO
   220       CONTINUE
-         IF( .NOT.MATCH ) &
-            WRITE( NOUNIT, FMT = 9997 )'Left', 'DTREVC', N, JTYPE, &
+         IF( .NOT.MATCH ) WRITE( NOUNIT, FMT = 9997 )'Left', 'DTREVC', N, JTYPE, &
             IOLDSD
 !
 !           Call DHSEIN for Right eigenvectors of H, do test 11
 !
          NTEST = 11
          RESULT( 11 ) = ULPINV
-         DO J = 1, N
-            SELECT( J ) = .TRUE.
-            ENDDO
+         SELECT(1:N) = .TRUE.
 !
          CALL DHSEIN( 'Right', 'Qr', 'Ninitv', SELECT, N, H, LDA, &
                       WR3, WI3, DUMMA, LDU, EVECTX, LDU, N1, IN, &
@@ -1016,8 +963,7 @@
             WRITE( NOUNIT, FMT = 9999 )'DHSEIN(R)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 250
+            IF( IINFO < 0 ) GO TO 250
          ELSE
 !
 !              Test 11:  | HX - XW | / ( |H| |X| ulp )
@@ -1038,9 +984,7 @@
 !
          NTEST = 12
          RESULT( 12 ) = ULPINV
-         DO J = 1, N
-            SELECT( J ) = .TRUE.
-            ENDDO
+         SELECT(1:N) = .TRUE.
 !
          CALL DHSEIN( 'Left', 'Qr', 'Ninitv', SELECT, N, H, LDA, WR3, &
                       WI3, EVECTY, LDU, DUMMA, LDU, N1, IN, WORK, &
@@ -1049,8 +993,7 @@
             WRITE( NOUNIT, FMT = 9999 )'DHSEIN(L)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 250
+            IF( IINFO < 0 ) GO TO 250
          ELSE
 !
 !              Test 12:  | YH - WY | / ( |H| |Y| ulp )
@@ -1078,8 +1021,7 @@
             WRITE( NOUNIT, FMT = 9999 )'DORMHR(R)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 250
+            IF( IINFO < 0 ) GO TO 250
          ELSE
 !
 !              Test 13:  | AX - XW | / ( |A| |X| ulp )
@@ -1088,8 +1030,7 @@
 !
             CALL DGET22( 'N', 'N', 'N', N, A, LDA, EVECTX, LDU, WR3, &
                          WI3, WORK, DUMMA( 1 ) )
-            IF( DUMMA( 1 ) < ULPINV ) &
-               RESULT( 13 ) = DUMMA( 1 )*ANINV
+            IF( DUMMA( 1 ) < ULPINV ) RESULT( 13 ) = DUMMA( 1 )*ANINV
          END IF
 !
 !           Call DORMHR for Left eigenvectors of A, do test 14
@@ -1103,8 +1044,7 @@
             WRITE( NOUNIT, FMT = 9999 )'DORMHR(L)', IINFO, N, JTYPE, &
                IOLDSD
             INFO = ABS( IINFO )
-            IF( IINFO < 0 ) &
-               GO TO 250
+            IF( IINFO < 0 ) GO TO 250
          ELSE
 !
 !              Test 14:  | YA - WY | / ( |A| |Y| ulp )
@@ -1207,4 +1147,3 @@
 !     End of DCHKHS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

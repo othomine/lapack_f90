@@ -549,7 +549,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0D0, 1.0D0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -611,11 +611,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO, EIGHT, TEN, HUN
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0, &
-                      EIGHT = 8.0D0, TEN = 10.0D0, HUN = 100.0D0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = ONE / TWO )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
    LOGICAL            SRANGE
@@ -654,12 +649,9 @@
    INTRINSIC          ABS, DBLE, INT, LOG, MAX, MIN, SQRT
 !     ..
 !     .. Data statements ..
-   DATA               KTYPE / 1, 2, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 8, &
-                      8, 8, 9, 9, 9, 9, 9, 10 /
-   DATA               KMAGN / 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3, 1, 1, 1, 2, 3, 1 /
-   DATA               KMODE / 0, 0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 4, 3, 1, 4, 4, 3 /
+   DATA               KTYPE / 1, 2, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 8, 8, 8, 9, 9, 9, 9, 9, 10 /
+   DATA               KMAGN / 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3, 1, 1, 1, 2, 3, 1 /
+   DATA               KMODE / 0, 0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 4, 3, 1, 4, 4, 3 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -673,14 +665,8 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   TRYRAC = .TRUE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
    NBLOCK = ILAENV( 1, 'DSYTRD', 'L', NMAX, -1, -1, -1 )
    NBLOCK = MIN( NMAX, MAX( 1, NBLOCK ) )
@@ -708,35 +694,30 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
-   LOG2UI = INT( LOG( ULPINV ) / LOG( TWO ) )
+   ULPINV = 1.0D0 / ULP
+   LOG2UI = INT( LOG( ULPINV ) / LOG( 2.0D0 ) )
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
 !     Loop over sizes, types
 !
-   DO I = 1, 4
-      ISEED2( I ) = ISEED( I )
-   ENDDO
+   ISEED2(1:4) = ISEED(1:4)
    NERRS = 0
    NMATS = 0
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
       IF( N > 0 ) THEN
-         LGN = INT( LOG( DBLE( N ) ) / LOG( TWO ) )
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
+         LGN = INT( LOG( DBLE( N ) ) / LOG( 2.0D0 ) )
+         IF( 2**LGN < N ) LGN = LGN + 1
+         IF( 2**LGN < N ) LGN = LGN + 1
          LWEDC = 1 + 4*N + 2*N*LGN + 4*N**2
          LIWEDC = 6 + 6*N + 5*N*LGN
       ELSE
@@ -744,7 +725,7 @@
          LIWEDC = 12
       END IF
       NAP = ( N*( N+1 ) ) / 2
-      ANINV = ONE / DBLE( MAX( 1, N ) )
+      ANINV = 1.0D0 / DBLE( MAX( 1, N ) )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -758,9 +739,7 @@
          NMATS = NMATS + 1
          NTEST = 0
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
@@ -778,36 +757,28 @@
 !           =9                      positive definite
 !           =10                     diagonally dominant tridiagonal
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0D+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
-!
-         CALL DLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+         CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
          IINFO = 0
          IF( JTYPE <= 15 ) THEN
             COND = ULPINV
          ELSE
-            COND = ULPINV*ANINV / TEN
+            COND = ULPINV*ANINV / 10.0D0
          END IF
 !
 !           Special Matrices -- Identity & Jordan block
@@ -830,8 +801,7 @@
 !              Diagonal Matrix, [Eigen]values Specified
 !
             CALL DLATMS( N, N, 'S', ISEED, 'S', WORK, IMODE, COND, &
-                         ANORM, 0, 0, 'N', A, LDA, WORK( N+1 ), &
-                         IINFO )
+                         ANORM, 0, 0, 'N', A, LDA, WORK( N+1 ), IINFO )
 !
 !
          ELSE IF( ITYPE == 5 ) THEN
@@ -846,19 +816,19 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
-            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL DLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0D0, 1.0D0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
@@ -878,8 +848,8 @@
             DO I = 2, N
                TEMP1 = ABS( A( I-1, I ) ) / &
                        SQRT( ABS( A( I-1, I-1 )*A( I, I ) ) )
-               IF( TEMP1 > HALF ) THEN
-                  A( I-1, I ) = HALF*SQRT( ABS( A( I-1, I-1 )*A( I, &
+               IF( TEMP1 > 0.5D0 ) THEN
+                  A( I-1, I ) = 0.5D0*SQRT( ABS( A( I-1, I-1 )*A( I, &
                                 I ) ) )
                   A( I, I-1 ) = A( I-1, I )
                END IF
@@ -992,8 +962,8 @@
             DO JR = 1, JC
                I = I + 1
                AP( I ) = A( JR, JC )
-               ENDDO
             ENDDO
+         ENDDO
 !
 !           Call DSPTRD and DOPGTR to compute S and U from AP
 !
@@ -1042,8 +1012,8 @@
             DO JR = JC, N
                I = I + 1
                AP( I ) = A( JR, JC )
-               ENDDO
             ENDDO
+         ENDDO
 !
 !           Call DSPTRD and DOPGTR to compute S and U from AP
 !
@@ -1088,9 +1058,8 @@
 !           Compute D1 and Z
 !
          CALL DCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
-         CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
          NTEST = 9
          CALL DSTEQR( 'V', N, D1, WORK, Z, LDU, WORK( N+1 ), IINFO )
@@ -1109,15 +1078,12 @@
 !           Compute D2
 !
          CALL DCOPY( N, SD, 1, D2, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
          NTEST = 11
-         CALL DSTEQR( 'N', N, D2, WORK, WORK( N+1 ), LDU, &
-                      WORK( N+1 ), IINFO )
+         CALL DSTEQR( 'N', N, D2, WORK, WORK( N+1 ), LDU, WORK( N+1 ), IINFO )
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUNIT, FMT = 9999 )'DSTEQR(N)', IINFO, N, JTYPE, &
-               IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'DSTEQR(N)', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -1130,14 +1096,12 @@
 !           Compute D3 (using PWK method)
 !
          CALL DCOPY( N, SD, 1, D3, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
          NTEST = 12
          CALL DSTERF( N, D3, WORK, IINFO )
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUNIT, FMT = 9999 )'DSTERF', IINFO, N, JTYPE, &
-               IOLDSD
+            WRITE( NOUNIT, FMT = 9999 )'DSTERF', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -1154,17 +1118,10 @@
 !
 !           Do Tests 11 and 12
 !
-         TEMP1 = ZERO
-         TEMP2 = ZERO
-         TEMP3 = ZERO
-         TEMP4 = ZERO
-!
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-            TEMP3 = MAX( TEMP3, ABS( D1( J ) ), ABS( D3( J ) ) )
-            TEMP4 = MAX( TEMP4, ABS( D1( J )-D3( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D1(1:N))),MAXVAL(ABS(D2(1:N))))
+         TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
+         TEMP3 = MAX(MAXVAL(ABS(D1(1:N))),MAXVAL(ABS(D3(1:N))))
+         TEMP4 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
 !
          RESULT( 11 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
          RESULT( 12 ) = TEMP4 / MAX( UNFL, ULP*MAX( TEMP3, TEMP4 ) )
@@ -1173,14 +1130,13 @@
 !                         Go up by factors of two until it succeeds
 !
          NTEST = 13
-         TEMP1 = THRESH*( HALF-ULP )
+         TEMP1 = THRESH*( 0.5D0-ULP )
 !
          DO J = 0, LOG2UI
             CALL DSTECH( N, SD, SE, D1, TEMP1, WORK, IINFO )
-            IF( IINFO == 0 ) &
-               GO TO 170
-            TEMP1 = TEMP1*TWO
-            ENDDO
+            IF( IINFO == 0 ) GO TO 170
+            TEMP1 = TEMP1*2.0D0
+         ENDDO
 !
   170       CONTINUE
          RESULT( 13 ) = TEMP1
@@ -1195,7 +1151,7 @@
             CALL DCOPY( N, SD, 1, D4, 1 )
             IF( N > 0 ) &
                CALL DCOPY( N-1, SE, 1, WORK, 1 )
-            CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+            CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
             NTEST = 14
             CALL DPTEQR( 'V', N, D4, WORK, Z, LDU, WORK( N+1 ), &
@@ -1240,19 +1196,12 @@
 !
 !              Do Test 16
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D4( J ) ), ABS( D5( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D4( J )-D5( J ) ) )
-               ENDDO
+            TEMP1 = MAX(MAXVAL(ABS(D4(1:N))),MAXVAL(ABS(D5(1:N))))
+            TEMP2 = MAXVAL(ABS(D4(1:N)-D5(1:N)))
 !
-            RESULT( 16 ) = TEMP2 / MAX( UNFL, &
-                           HUN*ULP*MAX( TEMP1, TEMP2 ) )
+            RESULT( 16 ) = TEMP2 / MAX( UNFL, 100.0D0*ULP*MAX( TEMP1, TEMP2 ) )
          ELSE
-            RESULT( 14 ) = ZERO
-            RESULT( 15 ) = ZERO
-            RESULT( 16 ) = ZERO
+            RESULT( 14:16 ) = 0.0E+0
          END IF
 !
 !           Call DSTEBZ with different options and do tests 17-18.
@@ -1260,8 +1209,8 @@
 !              If S is positive definite and diagonally dominant,
 !              ask for all eigenvalues with high relative accuracy.
 !
-         VL = ZERO
-         VU = ZERO
+         VL = 0.0D0
+         VU = 0.0D0
          IL = 0
          IU = 0
          IF( JTYPE == 21 ) THEN
@@ -1271,8 +1220,7 @@
                          M, NSPLIT, WR, IWORK( 1 ), IWORK( N+1 ), &
                          WORK, IWORK( 2*N+1 ), IINFO )
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(A,rel)', IINFO, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(A,rel)', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
                   RETURN
@@ -1284,18 +1232,16 @@
 !
 !              Do test 17
 !
-            TEMP2 = TWO*( TWO*N-ONE )*ULP*( ONE+EIGHT*HALF**2 ) / &
-                    ( ONE-HALF )**4
+            TEMP2 = 2.0D0*( 2.0D0*N-1.0D0 )*ULP*( 1.0D0+8.0D0*0.5D0**2 ) / ( 1.0D0-0.5D0 )**4
 !
-            TEMP1 = ZERO
+            TEMP1 = 0.0D0
             DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / &
-                       ( ABSTOL+ABS( D4( J ) ) ) )
+               TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / ( ABSTOL+ABS( D4( J ) ) ) )
                ENDDO
 !
             RESULT( 17 ) = TEMP1 / TEMP2
          ELSE
-            RESULT( 17 ) = ZERO
+            RESULT( 17 ) = 0.0D0
          END IF
 !
 !           Now ask for all eigenvalues with high absolute accuracy.
@@ -1319,12 +1265,8 @@
 !
 !           Do test 18
 !
-         TEMP1 = ZERO
-         TEMP2 = ZERO
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D3( J ) ), ABS( WA1( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D3( J )-WA1( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D3(1:N))),MAXVAL(ABS(WA1(1:N))))
+         TEMP2 = MAXVAL(ABS(D3(1:N)-WA1(1:N)))
 !
          RESULT( 18 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -1365,22 +1307,22 @@
 !
          IF( N > 0 ) THEN
             IF( IL /= 1 ) THEN
-               VL = WA1( IL ) - MAX( HALF*( WA1( IL )-WA1( IL-1 ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VL = WA1( IL ) - MAX( 0.5D0*( WA1( IL )-WA1( IL-1 ) ), &
+                    ULP*ANORM, 2.0D0*RTUNFL )
             ELSE
-               VL = WA1( 1 ) - MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VL = WA1( 1 ) - MAX( 0.5D0*( WA1( N )-WA1( 1 ) ), &
+                    ULP*ANORM, 2.0D0*RTUNFL )
             END IF
             IF( IU /= N ) THEN
-               VU = WA1( IU ) + MAX( HALF*( WA1( IU+1 )-WA1( IU ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VU = WA1( IU ) + MAX( 0.5D0*( WA1( IU+1 )-WA1( IU ) ), &
+                    ULP*ANORM, 2.0D0*RTUNFL )
             ELSE
-               VU = WA1( N ) + MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VU = WA1( N ) + MAX( 0.5D0*( WA1( N )-WA1( 1 ) ), &
+                    ULP*ANORM, 2.0D0*RTUNFL )
             END IF
          ELSE
-            VL = ZERO
-            VU = ONE
+            VL = 0.0D0
+            VU = 1.0D0
          END IF
 !
          CALL DSTEBZ( 'V', 'E', N, VL, VU, IL, IU, ABSTOL, SD, SE, &
@@ -1410,7 +1352,7 @@
          IF( N > 0 ) THEN
             TEMP3 = MAX( ABS( WA1( N ) ), ABS( WA1( 1 ) ) )
          ELSE
-            TEMP3 = ZERO
+            TEMP3 = 0.0D0
          END IF
 !
          RESULT( 19 ) = ( TEMP1+TEMP2 ) / MAX( UNFL, TEMP3*ULP )
@@ -1462,9 +1404,8 @@
 !           Compute D1 and Z
 !
          CALL DCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
-         CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
          NTEST = 22
          CALL DSTEDC( 'I', N, D1, WORK, Z, LDU, WORK( N+1 ), LWEDC-N, &
@@ -1483,17 +1424,15 @@
 !
 !           Do Tests 22 and 23
 !
-         CALL DSTT21( N, 0, SD, SE, D1, DUMMA, Z, LDU, WORK, &
-                      RESULT( 22 ) )
+         CALL DSTT21( N, 0, SD, SE, D1, DUMMA, Z, LDU, WORK, RESULT( 22 ) )
 !
 !           Call DSTEDC(V) to compute D1 and Z, do tests.
 !
 !           Compute D1 and Z
 !
          CALL DCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
-         CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
          NTEST = 24
          CALL DSTEDC( 'V', N, D1, WORK, Z, LDU, WORK( N+1 ), LWEDC-N, &
@@ -1520,9 +1459,8 @@
 !           Compute D2
 !
          CALL DCOPY( N, SD, 1, D2, 1 )
-         IF( N > 0 ) &
-            CALL DCOPY( N-1, SE, 1, WORK, 1 )
-         CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+         IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
+         CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
          NTEST = 26
          CALL DSTEDC( 'N', N, D2, WORK, Z, LDU, WORK( N+1 ), LWEDC-N, &
@@ -1541,13 +1479,8 @@
 !
 !           Do Test 26
 !
-         TEMP1 = ZERO
-         TEMP2 = ZERO
-!
-         DO J = 1, N
-            TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-            TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-            ENDDO
+         TEMP1 = MAX(MAXVAL(ABS(D1(1:N))),MAXVAL(ABS(D2(1:N))))
+         TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
 !
          RESULT( 26 ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -1561,8 +1494,8 @@
 !              If S is positive definite and diagonally dominant,
 !              ask for all eigenvalues with high relative accuracy.
 !
-            VL = ZERO
-            VU = ZERO
+            VL = 0.0D0
+            VU = 0.0D0
             IL = 0
             IU = 0
             IF( JTYPE == 21 .AND. SREL ) THEN
@@ -1586,10 +1519,10 @@
 !
 !              Do test 27
 !
-               TEMP2 = TWO*( TWO*N-ONE )*ULP*( ONE+EIGHT*HALF**2 ) / &
-                       ( ONE-HALF )**4
+               TEMP2 = 2.0D0*( 2.0D0*N-1.0D0 )*ULP*( 1.0D0+8.0D0*0.5D0**2 ) / &
+                       ( 1.0D0-0.5D0 )**4
 !
-               TEMP1 = ZERO
+               TEMP1 = 0.0D0
                DO J = 1, N
                   TEMP1 = MAX( TEMP1, ABS( D4( J )-WR( N-J+1 ) ) / &
                           ( ABSTOL+ABS( D4( J ) ) ) )
@@ -1628,10 +1561,10 @@
 !
 !                 Do test 28
 !
-                  TEMP2 = TWO*( TWO*N-ONE )*ULP* &
-                          ( ONE+EIGHT*HALF**2 ) / ( ONE-HALF )**4
+                  TEMP2 = 2.0D0*( 2.0D0*N-1.0D0 )*ULP* &
+                          ( 1.0D0+8.0D0*0.5D0**2 ) / ( 1.0D0-0.5D0 )**4
 !
-                  TEMP1 = ZERO
+                  TEMP1 = 0.0D0
                   DO J = IL, IU
                      TEMP1 = MAX( TEMP1, ABS( WR( J-IL+1 )-D4( N-J+ &
                              1 ) ) / ( ABSTOL+ABS( WR( J-IL+1 ) ) ) )
@@ -1639,11 +1572,10 @@
 !
                   RESULT( 28 ) = TEMP1 / TEMP2
                ELSE
-                  RESULT( 28 ) = ZERO
+                  RESULT( 28 ) = 0.0D0
                END IF
             ELSE
-               RESULT( 27 ) = ZERO
-               RESULT( 28 ) = ZERO
+               RESULT(27:28) = 0.0D+0
             END IF
 !
 !           Call DSTEMR(V,I) to compute D1 and Z, do tests.
@@ -1653,7 +1585,7 @@
             CALL DCOPY( N, SD, 1, D5, 1 )
             IF( N > 0 ) &
                CALL DCOPY( N-1, SE, 1, WORK, 1 )
-            CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+            CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
             IF( SRANGE ) THEN
                NTEST = 29
@@ -1669,8 +1601,7 @@
                             WORK( N+1 ), LWORK-N, IWORK( 2*N+1 ), &
                             LIWORK-2*N, IINFO )
                IF( IINFO /= 0 ) THEN
-                  WRITE( NOUNIT, FMT = 9999 )'DSTEMR(V,I)', IINFO, &
-                     N, JTYPE, IOLDSD
+                  WRITE( NOUNIT, FMT = 9999 )'DSTEMR(V,I)', IINFO, N, JTYPE, IOLDSD
                   INFO = ABS( IINFO )
                   IF( IINFO < 0 ) THEN
                      RETURN
@@ -1690,8 +1621,7 @@
 !           Compute D2
 !
                CALL DCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
-                  CALL DCOPY( N-1, SE, 1, WORK, 1 )
+               IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
                NTEST = 31
                CALL DSTEMR( 'N', 'I', N, D5, WORK, VL, VU, IL, IU, &
@@ -1712,18 +1642,11 @@
 !
 !           Do Test 31
 !
-               TEMP1 = ZERO
-               TEMP2 = ZERO
-!
-               DO J = 1, IU - IL + 1
-                  TEMP1 = MAX( TEMP1, ABS( D1( J ) ), &
-                          ABS( D2( J ) ) )
-                  TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-                  ENDDO
+               TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))),MAXVAL(ABS( D2(1:IU-IL+1))))
+               TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
                RESULT( 31 ) = TEMP2 / MAX( UNFL, &
                               ULP*MAX( TEMP1, TEMP2 ) )
-!
 !
 !           Call DSTEMR(V,V) to compute D1 and Z, do tests.
 !
@@ -1732,30 +1655,30 @@
                CALL DCOPY( N, SD, 1, D5, 1 )
                IF( N > 0 ) &
                   CALL DCOPY( N-1, SE, 1, WORK, 1 )
-               CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDU )
+               CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDU )
 !
                NTEST = 32
 !
                IF( N > 0 ) THEN
                   IF( IL /= 1 ) THEN
-                     VL = D2( IL ) - MAX( HALF* &
+                     VL = D2( IL ) - MAX( 0.5D0* &
                           ( D2( IL )-D2( IL-1 ) ), ULP*ANORM, &
-                          TWO*RTUNFL )
+                          2.0D0*RTUNFL )
                   ELSE
-                     VL = D2( 1 ) - MAX( HALF*( D2( N )-D2( 1 ) ), &
-                          ULP*ANORM, TWO*RTUNFL )
+                     VL = D2( 1 ) - MAX( 0.5D0*( D2( N )-D2( 1 ) ), &
+                          ULP*ANORM, 2.0D0*RTUNFL )
                   END IF
                   IF( IU /= N ) THEN
-                     VU = D2( IU ) + MAX( HALF* &
+                     VU = D2( IU ) + MAX( 0.5D0* &
                           ( D2( IU+1 )-D2( IU ) ), ULP*ANORM, &
-                          TWO*RTUNFL )
+                          2.0D0*RTUNFL )
                   ELSE
-                     VU = D2( N ) + MAX( HALF*( D2( N )-D2( 1 ) ), &
-                          ULP*ANORM, TWO*RTUNFL )
+                     VU = D2( N ) + MAX( 0.5D0*( D2( N )-D2( 1 ) ), &
+                          ULP*ANORM, 2.0D0*RTUNFL )
                   END IF
                ELSE
-                  VL = ZERO
-                  VU = ONE
+                  VL = 0.0D0
+                  VU = 1.0D0
                END IF
 !
                CALL DSTEMR( 'V', 'V', N, D5, WORK, VL, VU, IL, IU, &
@@ -1784,8 +1707,7 @@
 !           Compute D2
 !
                CALL DCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
-                  CALL DCOPY( N-1, SE, 1, WORK, 1 )
+               IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
                NTEST = 34
                CALL DSTEMR( 'N', 'V', N, D5, WORK, VL, VU, IL, IU, &
@@ -1806,24 +1728,12 @@
 !
 !           Do Test 34
 !
-               TEMP1 = ZERO
-               TEMP2 = ZERO
+               TEMP1 = MAX(MAXVAL(ABS(D1(1:IU-IL+1))),MAXVAL(ABS( D2(1:IU-IL+1))))
+               TEMP2 = MAXVAL(ABS(D1(1:IU-IL+1)-D2(1:IU-IL+1)))
 !
-               DO J = 1, IU - IL + 1
-                  TEMP1 = MAX( TEMP1, ABS( D1( J ) ), &
-                          ABS( D2( J ) ) )
-                  TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-                  ENDDO
-!
-               RESULT( 34 ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+               RESULT(34) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
             ELSE
-               RESULT( 29 ) = ZERO
-               RESULT( 30 ) = ZERO
-               RESULT( 31 ) = ZERO
-               RESULT( 32 ) = ZERO
-               RESULT( 33 ) = ZERO
-               RESULT( 34 ) = ZERO
+               RESULT(29:34) = 0.0D+0
             END IF
 !
 !
@@ -1832,8 +1742,7 @@
 !           Compute D1 and Z
 !
             CALL DCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL DCOPY( N-1, SE, 1, WORK, 1 )
+            IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
             NTEST = 35
 !
@@ -1863,8 +1772,7 @@
 !           Compute D2
 !
             CALL DCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
-               CALL DCOPY( N-1, SE, 1, WORK, 1 )
+            IF( N > 0 ) CALL DCOPY( N-1, SE, 1, WORK, 1 )
 !
             NTEST = 37
             CALL DSTEMR( 'N', 'A', N, D5, WORK, VL, VU, IL, IU, &
@@ -1885,13 +1793,8 @@
 !
 !           Do Test 34
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-!
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D2( J ) ) )
-               ENDDO
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))),MAXVAL(ABS(D2(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D2(1:N)))
 !
             RESULT( 37 ) = TEMP2 / MAX( UNFL, &
                            ULP*MAX( TEMP1, TEMP2 ) )
@@ -1974,4 +1877,3 @@
 !     End of DCHKST
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

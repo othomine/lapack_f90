@@ -589,9 +589,11 @@
 !
    INFO = 0
 !
-   BADNN = .FALSE.
    NMAX = MAXVAL(NN(1:NSIZES))
-   BADNN = (any(NN(1:NSIZES) < 0 ))
+   BADNN = any(NN(1:NSIZES) < 0 )
+!
+!     Maximum blocksize and shift -- we assume that blocksize and number
+!     of shifts are monotone increasing functions of N.
 !
    LWKOPT = MAX( 2*NMAX*NMAX, 4*NMAX, 1 )
 !
@@ -1077,9 +1079,7 @@
             RESULT( 15 ) = MAX( TEMP1, TEMP2 )
             NTEST = 15
          ELSE
-            RESULT( 13 ) = 0.0E+0
-            RESULT( 14 ) = 0.0E+0
-            RESULT( 15 ) = 0.0E+0
+            RESULT( 13:15 ) = 0.0E+0
             NTEST = 12
          END IF
 !

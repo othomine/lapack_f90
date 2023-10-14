@@ -783,11 +783,9 @@
                RESULT( 12 ) = 0.0E+0
                KNTEIG = 0
                DO I = 1, N
-                  IF( CLCTES( ALPHA( I ), BETA( I ) ) ) &
-                     KNTEIG = KNTEIG + 1
-                  ENDDO
-               IF( SDIM /= KNTEIG ) &
-                  RESULT( 13 ) = ULPINV
+                  IF( CLCTES( ALPHA( I ), BETA( I ) ) ) KNTEIG = KNTEIG + 1
+               ENDDO
+               IF( SDIM /= KNTEIG ) RESULT( 13 ) = ULPINV
             END IF
 !
             ENDDO

@@ -1129,10 +1129,10 @@
 !     ..
 !     .. Common blocks ..
    COMMON             / CENVIR / NPROC, NSHIFT, MAXB
+   COMMON             / CLAENV / IPARMS
    COMMON             / INFOC / INFOT, NUNIT, OK, LERR
    COMMON             / SRNAMC / SRNAMT
    COMMON             / SSLCT / SELOPT, SELDIM, SELVAL, SELWR, SELWI
-   COMMON             / CLAENV / IPARMS
 !     ..
 !     .. Data statements ..
    DATA               INTSTR / '0123456789' /
@@ -1285,7 +1285,7 @@
 !
 !        DEC:  Eigencondition estimation
 !
-      READ( NIN, FMT = * )THRESH
+      READ(NIN,*)THRESH
       CALL XLAENV( 1, 1 )
       CALL XLAENV( 12, 11 )
       CALL XLAENV( 13, 2 )
@@ -1311,7 +1311,7 @@
 !
 !     Read the number of values of M, P, and N.
 !
-   READ( NIN, FMT = * )NN
+   READ(NIN,*)NN
    IF( NN < 0 ) THEN
       WRITE( NOUT, FMT = 9989 )'   NN ', NN, 1
       NN = 0
@@ -1325,7 +1325,7 @@
 !     Read the values of M
 !
    IF( .NOT.( DGX .OR. DXV ) ) THEN
-      READ( NIN, FMT = * )( MVAL( I ), I = 1, NN )
+      READ(NIN,*) MVAL(1:NN)
       IF( SVD ) THEN
          VNAME = '    M '
       ELSE
@@ -1340,13 +1340,13 @@
             FATAL = .TRUE.
          END IF
       ENDDO
-      WRITE( NOUT, FMT = 9983 )'M:    ', ( MVAL( I ), I = 1, NN )
+      WRITE( NOUT, FMT = 9983 )'M:    ', MVAL(1:NN)
    END IF
 !
 !     Read the values of P
 !
    IF( GLM .OR. GQR .OR. GSV .OR. CSD .OR. LSE ) THEN
-      READ( NIN, FMT = * )( PVAL( I ), I = 1, NN )
+      READ(NIN,*) PVAL(1:NN)
       DO I = 1, NN
          IF( PVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )' P  ', PVAL( I ), 0
@@ -1356,14 +1356,14 @@
             FATAL = .TRUE.
          END IF
       ENDDO
-      WRITE( NOUT, FMT = 9983 )'P:    ', ( PVAL( I ), I = 1, NN )
+      WRITE( NOUT, FMT = 9983 )'P:    ', PVAL(1:NN)
    END IF
 !
 !     Read the values of N
 !
    IF( SVD .OR. DBB .OR. GLM .OR. GQR .OR. GSV .OR. CSD .OR. &
        LSE ) THEN
-      READ( NIN, FMT = * )( NVAL( I ), I = 1, NN )
+      READ(NIN,*) NVAL(1:NN)
       DO I = 1, NN
          IF( NVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )'    N ', NVAL( I ), 0
@@ -1377,7 +1377,7 @@
       NVAL(1:NN) = MVAL(1:NN)
    END IF
    IF( .NOT.( DGX .OR. DXV ) ) THEN
-      WRITE( NOUT, FMT = 9983 )'N:    ', ( NVAL( I ), I = 1, NN )
+      WRITE( NOUT, FMT = 9983 )'N:    ', NVAL(1:NN)
    ELSE
       WRITE( NOUT, FMT = 9983 )'N:    ', NN
    END IF
@@ -1385,8 +1385,8 @@
 !     Read the number of values of K, followed by the values of K
 !
    IF( DSB .OR. DBB ) THEN
-      READ( NIN, FMT = * )NK
-      READ( NIN, FMT = * )( KVAL( I ), I = 1, NK )
+      READ(NIN,*) NK
+      READ(NIN,*) KVAL(1:NK)
       DO I = 1, NK
          IF( KVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )'    K ', KVAL( I ), 0
@@ -1396,7 +1396,7 @@
             FATAL = .TRUE.
          END IF
       ENDDO
-      WRITE( NOUT, FMT = 9983 )'K:    ', ( KVAL( I ), I = 1, NK )
+      WRITE( NOUT, FMT = 9983 )'K:    ', KVAL(1:NK)
    END IF
 !
    IF( DEV .OR. DES .OR. DVX .OR. DSX ) THEN
@@ -1404,7 +1404,7 @@
 !        For the nonsymmetric QR driver routines, only one set of
 !        parameters is allowed.
 !
-      READ( NIN, FMT = * )NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
+      READ(NIN,*) NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
          INMIN( 1 ), INWIN( 1 ), INIBL(1), ISHFTS(1), IACC22(1)
       IF( NBVAL( 1 ) < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( 1 ), 1
@@ -1453,8 +1453,7 @@
 !        For the nonsymmetric generalized driver routines, only one set
 !        of parameters is allowed.
 !
-      READ( NIN, FMT = * )NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
-         NSVAL( 1 ), MXBVAL( 1 )
+      READ(NIN,*) NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), NSVAL( 1 ), MXBVAL( 1 )
       IF( NBVAL( 1 ) < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( 1 ), 1
          FATAL = .TRUE.
@@ -1481,14 +1480,13 @@
       WRITE( NOUT, FMT = 9983 )'NX:   ', NXVAL( 1 )
       WRITE( NOUT, FMT = 9983 )'NS:   ', NSVAL( 1 )
       WRITE( NOUT, FMT = 9983 )'MAXB: ', MXBVAL( 1 )
-!
    ELSE IF( .NOT.DSB .AND. .NOT.GLM .AND. .NOT.GQR .AND. .NOT. &
             GSV .AND. .NOT.CSD .AND. .NOT.LSE ) THEN
 !
 !        For the other paths, the number of parameters can be varied
 !        from the input file.  Read the number of parameter values.
 !
-      READ( NIN, FMT = * )NPARMS
+      READ(NIN,*) NPARMS
       IF( NPARMS < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'NPARMS', NPARMS, 1
          NPARMS = 0
@@ -1502,7 +1500,7 @@
 !        Read the values of NB
 !
       IF( .NOT.DBB ) THEN
-         READ( NIN, FMT = * )( NBVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NBVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( I ), 0
@@ -1518,7 +1516,7 @@
 !        Read the values of NBMIN
 !
       IF( NEP .OR. SEP .OR. SVD .OR. DGG ) THEN
-         READ( NIN, FMT = * )( NBMIN( I ), I = 1, NPARMS )
+         READ(NIN,*) NBMIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBMIN ', NBMIN( I ), 0
@@ -1528,7 +1526,7 @@
                FATAL = .TRUE.
             END IF
          ENDDO
-         WRITE( NOUT, FMT = 9983 )'NBMIN:', ( NBMIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NBMIN:', NBMIN(1:NPARMS)
       ELSE
          NBMIN(1:NPARMS) = 1
       END IF
@@ -1536,7 +1534,7 @@
 !        Read the values of NX
 !
       IF( NEP .OR. SEP .OR. SVD ) THEN
-         READ( NIN, FMT = * )( NXVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NXVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NXVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NX ', NXVAL( I ), 0
@@ -1555,7 +1553,7 @@
 !        or DBB).
 !
       IF( SVD .OR. DBB .OR. DGG ) THEN
-         READ( NIN, FMT = * )( NSVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NSVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NSVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NS ', NSVAL( I ), 0
@@ -1573,7 +1571,7 @@
 !        Read the values for MAXB.
 !
       IF( DGG ) THEN
-         READ( NIN, FMT = * )( MXBVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) MXBVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( MXBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' MAXB ', MXBVAL( I ), 0
@@ -1583,8 +1581,7 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'MAXB: ', &
-            ( MXBVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'MAXB: ', MXBVAL(1:NPARMS)
       ELSE
          MXBVAL(1:NPARMS) = 1
       END IF
@@ -1592,7 +1589,7 @@
 !        Read the values for INMIN.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INMIN( I ), I = 1, NPARMS )
+         READ(NIN,*) INMIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( INMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INMIN ', INMIN( I ), 0
@@ -1607,7 +1604,7 @@
 !        Read the values for INWIN.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INWIN( I ), I = 1, NPARMS )
+         READ(NIN,*) INWIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( INWIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INWIN ', INWIN( I ), 0
@@ -1622,7 +1619,7 @@
 !        Read the values for INIBL.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( INIBL( I ), I = 1, NPARMS )
+         READ(NIN,*) INIBL(1:NPARMS)
          DO I = 1, NPARMS
             IF( INIBL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INIBL ', INIBL( I ), 0
@@ -1637,14 +1634,14 @@
 !        Read the values for ISHFTS.
 !
       IF( NEP ) THEN
-         READ( NIN, FMT = * )( ISHFTS( I ), I = 1, NPARMS )
+         READ(NIN,*) ISHFTS(1:NPARMS)
          DO I = 1, NPARMS
             IF( ISHFTS( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' ISHFTS ', ISHFTS( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', ( ISHFTS( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', ISHFTS(1:NPARMS)
       ELSE
          ISHFTS(1:NPARMS) = 1
       END IF
@@ -1652,7 +1649,7 @@
 !        Read the values for IACC22.
 !
       IF( NEP .OR. DGG ) THEN
-         READ( NIN, FMT = * )( IACC22( I ), I = 1, NPARMS )
+         READ(NIN,*) IACC22(1:NPARMS)
          DO I = 1, NPARMS
             IF( IACC22( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' IACC22 ', IACC22( I ), 0
@@ -1667,7 +1664,7 @@
 !        Read the values for NBCOL.
 !
       IF( DGG ) THEN
-         READ( NIN, FMT = * )( NBCOL( I ), I = 1, NPARMS )
+         READ(NIN,*) NBCOL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBCOL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBCOL ', NBCOL( I ), 0
@@ -1677,12 +1674,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NBCOL:', &
-            ( NBCOL(1:NPARMS), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NBCOL:', NBCOL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NBCOL( I ) = 1
-            ENDDO
+         NBCOL(1:NPARMS) = 1
       END IF
    END IF
 !
@@ -1698,30 +1692,30 @@
 !
 !     Read the threshold value for the test ratios.
 !
-   READ( NIN, FMT = * )THRESH
+   READ(NIN,*) THRESH
    WRITE( NOUT, FMT = 9982 )THRESH
    IF( SEP .OR. SVD .OR. DGG ) THEN
 !
 !        Read the flag that indicates whether to test LAPACK routines.
 !
-      READ( NIN, FMT = * )TSTCHK
+      READ(NIN,*) TSTCHK
 !
 !        Read the flag that indicates whether to test driver routines.
 !
-      READ( NIN, FMT = * )TSTDRV
+      READ(NIN,*) TSTDRV
    END IF
 !
 !     Read the flag that indicates whether to test the error exits.
 !
-   READ( NIN, FMT = * )TSTERR
+   READ(NIN,*) TSTERR
 !
 !     Read the code describing how to set the random number seed.
 !
-   READ( NIN, FMT = * )NEWSD
+   READ(NIN,*) NEWSD
 !
 !     If NEWSD = 2, read another line with 4 integers for the seed.
 !
-   IF( NEWSD == 2 ) READ( NIN, FMT = * )( IOLDSD( I ), I = 1, 4 )
+   IF( NEWSD == 2 ) READ(NIN,*) IOLDSD(1:4)
 !
    ISEED(1:4) = IOLDSD(1:4)
 !
@@ -1796,9 +1790,7 @@
 !
 !     Reset the random number seed.
 !
-   IF( NEWSD == 0 ) THEN
-      ISEED(1:4) = IOLDSD(1:4)
-   END IF
+   IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
 !
    IF( LSAMEN( 3, C3, 'DHS' ) .OR. LSAMEN( 3, C3, 'NEP' ) ) THEN
 !
@@ -2539,7 +2531,6 @@
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'DCKLSE', INFO
-!
    ELSE
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = * )

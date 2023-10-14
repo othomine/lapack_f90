@@ -180,10 +180,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMA, NORME
@@ -203,17 +199,12 @@
 !     .. External Subroutines ..
    EXTERNAL           DAXPY, DGEMM, DLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize RESULT (in case N=0)
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0D0
+   IF( N <= 0 ) RETURN
 !
    UNFL = DLAMCH( 'Safe minimum' )
    ULP = DLAMCH( 'Precision' )
@@ -234,16 +225,16 @@
 !
 !     Check normalization of E
 !
-   ENRMIN = ONE / ULP
-   ENRMAX = ZERO
+   ENRMIN = 1.0D0 / ULP
+   ENRMAX = 0.0D0
    IF( ITRNSE == 0 ) THEN
 !
 !        Eigenvectors are column vectors.
 !
       IPAIR = 0
       DO JVEC = 1, N
-         TEMP1 = ZERO
-         IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= ZERO ) &
+         TEMP1 = 0.0D0
+         IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= 0.0D0 ) &
             IPAIR = 1
          IF( IPAIR == 1 ) THEN
 !
@@ -276,13 +267,13 @@
 !        Eigenvectors are row vectors.
 !
       DO JVEC = 1, N
-         WORK( JVEC ) = ZERO
+         WORK( JVEC ) = 0.0D0
       ENDDO
 !
       DO J = 1, N
          IPAIR = 0
          DO JVEC = 1, N
-            IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= ZERO ) &
+            IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= 0.0D0 ) &
                IPAIR = 1
             IF( IPAIR == 1 ) THEN
                WORK( JVEC ) = MAX( WORK( JVEC ), &
@@ -317,7 +308,7 @@
 !
 !     Error =  AE - EW
 !
-   CALL DLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+   CALL DLASET( 'Full', N, N, 0.0D0, 0.0D0, WORK, N )
 !
    IPAIR = 0
    IEROW = 1
@@ -330,7 +321,7 @@
          IECOL = JCOL
       END IF
 !
-      IF( IPAIR == 0 .AND. WI( JCOL ) /= ZERO ) &
+      IF( IPAIR == 0 .AND. WI( JCOL ) /= 0.0D0 ) &
          IPAIR = 1
 !
       IF( IPAIR == 1 ) THEN
@@ -338,8 +329,8 @@
          WMAT( 2, 1 ) = -WI( JCOL )
          WMAT( 1, 2 ) = WI( JCOL )
          WMAT( 2, 2 ) = WR( JCOL )
-         CALL DGEMM( TRANSE, TRANSW, N, 2, 2, ONE, E( IEROW, IECOL ), &
-                     LDE, WMAT, 2, ZERO, WORK( N*( JCOL-1 )+1 ), N )
+         CALL DGEMM( TRANSE, TRANSW, N, 2, 2, 1.0D0, E( IEROW, IECOL ), &
+                     LDE, WMAT, 2, 0.0D0, WORK( N*( JCOL-1 )+1 ), N )
          IPAIR = 2
       ELSE IF( IPAIR == 2 ) THEN
          IPAIR = 0
@@ -353,7 +344,7 @@
 !
    ENDDO
 !
-   CALL DGEMM( TRANSA, TRANSE, N, N, N, ONE, A, LDA, E, LDE, -ONE, &
+   CALL DGEMM( TRANSA, TRANSE, N, N, N, 1.0D0, A, LDA, E, LDE, -1.0D0, &
                WORK, N )
 !
    ERRNRM = DLANGE( 'One', N, N, WORK, N, WORK( N*N+1 ) ) / ENORM
@@ -363,16 +354,16 @@
    IF( ANORM > ERRNRM ) THEN
       RESULT( 1 ) = ( ERRNRM / ANORM ) / ULP
    ELSE
-      IF( ANORM < ONE ) THEN
-         RESULT( 1 ) = ONE / ULP
+      IF( ANORM < 1.0D0 ) THEN
+         RESULT( 1 ) = 1.0D0 / ULP
       ELSE
-         RESULT( 1 ) = MIN( ERRNRM / ANORM, ONE ) / ULP
+         RESULT( 1 ) = MIN( ERRNRM / ANORM, 1.0D0 ) / ULP
       END IF
    END IF
 !
 !     Compute RESULT(2) : the normalization error in E.
 !
-   RESULT( 2 ) = MAX( ABS( ENRMAX-ONE ), ABS( ENRMIN-ONE ) ) / &
+   RESULT( 2 ) = MAX( ABS( ENRMAX-1.0D0 ), ABS( ENRMIN-1.0D0 ) ) / &
                  ( DBLE( N )*ULP )
 !
    RETURN
@@ -380,4 +371,4 @@
 !     End of DGET22
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

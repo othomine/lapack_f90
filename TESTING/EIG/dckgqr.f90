@@ -248,9 +248,6 @@
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, DGQRTS, DGRQTS, DLATB9, &
                       DLATMS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize constants.
@@ -284,8 +281,7 @@
 !
 !                 Do the tests only if DOTYPE( IMAT ) is true.
 !
-               IF( .NOT.DOTYPE( IMAT ) ) &
-                  GO TO 30
+               IF (DOTYPE( IMAT ) ) THEN
 !
 !                 Test DGGRQF
 !
@@ -304,7 +300,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
+                  CYCLE
                END IF
 !
 !                 Generate P by N matrix B
@@ -315,7 +311,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
+                  CYCLE
                END IF
 !
                NT = 4
@@ -333,8 +329,7 @@
                         FIRSTT = .FALSE.
                         CALL ALAHDG( NOUT, 'GRQ' )
                      END IF
-                     WRITE( NOUT, FMT = 9998 )M, P, N, IMAT, I, &
-                        RESULT( I )
+                     WRITE( NOUT, FMT = 9998 )M, P, N, IMAT, I, RESULT( I )
                      NFAIL = NFAIL + 1
                   END IF
                ENDDO
@@ -357,7 +352,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
+                  CYCLE
                END IF
 !
 !                 Generate N-by-P matrix  B
@@ -368,7 +363,7 @@
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9999 )IINFO
                   INFO = ABS( IINFO )
-                  GO TO 30
+                  CYCLE
                END IF
 !
                NT = 4
@@ -393,7 +388,7 @@
                ENDDO
                NRUN = NRUN + NT
 !
-30          CONTINUE
+            ENDIF
             ENDDO
          ENDDO
       ENDDO
@@ -413,4 +408,4 @@
 !     End of DCKGQR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

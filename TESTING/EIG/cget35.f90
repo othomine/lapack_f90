@@ -142,17 +142,17 @@
 !
 !     Begin test loop
 !
-10 CONTINUE
-   READ( NIN, FMT = * )M, N
+   DO
+   READ(NIN,*)M, N
    IF( N == 0 ) RETURN
    DO I = 1, M
-      READ( NIN, FMT = * )( ATMP( I, J ), J = 1, M )
+      READ(NIN,*) ATMP(I,1:M)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( BTMP( I, J ), J = 1, N )
+      READ(NIN,*) BTMP(I,1:N)
    ENDDO
    DO I = 1, M
-      READ( NIN, FMT = * )( CTMP( I, J ), J = 1, N )
+      READ(NIN,*) CTMP(I,1:N)
    ENDDO
    DO IMLA = 1, 3
       DO IMLAD = 1, 3
@@ -207,7 +207,7 @@
             ENDDO
          ENDDO
       ENDDO
-   GO TO 10
+   ENDDO
 !
 !     End of CGET35
 !

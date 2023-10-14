@@ -171,7 +171,7 @@
    EXTERNAL           CLANGE, SCASUM, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMV
+   EXTERNAL           CGEMV
 !     ..
 !     .. Executable Statements ..
 !
@@ -197,8 +197,8 @@
             CALL CCOPY( M, A( 1, J ), 1, WORK, 1 )
             WORK(M+1:M+N-1) = D(1:N-1)*PT(1:N-1,J) + E(1:N-1)*PT(2:N, J )
             WORK( M+N ) = D( N )*PT( N, J )
-            CALL CGEMV( 'No transpose', M, N, -CMPLX( 1.0E+0 ), Q, LDQ, &
-                        WORK( M+1 ), 1, CMPLX( 1.0E+0 ), WORK, 1 )
+            CALL CGEMV( 'No transpose', M, N, -CMPLX(1.0E+0), Q, LDQ, &
+                        WORK( M+1 ), 1, CMPLX(1.0E+0), WORK, 1 )
             RESID = MAX( RESID, SCASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -254,19 +254,16 @@
    ANORM = CLANGE( '1', M, N, A, LDA, RWORK )
    EPS = SLAMCH( 'Precision' )
 !
-   IF( ANORM <= 0.0E+0 ) THEN
-      IF( RESID /= 0.0E+0 ) &
-         RESID = 1.0E+0 / EPS
+   IF( ANORM <= 0.0D+0 ) THEN
+      IF( RESID /= 0.0D+0 ) RESID = 1.0D+0 / EPS
    ELSE
       IF( ANORM >= RESID ) THEN
          RESID = ( RESID / ANORM ) / ( REAL( N )*EPS )
       ELSE
          IF( ANORM < 1.0E+0 ) THEN
-            RESID = ( MIN( RESID, REAL( N )*ANORM ) / ANORM ) / &
-                    ( REAL( N )*EPS )
+            RESID = ( MIN( RESID, REAL( N )*ANORM ) / ANORM ) / ( REAL( N )*EPS )
          ELSE
-            RESID = MIN( RESID / ANORM, REAL( N ) ) / &
-                    ( REAL( N )*EPS )
+            RESID = MIN( RESID / ANORM, REAL( N ) ) / ( REAL( N )*EPS )
          END IF
       END IF
    END IF

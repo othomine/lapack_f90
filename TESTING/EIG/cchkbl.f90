@@ -132,15 +132,13 @@
 !
    DO I = 1, N
       DO J = 1, N
-         TEMP = MAX( CABS1( A( I, J ) ), CABS1( AIN( I, J ) ) )
-         TEMP = MAX( TEMP, SFMIN )
+         TEMP = MAX( CABS1( A( I, J ) ), CABS1( AIN( I, J ) ) , SFMIN )
          VMAX = MAX( VMAX, CABS1( A( I, J )-AIN( I, J ) ) / TEMP )
       ENDDO
    ENDDO
 !
    DO I = 1, N
-      TEMP = MAX( SCALE( I ), SCALIN( I ) )
-      TEMP = MAX( TEMP, SFMIN )
+      TEMP = MAX( SCALE( I ), SCALIN( I ) , SFMIN )
       VMAX = MAX( VMAX, ABS( SCALE( I )-SCALIN( I ) ) / TEMP )
    ENDDO
 !

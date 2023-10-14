@@ -1099,8 +1099,9 @@
    COMPLEX, DIMENSION(:,:), ALLOCATABLE :: A, B, C
 !     ..
 !     .. External Functions ..
+   LOGICAL            LSAMEN
    REAL               SECOND, SLAMCH
-   EXTERNAL           SECOND, SLAMCH
+   EXTERNAL           LSAMEN, SECOND, SLAMCH
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           ALAREQ, CCHKBB, CCHKBD, CCHKBK, CCHKBL, CCHKEC, &
@@ -1161,7 +1162,7 @@
 !
 !     Return to here to read multiple sets of data
 !
-10 CONTINUE
+   DO
 !
 !     Read the first line and set the 3-character test path
 !
@@ -1193,9 +1194,8 @@
 !
 !     Report values of parameters.
 !
-   IF( PATH == '   ' ) THEN
-      GO TO 10
-   ELSE IF( NEP ) THEN
+   IF( PATH == '   ' ) CYCLE
+   IF( NEP ) THEN
       WRITE( NOUT, FMT = 9987 )
    ELSE IF( SEP ) THEN
       WRITE( NOUT, FMT = 9986 )
@@ -1244,7 +1244,7 @@
       write(10,'(A,F16.10,A)') 'Total time : CCHKBL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 380
+      CYCLE
    ELSE IF( CBK ) THEN
 !
 !        CGEBAK:  Back transformation
@@ -1256,7 +1256,7 @@
       write(10,'(A,F16.10,A)') 'Total time : CCHKBK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 380
+      CYCLE
    ELSE IF( CGL ) THEN
 !
 !        CGGBAL:  Balancing
@@ -1268,7 +1268,7 @@
       write(10,'(A,F16.10,A)') 'Total time : CCHKGL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 380
+      CYCLE
    ELSE IF( CGK ) THEN
 !
 !        CGGBAK:  Back transformation
@@ -1280,7 +1280,7 @@
       write(10,'(A,F16.10,A)') 'Total time : CCHKGK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 380
+      CYCLE
    ELSE IF( PATH == 'CEC' ) THEN
 !
 !        CEC:  Eigencondition estimation
@@ -1296,10 +1296,10 @@
       write(10,'(A,F16.10,A)') 'Total time : CCHKEC : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 380
+      CYCLE
    ELSE
       WRITE( NOUT, FMT = 9992 )PATH
-      GO TO 380
+      CYCLE
    END IF
    CALL ILAVER( VERS_MAJOR, VERS_MINOR, VERS_PATCH )
    WRITE( NOUT, FMT = 9972 ) VERS_MAJOR, VERS_MINOR, VERS_PATCH
@@ -1542,9 +1542,7 @@
             ENDDO
          WRITE( NOUT, FMT = 9983 )'NX:   ', NXVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NXVAL( I ) = 1
-            ENDDO
+         NXVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values of NSHIFT (if CGG) or NRHS (if SVD
@@ -1842,11 +1840,11 @@
          write(10,'(A,F16.10,A)') 'Total time : CCHKHS : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'CCHKHS', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCHKHS', INFO
          ENDDO
 !
-   ELSE IF( C3 == 'CST' .OR. C3 == 'SEP' .OR. C3 == 'SE2' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CST' ) .OR. LSAMEN( 3, C3, 'SEP' ) &
+                                   .OR. LSAMEN( 3, C3, 'SE2' ) ) THEN
 !
 !        ----------------------------------
 !        SEP:  Symmetric Eigenvalue Problem
@@ -1880,7 +1878,7 @@
          IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
-            IF( C3 == 'SE2' ) THEN
+            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CCHKST2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, &
                          NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), &
@@ -1917,7 +1915,7 @@
                WRITE( NOUT, FMT = 9980 )'CCHKST', INFO
          END IF
          IF( TSTDRV ) THEN
-            IF( C3 == 'SE2' ) THEN
+            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL CDRVST2STG( NN, NVAL, 18, DOTYPE, ISEED, THRESH, &
                        NOUT, A( 1, 1 ), NMAX, DR( 1, 3 ), DR( 1, 4 ), &
@@ -1948,7 +1946,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'CSG' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CSG' ) ) THEN
 !
 !        ----------------------------------------------
 !        CSG:  Hermitian Generalized Eigenvalue Problem
@@ -1968,8 +1966,7 @@
          CALL XLAENV( 3, NXVAL( I ) )
 !
          IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
-         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I )
+         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
 !               CALL CDRVSG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 !     $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
@@ -1993,7 +1990,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'CBD' .OR. C3 == 'SVD' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CBD' ) .OR. LSAMEN( 3, C3, 'SVD' ) ) THEN
 !
 !        ----------------------------------
 !        SVD:  Singular Value Decomposition
@@ -2053,7 +2050,7 @@
     ENDIF
          ENDDO
 !
-   ELSE IF( C3 == 'CEV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CEV' ) ) THEN
 !
 !        --------------------------------------------
 !        CEV:  Nonsymmetric Eigenvalue Problem Driver
@@ -2081,9 +2078,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CGEEV', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CES' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CES' ) ) THEN
 !
 !        --------------------------------------------
 !        CES:  Nonsymmetric Eigenvalue Problem Driver
@@ -2111,9 +2108,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CGEES', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CVX' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CVX' ) ) THEN
 !
 !        --------------------------------------------------------------
 !        CVX:  Nonsymmetric Eigenvalue Problem Expert Driver
@@ -2143,9 +2140,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CGEEVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CSX' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CSX' ) ) THEN
 !
 !        ---------------------------------------------------
 !        CSX:  Nonsymmetric Eigenvalue Problem Expert Driver
@@ -2173,9 +2170,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CGEESX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CGG' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CGG' ) ) THEN
 !
 !        -------------------------------------------------
 !        CGG:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2225,7 +2222,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'CGS' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CGS' ) ) THEN
 !
 !        -------------------------------------------------
 !        CGS:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2271,8 +2268,7 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CDRGES3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-
-      GO TO 10
+      CYCLE
 !
    ELSE IF( CGX ) THEN
 !
@@ -2303,9 +2299,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CDRGSX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CGV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CGV' ) ) THEN
 !
 !        -------------------------------------------------
 !        CGV:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2333,7 +2329,7 @@
          close(10)
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CDRGEV', INFO
 !
-! Blocked version
+!     Blocked version
 !
          CALL XLAENV(16,2)
          call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -2351,7 +2347,7 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CDRGEV3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( CXV ) THEN
 !
@@ -2384,9 +2380,9 @@
          IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CDRGVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'CHB' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CHB' ) ) THEN
 !
 !        ------------------------------
 !        CHB:  Hermitian Band Reduction
@@ -2423,7 +2419,7 @@
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCHKHB', INFO
 !
-   ELSE IF( C3 == 'CBB' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CBB' ) ) THEN
 !
 !        ------------------------------
 !        CBB:  General Band Reduction
@@ -2449,11 +2445,10 @@
          write(10,'(A,F16.10,A)') 'Total time : CCHKBB : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'CCHKBB', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCHKBB', INFO
          ENDDO
 !
-   ELSE IF( C3 == 'GLM' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GLM' ) ) THEN
 !
 !        -----------------------------------------
 !        GLM:  Generalized Linear Regression Model
@@ -2472,7 +2467,7 @@
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCKGLM', INFO
 !
-   ELSE IF( C3 == 'GQR' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GQR' ) ) THEN
 !
 !        ------------------------------------------
 !        GQR:  Generalized QR and RQ factorizations
@@ -2493,7 +2488,7 @@
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCKGQR', INFO
 !
-   ELSE IF( C3 == 'GSV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GSV' ) ) THEN
 !
 !        ----------------------------------------------
 !        GSV:  Generalized Singular Value Decomposition
@@ -2514,7 +2509,7 @@
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCKGSV', INFO
 !
-   ELSE IF( C3 == 'CSD' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CSD' ) ) THEN
 !
 !        ----------------------------------------------
 !        CSD:  CS Decomposition
@@ -2534,7 +2529,7 @@
       close(10)
       IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'CCKCSD', INFO
 !
-   ELSE IF( C3 == 'LSE' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'LSE' ) ) THEN
 !
 !        --------------------------------------
 !        LSE:  Constrained Linear Least Squares
@@ -2557,6 +2552,7 @@
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = 9992 )C3
    END IF
+   ENDDO
    IF( .NOT.( CGX .OR. CXV ) ) GO TO 190
   380 CONTINUE
    WRITE( NOUT, FMT = 9994 )

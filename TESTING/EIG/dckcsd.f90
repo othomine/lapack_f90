@@ -205,10 +205,8 @@
    PARAMETER          ( NTESTS = 15 )
    INTEGER            NTYPES
    PARAMETER          ( NTYPES = 4 )
-   DOUBLE PRECISION   GAPDIGIT, ONE, ORTH, TEN, ZERO
-   PARAMETER          ( GAPDIGIT = 18.0D0, ONE = 1.0D0, &
-                        ORTH = 1.0D-12, &
-                        TEN = 10.0D0, ZERO = 0.0D0 )
+   DOUBLE PRECISION   GAPDIGIT, ORTH
+   PARAMETER          ( GAPDIGIT = 18.0D0, ORTH = 1.0D-12)
    DOUBLE PRECISION   PIOVER2
    PARAMETER ( PIOVER2 = 1.57079632679489661923132169163975144210D0 )
 !     ..
@@ -225,9 +223,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, DCSDTS, DLACSG, DLAROR, &
                       DLASET, DROT
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MIN
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLARAN, DLARND
@@ -261,8 +256,7 @@
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 20
+         IF( .NOT.DOTYPE( IMAT ) ) GO TO 20
 !
 !           Generate X
 !
@@ -281,29 +275,26 @@
             CALL DLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
             DO I = 1, M
                DO J = 1, M
-                  X(I+(J-1)*LDX) = X(I+(J-1)*LDX) + &
-                                   ORTH*DLARND(2,ISEED)
+                  X(I+(J-1)*LDX) = X(I+(J-1)*LDX) + ORTH*DLARND(2,ISEED)
                END DO
             END DO
          ELSE IF( IMAT == 3 ) THEN
             R = MIN( P, M-P, Q, M-Q )
             DO I = 1, R+1
-               THETA(I) = TEN**(-DLARND(1,ISEED)*GAPDIGIT)
+               THETA(I) = 10.0D0**(-DLARND(1,ISEED)*GAPDIGIT)
             END DO
             DO I = 2, R+1
                THETA(I) = THETA(I-1) + THETA(I)
             END DO
-            DO I = 1, R
-               THETA(I) = PIOVER2 * THETA(I) / THETA(R+1)
-            END DO
+            THETA(1:R) = PIOVER2 * THETA(1:R) / THETA(R+1)
             CALL DLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
          ELSE
-            CALL DLASET( 'F', M, M, ZERO, ONE, X, LDX )
+            CALL DLASET( 'F', M, M, 0.0D0, 1.0D0, X, LDX )
             DO I = 1, M
                J = INT( DLARAN( ISEED ) * M ) + 1
                IF( J  /=  I ) THEN
                   CALL DROT( M, X(1+(I-1)*LDX), 1, X(1+(J-1)*LDX), 1, &
-                    ZERO, ONE )
+                    0.0D0, 1.0D0 )
                END IF
             END DO
          END IF
@@ -356,37 +347,34 @@
    DOUBLE PRECISION   THETA( * )
    DOUBLE PRECISION   WORK( * ), X( LDX, * )
 !
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ONE = 1.0D0, ZERO = 0.0D0 )
-!
    INTEGER            I, INFO, R
 !
    R = MIN( P, M-P, Q, M-Q )
 !
-   CALL DLASET( 'Full', M, M, ZERO, ZERO, X, LDX )
+   CALL DLASET( 'Full', M, M, 0.0D0, 0.0D0, X, LDX )
 !
    DO I = 1, MIN(P,Q)-R
-      X(I,I) = ONE
+      X(I,I) = 1.0D0
    END DO
    DO I = 1, R
       X(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = COS(THETA(I))
    END DO
    DO I = 1, MIN(P,M-Q)-R
-      X(P-I+1,M-I+1) = -ONE
+      X(P-I+1,M-I+1) = -1.0D0
    END DO
    DO I = 1, R
       X(P-(MIN(P,M-Q)-R)+1-I,M-(MIN(P,M-Q)-R)+1-I) = &
          -SIN(THETA(R-I+1))
    END DO
    DO I = 1, MIN(M-P,Q)-R
-      X(M-I+1,Q-I+1) = ONE
+      X(M-I+1,Q-I+1) = 1.0D0
    END DO
    DO I = 1, R
       X(M-(MIN(M-P,Q)-R)+1-I,Q-(MIN(M-P,Q)-R)+1-I) = &
          SIN(THETA(R-I+1))
    END DO
    DO I = 1, MIN(M-P,M-Q)-R
-      X(P+I,Q+I) = ONE
+      X(P+I,Q+I) = 1.0D0
    END DO
    DO I = 1, R
       X(P+(MIN(M-P,M-Q)-R)+I,Q+(MIN(M-P,M-Q)-R)+I) = &
@@ -402,4 +390,3 @@
 !
    END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

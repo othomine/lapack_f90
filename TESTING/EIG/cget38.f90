@@ -156,13 +156,13 @@
 !     imaginary part)
 !
    DO
-   READ( NIN, FMT = * )N, NDIM, ISRT
+   READ(NIN,*) N, NDIM, ISRT
    IF( N == 0 ) RETURN
-   READ( NIN, FMT = * )( ISELEC( I ), I = 1, NDIM )
+   READ(NIN,*) ISELEC(1:NDIM)
    DO I = 1, N
-      READ( NIN, FMT = * )( TMP( I, J ), J = 1, N )
+      READ(NIN,*) TMP(I,1:N)
    ENDDO
-   READ( NIN, FMT = * )SIN, SEPIN
+   READ(NIN,*) SIN, SEPIN
 !
    TNRM = CLANGE( 'M', N, N, TMP, LDT, RWORK )
    DO ISCL = 1, 3

@@ -350,8 +350,8 @@
       DO JC = 2, N
          DO JR = 1, JC - 1
             A( JR, JC ) = TRIANG*CLARND( IDIST, ISEED )
-            ENDDO
          ENDDO
+      ENDDO
    END IF
 !
    RETURN

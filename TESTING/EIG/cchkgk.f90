@@ -106,19 +106,19 @@
    EPS = SLAMCH( 'Precision' )
 !
    DO
-   READ( NIN, FMT = * )N, M
+   READ(NIN,*) N, M
    IF( N == 0 ) GO TO 100
    DO I = 1, N
-      READ( NIN, FMT = * ) A(I,1:N)
+      READ(NIN,*) A(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * ) B(I,1:N)
+      READ(NIN,*) B(I,1:N)
    ENDDO
    DO I = 1, N
-     READ( NIN, FMT = * ) VL( I,1:M)
+     READ(NIN,*) VL( I,1:M)
    ENDDO
    DO I = 1, N
-     READ( NIN, FMT = * ) VR( I,1:M)
+     READ(NIN,*) VR( I,1:M)
    ENDDO
 !
    KNT = KNT + 1
