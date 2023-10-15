@@ -103,8 +103,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0 )
    REAL               EPSIN
    PARAMETER          ( EPSIN = 5.9605E-8 )
    INTEGER            LDT, LWORK
@@ -134,21 +132,18 @@
    EXTERNAL           SCOPY, SGEHRD, SHSEQR, SLACPY, SSCAL, STREVC, &
                       STRSNA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, REAL, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     EPSIN = 2**(-24) = precision to which input data computed
 !
    EPS = MAX( EPS, EPSIN )
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
-   RMAX( 3 ) = ZERO
+   RMAX( 1 ) = 0.0E+0
+   RMAX( 2 ) = 0.0E+0
+   RMAX( 3 ) = 0.0E+0
    LMAX( 1 ) = 0
    LMAX( 2 ) = 0
    LMAX( 3 ) = 0
@@ -158,22 +153,22 @@
    NINFO( 3 ) = 0
 !
    VAL( 1 ) = SQRT( SMLNUM )
-   VAL( 2 ) = ONE
+   VAL( 2 ) = 1.0E+0
    VAL( 3 ) = SQRT( BIGNUM )
 !
 !     Read input data until N=0.  Assume input eigenvalues are sorted
 !     lexicographically (increasing by real part, then decreasing by
 !     imaginary part)
 !
-10 CONTINUE
-   READ( NIN, FMT = * )N
+   DO
+   READ(NIN,*) N
    IF( N == 0 ) &
       RETURN
    DO I = 1, N
-      READ( NIN, FMT = * )( TMP( I, J ), J = 1, N )
+      READ(NIN,*) TMP(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )WRIN( I ), WIIN( I ), SIN( I ), SEPIN( I )
+      READ(NIN,*) WRIN( I ), WIIN( I ), SIN( I ), SEPIN( I )
    ENDDO
    TNRM = SLANGE( 'M', N, N, TMP, LDT, WORK )
 !
@@ -189,8 +184,7 @@
       DO I = 1, N
          CALL SSCAL( N, VMUL, T( 1, I ), 1 )
       ENDDO
-      IF( TNRM == ZERO ) &
-         VMUL = ONE
+      IF( TNRM == 0.0E+0 ) VMUL = 1.0E+0
 !
 !        Compute eigenvalues and eigenvectors
 !
@@ -202,9 +196,7 @@
          GO TO 240
       END IF
       DO J = 1, N - 2
-         DO I = J + 2, N
-            T( I, J ) = ZERO
-         ENDDO
+         T(J+2:N,J) = 0.0E0
       ENDDO
 !
 !        Compute Schur form
@@ -239,7 +231,7 @@
       CALL SCOPY( N, WI, 1, WITMP, 1 )
       CALL SCOPY( N, S, 1, STMP, 1 )
       CALL SCOPY( N, SEP, 1, SEPTMP, 1 )
-      CALL SSCAL( N, ONE / VMUL, SEPTMP, 1 )
+      CALL SSCAL( N, 1.0E+0 / VMUL, SEPTMP, 1 )
       DO I = 1, N - 1
          KMIN = I
          VRMIN = WRTMP( I )
@@ -266,37 +258,35 @@
 !        Compare condition numbers for eigenvalues
 !        taking their condition numbers into account
 !
-      V = MAX( TWO*REAL( N )*EPS*TNRM, SMLNUM )
-      IF( TNRM == ZERO ) &
-         V = ONE
+      V = MAX( 2.0E+0*REAL( N )*EPS*TNRM, SMLNUM )
+      IF( TNRM == 0.0E+0 ) V = 1.0E+0
       DO I = 1, N
          IF( V > SEPTMP( I ) ) THEN
-            TOL = ONE
+            TOL = 1.0E+0
          ELSE
             TOL = V / SEPTMP( I )
          END IF
          IF( V > SEPIN( I ) ) THEN
-            TOLIN = ONE
+            TOLIN = 1.0E+0
          ELSE
             TOLIN = V / SEPIN( I )
          END IF
          TOL = MAX( TOL, SMLNUM / EPS )
          TOLIN = MAX( TOLIN, SMLNUM / EPS )
          IF( EPS*( SIN( I )-TOLIN ) > STMP( I )+TOL ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SIN( I )-TOLIN > STMP( I )+TOL ) THEN
             VMAX = ( SIN( I )-TOLIN ) / ( STMP( I )+TOL )
          ELSE IF( SIN( I )+TOLIN < EPS*( STMP( I )-TOL ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SIN( I )+TOLIN < STMP( I )-TOL ) THEN
             VMAX = ( STMP( I )-TOL ) / ( SIN( I )+TOLIN )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0E+0
          END IF
          IF( VMAX > RMAX( 2 ) ) THEN
             RMAX( 2 ) = VMAX
-            IF( NINFO( 2 ) == 0 ) &
-               LMAX( 2 ) = KNT
+            IF( NINFO( 2 ) == 0 ) LMAX( 2 ) = KNT
          END IF
       ENDDO
 !
@@ -317,15 +307,15 @@
          TOL = MAX( TOL, SMLNUM / EPS )
          TOLIN = MAX( TOLIN, SMLNUM / EPS )
          IF( EPS*( SEPIN( I )-TOLIN ) > SEPTMP( I )+TOL ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SEPIN( I )-TOLIN > SEPTMP( I )+TOL ) THEN
             VMAX = ( SEPIN( I )-TOLIN ) / ( SEPTMP( I )+TOL )
          ELSE IF( SEPIN( I )+TOLIN < EPS*( SEPTMP( I )-TOL ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SEPIN( I )+TOLIN < SEPTMP( I )-TOL ) THEN
             VMAX = ( SEPTMP( I )-TOL ) / ( SEPIN( I )+TOLIN )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0E+0
          END IF
          IF( VMAX > RMAX( 2 ) ) THEN
             RMAX( 2 ) = VMAX
@@ -340,17 +330,17 @@
       DO I = 1, N
          IF( SIN( I ) <= REAL( 2*N )*EPS .AND. STMP( I ) <= &
              REAL( 2*N )*EPS ) THEN
-            VMAX = ONE
+            VMAX = 1.0E+0
          ELSE IF( EPS*SIN( I ) > STMP( I ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SIN( I ) > STMP( I ) ) THEN
             VMAX = SIN( I ) / STMP( I )
          ELSE IF( SIN( I ) < EPS*STMP( I ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SIN( I ) < STMP( I ) ) THEN
             VMAX = STMP( I ) / SIN( I )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0E+0
          END IF
          IF( VMAX > RMAX( 3 ) ) THEN
             RMAX( 3 ) = VMAX
@@ -364,17 +354,17 @@
 !
       DO I = 1, N
          IF( SEPIN( I ) <= V .AND. SEPTMP( I ) <= V ) THEN
-            VMAX = ONE
+            VMAX = 1.0E+0
          ELSE IF( EPS*SEPIN( I ) > SEPTMP( I ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SEPIN( I ) > SEPTMP( I ) ) THEN
             VMAX = SEPIN( I ) / SEPTMP( I )
          ELSE IF( SEPIN( I ) < EPS*SEPTMP( I ) ) THEN
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ELSE IF( SEPIN( I ) < SEPTMP( I ) ) THEN
             VMAX = SEPTMP( I ) / SEPIN( I )
          ELSE
-            VMAX = ONE
+            VMAX = 1.0E+0
          END IF
          IF( VMAX > RMAX( 3 ) ) THEN
             RMAX( 3 ) = VMAX
@@ -385,8 +375,8 @@
 !
 !        Compute eigenvalue condition numbers only and compare
 !
-      VMAX = ZERO
-      DUM( 1 ) = -ONE
+      VMAX = 0.0E+0
+      DUM( 1 ) = -1.0E+0
       CALL SCOPY( N, DUM, 0, STMP, 1 )
       CALL SCOPY( N, DUM, 0, SEPTMP, 1 )
       CALL STRSNA( 'Eigcond', 'All', SELECT, N, T, LDT, LE, LDT, RE, &
@@ -398,9 +388,9 @@
       END IF
       DO I = 1, N
          IF( STMP( I ) /= S( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( SEPTMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute eigenvector condition numbers only and compare
@@ -416,9 +406,9 @@
       END IF
       DO I = 1, N
          IF( STMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( SEPTMP( I ) /= SEP( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute all condition numbers using SELECT and compare
@@ -438,9 +428,9 @@
       END IF
       DO I = 1, N
          IF( SEPTMP( I ) /= SEP( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( STMP( I ) /= S( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute eigenvalue condition numbers using SELECT and compare
@@ -456,9 +446,9 @@
       END IF
       DO I = 1, N
          IF( STMP( I ) /= S( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( SEPTMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute eigenvector condition numbers using SELECT and compare
@@ -474,9 +464,9 @@
       END IF
       DO I = 1, N
          IF( STMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( SEPTMP( I ) /= SEP( I ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
       IF( VMAX > RMAX( 1 ) ) THEN
          RMAX( 1 ) = VMAX
@@ -486,11 +476,11 @@
 !
 !        Select first real and first complex eigenvalue
 !
-      IF( WI( 1 ) == ZERO ) THEN
+      IF( WI( 1 ) == 0.0E+0 ) THEN
          LCMP( 1 ) = 1
          IFND = 0
          DO I = 2, N
-            IF( IFND == 1 .OR. WI( I ) == ZERO ) THEN
+            IF( IFND == 1 .OR. WI( I ) == 0.0E+0 ) THEN
                SELECT( I ) = .FALSE.
             ELSE
                IFND = 1
@@ -512,7 +502,7 @@
          LCMP( 2 ) = 2
          IFND = 0
          DO I = 3, N
-            IF( IFND == 1 .OR. WI( I ) /= ZERO ) THEN
+            IF( IFND == 1 .OR. WI( I ) /= 0.0E+0 ) THEN
                SELECT( I ) = .FALSE.
             ELSE
                LCMP( 3 ) = I
@@ -543,9 +533,9 @@
       DO I = 1, ICMP
          J = LCMP( I )
          IF( SEPTMP( I ) /= SEP( J ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( STMP( I ) /= S( J ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute selected eigenvalue condition numbers
@@ -562,9 +552,9 @@
       DO I = 1, ICMP
          J = LCMP( I )
          IF( STMP( I ) /= S( J ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          IF( SEPTMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
+            VMAX = 1.0E+0 / EPS
          ENDDO
 !
 !        Compute selected eigenvector condition numbers
@@ -580,21 +570,17 @@
       END IF
       DO I = 1, ICMP
          J = LCMP( I )
-         IF( STMP( I ) /= DUM( 1 ) ) &
-            VMAX = ONE / EPS
-         IF( SEPTMP( I ) /= SEP( J ) ) &
-            VMAX = ONE / EPS
+         IF( STMP( I ) /= DUM( 1 ) ) VMAX = 1.0E+0 / EPS
+         IF( SEPTMP( I ) /= SEP( J ) ) VMAX = 1.0E+0 / EPS
          ENDDO
       IF( VMAX > RMAX( 1 ) ) THEN
          RMAX( 1 ) = VMAX
-         IF( NINFO( 1 ) == 0 ) &
-            LMAX( 1 ) = KNT
+         IF( NINFO( 1 ) == 0 ) LMAX( 1 ) = KNT
       END IF
   240 CONTINUE
       ENDDO
-   GO TO 10
+   ENDDO
 !
 !     End of SGET37
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

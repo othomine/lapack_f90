@@ -115,8 +115,6 @@
 !     .. Parameters ..
    INTEGER            LDT, LDT2
    PARAMETER          ( LDT = 10, LDT2 = 2*LDT )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0, ONE = 1.0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, IVM1, IVM2, IVM3, IVM4, IVM5, J, K, N, &
@@ -131,9 +129,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           SCOPY, SGEMV, SLAQTR
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, COS, MAX, REAL, SIN, SQRT
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDIM( 6 ), IVAL( 5, 5, 6 )
@@ -158,42 +153,42 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Set up test case parameters
 !
-   VM1( 1 ) = ONE
+   VM1( 1 ) = 1.0E+0
    VM1( 2 ) = SQRT( SMLNUM )
    VM1( 3 ) = SQRT( VM1( 2 ) )
    VM1( 4 ) = SQRT( BIGNUM )
    VM1( 5 ) = SQRT( VM1( 4 ) )
 !
-   VM2( 1 ) = ONE
+   VM2( 1 ) = 1.0E+0
    VM2( 2 ) = SQRT( SMLNUM )
    VM2( 3 ) = SQRT( VM2( 2 ) )
    VM2( 4 ) = SQRT( BIGNUM )
    VM2( 5 ) = SQRT( VM2( 4 ) )
 !
-   VM3( 1 ) = ONE
+   VM3( 1 ) = 1.0E+0
    VM3( 2 ) = SQRT( SMLNUM )
    VM3( 3 ) = SQRT( VM3( 2 ) )
    VM3( 4 ) = SQRT( BIGNUM )
    VM3( 5 ) = SQRT( VM3( 4 ) )
 !
-   VM4( 1 ) = ONE
+   VM4( 1 ) = 1.0E+0
    VM4( 2 ) = SQRT( SMLNUM )
    VM4( 3 ) = SQRT( VM4( 2 ) )
    VM4( 4 ) = SQRT( BIGNUM )
    VM4( 5 ) = SQRT( VM4( 4 ) )
 !
-   VM5( 1 ) = ONE
+   VM5( 1 ) = 1.0E+0
    VM5( 2 ) = EPS
    VM5( 3 ) = SQRT( SMLNUM )
 !
 !     Initialization
 !
    KNT = 0
-   RMAX = ZERO
+   RMAX = 0.0E+0
    NINFO = 0
    SMLNUM = SMLNUM / EPS
 !
@@ -216,7 +211,7 @@
                         ENDDO
                      ENDDO
 !
-                     W = ONE*VM2( IVM2 )
+                     W = 1.0E+0*VM2( IVM2 )
 !
                      DO I = 1, N
                         B( I ) = COS( REAL( I ) )*VM3( IVM3 )
@@ -241,7 +236,7 @@
 !                         max(ulp*||T||*||x||,smlnum/ulp*||T||,smlnum)
 !
                      CALL SCOPY( N, D, 1, Y, 1 )
-                     CALL SGEMV( 'No transpose', N, N, ONE, T, LDT, &
+                     CALL SGEMV( 'No transpose', N, N, 1.0E+0, T, LDT, &
                                  X, 1, -SCALE, Y, 1 )
                      XNORM = SASUM( N, X, 1 )
                      RESID = SASUM( N, Y, 1 )
@@ -264,7 +259,7 @@
 !                         max(ulp*||T||*||x||,smlnum/ulp*||T||,smlnum)
 !
                      CALL SCOPY( N, D, 1, Y, 1 )
-                     CALL SGEMV( 'Transpose', N, N, ONE, T, LDT, X, &
+                     CALL SGEMV( 'Transpose', N, N, 1.0E+0, T, LDT, X, &
                                  1, -SCALE, Y, 1 )
                      XNORM = SASUM( N, X, 1 )
                      RESID = SASUM( N, Y, 1 )
@@ -294,16 +289,16 @@
                      DO I = 2, N
                         Y( I ) = W*X( I+N ) + SCALE*Y( I )
                      ENDDO
-                     CALL SGEMV( 'No transpose', N, N, ONE, T, LDT, &
-                                 X, 1, -ONE, Y, 1 )
+                     CALL SGEMV( 'No transpose', N, N, 1.0E+0, T, LDT, &
+                                 X, 1, -1.0E+0, Y, 1 )
 !
                      Y( 1+N ) = SDOT( N, B, 1, X, 1 ) - &
                                 SCALE*Y( 1+N )
                      DO I = 2, N
                         Y( I+N ) = W*X( I ) - SCALE*Y( I+N )
                      ENDDO
-                     CALL SGEMV( 'No transpose', N, N, ONE, T, LDT, &
-                                 X( 1+N ), 1, ONE, Y( 1+N ), 1 )
+                     CALL SGEMV( 'No transpose', N, N, 1.0E+0, T, LDT, &
+                                 X( 1+N ), 1, 1.0E+0, Y( 1+N ), 1 )
 !
                      RESID = SASUM( 2*N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORMTB, &
@@ -331,16 +326,16 @@
                         Y( I ) = B( I )*X( 1+N ) + W*X( I+N ) - &
                                  SCALE*Y( I )
                      ENDDO
-                     CALL SGEMV( 'Transpose', N, N, ONE, T, LDT, X, &
-                                 1, ONE, Y, 1 )
+                     CALL SGEMV( 'Transpose', N, N, 1.0E+0, T, LDT, X, &
+                                 1, 1.0E+0, Y, 1 )
 !
                      Y( 1+N ) = B( 1 )*X( 1 ) + SCALE*Y( 1+N )
                      DO I = 2, N
                         Y( I+N ) = B( I )*X( 1 ) + W*X( I ) + &
                                    SCALE*Y( I+N )
                      ENDDO
-                     CALL SGEMV( 'Transpose', N, N, ONE, T, LDT, &
-                                 X( 1+N ), 1, -ONE, Y( 1+N ), 1 )
+                     CALL SGEMV( 'Transpose', N, N, 1.0E+0, T, LDT, &
+                                 X( 1+N ), 1, -1.0E+0, Y( 1+N ), 1 )
 !
                      RESID = SASUM( 2*N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORMTB, &
@@ -363,4 +358,4 @@
 !     End of SGET39
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

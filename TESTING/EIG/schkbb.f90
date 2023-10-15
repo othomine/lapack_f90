@@ -314,7 +314,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0E+0, 1.0E+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -373,8 +373,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -402,8 +400,7 @@
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*6, 3*9 /
    DATA               KMAGN / 2*1, 3*1, 2, 3, 3*1, 2, 3, 1, 2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -463,15 +460,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -484,12 +480,11 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / REAL( MAX( 1, M, N ) )
+      AMNINV = 1.0E+0 / REAL( MAX( 1, M, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K >= M .AND. K >= N ) &
-            GO TO 150
+         IF( K < M .OR. K < N ) THEN
          KL = MAX( 0, MIN( M-1, K ) )
          KU = MAX( 0, MIN( N-1, K ) )
 !
@@ -500,14 +495,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 140
+            IF(DOTYPE( JTYPE ) ) THEN
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !
@@ -524,32 +516,24 @@
 !              =8                      (none)
 !              =9                      random nonhermitian
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 90
+            IF( MTYPES <= MAXTYP ) THEN
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+            SELECT CASE (KMAGN( JTYPE ))
+             CASE (1)
+              ANORM = 1.0E0
+             CASE (2)
+              ANORM = ( RTOVFL*ULP )*AMNINV
+             CASE (3)
+              ANORM = RTUNFL*MAX( M, N )*ULPINV
+            END SELECT
 !
-40          CONTINUE
-            ANORM = ONE
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*AMNINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*MAX( M, N )*ULPINV
-            GO TO 70
-!
-70          CONTINUE
-!
-            CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
-            CALL SLASET( 'Full', LDAB, N, ZERO, ZERO, AB, LDAB )
+            CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
+            CALL SLASET( 'Full', LDAB, N, 0.0E+0, 0.0E+0, AB, LDAB )
             IINFO = 0
             COND = ULPINV
 !
@@ -564,9 +548,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( JCOL, JCOL ) = ANORM
-               ENDDO
+               FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -588,10 +570,10 @@
 !
 !                 Nonhermitian, random entries
 !
-               CALL SLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                            'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, KL, &
-                            KU, ZERO, ANORM, 'N', A, LDA, IDUMMA, &
+               CALL SLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0E+0, 1.0E+0, &
+                            'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                            WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, KL, &
+                            KU, 0.0E+0, ANORM, 'N', A, LDA, IDUMMA, &
                             IINFO )
 !
             ELSE
@@ -601,10 +583,10 @@
 !
 !              Generate Right-Hand Side
 !
-            CALL SLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( M+1 ), 1, ONE, &
-                         WORK( 2*M+1 ), 1, ONE, 'N', IDUMMA, M, NRHS, &
-                         ZERO, ONE, 'NO', C, LDC, IDUMMA, IINFO )
+            CALL SLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( M+1 ), 1, 1.0E+0, &
+                         WORK( 2*M+1 ), 1, 1.0E+0, 'N', IDUMMA, M, NRHS, &
+                         0.0E+0, 1.0E+0, 'NO', C, LDC, IDUMMA, IINFO )
 !
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'Generator', IINFO, N, &
@@ -613,15 +595,15 @@
                RETURN
             END IF
 !
-90          CONTINUE
+            ENDIF
 !
 !              Copy A to band storage.
 !
             DO J = 1, N
                DO I = MAX( 1, J-KU ), MIN( M, J+KL )
                   AB( KU+1+I-J, J ) = A( I, J )
-                  ENDDO
                ENDDO
+            ENDDO
 !
 !              Copy C
 !
@@ -633,8 +615,7 @@
                          Q, LDQ, P, LDP, CC, LDC, WORK, IINFO )
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 )'SGBBRD', IINFO, N, JTYPE, &
-                  IOLDSD
+               WRITE( NOUNIT, FMT = 9999 )'SGBBRD', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
                   RETURN
@@ -649,14 +630,10 @@
 !                   3:  Check the orthogonality of P
 !                   4:  Check the computation of Q' * C
 !
-            CALL SBDT01( M, N, -1, A, LDA, Q, LDQ, BD, BE, P, LDP, &
-                         WORK, RESULT( 1 ) )
-            CALL SORT01( 'Columns', M, M, Q, LDQ, WORK, LWORK, &
-                         RESULT( 2 ) )
-            CALL SORT01( 'Rows', N, N, P, LDP, WORK, LWORK, &
-                         RESULT( 3 ) )
-            CALL SBDT02( M, NRHS, C, LDC, CC, LDC, Q, LDQ, WORK, &
-                         RESULT( 4 ) )
+            CALL SBDT01( M, N, -1, A, LDA, Q, LDQ, BD, BE, P, LDP, WORK, RESULT( 1 ) )
+            CALL SORT01( 'Columns', M, M, Q, LDQ, WORK, LWORK, RESULT( 2 ) )
+            CALL SORT01( 'Rows', N, N, P, LDP, WORK, LWORK, RESULT( 3 ) )
+            CALL SBDT02( M, NRHS, C, LDC, CC, LDC, Q, LDQ, WORK, RESULT( 4 ) )
 !
 !              End of Loop -- Check for RESULT(j) > THRESH
 !
@@ -668,17 +645,15 @@
 !
             DO JR = 1, NTEST
                IF( RESULT( JR ) >= THRESH ) THEN
-                  IF( NERRS == 0 ) &
-                     CALL SLAHD2( NOUNIT, 'SBB' )
+                  IF( NERRS == 0 ) CALL SLAHD2( NOUNIT, 'SBB' )
                   NERRS = NERRS + 1
-                  WRITE( NOUNIT, FMT = 9998 )M, N, K, IOLDSD, JTYPE, &
-                     JR, RESULT( JR )
+                  WRITE( NOUNIT, FMT = 9998 )M, N, K, IOLDSD, JTYPE, JR, RESULT( JR )
                END IF
-               ENDDO
-!
-  140       CONTINUE
             ENDDO
-  150    CONTINUE
+!
+            ENDIF
+            ENDDO
+         ENDIF
          ENDDO
       ENDDO
 !
@@ -688,11 +663,11 @@
    RETURN
 !
  9999 FORMAT( ' SCHKBB: ', A, ' returned INFO=', I5, '.', / 9X, 'M=', &
-         I5, ' N=', I5, ' K=', I5, ', JTYPE=', I5, ', ISEED=(', &
-         3( I5, ',' ), I5, ')' )
+         I5, ' N=', I5, ' K=', I5, ', JTYPE=', I5, ', ISEED=(', 3( I5, ',' ), I5, ')' )
  9998 FORMAT( ' M =', I4, ' N=', I4, ', K=', I3, ', seed=', &
          4( I4, ',' ), ' type ', I2, ', test(', I2, ')=', G10.3 )
 !
 !     End of SCHKBB
 !
 END
+

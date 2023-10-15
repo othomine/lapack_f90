@@ -307,7 +307,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0E+0, 1.0E+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -472,11 +472,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TWO, TEN
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0, &
-                      TEN = 10.0E0 )
-   REAL               HALF
-   PARAMETER          ( HALF = 0.5E+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 18 )
 !     ..
@@ -517,35 +512,25 @@
 !     .. Common blocks ..
    COMMON             / SRNAMC / SRNAMT
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, INT, LOG, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8, 3*9 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3, 1, 2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 4, 4, 4 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 4, 4, 4 /
 !     ..
 !     .. Executable Statements ..
 !
 !     Keep ftrnchek happy
 !
-   VL = ZERO
-   VU = ZERO
+   VL = 0.0E+0
+   VU = 0.0E+0
 !
 !     1)      Check for errors
 !
    NTESTT = 0
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -570,37 +555,31 @@
 !
 !     Quick return if nothing to do
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
    OVFL = SLAMCH( 'Overflow' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
 !     Loop over sizes, types
 !
-   DO I = 1, 4
-      ISEED2( I ) = ISEED( I )
-      ISEED3( I ) = ISEED( I )
-   ENDDO
+   ISEED2(1:4) = ISEED(1:4)
+   ISEED3(1:4) = ISEED(1:4)
 !
    NERRS = 0
    NMATS = 0
 !
-!
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
       IF( N > 0 ) THEN
-         LGN = INT( LOG( REAL( N ) ) / LOG( TWO ) )
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
+         LGN = INT( LOG( REAL( N ) ) / LOG( 2.0E+0 ) )
+         IF( 2**LGN < N ) LGN = LGN + 1
+         IF( 2**LGN < N ) LGN = LGN + 1
          LWEDC = 1 + 4*N + 2*N*LGN + 4*N**2
 !           LIWEDC = 6 + 6*N + 5*N*LGN
          LIWEDC = 3 + 5*N
@@ -609,7 +588,7 @@
 !           LIWEDC = 12
          LIWEDC = 8
       END IF
-      ANINV = ONE / REAL( MAX( 1, N ) )
+      ANINV = 1.0E+0 / REAL( MAX( 1, N ) )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -619,14 +598,11 @@
 !
       DO JTYPE = 1, MTYPES
 !
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 1730
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 1730
          NMATS = NMATS + 1
          NTEST = 0
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           2)      Compute "A"
 !
@@ -651,16 +627,16 @@
 !
 !           Compute norm
 !
-            SELECT CASE (KMAGN(JTYPE))
-             CASE (1)
-              ANORM = 1.0E+0
-             CASE (2)
-              ANORM = ( RTOVFL*ULP )*ANINV
-             CASE (3)
-              ANORM = RTUNFL*N*ULPINV
-            END SELECT
+         SELECT CASE (KMAGN( JTYPE ))
+          CASE(1)
+           ANORM = 1.0E+0
+          CASE(2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE(3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
-         CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+         CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -675,9 +651,7 @@
 !
 !              Identity
 !
-            DO JCOL = 1, N
-               A( JCOL, JCOL ) = ANORM
-            ENDDO
+            FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
          ELSE IF( ITYPE == 4 ) THEN
 !
@@ -700,20 +674,20 @@
 !              Diagonal, random eigenvalues
 !
             IDUMMA( 1 ) = 1
-            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
             IDUMMA( 1 ) = 1
-            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
@@ -726,7 +700,7 @@
 !
 !              Store as dense matrix for most routines.
 !
-            CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+            CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
             DO IDIAG = -IHBW, IHBW
                IROW = IHBW - IDIAG + 1
                J1 = MAX( 1, IDIAG+1 )
@@ -735,7 +709,7 @@
                   I = J - IDIAG
                   A( I, J ) = U( IROW, J )
                ENDDO
-               ENDDO
+            ENDDO
          ELSE
             IINFO = 1
          END IF
@@ -793,10 +767,10 @@
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT21( N, 0, D3, D4, D1, D2, Z, LDU, WORK, &
                          RESULT( 1 ) )
 !
@@ -820,8 +794,8 @@
 !
 !              Do test 3.
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
+            TEMP1 = 0.0E+0
+            TEMP2 = 0.0E+0
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
                TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
@@ -835,10 +809,10 @@
             DO I = 1, N
                EVEIGS( I ) = D3( I )
                D1( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D2( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVX'
             CALL SSTEVX( 'V', 'A', N, D1, D2, VL, VU, IL, IU, ABSTOL, &
                          M, WA1, Z, LDU, WORK, IWORK, IWORK( 5*N+1 ), &
@@ -859,24 +833,24 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
 !
 !              Do tests 4 and 5.
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT21( N, 0, D3, D4, WA1, D2, Z, LDU, WORK, &
                          RESULT( 4 ) )
 !
             NTEST = 6
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVX'
             CALL SSTEVX( 'N', 'A', N, D3, D4, VL, VU, IL, IU, ABSTOL, &
                          M2, WA2, Z, LDU, WORK, IWORK, &
@@ -895,13 +869,13 @@
 !
 !              Do test 6.
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
+            TEMP1 = 0.0E+0
+            TEMP2 = 0.0E+0
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( WA2( J ) ), &
                        ABS( EVEIGS( J ) ) )
                TEMP2 = MAX( TEMP2, ABS( WA2( J )-EVEIGS( J ) ) )
-               ENDDO
+            ENDDO
             RESULT( 6 ) = TEMP2 / MAX( UNFL, &
                           ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -910,10 +884,10 @@
             NTEST = 7
             DO I = 1, N
                D1( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D2( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVR'
             CALL SSTEVR( 'V', 'A', N, D1, D2, VL, VU, IL, IU, ABSTOL, &
                          M, WA1, Z, LDU, IWORK, WORK, LWORK, &
@@ -933,24 +907,24 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
 !
 !              Do tests 7 and 8.
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT21( N, 0, D3, D4, WA1, D2, Z, LDU, WORK, &
                          RESULT( 7 ) )
 !
             NTEST = 9
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVR'
             CALL SSTEVR( 'N', 'A', N, D3, D4, VL, VU, IL, IU, ABSTOL, &
                          M2, WA2, Z, LDU, IWORK, WORK, LWORK, &
@@ -969,13 +943,13 @@
 !
 !              Do test 9.
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
+            TEMP1 = 0.0E+0
+            TEMP2 = 0.0E+0
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( WA2( J ) ), &
                        ABS( EVEIGS( J ) ) )
                TEMP2 = MAX( TEMP2, ABS( WA2( J )-EVEIGS( J ) ) )
-               ENDDO
+            ENDDO
             RESULT( 9 ) = TEMP2 / MAX( UNFL, &
                           ULP*MAX( TEMP1, TEMP2 ) )
 !
@@ -985,10 +959,10 @@
             NTEST = 10
             DO I = 1, N
                D1( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D2( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVX'
             CALL SSTEVX( 'V', 'I', N, D1, D2, VL, VU, IL, IU, ABSTOL, &
                          M2, WA2, Z, LDU, WORK, IWORK, &
@@ -1011,10 +985,10 @@
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT22( N, M2, 0, D3, D4, WA2, D2, Z, LDU, WORK, &
                          MAX( 1, M2 ), RESULT( 10 ) )
 !
@@ -1050,24 +1024,24 @@
             NTEST = 12
             IF( N > 0 ) THEN
                IF( IL /= 1 ) THEN
-                  VL = WA1( IL ) - MAX( HALF* &
-                       ( WA1( IL )-WA1( IL-1 ) ), TEN*ULP*TEMP3, &
-                       TEN*RTUNFL )
+                  VL = WA1( IL ) - MAX( 0.5E+0* &
+                       ( WA1( IL )-WA1( IL-1 ) ), 10.0E+0*ULP*TEMP3, &
+                       10.0E+0*RTUNFL )
                ELSE
-                  VL = WA1( 1 ) - MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = WA1( 1 ) - MAX( 0.5E+0*( WA1( N )-WA1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
                IF( IU /= N ) THEN
-                  VU = WA1( IU ) + MAX( HALF* &
-                       ( WA1( IU+1 )-WA1( IU ) ), TEN*ULP*TEMP3, &
-                       TEN*RTUNFL )
+                  VU = WA1( IU ) + MAX( 0.5E+0* &
+                       ( WA1( IU+1 )-WA1( IU ) ), 10.0E+0*ULP*TEMP3, &
+                       10.0E+0*RTUNFL )
                ELSE
-                  VU = WA1( N ) + MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = WA1( N ) + MAX( 0.5E+0*( WA1( N )-WA1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
             ELSE
-               VL = ZERO
-               VU = ONE
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
 !
             DO I = 1, N
@@ -1143,10 +1117,10 @@
             NTEST = 16
             DO I = 1, N
                D1( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D2( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             SRNAMT = 'SSTEVD'
             CALL SSTEVD( 'V', N, D1, D2, Z, LDU, WORK, LWEDC, IWORK, &
                          LIWEDC, IINFO )
@@ -1168,10 +1142,10 @@
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT21( N, 0, D3, D4, D1, D2, Z, LDU, WORK, &
                          RESULT( 16 ) )
 !
@@ -1196,8 +1170,8 @@
 !
 !              Do test 18.
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
+            TEMP1 = 0.0E+0
+            TEMP2 = 0.0E+0
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( EVEIGS( J ) ), &
                        ABS( D3( J ) ) )
@@ -1237,10 +1211,10 @@
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT22( N, M2, 0, D3, D4, WA2, D2, Z, LDU, WORK, &
                          MAX( 1, M2 ), RESULT( 19 ) )
 !
@@ -1276,24 +1250,24 @@
             NTEST = 21
             IF( N > 0 ) THEN
                IF( IL /= 1 ) THEN
-                  VL = WA1( IL ) - MAX( HALF* &
-                       ( WA1( IL )-WA1( IL-1 ) ), TEN*ULP*TEMP3, &
-                       TEN*RTUNFL )
+                  VL = WA1( IL ) - MAX( 0.5E+0* &
+                       ( WA1( IL )-WA1( IL-1 ) ), 10.0E+0*ULP*TEMP3, &
+                       10.0E+0*RTUNFL )
                ELSE
-                  VL = WA1( 1 ) - MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = WA1( 1 ) - MAX( 0.5E+0*( WA1( N )-WA1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
                IF( IU /= N ) THEN
-                  VU = WA1( IU ) + MAX( HALF* &
-                       ( WA1( IU+1 )-WA1( IU ) ), TEN*ULP*TEMP3, &
-                       TEN*RTUNFL )
+                  VU = WA1( IU ) + MAX( 0.5E+0* &
+                       ( WA1( IU+1 )-WA1( IU ) ), 10.0E+0*ULP*TEMP3, &
+                       10.0E+0*RTUNFL )
                ELSE
-                  VU = WA1( N ) + MAX( HALF*( WA1( N )-WA1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = WA1( N ) + MAX( 0.5E+0*( WA1( N )-WA1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
             ELSE
-               VL = ZERO
-               VU = ONE
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
 !
             DO I = 1, N
@@ -1331,10 +1305,10 @@
 !
             DO I = 1, N
                D3( I ) = REAL( A( I, I ) )
-               ENDDO
+            ENDDO
             DO I = 1, N - 1
                D4( I ) = REAL( A( I+1, I ) )
-               ENDDO
+            ENDDO
             CALL SSTT22( N, M2, 0, D3, D4, WA2, D2, Z, LDU, WORK, &
                          MAX( 1, M2 ), RESULT( 22 ) )
 !
@@ -1370,9 +1344,7 @@
 !
          ELSE
 !
-            DO I = 1, 24
-               RESULT( I ) = ZERO
-               ENDDO
+            RESULT(1:24) = 0.0E+0
             NTEST = 24
          END IF
 !
@@ -1434,14 +1406,9 @@
 !
 !              Do test 27 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   660          CONTINUE
             CALL SLACPY( ' ', N, N, V, LDU, A, LDA )
@@ -1451,23 +1418,23 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( D1( 1 ) ), ABS( D1( N ) ) )
                IF( IL /= 1 ) THEN
-                  VL = D1( IL ) - MAX( HALF*( D1( IL )-D1( IL-1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = D1( IL ) - MAX( 0.5E+0*( D1( IL )-D1( IL-1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                ELSE IF( N > 0 ) THEN
-                  VL = D1( 1 ) - MAX( HALF*( D1( N )-D1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = D1( 1 ) - MAX( 0.5E+0*( D1( N )-D1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
                IF( IU /= N ) THEN
-                  VU = D1( IU ) + MAX( HALF*( D1( IU+1 )-D1( IU ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = D1( IU ) + MAX( 0.5E+0*( D1( IU+1 )-D1( IU ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                ELSE IF( N > 0 ) THEN
-                  VU = D1( N ) + MAX( HALF*( D1( N )-D1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = D1( N ) + MAX( 0.5E+0*( D1( N )-D1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
             ELSE
-               TEMP3 = ZERO
-               VL = ZERO
-               VU = ONE
+               TEMP3 = 0.0E+0
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
 !
             SRNAMT = 'SSYEVX'
@@ -1515,14 +1482,9 @@
 !
 !              Do test 30 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( WA1( J ) ), ABS( WA2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( WA1( J )-WA2( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(WA1(1:N))), MAXVAL(ABS(WA2(1:N))))
+            TEMP2 = MAXVAL(ABS(WA1(1:N)-WA2(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   680          CONTINUE
 !
@@ -1539,9 +1501,7 @@
                IF( IINFO < 0 ) THEN
                   RETURN
                ELSE
-                  RESULT( NTEST ) = ULPINV
-                  RESULT( NTEST+1 ) = ULPINV
-                  RESULT( NTEST+2 ) = ULPINV
+                  RESULT( NTEST:NTEST+2 ) = ULPINV
                   GO TO 690
                END IF
             END IF
@@ -1593,9 +1553,7 @@
                IF( IINFO < 0 ) THEN
                   RETURN
                ELSE
-                  RESULT( NTEST ) = ULPINV
-                  RESULT( NTEST+1 ) = ULPINV
-                  RESULT( NTEST+2 ) = ULPINV
+                  RESULT( NTEST:NTEST+2 ) = ULPINV
                   GO TO 700
                END IF
             END IF
@@ -1638,7 +1596,7 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
                               MAX( UNFL, TEMP3*ULP )
@@ -1658,16 +1616,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -1698,16 +1656,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 2
@@ -1727,14 +1685,9 @@
 !
 !              Do test 39 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
 !              Load array WORK with the upper or lower triangular part
 !              of the matrix in packed form.
@@ -1746,16 +1699,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -1763,23 +1716,23 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( D1( 1 ) ), ABS( D1( N ) ) )
                IF( IL /= 1 ) THEN
-                  VL = D1( IL ) - MAX( HALF*( D1( IL )-D1( IL-1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = D1( IL ) - MAX( 0.5E+0*( D1( IL )-D1( IL-1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                ELSE IF( N > 0 ) THEN
-                  VL = D1( 1 ) - MAX( HALF*( D1( N )-D1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VL = D1( 1 ) - MAX( 0.5E+0*( D1( N )-D1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
                IF( IU /= N ) THEN
-                  VU = D1( IU ) + MAX( HALF*( D1( IU+1 )-D1( IU ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = D1( IU ) + MAX( 0.5E+0*( D1( IU+1 )-D1( IU ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                ELSE IF( N > 0 ) THEN
-                  VU = D1( N ) + MAX( HALF*( D1( N )-D1( 1 ) ), &
-                       TEN*ULP*TEMP3, TEN*RTUNFL )
+                  VU = D1( N ) + MAX( 0.5E+0*( D1( N )-D1( 1 ) ), &
+                       10.0E+0*ULP*TEMP3, 10.0E+0*RTUNFL )
                END IF
             ELSE
-               TEMP3 = ZERO
-               VL = ZERO
-               VU = ONE
+               TEMP3 = 0.0E+0
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
 !
             SRNAMT = 'SSPEVX'
@@ -1813,16 +1766,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSPEVX'
@@ -1843,14 +1796,9 @@
 !
 !              Do test 42 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( WA1( J ) ), ABS( WA2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( WA1( J )-WA2( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(WA1(1:N))), MAXVAL(ABS(WA2(1:N))))
+            TEMP2 = MAXVAL(ABS(WA1(1:N)-WA2(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   900          CONTINUE
             IF( IUPLO == 1 ) THEN
@@ -1859,16 +1807,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -1904,16 +1852,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSPEVX'
@@ -1944,7 +1892,7 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
                               MAX( UNFL, TEMP3*ULP )
@@ -1956,16 +1904,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -2001,16 +1949,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSPEVX'
@@ -2041,10 +1989,9 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
-            RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
-                              MAX( UNFL, TEMP3*ULP )
+            RESULT( NTEST ) = ( TEMP1+TEMP2 ) / MAX( UNFL, TEMP3*ULP )
 !
  1080          CONTINUE
 !
@@ -2065,14 +2012,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -2102,14 +2049,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 2
@@ -2117,8 +2064,7 @@
             CALL SSBEV_2STAGE( 'N', UPLO, N, KD, V, LDU, D3, Z, LDU, &
                         WORK, LWORK, IINFO )
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUNIT, FMT = 9999 ) &
-                  'SSBEV_2STAGE(N,' // UPLO // ')', &
+               WRITE( NOUNIT, FMT = 9999 ) 'SSBEV_2STAGE(N,' // UPLO // ')', &
                   IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                IF( IINFO < 0 ) THEN
@@ -2131,14 +2077,9 @@
 !
 !              Do test 51 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
 !              Load array V with the upper or lower triangular part
 !              of the matrix in band form.
@@ -2148,14 +2089,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -2188,14 +2129,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSBEVX_2STAGE'
@@ -2218,14 +2159,9 @@
 !
 !              Do test 54 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( WA2( J ) ), ABS( WA3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( WA2( J )-WA3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(WA2(1:N))), MAXVAL(ABS(WA3(1:N))))
+            TEMP2 = MAXVAL(ABS(WA2(1:N)-WA3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
  1280          CONTINUE
             NTEST = NTEST + 1
@@ -2233,14 +2169,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSBEVX'
@@ -2272,14 +2208,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSBEVX_2STAGE'
@@ -2307,7 +2243,7 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
                               MAX( UNFL, TEMP3*ULP )
@@ -2318,14 +2254,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSBEVX'
@@ -2357,14 +2293,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             SRNAMT = 'SSBEVX_2STAGE'
@@ -2397,7 +2333,7 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
                               MAX( UNFL, TEMP3*ULP )
@@ -2452,14 +2388,9 @@
 !
 !              Do test 63 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
  1480          CONTINUE
 !
@@ -2476,16 +2407,16 @@
                   DO I = 1, J
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -2516,19 +2447,18 @@
                INDX = 1
                DO J = 1, N
                   DO I = 1, J
-!
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                INDX = 1
                DO J = 1, N
                   DO I = J, N
                      WORK( INDX ) = A( I, J )
                      INDX = INDX + 1
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 2
@@ -2550,14 +2480,9 @@
 !
 !              Do test 66 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
  1580          CONTINUE
 !
 !              9)      Call SSBEVD.
@@ -2577,14 +2502,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 1
@@ -2614,14 +2539,14 @@
                DO J = 1, N
                   DO I = MAX( 1, J-KD ), J
                      V( KD+1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
                DO J = 1, N
                   DO I = J, MIN( N, J+KD )
                      V( 1+I-J, J ) = A( I, J )
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
             NTEST = NTEST + 2
@@ -2643,14 +2568,9 @@
 !
 !              Do test 69 (or +54)
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( D1( J ) ), ABS( D3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( D1( J )-D3( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(D1(1:N))), MAXVAL(ABS(D3(1:N))))
+            TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
  1680          CONTINUE
 !
@@ -2703,14 +2623,9 @@
 !
 !              Do test 72 (or ... )
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( WA1( J ) ), ABS( WA2( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( WA1( J )-WA2( J ) ) )
-               ENDDO
-            RESULT( NTEST ) = TEMP2 / MAX( UNFL, &
-                              ULP*MAX( TEMP1, TEMP2 ) )
+            TEMP1 = MAX(MAXVAL(ABS(WA1(1:N))), MAXVAL(ABS(WA2(1:N))))
+            TEMP2 = MAXVAL(ABS(WA1(1:N)-WA2(1:N)))
+            RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
  1700          CONTINUE
 !
@@ -2782,9 +2697,7 @@
                IF( IINFO < 0 ) THEN
                   RETURN
                ELSE
-                  RESULT( NTEST ) = ULPINV
-                  RESULT( NTEST+1 ) = ULPINV
-                  RESULT( NTEST+2 ) = ULPINV
+                  RESULT( NTEST:NTEST+2  ) = ULPINV
                   GO TO 700
                END IF
             END IF
@@ -2828,10 +2741,9 @@
             IF( N > 0 ) THEN
                TEMP3 = MAX( ABS( WA1( 1 ) ), ABS( WA1( N ) ) )
             ELSE
-               TEMP3 = ZERO
+               TEMP3 = 0.0E+0
             END IF
-            RESULT( NTEST ) = ( TEMP1+TEMP2 ) / &
-                              MAX( UNFL, TEMP3*ULP )
+            RESULT( NTEST ) = ( TEMP1+TEMP2 ) / MAX( UNFL, TEMP3*ULP )
 !
             CALL SLACPY( ' ', N, N, V, LDU, A, LDA )
 !
@@ -2840,7 +2752,6 @@
 !           End of Loop -- Check for RESULT(j) > THRESH
 !
          NTESTT = NTESTT + NTEST
-!
          CALL SLAFTS( 'SST', N, N, JTYPE, NTEST, RESULT, IOLDSD, &
                       THRESH, NOUNIT, NERRS )
 !

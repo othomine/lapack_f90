@@ -233,12 +233,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TEN = 10.0E0 )
-   REAL               HALF
-   PARAMETER          ( HALF = 1.0E+0 / 2.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER
@@ -255,18 +249,13 @@
    EXTERNAL           SAXPY, SCOPY, SGEMM, SLACPY, SLASET, SOPMTR, &
                       SSPMV, SSPR, SSPR2
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     1)      Constants
 !
-   RESULT( 1 ) = ZERO
-   IF( ITYPE == 1 ) &
-      RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1 ) = 0.0E+0
+   IF( ITYPE == 1 ) RESULT( 2 ) = 0.0E+0
+   IF( N <= 0 ) RETURN
 !
    LAP = ( N*( N+1 ) ) / 2
 !
@@ -284,7 +273,7 @@
 !     Some Error Checks
 !
    IF( ITYPE < 1 .OR. ITYPE > 3 ) THEN
-      RESULT( 1 ) = TEN / ULP
+      RESULT( 1 ) = 10.0E+0 / ULP
       RETURN
    END IF
 !
@@ -293,7 +282,7 @@
 !     Norm of A:
 !
    IF( ITYPE == 3 ) THEN
-      ANORM = ONE
+      ANORM = 1.0E+0
    ELSE
       ANORM = MAX( SLANSP( '1', CUPLO, N, AP, WORK ), UNFL )
    END IF
@@ -304,7 +293,7 @@
 !
 !        ITYPE=1: error = A - U S U**T
 !
-      CALL SLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+      CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
       CALL SCOPY( LAP, AP, 1, WORK, 1 )
 !
       DO J = 1, N
@@ -323,7 +312,7 @@
 !
 !        ITYPE=2: error = V S V**T - A
 !
-      CALL SLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+      CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
 !
       IF( LOWER ) THEN
          WORK( LAP ) = D( N )
@@ -331,18 +320,18 @@
             JP = ( ( 2*N-J )*( J-1 ) ) / 2
             JP1 = JP + N - J
             IF( KBAND == 1 ) THEN
-               WORK( JP+J+1 ) = ( ONE-TAU( J ) )*E( J )
+               WORK( JP+J+1 ) = ( 1.0E+0-TAU( J ) )*E( J )
                DO JR = J + 2, N
                   WORK( JP+JR ) = -TAU( J )*E( J )*VP( JP+JR )
                ENDDO
             END IF
 !
-            IF( TAU( J ) /= ZERO ) THEN
+            IF( TAU( J ) /= 0.0E+0 ) THEN
                VSAVE = VP( JP+J+1 )
-               VP( JP+J+1 ) = ONE
-               CALL SSPMV( 'L', N-J, ONE, WORK( JP1+J+1 ), &
-                           VP( JP+J+1 ), 1, ZERO, WORK( LAP+1 ), 1 )
-               TEMP = -HALF*TAU( J )*SDOT( N-J, WORK( LAP+1 ), 1, &
+               VP( JP+J+1 ) = 1.0E+0
+               CALL SSPMV( 'L', N-J, 1.0E+0, WORK( JP1+J+1 ), &
+                           VP( JP+J+1 ), 1, 0.0E+0, WORK( LAP+1 ), 1 )
+               TEMP = -0.5E+0*TAU( J )*SDOT( N-J, WORK( LAP+1 ), 1, &
                       VP( JP+J+1 ), 1 )
                CALL SAXPY( N-J, TEMP, VP( JP+J+1 ), 1, WORK( LAP+1 ), &
                            1 )
@@ -358,18 +347,18 @@
             JP = ( J*( J-1 ) ) / 2
             JP1 = JP + J
             IF( KBAND == 1 ) THEN
-               WORK( JP1+J ) = ( ONE-TAU( J ) )*E( J )
+               WORK( JP1+J ) = ( 1.0E+0-TAU( J ) )*E( J )
                DO JR = 1, J - 1
                   WORK( JP1+JR ) = -TAU( J )*E( J )*VP( JP1+JR )
                ENDDO
             END IF
 !
-            IF( TAU( J ) /= ZERO ) THEN
+            IF( TAU( J ) /= 0.0E+0 ) THEN
                VSAVE = VP( JP1+J )
-               VP( JP1+J ) = ONE
-               CALL SSPMV( 'U', J, ONE, WORK, VP( JP1+1 ), 1, ZERO, &
+               VP( JP1+J ) = 1.0E+0
+               CALL SSPMV( 'U', J, 1.0E+0, WORK, VP( JP1+1 ), 1, 0.0E+0, &
                            WORK( LAP+1 ), 1 )
-               TEMP = -HALF*TAU( J )*SDOT( J, WORK( LAP+1 ), 1, &
+               TEMP = -0.5E+0*TAU( J )*SDOT( J, WORK( LAP+1 ), 1, &
                       VP( JP1+1 ), 1 )
                CALL SAXPY( J, TEMP, VP( JP1+1 ), 1, WORK( LAP+1 ), &
                            1 )
@@ -396,12 +385,12 @@
       CALL SOPMTR( 'R', CUPLO, 'T', N, N, VP, TAU, WORK, N, &
                    WORK( N**2+1 ), IINFO )
       IF( IINFO /= 0 ) THEN
-         RESULT( 1 ) = TEN / ULP
+         RESULT( 1 ) = 10.0E+0 / ULP
          RETURN
       END IF
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - ONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 1.0E+0
       ENDDO
 !
       WNORM = SLANGE( '1', N, N, WORK, N, WORK( N**2+1 ) )
@@ -410,7 +399,7 @@
    IF( ANORM > WNORM ) THEN
       RESULT( 1 ) = ( WNORM / ANORM ) / ( N*ULP )
    ELSE
-      IF( ANORM < ONE ) THEN
+      IF( ANORM < 1.0E+0 ) THEN
          RESULT( 1 ) = ( MIN( WNORM, N*ANORM ) / ANORM ) / ( N*ULP )
       ELSE
          RESULT( 1 ) = MIN( WNORM / ANORM, REAL( N ) ) / ( N*ULP )
@@ -422,11 +411,11 @@
 !     Compute  U U**T - I
 !
    IF( ITYPE == 1 ) THEN
-      CALL SGEMM( 'N', 'C', N, N, N, ONE, U, LDU, U, LDU, ZERO, WORK, &
+      CALL SGEMM( 'N', 'C', N, N, N, 1.0E+0, U, LDU, U, LDU, 0.0E+0, WORK, &
                   N )
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - ONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 1.0E+0
       ENDDO
 !
       RESULT( 2 ) = MIN( SLANGE( '1', N, N, WORK, N, &
@@ -438,4 +427,4 @@
 !     End of SSPT21
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

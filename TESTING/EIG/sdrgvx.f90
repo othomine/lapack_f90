@@ -320,11 +320,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TEN, TNTH, HALF
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TEN = 1.0E+1, &
-                      TNTH = 1.0E-1, HALF = 0.5D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IPTYPE, IWA, IWB, IWX, IWY, J, LINFO, &
@@ -343,9 +338,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALASVM, SGET52, SGGEVX, SLACPY, SLATM6, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Check for errors
@@ -356,7 +348,7 @@
 !
    IF( NSIZE < 0 ) THEN
       INFO = -1
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0E+0 ) THEN
       INFO = -2
    ELSE IF( NIN <= 0 ) THEN
       INFO = -3
@@ -384,8 +376,7 @@
       WORK( 1 ) = MAXWRK
    END IF
 !
-   IF( LWORK < MINWRK ) &
-      INFO = -24
+   IF( LWORK < MINWRK ) INFO = -24
 !
    IF( INFO /= 0 ) THEN
       CALL XERBLA( 'SDRGVX', -INFO )
@@ -394,22 +385,21 @@
 !
    N = 5
    ULP = SLAMCH( 'P' )
-   ULPINV = ONE / ULP
-   THRSH2 = TEN*THRESH
+   ULPINV = 1.0E+0 / ULP
+   THRSH2 = 10.0E+0*THRESH
    NERRS = 0
    NPTKNT = 0
    NTESTT = 0
 !
-   IF( NSIZE == 0 ) &
-      GO TO 90
+   IF( NSIZE == 0 ) GO TO 90
 !
 !     Parameters used for generating test matrices.
 !
-   WEIGHT( 1 ) = TNTH
-   WEIGHT( 2 ) = HALF
-   WEIGHT( 3 ) = ONE
-   WEIGHT( 4 ) = ONE / WEIGHT( 2 )
-   WEIGHT( 5 ) = ONE / WEIGHT( 1 )
+   WEIGHT( 1 ) = 0.1E+0
+   WEIGHT( 2 ) = 0.5E+0
+   WEIGHT( 3 ) = 1.0E+0
+   WEIGHT( 4 ) = 1.0E+0 / WEIGHT( 2 )
+   WEIGHT( 5 ) = 1.0E+0 / WEIGHT( 1 )
 !
    DO IPTYPE = 1, 2
       DO IWA = 1, 5
@@ -452,7 +442,7 @@
 !
 !                    Tests (1) and (2)
 !
-                  RESULT( 1 ) = ZERO
+                  RESULT( 1 ) = 0.0E+0
                   CALL SGET52( .TRUE., N, A, LDA, B, LDA, VL, LDA, &
                                ALPHAR, ALPHAI, BETA, WORK, &
                                RESULT( 1 ) )
@@ -461,7 +451,7 @@
                         RESULT( 2 ), N, IPTYPE, IWA, IWB, IWX, IWY
                   END IF
 !
-                  RESULT( 2 ) = ZERO
+                  RESULT( 2 ) = 0.0E+0
                   CALL SGET52( .FALSE., N, A, LDA, B, LDA, VR, LDA, &
                                ALPHAR, ALPHAI, BETA, WORK, &
                                RESULT( 2 ) )
@@ -472,14 +462,12 @@
 !
 !                    Test (3)
 !
-                  RESULT( 3 ) = ZERO
+                  RESULT( 3 ) = 0.0E+0
                   DO I = 1, N
-                     IF( S( I ) == ZERO ) THEN
-                        IF( STRU( I ) > ABNORM*ULP ) &
-                           RESULT( 3 ) = ULPINV
-                     ELSE IF( STRU( I ) == ZERO ) THEN
-                        IF( S( I ) > ABNORM*ULP ) &
-                           RESULT( 3 ) = ULPINV
+                     IF( S( I ) == 0.0E+0 ) THEN
+                        IF( STRU( I ) > ABNORM*ULP ) RESULT( 3 ) = ULPINV
+                     ELSE IF( STRU( I ) == 0.0E+0 ) THEN
+                        IF( S( I ) > ABNORM*ULP ) RESULT( 3 ) = ULPINV
                      ELSE
                         WORK( I ) = MAX( ABS( STRU( I ) / S( I ) ), &
                                     ABS( S( I ) / STRU( I ) ) )
@@ -489,19 +477,15 @@
 !
 !                    Test (4)
 !
-                  RESULT( 4 ) = ZERO
-                  IF( DIF( 1 ) == ZERO ) THEN
-                     IF( DIFTRU( 1 ) > ABNORM*ULP ) &
-                        RESULT( 4 ) = ULPINV
-                  ELSE IF( DIFTRU( 1 ) == ZERO ) THEN
-                     IF( DIF( 1 ) > ABNORM*ULP ) &
-                        RESULT( 4 ) = ULPINV
-                  ELSE IF( DIF( 5 ) == ZERO ) THEN
-                     IF( DIFTRU( 5 ) > ABNORM*ULP ) &
-                        RESULT( 4 ) = ULPINV
-                  ELSE IF( DIFTRU( 5 ) == ZERO ) THEN
-                     IF( DIF( 5 ) > ABNORM*ULP ) &
-                        RESULT( 4 ) = ULPINV
+                  RESULT( 4 ) = 0.0E+0
+                  IF( DIF( 1 ) == 0.0E+0 ) THEN
+                     IF( DIFTRU( 1 ) > ABNORM*ULP ) RESULT( 4 ) = ULPINV
+                  ELSE IF( DIFTRU( 1 ) == 0.0E+0 ) THEN
+                     IF( DIF( 1 ) > ABNORM*ULP ) RESULT( 4 ) = ULPINV
+                  ELSE IF( DIF( 5 ) == 0.0E+0 ) THEN
+                     IF( DIFTRU( 5 ) > ABNORM*ULP ) RESULT( 4 ) = ULPINV
+                  ELSE IF( DIFTRU( 5 ) == 0.0E+0 ) THEN
+                     IF( DIF( 5 ) > ABNORM*ULP ) RESULT( 4 ) = ULPINV
                   ELSE
                      RATIO1 = MAX( ABS( DIFTRU( 1 ) / DIF( 1 ) ), &
                               ABS( DIF( 1 ) / DIFTRU( 1 ) ) )
@@ -565,17 +549,16 @@
 !     Read in data from file to check accuracy of condition estimation
 !     Read input data until N=0
 !
-   READ( NIN, FMT = *, END = 150 )N
-   IF( N == 0 ) &
-      GO TO 150
+   READ(NIN,*, END = 150 ) N
+   IF( N == 0 ) GO TO 150
    DO I = 1, N
-      READ( NIN, FMT = * )( A( I, J ), J = 1, N )
-      ENDDO
+      READ(NIN,* ) A( I,1:N)
+   ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( B( I, J ), J = 1, N )
-      ENDDO
-   READ( NIN, FMT = * )( STRU( I ), I = 1, N )
-   READ( NIN, FMT = * )( DIFTRU( I ), I = 1, N )
+      READ(NIN,* ) B( I,1:N)
+   ENDDO
+   READ(NIN,* ) STRU(1:N)
+   READ(NIN,* ) DIFTRU(1:N)
 !
    NPTKNT = NPTKNT + 1
 !
@@ -605,7 +588,7 @@
 !
 !     Tests (1) and (2)
 !
-   RESULT( 1 ) = ZERO
+   RESULT( 1 ) = 0.0E+0
    CALL SGET52( .TRUE., N, A, LDA, B, LDA, VL, LDA, ALPHAR, ALPHAI, &
                 BETA, WORK, RESULT( 1 ) )
    IF( RESULT( 2 ) > THRESH ) THEN
@@ -613,7 +596,7 @@
          NPTKNT
    END IF
 !
-   RESULT( 2 ) = ZERO
+   RESULT( 2 ) = 0.0E+0
    CALL SGET52( .FALSE., N, A, LDA, B, LDA, VR, LDA, ALPHAR, ALPHAI, &
                 BETA, WORK, RESULT( 2 ) )
    IF( RESULT( 3 ) > THRESH ) THEN
@@ -623,12 +606,12 @@
 !
 !     Test (3)
 !
-   RESULT( 3 ) = ZERO
+   RESULT( 3 ) = 0.0E+0
    DO I = 1, N
-      IF( S( I ) == ZERO ) THEN
+      IF( S( I ) == 0.0E+0 ) THEN
          IF( STRU( I ) > ABNORM*ULP ) &
             RESULT( 3 ) = ULPINV
-      ELSE IF( STRU( I ) == ZERO ) THEN
+      ELSE IF( STRU( I ) == 0.0E+0 ) THEN
          IF( S( I ) > ABNORM*ULP ) &
             RESULT( 3 ) = ULPINV
       ELSE
@@ -640,17 +623,17 @@
 !
 !     Test (4)
 !
-   RESULT( 4 ) = ZERO
-   IF( DIF( 1 ) == ZERO ) THEN
+   RESULT( 4 ) = 0.0E+0
+   IF( DIF( 1 ) == 0.0E+0 ) THEN
       IF( DIFTRU( 1 ) > ABNORM*ULP ) &
          RESULT( 4 ) = ULPINV
-   ELSE IF( DIFTRU( 1 ) == ZERO ) THEN
+   ELSE IF( DIFTRU( 1 ) == 0.0E+0 ) THEN
       IF( DIF( 1 ) > ABNORM*ULP ) &
          RESULT( 4 ) = ULPINV
-   ELSE IF( DIF( 5 ) == ZERO ) THEN
+   ELSE IF( DIF( 5 ) == 0.0E+0 ) THEN
       IF( DIFTRU( 5 ) > ABNORM*ULP ) &
          RESULT( 4 ) = ULPINV
-   ELSE IF( DIFTRU( 5 ) == ZERO ) THEN
+   ELSE IF( DIFTRU( 5 ) == 0.0E+0 ) THEN
       IF( DIF( 5 ) > ABNORM*ULP ) &
          RESULT( 4 ) = ULPINV
    ELSE
@@ -759,4 +742,4 @@
 !     End of SDRGVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

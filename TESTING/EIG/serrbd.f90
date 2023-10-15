@@ -67,8 +67,6 @@
 !     .. Parameters ..
    INTEGER            NMAX, LW
    PARAMETER          ( NMAX = 4, LW = NMAX )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER*2        C2
@@ -97,9 +95,6 @@
 !     .. Common blocks ..
    COMMON             / INFOC / INFOT, NOUT, OK, LERR
    COMMON             / SRNAMC / SRNAMT
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -191,56 +186,43 @@
 !
       SRNAMT = 'SORMBR'
       INFOT = 1
-      CALL SORMBR( '/', 'L', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( '/', 'L', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL SORMBR( 'Q', '/', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', '/', 'T', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL SORMBR( 'Q', 'L', '/', 0, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', '/', 0, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL SORMBR( 'Q', 'L', 'T', -1, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', 'T', -1, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL SORMBR( 'Q', 'L', 'T', 0, -1, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', 'T', 0, -1, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 6
-      CALL SORMBR( 'Q', 'L', 'T', 0, 0, -1, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', 'T', 0, 0, -1, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SORMBR( 'Q', 'L', 'T', 2, 0, 0, A, 1, TQ, U, 2, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', 'T', 2, 0, 0, A, 1, TQ, U, 2, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SORMBR( 'Q', 'R', 'T', 0, 2, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'R', 'T', 0, 2, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SORMBR( 'P', 'L', 'T', 2, 0, 2, A, 1, TQ, U, 2, W, 1, &
-                   INFO )
+      CALL SORMBR( 'P', 'L', 'T', 2, 0, 2, A, 1, TQ, U, 2, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SORMBR( 'P', 'R', 'T', 0, 2, 2, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'P', 'R', 'T', 0, 2, 2, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL SORMBR( 'Q', 'R', 'T', 2, 0, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'R', 'T', 2, 0, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 13
-      CALL SORMBR( 'Q', 'L', 'T', 0, 2, 0, A, 1, TQ, U, 1, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'L', 'T', 0, 2, 0, A, 1, TQ, U, 1, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       INFOT = 13
-      CALL SORMBR( 'Q', 'R', 'T', 2, 0, 0, A, 1, TQ, U, 2, W, 1, &
-                   INFO )
+      CALL SORMBR( 'Q', 'R', 'T', 2, 0, 0, A, 1, TQ, U, 2, W, 1, INFO )
       CALL CHKXER( 'SORMBR', INFOT, NOUT, LERR, OK )
       NT = NT + 13
 !
@@ -251,20 +233,16 @@
       CALL SBDSQR( '/', 0, 0, 0, 0, D, E, V, 1, U, 1, A, 1, W, INFO )
       CALL CHKXER( 'SBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL SBDSQR( 'U', -1, 0, 0, 0, D, E, V, 1, U, 1, A, 1, W, &
-                   INFO )
+      CALL SBDSQR( 'U', -1, 0, 0, 0, D, E, V, 1, U, 1, A, 1, W, INFO )
       CALL CHKXER( 'SBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL SBDSQR( 'U', 0, -1, 0, 0, D, E, V, 1, U, 1, A, 1, W, &
-                   INFO )
+      CALL SBDSQR( 'U', 0, -1, 0, 0, D, E, V, 1, U, 1, A, 1, W, INFO )
       CALL CHKXER( 'SBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL SBDSQR( 'U', 0, 0, -1, 0, D, E, V, 1, U, 1, A, 1, W, &
-                   INFO )
+      CALL SBDSQR( 'U', 0, 0, -1, 0, D, E, V, 1, U, 1, A, 1, W, INFO )
       CALL CHKXER( 'SBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL SBDSQR( 'U', 0, 0, 0, -1, D, E, V, 1, U, 1, A, 1, W, &
-                   INFO )
+      CALL SBDSQR( 'U', 0, 0, 0, -1, D, E, V, 1, U, 1, A, 1, W, INFO )
       CALL CHKXER( 'SBDSQR', INFOT, NOUT, LERR, OK )
       INFOT = 9
       CALL SBDSQR( 'U', 2, 1, 0, 0, D, E, V, 1, U, 1, A, 1, W, INFO )
@@ -281,24 +259,19 @@
 !
       SRNAMT = 'SBDSDC'
       INFOT = 1
-      CALL SBDSDC( '/', 'N', 0, D, E, U, 1, V, 1, Q, IQ, W, IW, &
-                   INFO )
+      CALL SBDSDC( '/', 'N', 0, D, E, U, 1, V, 1, Q, IQ, W, IW, INFO )
       CALL CHKXER( 'SBDSDC', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL SBDSDC( 'U', '/', 0, D, E, U, 1, V, 1, Q, IQ, W, IW, &
-                   INFO )
+      CALL SBDSDC( 'U', '/', 0, D, E, U, 1, V, 1, Q, IQ, W, IW, INFO )
       CALL CHKXER( 'SBDSDC', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL SBDSDC( 'U', 'N', -1, D, E, U, 1, V, 1, Q, IQ, W, IW, &
-                   INFO )
+      CALL SBDSDC( 'U', 'N', -1, D, E, U, 1, V, 1, Q, IQ, W, IW, INFO )
       CALL CHKXER( 'SBDSDC', INFOT, NOUT, LERR, OK )
       INFOT = 7
-      CALL SBDSDC( 'U', 'I', 2, D, E, U, 1, V, 1, Q, IQ, W, IW, &
-                   INFO )
+      CALL SBDSDC( 'U', 'I', 2, D, E, U, 1, V, 1, Q, IQ, W, IW, INFO )
       CALL CHKXER( 'SBDSDC', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL SBDSDC( 'U', 'I', 2, D, E, U, 2, V, 1, Q, IQ, W, IW, &
-                   INFO )
+      CALL SBDSDC( 'U', 'I', 2, D, E, U, 2, V, 1, Q, IQ, W, IW, INFO )
       CALL CHKXER( 'SBDSDC', INFOT, NOUT, LERR, OK )
       NT = NT + 5
 !
@@ -306,52 +279,40 @@
 !
       SRNAMT = 'SBDSVDX'
       INFOT = 1
-      CALL SBDSVDX( 'X', 'N', 'A', 1, D, E, ZERO, ONE, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'X', 'N', 'A', 1, D, E, 0.0E+0, 1.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL SBDSVDX( 'U', 'X', 'A', 1, D, E, ZERO, ONE, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'U', 'X', 'A', 1, D, E, 0.0E+0, 1.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL SBDSVDX( 'U', 'V', 'X', 1, D, E, ZERO, ONE, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'U', 'V', 'X', 1, D, E, 0.0E+0, 1.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL SBDSVDX( 'U', 'V', 'A', -1, D, E, ZERO, ONE, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'U', 'V', 'A', -1, D, E, 0.0E+0, 1.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 7
-      CALL SBDSVDX( 'U', 'V', 'V', 2, D, E, -ONE, ZERO, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'U', 'V', 'V', 2, D, E, -1.0E+0, 0.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SBDSVDX( 'U', 'V', 'V', 2, D, E, ONE, ZERO, 0, 0, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'U', 'V', 'V', 2, D, E, 1.0E+0, 0.0E+0, 0, 0, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL SBDSVDX( 'L', 'V', 'I', 2, D, E, ZERO, ZERO, 0, 2, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'I', 2, D, E, 0.0E+0, 0.0E+0, 0, 2, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, ZERO, ZERO, 5, 2, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, 0.0E+0, 0.0E+0, 5, 2, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 10
-      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, ZERO, ZERO, 3, 2, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, 0.0E+0, 0.0E+0, 3, 2, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 10
-      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, ZERO, ZERO, 3, 5, &
-                       NS, S, Q, 1, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'I', 4, D, E, 0.0E+0, 0.0E+0, 3, 5, NS, S, Q, 1, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 14
-      CALL SBDSVDX( 'L', 'V', 'A', 4, D, E, ZERO, ZERO, 0, 0, &
-                       NS, S, Q, 0, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'A', 4, D, E, 0.0E+0, 0.0E+0, 0, 0, NS, S, Q, 0, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       INFOT = 14
-      CALL SBDSVDX( 'L', 'V', 'A', 4, D, E, ZERO, ZERO, 0, 0, &
-                       NS, S, Q, 2, W, IW, INFO)
+      CALL SBDSVDX( 'L', 'V', 'A', 4, D, E, 0.0E+0, 0.0E+0, 0, 0, NS, S, Q, 2, W, IW, INFO)
       CALL CHKXER( 'SBDSVDX', INFOT, NOUT, LERR, OK )
       NT = NT + 12
    END IF
@@ -364,14 +325,11 @@
       WRITE( NOUT, FMT = 9998 )PATH
    END IF
 !
- 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits', &
-         ' (', I3, ' tests done)' )
- 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ', &
-         'exits ***' )
+ 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits', ' (', I3, ' tests done)' )
+ 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ', 'exits ***' )
 !
    RETURN
 !
 !     End of SERRBD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

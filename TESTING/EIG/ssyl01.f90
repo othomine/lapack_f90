@@ -104,8 +104,6 @@
 !  =====================================================================
 !     ..
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            MAXM, MAXN, LDSWORK
    PARAMETER          ( MAXM = 101, MAXN = 138, LDSWORK = 18 )
 !     ..
@@ -135,9 +133,6 @@
 !     .. External Subroutines ..
    EXTERNAL           SLATMR, SLACPY, SGEMM, STRSYL, STRSYL3
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, MAX
-!     ..
 !     .. Allocate memory dynamically ..
    ALLOCATE ( A( MAXM, MAXM ), STAT = AllocateStatus )
    IF( AllocateStatus /= 0 ) STOP "*** Not enough memory ***"
@@ -158,59 +153,49 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
-   VM( 1 ) = ONE
+   VM( 1 ) = 1.0E+0
    VM( 2 ) = 0.05E+0
 !
 !     Begin test loop
 !
-   NINFO( 1 ) = 0
-   NINFO( 2 ) = 0
-   NFAIL( 1 ) = 0
-   NFAIL( 2 ) = 0
-   NFAIL( 3 ) = 0
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
+   NINFO( 1:2 ) = 0
+   NFAIL( 1:3 ) = 0
+   RMAX( 1:2 ) = 0.0E+0
    KNT = 0
-   DO I = 1, 4
-      ISEED( I ) = 1
-   END DO
-   SCALE = ONE
-   SCALE3 = ONE
+   ISEED( 1:4 ) = 1
+   SCALE = 1.0E+0
+   SCALE3 = 1.0E+0
    LIWORK = MAXM + MAXN + 2
    DO J = 1, 2
       DO ISGN = -1, 1, 2
 !           Reset seed (overwritten by LATMR)
-         DO I = 1, 4
-            ISEED( I ) = 1
-         END DO
+         ISEED( 1:4 ) = 1
          DO M = 32, MAXM, 71
             KLA = 0
             KUA = M - 1
             CALL SLATMR( M, M, 'S', ISEED, 'N', D, &
-                         6, ONE, ONE, 'T', 'N', &
-                         DUML, 1, ONE, DUMR, 1, ONE, &
-                         'N', IWORK, KLA, KUA, ZERO, &
-                         ONE, 'NO', A, MAXM, IWORK, IINFO )
-            DO I = 1, M
-               A( I, I ) = A( I, I ) * VM( J )
-            END DO
+                         6, 1.0E+0, 1.0E+0, 'T', 'N', &
+                         DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                         'N', IWORK, KLA, KUA, 0.0E+0, &
+                         1.0E+0, 'NO', A, MAXM, IWORK, IINFO )
+            FORALL (I = 1:M) A( I, I ) = A( I, I ) * VM( J )
             ANRM = SLANGE( 'M', M, M, A, MAXM, DUM )
             DO N = 51, MAXN, 47
                KLB = 0
                KUB = N - 1
                CALL SLATMR( N, N, 'S', ISEED, 'N', D, &
-                            6, ONE, ONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, KLB, KUB, ZERO, &
-                            ONE, 'NO', B, MAXN, IWORK, IINFO )
+                            6, 1.0E+0, 1.0E+0, 'T', 'N', &
+                            DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                            'N', IWORK, KLB, KUB, 0.0E+0, &
+                            1.0E+0, 'NO', B, MAXN, IWORK, IINFO )
                BNRM = SLANGE( 'M', N, N, B, MAXN, DUM )
                TNRM = MAX( ANRM, BNRM )
                CALL SLATMR( M, N, 'S', ISEED, 'N', D, &
-                            6, ONE, ONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, M, N, ZERO, ONE, &
+                            6, 1.0E+0, 1.0E+0, 'T', 'N', &
+                            DUML, 1, 1.0E+0, DUMR, 1, 1.0E+0, &
+                            'N', IWORK, M, N, 0.0E+0, 1.0E+0, &
                             'NO', C, MAXM, IWORK, IINFO )
                DO ITRANA = 1, 2
                   IF( ITRANA == 1 ) THEN
@@ -236,10 +221,10 @@
                      IF( IINFO /= 0 ) &
                         NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = SLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = ONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = 1.0E+0
+                     IF( XNRM > 1.0E+0 .AND. TNRM > 1.0E+0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = ONE / MAX( XNRM, TNRM )
+                           RMUL = 1.0E+0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL SGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -247,7 +232,7 @@
                                  C, MAXM )
                      CALL SGEMM( 'N', TRANB, M, N, N, &
                                   REAL( ISGN )*RMUL, X, MAXM, B, &
-                                  MAXN, ONE, C, MAXM )
+                                  MAXN, 1.0E+0, C, MAXM )
                      RES1 = SLANGE( 'M', M, N, C, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                  ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -265,10 +250,10 @@
                      IF( INFO /= 0 ) &
                         NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = SLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = ONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = 1.0E+0
+                     IF( XNRM > 1.0E+0 .AND. TNRM > 1.0E+0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = ONE / MAX( XNRM, TNRM )
+                           RMUL = 1.0E+0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL SGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -276,13 +261,13 @@
                                  CC, MAXM )
                      CALL SGEMM( 'N', TRANB, M, N, N, &
                                  REAL( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, ONE, CC, MAXM )
+                                 MAXN, 1.0E+0, CC, MAXM )
                      RES1 = SLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( RMUL*TNRM )*EPS )*XNRM )
 !                       Verify that TRSYL3 only flushes if TRSYL flushes (but
 !                       there may be cases where TRSYL3 avoid flushing).
-                     IF( SCALE3 == ZERO .AND. SCALE > ZERO .OR. &
+                     IF( SCALE3 == 0.0E+0 .AND. SCALE > 0.0E+0 .OR. &
                          IINFO /= INFO ) THEN
                         NFAIL( 3 ) = NFAIL( 3 ) + 1
                      END IF
@@ -309,4 +294,4 @@
 !     End of SSYL01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

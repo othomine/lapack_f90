@@ -219,10 +219,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TEN = 10.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER
@@ -239,16 +235,11 @@
    EXTERNAL           SGEMM, SLACPY, SLARFY, SLASET, SORM2L, SORM2R, &
                       SSYR, SSYR2
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = ZERO
-   IF( ITYPE == 1 ) &
-      RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1 ) = 0.0E+0
+   IF( ITYPE == 1 ) RESULT( 2 ) = 0.0E+0
+   IF( N <= 0 ) RETURN
 !
    IF( LSAME( UPLO, 'U' ) ) THEN
       LOWER = .FALSE.
@@ -264,7 +255,7 @@
 !     Some Error Checks
 !
    IF( ITYPE < 1 .OR. ITYPE > 3 ) THEN
-      RESULT( 1 ) = TEN / ULP
+      RESULT( 1 ) = 10.0E+0 / ULP
       RETURN
    END IF
 !
@@ -273,7 +264,7 @@
 !     Norm of A:
 !
    IF( ITYPE == 3 ) THEN
-      ANORM = ONE
+      ANORM = 1.0E+0
    ELSE
       ANORM = MAX( SLANSY( '1', CUPLO, N, A, LDA, WORK ), UNFL )
    END IF
@@ -284,7 +275,7 @@
 !
 !        ITYPE=1: error = A - U S U**T
 !
-      CALL SLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+      CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
       CALL SLACPY( CUPLO, N, N, A, LDA, WORK, N )
 !
       DO J = 1, N
@@ -303,20 +294,20 @@
 !
 !        ITYPE=2: error = V S V**T - A
 !
-      CALL SLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+      CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
 !
       IF( LOWER ) THEN
          WORK( N**2 ) = D( N )
          DO J = N - 1, 1, -1
             IF( KBAND == 1 ) THEN
-               WORK( ( N+1 )*( J-1 )+2 ) = ( ONE-TAU( J ) )*E( J )
+               WORK( ( N+1 )*( J-1 )+2 ) = ( 1.0E+0-TAU( J ) )*E( J )
                DO JR = J + 2, N
                   WORK( ( J-1 )*N+JR ) = -TAU( J )*E( J )*V( JR, J )
                ENDDO
             END IF
 !
             VSAVE = V( J+1, J )
-            V( J+1, J ) = ONE
+            V( J+1, J ) = 1.0E+0
             CALL SLARFY( 'L', N-J, V( J+1, J ), 1, TAU( J ), &
                          WORK( ( N+1 )*J+1 ), N, WORK( N**2+1 ) )
             V( J+1, J ) = VSAVE
@@ -326,14 +317,14 @@
          WORK( 1 ) = D( 1 )
          DO J = 1, N - 1
             IF( KBAND == 1 ) THEN
-               WORK( ( N+1 )*J ) = ( ONE-TAU( J ) )*E( J )
+               WORK( ( N+1 )*J ) = ( 1.0E+0-TAU( J ) )*E( J )
                DO JR = 1, J - 1
                   WORK( J*N+JR ) = -TAU( J )*E( J )*V( JR, J+1 )
                ENDDO
             END IF
 !
             VSAVE = V( J, J+1 )
-            V( J, J+1 ) = ONE
+            V( J, J+1 ) = 1.0E+0
             CALL SLARFY( 'U', J, V( 1, J+1 ), 1, TAU( J ), WORK, N, &
                          WORK( N**2+1 ) )
             V( J, J+1 ) = VSAVE
@@ -360,8 +351,7 @@
 !
 !        ITYPE=3: error = U V**T - I
 !
-      IF( N < 2 ) &
-         RETURN
+      IF( N < 2 ) RETURN
       CALL SLACPY( ' ', N, N, U, LDU, WORK, N )
       IF( LOWER ) THEN
          CALL SORM2R( 'R', 'T', N, N-1, N-1, V( 2, 1 ), LDV, TAU, &
@@ -371,12 +361,12 @@
                       WORK, N, WORK( N**2+1 ), IINFO )
       END IF
       IF( IINFO /= 0 ) THEN
-         RESULT( 1 ) = TEN / ULP
+         RESULT( 1 ) = 10.0E+0 / ULP
          RETURN
       END IF
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - ONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 1.0E+0
          ENDDO
 !
       WNORM = SLANGE( '1', N, N, WORK, N, WORK( N**2+1 ) )
@@ -385,7 +375,7 @@
    IF( ANORM > WNORM ) THEN
       RESULT( 1 ) = ( WNORM / ANORM ) / ( N*ULP )
    ELSE
-      IF( ANORM < ONE ) THEN
+      IF( ANORM < 1.0E+0 ) THEN
          RESULT( 1 ) = ( MIN( WNORM, N*ANORM ) / ANORM ) / ( N*ULP )
       ELSE
          RESULT( 1 ) = MIN( WNORM / ANORM, REAL( N ) ) / ( N*ULP )
@@ -397,12 +387,12 @@
 !     Compute  U U**T - I
 !
    IF( ITYPE == 1 ) THEN
-      CALL SGEMM( 'N', 'C', N, N, N, ONE, U, LDU, U, LDU, ZERO, WORK, &
+      CALL SGEMM( 'N', 'C', N, N, N, 1.0E+0, U, LDU, U, LDU, 0.0E+0, WORK, &
                   N )
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - ONE
-         ENDDO
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 1.0E+0
+      ENDDO
 !
       RESULT( 2 ) = MIN( SLANGE( '1', N, N, WORK, N, &
                     WORK( N**2+1 ) ), REAL( N ) ) / ( N*ULP )
@@ -413,4 +403,4 @@
 !     End of SSYT21
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

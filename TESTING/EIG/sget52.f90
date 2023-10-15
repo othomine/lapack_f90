@@ -212,10 +212,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0, ONE = 1.0, TEN = 10.0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILCPLX
@@ -232,18 +228,13 @@
 !     .. External Subroutines ..
    EXTERNAL           SGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, REAL
-!     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0E+0
+   IF( N <= 0 ) RETURN
 !
    SAFMIN = SLAMCH( 'Safe minimum' )
-   SAFMAX = ONE / SAFMIN
+   SAFMAX = 1.0E+0 / SAFMIN
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
 !
    IF( LEFT ) THEN
@@ -259,8 +250,8 @@
    ANORM = MAX( SLANGE( NORMAB, N, N, A, LDA, WORK ), SAFMIN )
    BNORM = MAX( SLANGE( NORMAB, N, N, B, LDB, WORK ), SAFMIN )
    ENORM = MAX( SLANGE( 'O', N, N, E, LDE, WORK ), ULP )
-   ALFMAX = SAFMAX / MAX( ONE, BNORM )
-   BETMAX = SAFMAX / MAX( ONE, ANORM )
+   ALFMAX = SAFMAX / MAX( 1.0E+0, BNORM )
+   BETMAX = SAFMAX / MAX( 1.0E+0, ANORM )
 !
 !     Compute error matrix.
 !     Column i = ( b(i) A - a(i) B ) E(i) / max( |a(i) B|, |b(i) A| )
@@ -276,43 +267,43 @@
          SALFR = ALPHAR( JVEC )
          SALFI = ALPHAI( JVEC )
          SBETA = BETA( JVEC )
-         IF( SALFI == ZERO ) THEN
+         IF( SALFI == 0.0E+0 ) THEN
 !
 !              Real eigenvalue and -vector
 !
             ABMAX = MAX( ABS( SALFR ), ABS( SBETA ) )
             IF( ABS( SALFR ) > ALFMAX .OR. ABS( SBETA ) > &
-                BETMAX .OR. ABMAX < ONE ) THEN
-               SCALE = ONE / MAX( ABMAX, SAFMIN )
+                BETMAX .OR. ABMAX < 1.0E+0 ) THEN
+               SCALE = 1.0E+0 / MAX( ABMAX, SAFMIN )
                SALFR = SCALE*SALFR
                SBETA = SCALE*SBETA
             END IF
-            SCALE = ONE / MAX( ABS( SALFR )*BNORM, &
+            SCALE = 1.0E+0 / MAX( ABS( SALFR )*BNORM, &
                     ABS( SBETA )*ANORM, SAFMIN )
             ACOEF = SCALE*SBETA
             BCOEFR = SCALE*SALFR
             CALL SGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC ), 1, &
-                        ZERO, WORK( N*( JVEC-1 )+1 ), 1 )
+                        0.0E+0, WORK( N*( JVEC-1 )+1 ), 1 )
             CALL SGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC ), &
-                        1, ONE, WORK( N*( JVEC-1 )+1 ), 1 )
+                        1, 1.0E+0, WORK( N*( JVEC-1 )+1 ), 1 )
          ELSE
 !
 !              Complex conjugate pair
 !
             ILCPLX = .TRUE.
             IF( JVEC == N ) THEN
-               RESULT( 1 ) = TEN / ULP
+               RESULT( 1 ) = 10.0E+0 / ULP
                RETURN
             END IF
             ABMAX = MAX( ABS( SALFR )+ABS( SALFI ), ABS( SBETA ) )
             IF( ABS( SALFR )+ABS( SALFI ) > ALFMAX .OR. &
-                ABS( SBETA ) > BETMAX .OR. ABMAX < ONE ) THEN
-               SCALE = ONE / MAX( ABMAX, SAFMIN )
+                ABS( SBETA ) > BETMAX .OR. ABMAX < 1.0E+0 ) THEN
+               SCALE = 1.0E+0 / MAX( ABMAX, SAFMIN )
                SALFR = SCALE*SALFR
                SALFI = SCALE*SALFI
                SBETA = SCALE*SBETA
             END IF
-            SCALE = ONE / MAX( ( ABS( SALFR )+ABS( SALFI ) )*BNORM, &
+            SCALE = 1.0E+0 / MAX( ( ABS( SALFR )+ABS( SALFI ) )*BNORM, &
                     ABS( SBETA )*ANORM, SAFMIN )
             ACOEF = SCALE*SBETA
             BCOEFR = SCALE*SALFR
@@ -322,18 +313,18 @@
             END IF
 !
             CALL SGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC ), 1, &
-                        ZERO, WORK( N*( JVEC-1 )+1 ), 1 )
+                        0.0E+0, WORK( N*( JVEC-1 )+1 ), 1 )
             CALL SGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC ), &
-                        1, ONE, WORK( N*( JVEC-1 )+1 ), 1 )
+                        1, 1.0E+0, WORK( N*( JVEC-1 )+1 ), 1 )
             CALL SGEMV( TRANS, N, N, BCOEFI, B, LDA, E( 1, JVEC+1 ), &
-                        1, ONE, WORK( N*( JVEC-1 )+1 ), 1 )
+                        1, 1.0E+0, WORK( N*( JVEC-1 )+1 ), 1 )
 !
             CALL SGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC+1 ), &
-                        1, ZERO, WORK( N*JVEC+1 ), 1 )
+                        1, 0.0E+0, WORK( N*JVEC+1 ), 1 )
             CALL SGEMV( TRANS, N, N, -BCOEFI, B, LDA, E( 1, JVEC ), &
-                        1, ONE, WORK( N*JVEC+1 ), 1 )
+                        1, 1.0E+0, WORK( N*JVEC+1 ), 1 )
             CALL SGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC+1 ), &
-                        1, ONE, WORK( N*JVEC+1 ), 1 )
+                        1, 1.0E+0, WORK( N*JVEC+1 ), 1 )
          END IF
       END IF
    ENDDO
@@ -346,25 +337,25 @@
 !
 !     Normalization of E:
 !
-   ENRMER = ZERO
+   ENRMER = 0.0E+0
    ILCPLX = .FALSE.
    DO JVEC = 1, N
       IF( ILCPLX ) THEN
          ILCPLX = .FALSE.
       ELSE
-         TEMP1 = ZERO
-         IF( ALPHAI( JVEC ) == ZERO ) THEN
+         TEMP1 = 0.0E+0
+         IF( ALPHAI( JVEC ) == 0.0E+0 ) THEN
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( E( J, JVEC ) ) )
             ENDDO
-            ENRMER = MAX( ENRMER, ABS( TEMP1-ONE ) )
+            ENRMER = MAX( ENRMER, ABS( TEMP1-1.0E+0 ) )
          ELSE
             ILCPLX = .TRUE.
             DO J = 1, N
                TEMP1 = MAX( TEMP1, ABS( E( J, JVEC ) )+ &
                        ABS( E( J, JVEC+1 ) ) )
             ENDDO
-            ENRMER = MAX( ENRMER, ABS( TEMP1-ONE ) )
+            ENRMER = MAX( ENRMER, ABS( TEMP1-1.0E+0 ) )
          END IF
       END IF
    ENDDO
@@ -378,4 +369,4 @@
 !     End of SGET52
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

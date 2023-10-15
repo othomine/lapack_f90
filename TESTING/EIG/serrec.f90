@@ -67,8 +67,7 @@
 !
 !     .. Parameters ..
    INTEGER            NMAX
-   REAL               ONE, ZERO
-   PARAMETER          ( NMAX = 4, ONE = 1.0E0, ZERO = 0.0E0 )
+   PARAMETER          ( NMAX = 4 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IFST, ILST, INFO, J, M, NT
@@ -101,16 +100,10 @@
 !
 !     Initialize A, B and SEL
 !
-   DO J = 1, NMAX
-      DO I = 1, NMAX
-         A( I, J ) = ZERO
-         B( I, J ) = ZERO
-      ENDDO
-   ENDDO
-   DO I = 1, NMAX
-      A( I, I ) = ONE
-      SEL( I ) = .TRUE.
-   ENDDO
+   A(1:NMAX,1:NMAX) = 0.0E0
+   B(1:NMAX,1:NMAX) = 0.0E0
+   SEL(1:NMAX) = .TRUE.
+   FORALL (I = 1:NMAX) A( I, I ) = 1.0E0
 !
 !     Test STRSYL
 !
@@ -145,36 +138,28 @@
 !
    SRNAMT = 'STRSYL3'
    INFOT = 1
-   CALL STRSYL3( 'X', 'N', 1, 0, 0, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'X', 'N', 1, 0, 0, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 2
-   CALL STRSYL3( 'N', 'X', 1, 0, 0, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'X', 1, 0, 0, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 3
-   CALL STRSYL3( 'N', 'N', 0, 0, 0, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 0, 0, 0, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 4
-   CALL STRSYL3( 'N', 'N', 1, -1, 0, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 1, -1, 0, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 5
-   CALL STRSYL3( 'N', 'N', 1, 0, -1, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 1, 0, -1, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 7
-   CALL STRSYL3( 'N', 'N', 1, 2, 0, A, 1, B, 1, C, 2, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 1, 2, 0, A, 1, B, 1, C, 2, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 9
-   CALL STRSYL3( 'N', 'N', 1, 0, 2, A, 1, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 1, 0, 2, A, 1, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    INFOT = 11
-   CALL STRSYL3( 'N', 'N', 1, 2, 0, A, 2, B, 1, C, 1, SCALE, &
-                 IWORK, NMAX, WORK, NMAX, INFO )
+   CALL STRSYL3( 'N', 'N', 1, 2, 0, A, 2, B, 1, C, 1, SCALE, IWORK, NMAX, WORK, NMAX, INFO )
    CALL CHKXER( 'STRSYL3', INFOT, NOUT, LERR, OK )
    NT = NT + 8
 !
@@ -220,40 +205,31 @@
 !
    SRNAMT = 'STRSNA'
    INFOT = 1
-   CALL STRSNA( 'X', 'A', SEL, 0, A, 1, B, 1, C, 1, S, SEP, 1, M, &
-                WORK, 1, IWORK, INFO )
+   CALL STRSNA( 'X', 'A', SEL, 0, A, 1, B, 1, C, 1, S, SEP, 1, M, WORK, 1, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 2
-   CALL STRSNA( 'B', 'X', SEL, 0, A, 1, B, 1, C, 1, S, SEP, 1, M, &
-                WORK, 1, IWORK, INFO )
+   CALL STRSNA( 'B', 'X', SEL, 0, A, 1, B, 1, C, 1, S, SEP, 1, M, WORK, 1, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 4
-   CALL STRSNA( 'B', 'A', SEL, -1, A, 1, B, 1, C, 1, S, SEP, 1, M, &
-                WORK, 1, IWORK, INFO )
+   CALL STRSNA( 'B', 'A', SEL, -1, A, 1, B, 1, C, 1, S, SEP, 1, M, WORK, 1, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 6
-   CALL STRSNA( 'V', 'A', SEL, 2, A, 1, B, 1, C, 1, S, SEP, 2, M, &
-                WORK, 2, IWORK, INFO )
+   CALL STRSNA( 'V', 'A', SEL, 2, A, 1, B, 1, C, 1, S, SEP, 2, M, WORK, 2, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 8
-   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 1, C, 2, S, SEP, 2, M, &
-                WORK, 2, IWORK, INFO )
+   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 1, C, 2, S, SEP, 2, M, WORK, 2, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 10
-   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 2, C, 1, S, SEP, 2, M, &
-                WORK, 2, IWORK, INFO )
+   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 2, C, 1, S, SEP, 2, M, WORK, 2, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 13
-   CALL STRSNA( 'B', 'A', SEL, 1, A, 1, B, 1, C, 1, S, SEP, 0, M, &
-                WORK, 1, IWORK, INFO )
+   CALL STRSNA( 'B', 'A', SEL, 1, A, 1, B, 1, C, 1, S, SEP, 0, M, WORK, 1, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 13
-   CALL STRSNA( 'B', 'S', SEL, 2, A, 2, B, 2, C, 2, S, SEP, 1, M, &
-                WORK, 2, IWORK, INFO )
+   CALL STRSNA( 'B', 'S', SEL, 2, A, 2, B, 2, C, 2, S, SEP, 1, M, WORK, 2, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    INFOT = 16
-   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 2, C, 2, S, SEP, 2, M, &
-                WORK, 1, IWORK, INFO )
+   CALL STRSNA( 'B', 'A', SEL, 2, A, 2, B, 2, C, 2, S, SEP, 2, M, WORK, 1, IWORK, INFO )
    CALL CHKXER( 'STRSNA', INFOT, NOUT, LERR, OK )
    NT = NT + 9
 !
@@ -262,44 +238,34 @@
    SEL( 1 ) = .FALSE.
    SRNAMT = 'STRSEN'
    INFOT = 1
-   CALL STRSEN( 'X', 'N', SEL, 0, A, 1, B, 1, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 1, INFO )
+   CALL STRSEN( 'X', 'N', SEL, 0, A, 1, B, 1, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 2
-   CALL STRSEN( 'N', 'X', SEL, 0, A, 1, B, 1, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 1, INFO )
+   CALL STRSEN( 'N', 'X', SEL, 0, A, 1, B, 1, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 4
-   CALL STRSEN( 'N', 'N', SEL, -1, A, 1, B, 1, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 1, INFO )
+   CALL STRSEN( 'N', 'N', SEL, -1, A, 1, B, 1, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 6
-   CALL STRSEN( 'N', 'N', SEL, 2, A, 1, B, 1, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 2, IWORK, 1, INFO )
+   CALL STRSEN( 'N', 'N', SEL, 2, A, 1, B, 1, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 2, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 8
-   CALL STRSEN( 'N', 'V', SEL, 2, A, 2, B, 1, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 1, INFO )
+   CALL STRSEN( 'N', 'V', SEL, 2, A, 2, B, 1, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 15
-   CALL STRSEN( 'N', 'V', SEL, 2, A, 2, B, 2, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 0, IWORK, 1, INFO )
+   CALL STRSEN( 'N', 'V', SEL, 2, A, 2, B, 2, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 0, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 15
-   CALL STRSEN( 'E', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 1, INFO )
+   CALL STRSEN( 'E', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 15
-   CALL STRSEN( 'V', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 3, IWORK, 2, INFO )
+   CALL STRSEN( 'V', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 3, IWORK, 2, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 17
-   CALL STRSEN( 'E', 'V', SEL, 2, A, 2, B, 2, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 1, IWORK, 0, INFO )
+   CALL STRSEN( 'E', 'V', SEL, 2, A, 2, B, 2, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 1, IWORK, 0, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    INFOT = 17
-   CALL STRSEN( 'V', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), &
-                SEP( 1 ), WORK, 4, IWORK, 1, INFO )
+   CALL STRSEN( 'V', 'V', SEL, 3, A, 3, B, 3, WR, WI, M, S( 1 ), SEP( 1 ), WORK, 4, IWORK, 1, INFO )
    CALL CHKXER( 'STRSEN', INFOT, NOUT, LERR, OK )
    NT = NT + 10
 !
@@ -312,12 +278,10 @@
    END IF
 !
    RETURN
- 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits (', &
-         I3, ' tests done)' )
- 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ex', &
-         'its ***' )
+ 9999 FORMAT( 1X, A3, ' routines passed the tests of the error exits (', I3, ' tests done)' )
+ 9998 FORMAT( ' *** ', A3, ' routines failed the tests of the error ex', 'its ***' )
 !
 !     End of SERREC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

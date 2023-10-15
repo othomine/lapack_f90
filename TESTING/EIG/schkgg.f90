@@ -534,8 +534,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0, ONE = 1.0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 26 )
 !     ..
@@ -565,29 +563,19 @@
                       SLARFG, SLASET, SLASUM, SLATM4, SORM2R, STGEVC, &
                       XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SIGN
-!     ..
 !     .. Data statements ..
    DATA               KCLASS / 15*1, 10*2, 1*3 /
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
    DATA               KZ2 / 0, 0, 1, 2, 1, 1 /
    DATA               KADD / 0, 0, 0, 0, 3, 2 /
-   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, &
-                      4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
-   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, &
-                      1, 1, -4, 2, -4, 8*8, 0 /
-   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, &
-                      4*5, 4*3, 1 /
-   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, &
-                      4*6, 4*4, 1 /
-   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, &
-                      2, 1 /
-   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, &
-                      2, 1 /
+   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, 4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
+   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, 1, 1, -4, 2, -4, 8*8, 0 /
+   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, 4*5, 4*3, 1 /
+   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, 4*6, 4*4, 1 /
+   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, 2, 1 /
+   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, 2, 1 /
    DATA               KTRIAN / 16*0, 10*1 /
-   DATA               IASIGN / 6*0, 2, 0, 2*2, 2*0, 3*2, 0, 2, 3*0, &
-                      5*2, 0 /
+   DATA               IASIGN / 6*0, 2, 0, 2*2, 2*0, 3*2, 0, 2, 3*0, 5*2, 0 /
    DATA               IBSIGN / 7*0, 2, 2*0, 2*2, 2*0, 2, 0, 2, 9*0 /
 !     ..
 !     .. Executable Statements ..
@@ -596,13 +584,8 @@
 !
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = any(NN(1:NSIZES) < 0 )
 !
 !     Maximum blocksize and shift -- we assume that blocksize and number
 !     of shifts are monotone increasing functions of N.
@@ -617,7 +600,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0E+0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -10
@@ -634,19 +617,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
    SAFMIN = SLAMCH( 'Safe minimum' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
    SAFMIN = SAFMIN / ULP
-   SAFMAX = ONE / SAFMIN
-   ULPINV = ONE / ULP
+   SAFMAX = 1.0E+0 / SAFMIN
+   ULPINV = 1.0E+0 / ULP
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = ZERO
-   RMAGN( 1 ) = ONE
+   RMAGN( 0 ) = 0.0E+0
+   RMAGN( 1 ) = 1.0E+0
 !
 !     Loop over sizes, types
 !
@@ -667,22 +649,17 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 230
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 230
          NMATS = NMATS + 1
          NTEST = 0
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Initialize RESULT
 !
-         DO J = 1, 15
-            RESULT( J ) = ZERO
-         ENDDO
+         RESULT(1:15) = 0.0E+0
 !
 !           Compute A and B
 !
@@ -717,7 +694,7 @@
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL SLASET( 'Full', N, N, ZERO, ZERO, A, LDA )
+                  CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, A, LDA )
             ELSE
                IN = N
             END IF
@@ -727,26 +704,24 @@
                          RMAGN( KTRIAN( JTYPE )*KAMAGN( JTYPE ) ), 2, &
                          ISEED, A, LDA )
             IADD = KADD( KAZERO( JTYPE ) )
-            IF( IADD > 0 .AND. IADD <= N ) &
-               A( IADD, IADD ) = RMAGN( KAMAGN( JTYPE ) )
+            IF( IADD > 0 .AND. IADD <= N ) A( IADD, IADD ) = RMAGN( KAMAGN( JTYPE ) )
 !
 !              Generate B (w/o rotation)
 !
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL SLASET( 'Full', N, N, ZERO, ZERO, B, LDA )
+                  CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, B, LDA )
             ELSE
                IN = N
             END IF
             CALL SLATM4( KBTYPE( JTYPE ), IN, KZ1( KBZERO( JTYPE ) ), &
                          KZ2( KBZERO( JTYPE ) ), IBSIGN( JTYPE ), &
-                         RMAGN( KBMAGN( JTYPE ) ), ONE, &
+                         RMAGN( KBMAGN( JTYPE ) ), 1.0E+0, &
                          RMAGN( KTRIAN( JTYPE )*KBMAGN( JTYPE ) ), 2, &
                          ISEED, B, LDA )
             IADD = KADD( KBZERO( JTYPE ) )
-            IF( IADD /= 0 .AND. IADD <= N ) &
-               B( IADD, IADD ) = RMAGN( KBMAGN( JTYPE ) )
+            IF( IADD /= 0 .AND. IADD <= N ) B( IADD, IADD ) = RMAGN( KBMAGN( JTYPE ) )
 !
             IF( KCLASS( JTYPE ) == 2 .AND. N > 0 ) THEN
 !
@@ -762,46 +737,37 @@
                   ENDDO
                   CALL SLARFG( N+1-JC, U( JC, JC ), U( JC+1, JC ), 1, &
                                WORK( JC ) )
-                  WORK( 2*N+JC ) = SIGN( ONE, U( JC, JC ) )
-                  U( JC, JC ) = ONE
+                  WORK( 2*N+JC ) = SIGN( 1.0E+0, U( JC, JC ) )
+                  U( JC, JC ) = 1.0E+0
                   CALL SLARFG( N+1-JC, V( JC, JC ), V( JC+1, JC ), 1, &
                                WORK( N+JC ) )
-                  WORK( 3*N+JC ) = SIGN( ONE, V( JC, JC ) )
-                  V( JC, JC ) = ONE
+                  WORK( 3*N+JC ) = SIGN( 1.0E+0, V( JC, JC ) )
+                  V( JC, JC ) = 1.0E+0
                ENDDO
-               U( N, N ) = ONE
-               WORK( N ) = ZERO
-               WORK( 3*N ) = SIGN( ONE, SLARND( 2, ISEED ) )
-               V( N, N ) = ONE
-               WORK( 2*N ) = ZERO
-               WORK( 4*N ) = SIGN( ONE, SLARND( 2, ISEED ) )
+               U( N, N ) = 1.0E+0
+               WORK( N ) = 0.0E+0
+               WORK( 3*N ) = SIGN( 1.0E+0, SLARND( 2, ISEED ) )
+               V( N, N ) = 1.0E+0
+               WORK( 2*N ) = 0.0E+0
+               WORK( 4*N ) = SIGN( 1.0E+0, SLARND( 2, ISEED ) )
 !
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
-                  DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )*WORK( 3*N+JC )* &
-                                   A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )*WORK( 3*N+JC )* &
-                                   B( JR, JC )
-                  ENDDO
+                  A(1:N,JC) = WORK(2*N+1:3*N)*WORK(3*N+JC)*A(1:N,JC)
+                  B(1:N,JC) = WORK(2*N+1:3*N)*WORK(3*N+JC)*B(1:N,JC)
                ENDDO
-               CALL SORM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, A, &
-                            LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               CALL SORM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, A, LDA, WORK( 2*N+1 ), IINFO )
+               IF( IINFO /= 0 ) GO TO 100
                CALL SORM2R( 'R', 'T', N, N, N-1, V, LDU, WORK( N+1 ), &
                             A, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL SORM2R( 'L', 'N', N, N, N-1, U, LDU, WORK, B, &
                             LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL SORM2R( 'R', 'T', N, N, N-1, V, LDU, WORK( N+1 ), &
                             B, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
             END IF
          ELSE
 !
@@ -855,7 +821,7 @@
             GO TO 210
          END IF
 !
-         CALL SLASET( 'Full', N, N, ZERO, ONE, U, LDU )
+         CALL SLASET( 'Full', N, N, 0.0E+0, 1.0E+0, U, LDU )
          CALL SORM2R( 'R', 'N', N, N, N, T, LDA, WORK, U, LDU, &
                       WORK( N+1 ), IINFO )
          IF( IINFO /= 0 ) THEN
@@ -962,12 +928,8 @@
 !           in one call, and half in another
 !
          I1 = N / 2
-         DO J = 1, I1
-            LLWORK( J ) = .TRUE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .FALSE.
-            ENDDO
+         LLWORK(1:I1) = .TRUE.
+         LLWORK(I1+1:N) = .FALSE.
 !
          CALL STGEVC( 'L', 'S', LLWORK, N, S1, LDA, P1, LDA, EVECTL, &
                       LDU, DUMMA, LDU, N, IN, WORK, IINFO )
@@ -979,12 +941,8 @@
          END IF
 !
          I1 = IN
-         DO J = 1, I1
-            LLWORK( J ) = .FALSE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .TRUE.
-            ENDDO
+         LLWORK(1:I1) = .FALSE.
+         LLWORK(I1+1:N) = .TRUE.
 !
          CALL STGEVC( 'L', 'S', LLWORK, N, S1, LDA, P1, LDA, &
                       EVECTL( 1, I1+1 ), LDU, DUMMA, LDU, N, IN, &
@@ -1037,12 +995,8 @@
 !           in one call, and half in another
 !
          I1 = N / 2
-         DO J = 1, I1
-            LLWORK( J ) = .TRUE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .FALSE.
-            ENDDO
+         LLWORK(1:I1) = .TRUE.
+         LLWORK(I1+1:N) = .FALSE.
 !
          CALL STGEVC( 'R', 'S', LLWORK, N, S1, LDA, P1, LDA, DUMMA, &
                       LDU, EVECTR, LDU, N, IN, WORK, IINFO )
@@ -1054,12 +1008,8 @@
          END IF
 !
          I1 = IN
-         DO J = 1, I1
-            LLWORK( J ) = .FALSE.
-            ENDDO
-         DO J = I1 + 1, N
-            LLWORK( J ) = .TRUE.
-            ENDDO
+         LLWORK(1:I1) = .FALSE.
+         LLWORK(I1+1:N) = .TRUE.
 !
          CALL STGEVC( 'R', 'S', LLWORK, N, S1, LDA, P1, LDA, DUMMA, &
                       LDU, EVECTR( 1, I1+1 ), LDU, N, IN, WORK, &
@@ -1115,22 +1065,15 @@
 !
 !              Do Test 15
 !
-            TEMP1 = ZERO
-            TEMP2 = ZERO
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( ALPHR1( J )-ALPHR3( J ) )+ &
-                       ABS( ALPHI1( J )-ALPHI3( J ) ) )
-               TEMP2 = MAX( TEMP2, ABS( BETA1( J )-BETA3( J ) ) )
-               ENDDO
+            TEMP1 = MAXVAL(ABS(ALPHR1(1:N)-ALPHR3(1:N))+ABS(ALPHI1(1:N)-ALPHI3(1:N)))
+            TEMP2 = MAXVAL(ABS(BETA1(1:N)-BETA3(1:N)))
 !
             TEMP1 = TEMP1 / MAX( SAFMIN, ULP*MAX( TEMP1, ANORM ) )
             TEMP2 = TEMP2 / MAX( SAFMIN, ULP*MAX( TEMP2, BNORM ) )
             RESULT( 15 ) = MAX( TEMP1, TEMP2 )
             NTEST = 15
          ELSE
-            RESULT( 13 ) = ZERO
-            RESULT( 14 ) = ZERO
-            RESULT( 15 ) = ZERO
+            RESULT( 13:15 ) = 0.0E+0
             NTEST = 12
          END IF
 !
@@ -1239,4 +1182,3 @@
 !     End of SCHKGG
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

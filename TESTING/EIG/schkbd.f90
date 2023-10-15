@@ -450,7 +450,7 @@
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
 !>
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0E+0, 1.0E+0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     NTEST           The number of tests performed, or which can
 !>                     be performed so far, for the current matrix.
@@ -512,9 +512,6 @@
 ! ======================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TWO, HALF
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0, &
-                      HALF = 0.5E0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 16 )
 !     ..
@@ -547,9 +544,6 @@
                       SGEMM, SLACPY, SLAHD2, SLASET, SLATMR, &
                       SLATMS, SORGBR, SORT01, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, EXP, INT, LOG, MAX, MIN, SQRT
-!     ..
 !     .. Scalars in Common ..
    LOGICAL            LERR, OK
    CHARACTER*32       SRNAMT
@@ -562,8 +556,7 @@
 !     .. Data statements ..
    DATA            KTYPE / 1, 2, 5*4, 5*6, 3*9, 10 /
    DATA            KMAGN / 2*1, 3*1, 2, 3, 3*1, 2, 3, 1, 2, 3, 0 /
-   DATA            KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 0 /
+   DATA            KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -621,8 +614,8 @@
    UNFL = SLAMCH( 'Safe minimum' )
    OVFL = SLAMCH( 'Overflow' )
    ULP = SLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
-   LOG2UI = INT( LOG( ULPINV ) / LOG( TWO ) )
+   ULPINV = 1.0E+0 / ULP
+   LOG2UI = INT( LOG( ULPINV ) / LOG( 2.0E+0 ) )
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
    INFOT = 0
@@ -634,7 +627,7 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / MAX( M, N, 1 )
+      AMNINV = 1.0E+0 / MAX( M, N, 1 )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -643,16 +636,11 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 290
+         IF(DOTYPE( JTYPE ) ) THEN
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
-         DO J = 1, 34
-            RESULT( J ) = -ONE
-         ENDDO
+         RESULT(1:34) = -1.0E0
 !
          UPLO = ' '
 !
@@ -672,31 +660,23 @@
 !       =9                      random nonsymmetric
 !       =10                     random bidiagonal (log. distrib.)
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES > MAXTYP ) GO TO 100
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*AMNINV
+          CASE (3)
+           ANORM = RTUNFL*MAX( M, N )*ULPINV
+         END SELECT
 !
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*AMNINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*MAX( M, N )*ULPINV
-         GO TO 70
-!
-70       CONTINUE
-!
-         CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+         CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -743,38 +723,37 @@
 !
 !              Diagonal, random entries
 !
-            CALL SLATMR( MNMIN, MNMIN, 'S', ISEED, 'N', WORK, 6, ONE, &
-                         ONE, 'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( 2*MNMIN+1 ), 1, ONE, 'N', IWORK, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( MNMIN, MNMIN, 'S', ISEED, 'N', WORK, 6, 1.0E+0, &
+                         1.0E+0, 'T', 'N', WORK( MNMIN+1 ), 1, 1.0E+0, &
+                         WORK( 2*MNMIN+1 ), 1, 1.0E+0, 'N', IWORK, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random entries
 !
-            CALL SLATMR( MNMIN, MNMIN, 'S', ISEED, 'S', WORK, 6, ONE, &
-                         ONE, 'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( M+MNMIN+1 ), 1, ONE, 'N', IWORK, M, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( MNMIN, MNMIN, 'S', ISEED, 'S', WORK, 6, 1.0E+0, &
+                         1.0E+0, 'T', 'N', WORK( MNMIN+1 ), 1, 1.0E+0, &
+                         WORK( M+MNMIN+1 ), 1, 1.0E+0, 'N', IWORK, M, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              Nonsymmetric, random entries
 !
-            CALL SLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( M+MNMIN+1 ), 1, ONE, 'N', IWORK, M, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( MNMIN+1 ), 1, 1.0E+0, &
+                         WORK( M+MNMIN+1 ), 1, 1.0E+0, 'N', IWORK, M, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 10 ) THEN
 !
 !              Bidiagonal, random entries
 !
-            TEMP1 = -TWO*LOG( ULP )
+            TEMP1 = -2.0E+0*LOG( ULP )
             DO J = 1, MNMIN
                BD( J ) = EXP( TEMP1*SLARND( 2, ISEED ) )
-               IF( J < MNMIN ) &
-                  BE( J ) = EXP( TEMP1*SLARND( 2, ISEED ) )
+               IF( J < MNMIN ) BE( J ) = EXP( TEMP1*SLARND( 2, ISEED ) )
             ENDDO
 !
             IINFO = 0
@@ -794,15 +773,15 @@
 !
             IF( BIDIAG ) THEN
                CALL SLATMR( MNMIN, NRHS, 'S', ISEED, 'N', WORK, 6, &
-                            ONE, ONE, 'T', 'N', WORK( MNMIN+1 ), 1, &
-                            ONE, WORK( 2*MNMIN+1 ), 1, ONE, 'N', &
-                            IWORK, MNMIN, NRHS, ZERO, ONE, 'NO', Y, &
+                            1.0E+0, 1.0E+0, 'T', 'N', WORK( MNMIN+1 ), 1, &
+                            1.0E+0, WORK( 2*MNMIN+1 ), 1, 1.0E+0, 'N', &
+                            IWORK, MNMIN, NRHS, 0.0E+0, 1.0E+0, 'NO', Y, &
                             LDX, IWORK, IINFO )
             ELSE
-               CALL SLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, &
-                            ONE, 'T', 'N', WORK( M+1 ), 1, ONE, &
-                            WORK( 2*M+1 ), 1, ONE, 'N', IWORK, M, &
-                            NRHS, ZERO, ONE, 'NO', X, LDX, IWORK, &
+               CALL SLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0E+0, &
+                            1.0E+0, 'T', 'N', WORK( M+1 ), 1, 1.0E+0, &
+                            WORK( 2*M+1 ), 1, 1.0E+0, 'N', IWORK, M, &
+                            NRHS, 0.0E+0, 1.0E+0, 'NO', X, LDX, IWORK, &
                             IINFO )
             END IF
          END IF
@@ -832,8 +811,7 @@
 !              Check error code from SGEBRD.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'SGEBRD', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'SGEBRD', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
@@ -848,16 +826,14 @@
 !              Generate Q
 !
             MQ = M
-            IF( NRHS <= 0 ) &
-               MQ = MNMIN
+            IF( NRHS <= 0 ) MQ = MNMIN
             CALL SORGBR( 'Q', M, MQ, N, Q, LDQ, WORK, &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
 !
 !              Check error code from SORGBR.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'SORGBR(Q)', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'SORGBR(Q)', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
@@ -870,38 +846,33 @@
 !              Check error code from SORGBR.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'SORGBR(P)', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'SORGBR(P)', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
 !
 !              Apply Q' to an M by NRHS matrix X:  Y := Q' * X.
 !
-            CALL SGEMM( 'Transpose', 'No transpose', M, NRHS, M, ONE, &
-                        Q, LDQ, X, LDX, ZERO, Y, LDX )
+            CALL SGEMM( 'Transpose', 'No transpose', M, NRHS, M, 1.0E+0, &
+                        Q, LDQ, X, LDX, 0.0E+0, Y, LDX )
 !
 !              Test 1:  Check the decomposition A := Q * B * PT
 !                   2:  Check the orthogonality of Q
 !                   3:  Check the orthogonality of PT
 !
-            CALL SBDT01( M, N, 1, A, LDA, Q, LDQ, BD, BE, PT, LDPT, &
-                         WORK, RESULT( 1 ) )
-            CALL SORT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, &
-                         RESULT( 2 ) )
-            CALL SORT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, &
-                         RESULT( 3 ) )
+            CALL SBDT01( M, N, 1, A, LDA, Q, LDQ, BD, BE, PT, LDPT, WORK, RESULT( 1 ) )
+            CALL SORT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, RESULT( 2 ) )
+            CALL SORT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, RESULT( 3 ) )
          END IF
 !
 !           Use SBDSQR to form the SVD of the bidiagonal matrix B:
 !           B := U * S1 * VT, and compute Z = U' * Y.
 !
          CALL SCOPY( MNMIN, BD, 1, S1, 1 )
-         IF( MNMIN > 0 ) &
-            CALL SCOPY( MNMIN-1, BE, 1, WORK, 1 )
+         IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, WORK, 1 )
          CALL SLACPY( ' ', M, NRHS, Y, LDX, Z, LDX )
-         CALL SLASET( 'Full', MNMIN, MNMIN, ZERO, ONE, U, LDPT )
-         CALL SLASET( 'Full', MNMIN, MNMIN, ZERO, ONE, VT, LDPT )
+         CALL SLASET( 'Full', MNMIN, MNMIN, 0.0E+0, 1.0E+0, U, LDPT )
+         CALL SLASET( 'Full', MNMIN, MNMIN, 0.0E+0, 1.0E+0, VT, LDPT )
 !
          CALL SBDSQR( UPLO, MNMIN, MNMIN, MNMIN, NRHS, S1, WORK, VT, &
                       LDPT, U, LDPT, Z, LDX, WORK( MNMIN+1 ), IINFO )
@@ -909,8 +880,7 @@
 !           Check error code from SBDSQR.
 !
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUT, FMT = 9998 )'SBDSQR(vects)', IINFO, M, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUT, FMT = 9998 )'SBDSQR(vects)', IINFO, M, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -924,8 +894,7 @@
 !           bidiagonal matrix B;  U, VT, and Z should not be modified.
 !
          CALL SCOPY( MNMIN, BD, 1, S2, 1 )
-         IF( MNMIN > 0 ) &
-            CALL SCOPY( MNMIN-1, BE, 1, WORK, 1 )
+         IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, WORK, 1 )
 !
          CALL SBDSQR( UPLO, MNMIN, 0, 0, 0, S2, WORK, VT, LDPT, U, &
                       LDPT, Z, LDX, WORK( MNMIN+1 ), IINFO )
@@ -933,8 +902,7 @@
 !           Check error code from SBDSQR.
 !
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUT, FMT = 9998 )'SBDSQR(values)', IINFO, M, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUT, FMT = 9998 )'SBDSQR(values)', IINFO, M, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -949,37 +917,31 @@
 !                6:  Check the orthogonality of U
 !                7:  Check the orthogonality of VT
 !
-         CALL SBDT03( UPLO, MNMIN, 1, BD, BE, U, LDPT, S1, VT, LDPT, &
-                      WORK, RESULT( 4 ) )
-         CALL SBDT02( MNMIN, NRHS, Y, LDX, Z, LDX, U, LDPT, WORK, &
-                      RESULT( 5 ) )
-         CALL SORT01( 'Columns', MNMIN, MNMIN, U, LDPT, WORK, LWORK, &
-                      RESULT( 6 ) )
-         CALL SORT01( 'Rows', MNMIN, MNMIN, VT, LDPT, WORK, LWORK, &
-                      RESULT( 7 ) )
+         CALL SBDT03( UPLO, MNMIN, 1, BD, BE, U, LDPT, S1, VT, LDPT, WORK, RESULT( 4 ) )
+         CALL SBDT02( MNMIN, NRHS, Y, LDX, Z, LDX, U, LDPT, WORK, RESULT( 5 ) )
+         CALL SORT01( 'Columns', MNMIN, MNMIN, U, LDPT, WORK, LWORK, RESULT( 6 ) )
+         CALL SORT01( 'Rows', MNMIN, MNMIN, VT, LDPT, WORK, LWORK, RESULT( 7 ) )
 !
 !           Test 8:  Check that the singular values are sorted in
 !                    non-increasing order and are non-negative
 !
-         RESULT( 8 ) = ZERO
+         RESULT( 8 ) = 0.0E+0
          DO I = 1, MNMIN - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 8 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0E+0 ) &
                RESULT( 8 ) = ULPINV
             ENDDO
          IF( MNMIN >= 1 ) THEN
-            IF( S1( MNMIN ) < ZERO ) &
-               RESULT( 8 ) = ULPINV
+            IF(S1( MNMIN ) < 0.0E+0 ) RESULT( 8 ) = ULPINV
          END IF
 !
 !           Test 9:  Compare SBDSQR with and without singular vectors
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0E+0
 !
          DO J = 1, MNMIN
-            TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+            TEMP1 = ABS( S1( J )-S2( J ) ) / MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0E+0 ), &
                     ULP*MAX( ABS( S1( J ) ), ABS( S2( J ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
             ENDDO
@@ -989,13 +951,13 @@
 !           Test 10:  Sturm sequence test of singular values
 !                     Go up by factors of two until it succeeds
 !
-         TEMP1 = THRESH*( HALF-ULP )
+         TEMP1 = THRESH*( 0.5E+0-ULP )
 !
          DO J = 0, LOG2UI
 !               CALL SSVDCH( MNMIN, BD, BE, S1, TEMP1, IINFO )
             IF( IINFO == 0 ) &
                GO TO 140
-            TEMP1 = TEMP1*TWO
+            TEMP1 = TEMP1*2.0E+0
             ENDDO
 !
   140       CONTINUE
@@ -1033,8 +995,8 @@
          CALL SCOPY( MNMIN, BD, 1, S1, 1 )
          IF( MNMIN > 0 ) &
             CALL SCOPY( MNMIN-1, BE, 1, WORK, 1 )
-         CALL SLASET( 'Full', MNMIN, MNMIN, ZERO, ONE, U, LDPT )
-         CALL SLASET( 'Full', MNMIN, MNMIN, ZERO, ONE, VT, LDPT )
+         CALL SLASET( 'Full', MNMIN, MNMIN, 0.0E+0, 1.0E+0, U, LDPT )
+         CALL SLASET( 'Full', MNMIN, MNMIN, 0.0E+0, 1.0E+0, VT, LDPT )
 !
          CALL SBDSDC( UPLO, 'I', MNMIN, S1, WORK, U, LDPT, VT, LDPT, &
                       DUM, IDUM, WORK( MNMIN+1 ), IWORK, IINFO )
@@ -1091,28 +1053,26 @@
 !           Test 18:  Check that the singular values are sorted in
 !                     non-increasing order and are non-negative
 !
-         RESULT( 18 ) = ZERO
+         RESULT( 18 ) = 0.0E+0
          DO I = 1, MNMIN - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 18 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0E+0 ) &
                RESULT( 18 ) = ULPINV
             ENDDO
          IF( MNMIN >= 1 ) THEN
-            IF( S1( MNMIN ) < ZERO ) &
-               RESULT( 18 ) = ULPINV
+            IF( S1( MNMIN ) < 0.0E+0 ) RESULT( 18 ) = ULPINV
          END IF
 !
 !           Test 19:  Compare SBDSQR with and without singular vectors
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0E+0
 !
          DO J = 1, MNMIN
-            TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+            TEMP1 = ABS( S1( J )-S2( J ) ) / MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0E+0 ), &
                     ULP*MAX( ABS( S1( 1 ) ), ABS( S2( 1 ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
-            ENDDO
+         ENDDO
 !
          RESULT( 19 ) = TEMP2
 !
@@ -1124,7 +1084,7 @@
 !              =================================
 !              Matrix types temporarily disabled
 !              =================================
-            RESULT( 20:34 ) = ZERO
+            RESULT( 20:34 ) = 0.0E+0
             GO TO 270
          END IF
 !
@@ -1136,11 +1096,10 @@
          MNMIN2 = MAX( 1,MNMIN*2 )
 !
          CALL SCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
-         IF( MNMIN > 0 ) &
-            CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
+         IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
          CALL SBDSVDX( UPLO, 'V', 'A', MNMIN, WORK( IWBD ), &
-                       WORK( IWBE ), ZERO, ZERO, 0, 0, NS1, S1, &
+                       WORK( IWBE ), 0.0E+0, 0.0E+0, 0, 0, NS1, S1, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO)
 !
@@ -1164,7 +1123,7 @@
             J = J + MNMIN
             CALL SCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
             J = J + MNMIN
-            ENDDO
+         ENDDO
 !
 !           Use SBDSVDX to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
@@ -1173,16 +1132,15 @@
 !              =================================
 !              Matrix types temporarily disabled
 !              =================================
-            RESULT( 24 ) = ZERO
+            RESULT( 24 ) = 0.0E+0
             GO TO 270
          END IF
 !
          CALL SCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
-         IF( MNMIN > 0 ) &
-            CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
+         IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
          CALL SBDSVDX( UPLO, 'N', 'A', MNMIN, WORK( IWBD ), &
-                       WORK( IWBE ), ZERO, ZERO, 0, 0, NS2, S2, &
+                       WORK( IWBE ), 0.0E+0, 0.0E+0, 0, 0, NS2, S2, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
 !
@@ -1220,25 +1178,21 @@
                       WORK( IWBS+MNMIN ), LWORK-MNMIN, &
                       RESULT( 22) )
 !
-         RESULT( 23 ) = ZERO
+         RESULT( 23 ) = 0.0E+0
          DO I = 1, MNMIN - 1
-            IF( S1( I ) < S1( I+1 ) ) &
-               RESULT( 23 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
-               RESULT( 23 ) = ULPINV
-            ENDDO
+            IF( S1( I ) < S1( I+1 ) ) RESULT( 23 ) = ULPINV
+            IF( S1( I ) < 0.0E+0 ) RESULT( 23 ) = ULPINV
+         ENDDO
          IF( MNMIN >= 1 ) THEN
-            IF( S1( MNMIN ) < ZERO ) &
-               RESULT( 23 ) = ULPINV
+            IF( S1( MNMIN ) < 0.0E+0 ) RESULT( 23 ) = ULPINV
          END IF
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0E+0
          DO J = 1, MNMIN
-            TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+            TEMP1 = ABS( S1( J )-S2( J ) ) / MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0E+0 ), &
                     ULP*MAX( ABS( S1( 1 ) ), ABS( S2( 1 ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
-            ENDDO
+         ENDDO
          RESULT( 24 ) = TEMP2
          ANORM = S1( 1 )
 !
@@ -1246,9 +1200,7 @@
 !           IU, and ask for the IL-th through IU-th singular values
 !           and corresponding vectors.
 !
-         DO I = 1, 4
-            ISEED2( I ) = ISEED( I )
-            ENDDO
+         ISEED2(1:4) = ISEED(1:4)
          IF( MNMIN <= 1 ) THEN
             IL = 1
             IU = MNMIN
@@ -1267,7 +1219,7 @@
             CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
          CALL SBDSVDX( UPLO, 'V', 'I', MNMIN, WORK( IWBD ), &
-                       WORK( IWBE ), ZERO, ZERO, IL, IU, NS1, S1, &
+                       WORK( IWBE ), 0.0E+0, 0.0E+0, IL, IU, NS1, S1, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO)
 !
@@ -1291,17 +1243,16 @@
             J = J + MNMIN
             CALL SCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
             J = J + MNMIN
-            ENDDO
+         ENDDO
 !
 !           Use SBDSVDX to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
 !
          CALL SCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
-         IF( MNMIN > 0 ) &
-            CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
+         IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
          CALL SBDSVDX( UPLO, 'N', 'I', MNMIN, WORK( IWBD ), &
-                       WORK( IWBE ), ZERO, ZERO, IL, IU, NS2, S2, &
+                       WORK( IWBE ), 0.0E+0, 0.0E+0, IL, IU, NS2, S2, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
 !
@@ -1326,32 +1277,28 @@
 !                     non-increasing order and are non-negative
 !                29:  Compare SBDSVDX with and without singular vectors
 !
-         CALL SBDT04( UPLO, MNMIN, BD, BE, S1, NS1, U, &
-                      LDPT, VT, LDPT, WORK( IWBS+MNMIN ), &
+         CALL SBDT04( UPLO, MNMIN, BD, BE, S1, NS1, U, LDPT, VT, LDPT, WORK( IWBS+MNMIN ), &
                       RESULT( 25 ) )
-         CALL SORT01( 'Columns', MNMIN, NS1, U, LDPT, &
-                      WORK( IWBS+MNMIN ), LWORK-MNMIN, &
+         CALL SORT01( 'Columns', MNMIN, NS1, U, LDPT, WORK( IWBS+MNMIN ), LWORK-MNMIN, &
                       RESULT( 26 ) )
-         CALL SORT01( 'Rows', NS1, MNMIN, VT, LDPT, &
-                      WORK( IWBS+MNMIN ), LWORK-MNMIN, &
+         CALL SORT01( 'Rows', NS1, MNMIN, VT, LDPT,  WORK( IWBS+MNMIN ), LWORK-MNMIN, &
                       RESULT( 27 ) )
 !
-         RESULT( 28 ) = ZERO
+         RESULT( 28 ) = 0.0E+0
          DO I = 1, NS1 - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 28 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0E+0 ) &
                RESULT( 28 ) = ULPINV
             ENDDO
          IF( NS1 >= 1 ) THEN
-            IF( S1( NS1 ) < ZERO ) &
-               RESULT( 28 ) = ULPINV
+            IF( S1( NS1 ) < 0.0E+0 ) RESULT( 28 ) = ULPINV
          END IF
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0E+0
          DO J = 1, NS1
             TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+                    MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0E+0 ), &
                     ULP*MAX( ABS( S1( 1 ) ), ABS( S2( 1 ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
             ENDDO
@@ -1365,25 +1312,25 @@
 !
          IF( MNMIN > 0 ) THEN
             IF( IL /= 1 ) THEN
-               VU = S1( IL ) + MAX( HALF*ABS( S1( IL )-S1( IL-1 ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VU = S1( IL ) + MAX( 0.5E+0*ABS( S1( IL )-S1( IL-1 ) ), &
+                    ULP*ANORM, 2.0E+0*RTUNFL )
             ELSE
-               VU = S1( 1 ) + MAX( HALF*ABS( S1( MNMIN )-S1( 1 ) ), &
-                    ULP*ANORM, TWO*RTUNFL )
+               VU = S1( 1 ) + MAX( 0.5E+0*ABS( S1( MNMIN )-S1( 1 ) ), &
+                    ULP*ANORM, 2.0E+0*RTUNFL )
             END IF
             IF( IU /= NS1 ) THEN
-               VL = S1( IU ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                    HALF*ABS( S1( IU+1 )-S1( IU ) ) )
+               VL = S1( IU ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                    0.5E+0*ABS( S1( IU+1 )-S1( IU ) ) )
             ELSE
-               VL = S1( NS1 ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                    HALF*ABS( S1( MNMIN )-S1( 1 ) ) )
+               VL = S1( NS1 ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                    0.5E+0*ABS( S1( MNMIN )-S1( 1 ) ) )
             END IF
-            VL = MAX( VL,ZERO )
-            VU = MAX( VU,ZERO )
-            IF( VL >= VU ) VU = MAX( VU*2, VU+VL+HALF )
+            VL = MAX( VL,0.0E+0 )
+            VU = MAX( VU,0.0E+0 )
+            IF( VL >= VU ) VU = MAX( VU*2, VU+VL+0.5E+0 )
          ELSE
-            VL = ZERO
-            VU = ONE
+            VL = 0.0E+0
+            VU = 1.0E+0
          END IF
 !
          CALL SCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
@@ -1398,8 +1345,7 @@
 !           Check error code from SBDSVDX.
 !
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUT, FMT = 9998 )'SBDSVDX(vects,V)', IINFO, &
-               M, N, JTYPE, IOLDSD
+            WRITE( NOUT, FMT = 9998 )'SBDSVDX(vects,V)', IINFO, M, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -1415,7 +1361,7 @@
             J = J + MNMIN
             CALL SCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
             J = J + MNMIN
-            ENDDO
+         ENDDO
 !
 !           Use SBDSVDX to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
@@ -1460,22 +1406,19 @@
                       WORK( IWBS+MNMIN ), LWORK-MNMIN, &
                       RESULT( 32 ) )
 !
-         RESULT( 33 ) = ZERO
+         RESULT( 33 ) = 0.0E+0
          DO I = 1, NS1 - 1
-            IF( S1( I ) < S1( I+1 ) ) &
-               RESULT( 28 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
-               RESULT( 28 ) = ULPINV
+            IF( S1( I ) < S1( I+1 ) ) RESULT( 28 ) = ULPINV
+            IF( S1( I ) < 0.0E+0 ) RESULT( 28 ) = ULPINV
             ENDDO
          IF( NS1 >= 1 ) THEN
-            IF( S1( NS1 ) < ZERO ) &
-               RESULT( 28 ) = ULPINV
+            IF( S1( NS1 ) < 0.0E+0 ) RESULT( 28 ) = ULPINV
          END IF
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0E+0
          DO J = 1, NS1
             TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+                    MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0E+0 ), &
                     ULP*MAX( ABS( S1( 1 ) ), ABS( S2( 1 ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
             ENDDO
@@ -1487,20 +1430,18 @@
 !
          DO J = 1, 34
             IF( RESULT( J ) >= THRESH ) THEN
-               IF( NFAIL == 0 ) &
-                  CALL SLAHD2( NOUT, PATH )
-               WRITE( NOUT, FMT = 9999 )M, N, JTYPE, IOLDSD, J, &
-                  RESULT( J )
+               IF( NFAIL == 0 ) CALL SLAHD2( NOUT, PATH )
+               WRITE( NOUT, FMT = 9999 )M, N, JTYPE, IOLDSD, J, RESULT( J )
                NFAIL = NFAIL + 1
             END IF
-            ENDDO
+         ENDDO
          IF( .NOT.BIDIAG ) THEN
             NTEST = NTEST + 34
          ELSE
             NTEST = NTEST + 30
          END IF
 !
-  290    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !

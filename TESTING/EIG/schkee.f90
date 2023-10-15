@@ -1102,8 +1102,9 @@
    REAL, DIMENSION(:,:), ALLOCATABLE :: A, B, C
 !     ..
 !     .. External Functions ..
+   LOGICAL            LSAMEN
    REAL               SECOND, SLAMCH
-   EXTERNAL           SECOND, SLAMCH
+   EXTERNAL           LSAMEN, SECOND, SLAMCH
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           ALAREQ, SCHKBB, SCHKBD, SCHKBK, SCHKBL, SCHKEC, &
@@ -1160,7 +1161,7 @@
 !
 !     Return to here to read multiple sets of data
 !
-10 CONTINUE
+   DO
 !
 !     Read the first line and set the 3-character test path
 !
@@ -1193,9 +1194,8 @@
 !
 !     Report values of parameters.
 !
-   IF( PATH == '   ' ) THEN
-      GO TO 10
-   ELSE IF( NEP ) THEN
+   IF( PATH == '   ' ) CYCLE
+   IF( NEP ) THEN
       WRITE( NOUT, FMT = 9987 )
    ELSE IF( SEP ) THEN
       WRITE( NOUT, FMT = 9986 )
@@ -1244,7 +1244,7 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKBL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( SBK ) THEN
 !
 !        SGEBAK:  Back transformation
@@ -1256,7 +1256,7 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKBK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( SGL ) THEN
 !
 !        SGGBAL:  Balancing
@@ -1268,7 +1268,7 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKGL : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( SGK ) THEN
 !
 !        SGGBAK:  Back transformation
@@ -1280,7 +1280,7 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKGK : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE IF( PATH == 'SEC' ) THEN
 !
 !        SEC:  Eigencondition estimation
@@ -1300,10 +1300,10 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKEC : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      GO TO 10
+      CYCLE
    ELSE
       WRITE( NOUT, FMT = 9992 )PATH
-      GO TO 10
+      CYCLE
    END IF
    CALL ILAVER( VERS_MAJOR, VERS_MINOR, VERS_PATCH )
    WRITE( NOUT, FMT = 9972 ) VERS_MAJOR, VERS_MINOR, VERS_PATCH
@@ -1311,7 +1311,7 @@
 !
 !     Read the number of values of M, P, and N.
 !
-   READ( NIN,*)NN
+   READ(NIN,*)NN
    IF( NN < 0 ) THEN
       WRITE( NOUT, FMT = 9989 )'   NN ', NN, 1
       NN = 0
@@ -1325,7 +1325,7 @@
 !     Read the values of M
 !
    IF( .NOT.( SGX .OR. SXV ) ) THEN
-      READ( NIN,*)( MVAL( I ), I = 1, NN )
+      READ(NIN,*) MVAL(1:NN)
       IF( SVD ) THEN
          VNAME = '    M '
       ELSE
@@ -1340,13 +1340,13 @@
             FATAL = .TRUE.
          END IF
       ENDDO
-      WRITE( NOUT, FMT = 9983 )'M:    ', ( MVAL( I ), I = 1, NN )
+      WRITE( NOUT, FMT = 9983 )'M:    ', MVAL(1:NN)
    END IF
 !
 !     Read the values of P
 !
    IF( GLM .OR. GQR .OR. GSV .OR. CSD .OR. LSE ) THEN
-      READ( NIN,*)( PVAL( I ), I = 1, NN )
+      READ(NIN,*) PVAL(1:NN)
       DO I = 1, NN
          IF( PVAL( I ) < 0 ) THEN
             WRITE( NOUT, FMT = 9989 )' P  ', PVAL( I ), 0
@@ -1455,8 +1455,7 @@
 !        For the nonsymmetric generalized driver routines, only one set
 !        of parameters is allowed.
 !
-      READ( NIN,*)NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), &
-         NSVAL( 1 ), MXBVAL( 1 )
+      READ( NIN,*)NBVAL( 1 ), NBMIN( 1 ), NXVAL( 1 ), NSVAL( 1 ), MXBVAL( 1 )
       IF( NBVAL( 1 ) < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( 1 ), 1
          FATAL = .TRUE.
@@ -1483,14 +1482,13 @@
       WRITE( NOUT, FMT = 9983 )'NX:   ', NXVAL( 1 )
       WRITE( NOUT, FMT = 9983 )'NS:   ', NSVAL( 1 )
       WRITE( NOUT, FMT = 9983 )'MAXB: ', MXBVAL( 1 )
-!
    ELSE IF( .NOT.SSB .AND. .NOT.GLM .AND. .NOT.GQR .AND. .NOT. &
             GSV .AND. .NOT.CSD .AND. .NOT.LSE ) THEN
 !
 !        For the other paths, the number of parameters can be varied
 !        from the input file.  Read the number of parameter values.
 !
-      READ( NIN,*)NPARMS
+      READ(NIN,*) NPARMS
       IF( NPARMS < 1 ) THEN
          WRITE( NOUT, FMT = 9989 )'NPARMS', NPARMS, 1
          NPARMS = 0
@@ -1504,7 +1502,7 @@
 !        Read the values of NB
 !
       IF( .NOT.SBB ) THEN
-         READ( NIN,*)( NBVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NBVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NB ', NBVAL( I ), 0
@@ -1514,14 +1512,13 @@
                FATAL = .TRUE.
             END IF
          ENDDO
-         WRITE( NOUT, FMT = 9983 )'NB:   ', &
-            ( NBVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NB:   ', NBVAL(1:NPARMS)
       END IF
 !
 !        Read the values of NBMIN
 !
       IF( NEP .OR. SEP .OR. SVD .OR. SGG ) THEN
-         READ( NIN,*)( NBMIN( I ), I = 1, NPARMS )
+         READ(NIN,*) NBMIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBMIN ', NBMIN( I ), 0
@@ -1531,18 +1528,15 @@
                FATAL = .TRUE.
             END IF
          ENDDO
-         WRITE( NOUT, FMT = 9983 )'NBMIN:', &
-            ( NBMIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NBMIN:', NBMIN(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NBMIN( I ) = 1
-         ENDDO
+         NBMIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values of NX
 !
       IF( NEP .OR. SEP .OR. SVD ) THEN
-         READ( NIN,*)( NXVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NXVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NXVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NX ', NXVAL( I ), 0
@@ -1552,19 +1546,16 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NX:   ', &
-            ( NXVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NX:   ', NXVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NXVAL( I ) = 1
-            ENDDO
+         NXVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values of NSHIFT (if SGG) or NRHS (if SVD
 !        or SBB).
 !
       IF( SVD .OR. SBB .OR. SGG ) THEN
-         READ( NIN,*)( NSVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) NSVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NSVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'   NS ', NSVAL( I ), 0
@@ -1574,18 +1565,15 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NS:   ', &
-            ( NSVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NS:   ', NSVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NSVAL( I ) = 1
-            ENDDO
+         NSVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for MAXB.
 !
       IF( SGG ) THEN
-         READ( NIN,*)( MXBVAL( I ), I = 1, NPARMS )
+         READ(NIN,*) MXBVAL(1:NPARMS)
          DO I = 1, NPARMS
             IF( MXBVAL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' MAXB ', MXBVAL( I ), 0
@@ -1595,108 +1583,90 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'MAXB: ', &
-            ( MXBVAL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'MAXB: ', MXBVAL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            MXBVAL( I ) = 1
-            ENDDO
+         MXBVAL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INMIN.
 !
       IF( NEP ) THEN
-         READ( NIN,*)( INMIN( I ), I = 1, NPARMS )
+         READ(NIN,*) INMIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( INMIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INMIN ', INMIN( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INMIN: ', &
-            ( INMIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INMIN: ', INMIN(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INMIN( I ) = 1
-            ENDDO
+         INMIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INWIN.
 !
       IF( NEP ) THEN
-         READ( NIN,*)( INWIN( I ), I = 1, NPARMS )
+         READ(NIN,*) INWIN(1:NPARMS)
          DO I = 1, NPARMS
             IF( INWIN( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INWIN ', INWIN( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INWIN: ', &
-            ( INWIN( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INWIN: ', INWIN(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INWIN( I ) = 1
-            ENDDO
+         INWIN(1:NPARMS) = 1
       END IF
 !
 !        Read the values for INIBL.
 !
       IF( NEP ) THEN
-         READ( NIN,*)( INIBL( I ), I = 1, NPARMS )
+         READ(NIN,*) INIBL(1:NPARMS)
          DO I = 1, NPARMS
             IF( INIBL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' INIBL ', INIBL( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'INIBL: ', &
-            ( INIBL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'INIBL: ', INIBL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            INIBL( I ) = 1
-            ENDDO
+         INIBL(1:NPARMS) = 1
       END IF
 !
 !        Read the values for ISHFTS.
 !
       IF( NEP ) THEN
-         READ( NIN,*)( ISHFTS( I ), I = 1, NPARMS )
+         READ(NIN,*) ISHFTS(1:NPARMS)
          DO I = 1, NPARMS
             IF( ISHFTS( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' ISHFTS ', ISHFTS( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', &
-            ( ISHFTS( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'ISHFTS: ', ISHFTS(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            ISHFTS( I ) = 1
-            ENDDO
+         ISHFTS(1:NPARMS) = 1
       END IF
 !
 !        Read the values for IACC22.
 !
       IF( NEP .OR. SGG ) THEN
-         READ( NIN,*)( IACC22( I ), I = 1, NPARMS )
+         READ(NIN,*) IACC22(1:NPARMS)
          DO I = 1, NPARMS
             IF( IACC22( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )' IACC22 ', IACC22( I ), 0
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'IACC22: ', &
-            ( IACC22( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'IACC22: ', IACC22(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            IACC22( I ) = 1
-            ENDDO
+         IACC22(1:NPARMS) = 1
       END IF
 !
 !        Read the values for NBCOL.
 !
       IF( SGG ) THEN
-         READ( NIN,*)( NBCOL( I ), I = 1, NPARMS )
+         READ(NIN,*) NBCOL(1:NPARMS)
          DO I = 1, NPARMS
             IF( NBCOL( I ) < 0 ) THEN
                WRITE( NOUT, FMT = 9989 )'NBCOL ', NBCOL( I ), 0
@@ -1706,12 +1676,9 @@
                FATAL = .TRUE.
             END IF
             ENDDO
-         WRITE( NOUT, FMT = 9983 )'NBCOL:', &
-            ( NBCOL( I ), I = 1, NPARMS )
+         WRITE( NOUT, FMT = 9983 )'NBCOL:', NBCOL(1:NPARMS)
       ELSE
-         DO I = 1, NPARMS
-            NBCOL( I ) = 1
-            ENDDO
+         NBCOL(1:NPARMS) = 1
       END IF
    END IF
 !
@@ -1727,30 +1694,30 @@
 !
 !     Read the threshold value for the test ratios.
 !
-   READ( NIN,*)THRESH
+   READ(NIN,*) THRESH
    WRITE( NOUT, FMT = 9982 )THRESH
    IF( SEP .OR. SVD .OR. SGG ) THEN
 !
 !        Read the flag that indicates whether to test LAPACK routines.
 !
-      READ( NIN,*)TSTCHK
+      READ(NIN,*) TSTCHK
 !
 !        Read the flag that indicates whether to test driver routines.
 !
-      READ( NIN,*)TSTDRV
+      READ(NIN,*) TSTDRV
    END IF
 !
 !     Read the flag that indicates whether to test the error exits.
 !
-   READ( NIN,*)TSTERR
+   READ(NIN,*) TSTERR
 !
 !     Read the code describing how to set the random number seed.
 !
-   READ( NIN,*)NEWSD
+   READ(NIN,*) NEWSD
 !
 !     If NEWSD = 2, read another line with 4 integers for the seed.
 !
-   IF( NEWSD == 2 ) READ( NIN,*) IOLDSD(1:4)
+   IF( NEWSD == 2 ) READ(NIN,*) IOLDSD(1:4)
 !
    ISEED(1:4) = IOLDSD(1:4)
 !
@@ -1819,19 +1786,13 @@
       END IF
 !
    ELSE
-      IF( SXV ) &
-         C3 = 'SXV'
-      IF( SGX ) &
-         C3 = 'SGX'
+      IF( SXV ) C3 = 'SXV'
+      IF( SGX ) C3 = 'SGX'
    END IF
 !
 !     Reset the random number seed.
 !
-   IF( NEWSD == 0 ) THEN
-      DO K = 1, 4
-         ISEED( K ) = IOLDSD( K )
-         ENDDO
-   END IF
+   IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
 !
    IF( C3 == 'SHS' .OR. C3 == 'NEP' ) THEN
 !
@@ -1868,11 +1829,7 @@
          CALL XLAENV(15, ISHFTS( I ) )
          CALL XLAENV(16, IACC22( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9961 )C3, NBVAL( I ), NBMIN( I ), &
             NXVAL( I ), MAX( 11, INMIN(I)), &
             INWIN( I ), INIBL( I ), ISHFTS( I ), IACC22( I )
@@ -1890,8 +1847,7 @@
          write(10,'(A,F16.10,A)') 'Total time : SCHKHS : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SCHKHS', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKHS', INFO
          ENDDO
 !
    ELSE IF( C3 == 'SST' .OR. C3 == 'SEP' .OR. C3 == 'SE2' ) THEN
@@ -1925,15 +1881,10 @@
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I )
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
-            IF( C3 == 'SE2' ) THEN
+            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL SCHKST2STG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, &
                          NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), D( 1, 1 ), &
@@ -1962,11 +1913,10 @@
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
             ENDIF
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'SCHKST', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKST', INFO
          END IF
          IF( TSTDRV ) THEN
-            IF( C3 == 'SE2' ) THEN
+            IF( LSAMEN( 3, C3, 'SE2' ) ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL SDRVST2STG( NN, NVAL, 18, DOTYPE, ISEED, THRESH, &
                          NOUT, A( 1, 1 ), NMAX, D( 1, 3 ), D( 1, 4 ), &
@@ -1997,7 +1947,7 @@
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'SSG' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SSG' ) ) THEN
 !
 !        ----------------------------------------------
 !        SSG:  Symmetric Generalized Eigenvalue Problem
@@ -2016,13 +1966,8 @@
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I )
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9997 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I )
          IF( TSTCHK ) THEN
 !               CALL SDRVSG( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 !     $                      NOUT, A( 1, 1 ), NMAX, A( 1, 2 ), NMAX,
@@ -2041,12 +1986,11 @@
             write(10,'(A,F16.10,A)') 'Total time : SDRVSG2STG : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'SDRVSG', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRVSG', INFO
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'SBD' .OR. C3 == 'SVD' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SBD' ) .OR. LSAMEN( 3, C3, 'SVD' ) ) THEN
 !
 !        ----------------------------------
 !        SVD:  Singular Value Decomposition
@@ -2065,23 +2009,16 @@
 !
 !        Test the error exits
 !
-      IF( TSTERR .AND. TSTCHK ) &
-         CALL SERRBD( 'SBD', NOUT )
-      IF( TSTERR .AND. TSTDRV ) &
-         CALL SERRED( 'SBD', NOUT )
+      IF( TSTERR .AND. TSTCHK ) CALL SERRBD( 'SBD', NOUT )
+      IF( TSTERR .AND. TSTDRV ) CALL SERRED( 'SBD', NOUT )
 !
       DO I = 1, NPARMS
          NRHS = NSVAL( I )
          CALL XLAENV( 1, NBVAL( I ) )
          CALL XLAENV( 2, NBMIN( I ) )
          CALL XLAENV( 3, NXVAL( I ) )
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
-         WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ), &
-            NXVAL( I ), NRHS
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
+         WRITE( NOUT, FMT = 9995 )C3, NBVAL( I ), NBMIN( I ), NXVAL( I ), NRHS
          IF( TSTCHK ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
             CALL SCHKBD( NN, MVAL, NVAL, MAXTYP, DOTYPE, NRHS, ISEED, &
@@ -2095,8 +2032,7 @@
             write(10,'(A,F16.10,A)') 'Total time : SCHKBD : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'SCHKBD', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKBD', INFO
          END IF
          IF( TSTDRV ) THEN
             call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -2113,7 +2049,7 @@
     ENDIF
          ENDDO
 !
-   ELSE IF( C3 == 'SEV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SEV' ) ) THEN
 !
 !        --------------------------------------------
 !        SEV:  Nonsymmetric Eigenvalue Problem Driver
@@ -2125,8 +2061,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRED( C3, NOUT )
+         IF( TSTERR ) CALL SERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRVEV( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2139,13 +2074,12 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRVEV : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SGEEV', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SGEEV', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'SES' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SES' ) ) THEN
 !
 !        --------------------------------------------
 !        SES:  Nonsymmetric Eigenvalue Problem Driver
@@ -2157,8 +2091,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRED( C3, NOUT )
+         IF( TSTERR ) CALL SERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRVES( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2171,11 +2104,10 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRVES : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SGEES', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SGEES', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( C3 == 'SVX' ) THEN
 !
@@ -2189,8 +2121,7 @@
       IF( NTYPES < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRED( C3, NOUT )
+         IF( TSTERR ) CALL SERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRVVX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN, &
@@ -2205,13 +2136,12 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRVVX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SGEEVX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SGEEVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'SSX' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SSX' ) ) THEN
 !
 !        ---------------------------------------------------
 !        SSX:  Nonsymmetric Eigenvalue Problem Expert Driver
@@ -2223,8 +2153,7 @@
       IF( NTYPES < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRED( C3, NOUT )
+         IF( TSTERR ) CALL SERRED( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRVSX( NN, NVAL, NTYPES, DOTYPE, ISEED, THRESH, NIN, &
@@ -2238,13 +2167,12 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRVSX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SGEESX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SGEESX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'SGG' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SGG' ) ) THEN
 !
 !        -------------------------------------------------
 !        SGG:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2261,8 +2189,7 @@
       NTYPES = MIN( MAXTYP, NTYPES )
       CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
       CALL XLAENV(1,1)
-      IF( TSTCHK .AND. TSTERR ) &
-         CALL SERRGG( C3, NOUT )
+      IF( TSTCHK .AND. TSTERR ) CALL SERRGG( C3, NOUT )
       DO I = 1, NPARMS
          CALL XLAENV( 1, NBVAL( I ) )
          CALL XLAENV( 2, NBMIN( I ) )
@@ -2271,11 +2198,7 @@
          CALL XLAENV( 16, IACC22( I ) )
          CALL XLAENV( 5, NBCOL( I ) )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9996 )C3, NBVAL( I ), NBMIN( I ), &
             NSVAL( I ), MXBVAL( I ), IACC22( I ), NBCOL( I )
          TSTDIF = .FALSE.
@@ -2296,12 +2219,11 @@
             write(10,'(A,F16.10,A)') 'Total time : SCHKGG : ', &
                   real(S2-S1)/real(nb_periods_sec), ' s'
             close(10)
-            IF( INFO /= 0 ) &
-               WRITE( NOUT, FMT = 9980 )'SCHKGG', INFO
+            IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKGG', INFO
          END IF
          ENDDO
 !
-   ELSE IF( C3 == 'SGS' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SGS' ) ) THEN
 !
 !        -------------------------------------------------
 !        SGS:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2313,8 +2235,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRGG( C3, NOUT )
+         IF( TSTERR ) CALL SERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRGES( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2327,9 +2248,7 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRGES : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-!
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGES', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGES', INFO
 !
 !     Blocked version
 !
@@ -2345,12 +2264,10 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRGES3 : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-!
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGES3', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGES3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( SGX ) THEN
 !
@@ -2364,8 +2281,7 @@
       IF( NN < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRGG( C3, NOUT )
+         IF( TSTERR ) CALL SERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          CALL XLAENV( 5, 2 )
          call system_clock(count_rate=nb_periods_sec,count=S1)
@@ -2379,13 +2295,12 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRGSX : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGSX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGSX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'SGV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SGV' ) ) THEN
 !
 !        -------------------------------------------------
 !        SGV:  Generalized Nonsymmetric Eigenvalue Problem
@@ -2397,8 +2312,7 @@
       IF( NTYPES <= 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRGG( C3, NOUT )
+         IF( TSTERR ) CALL SERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRGEV( NN, NVAL, MAXTYP, DOTYPE, ISEED, THRESH, NOUT, &
@@ -2412,8 +2326,7 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRGEV : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGEV', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGEV', INFO
 !
 ! Blocked version
 !
@@ -2429,11 +2342,10 @@
          write(10,'(A,F16.10,A)') 'Total time : SDRGEV3 : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGEV3', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGEV3', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
    ELSE IF( SXV ) THEN
 !
@@ -2447,8 +2359,7 @@
       IF( NN < 0 ) THEN
          WRITE( NOUT, FMT = 9990 )C3
       ELSE
-         IF( TSTERR ) &
-            CALL SERRGG( C3, NOUT )
+         IF( TSTERR ) CALL SERRGG( C3, NOUT )
          CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SDRGVX( NN, THRESH, NIN, NOUT, A( 1, 1 ), NMAX, &
@@ -2464,13 +2375,12 @@
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
 !
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SDRGVX', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SDRGVX', INFO
       END IF
       WRITE( NOUT, FMT = 9973 )
-      GO TO 10
+      CYCLE
 !
-   ELSE IF( C3 == 'SSB' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SSB' ) ) THEN
 !
 !        ------------------------------
 !        SSB:  Symmetric Band Reduction
@@ -2479,8 +2389,7 @@
       MAXTYP = 15
       NTYPES = MIN( MAXTYP, NTYPES )
       CALL ALAREQ( C3, NTYPES, DOTYPE, MAXTYP, NIN, NOUT )
-      IF( TSTERR ) &
-         CALL SERRST( 'SSB', NOUT )
+      IF( TSTERR ) CALL SERRST( 'SSB', NOUT )
 !         CALL SCHKSB( NN, NVAL, NK, KVAL, MAXTYP, DOTYPE, ISEED, THRESH,
 !     $                NOUT, A( 1, 1 ), NMAX, D( 1, 1 ), D( 1, 2 ),
 !     $                A( 1, 2 ), NMAX, WORK, LWORK, RESULT, INFO )
@@ -2494,10 +2403,9 @@
       write(10,'(A,F16.10,A)') 'Total time : SCHKSB2STG : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCHKSB', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKSB', INFO
 !
-   ELSE IF( C3 == 'SBB' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'SBB' ) ) THEN
 !
 !        ------------------------------
 !        SBB:  General Band Reduction
@@ -2509,11 +2417,7 @@
       DO I = 1, NPARMS
          NRHS = NSVAL( I )
 !
-         IF( NEWSD == 0 ) THEN
-            DO K = 1, 4
-               ISEED( K ) = IOLDSD( K )
-               ENDDO
-         END IF
+         IF( NEWSD == 0 ) ISEED(1:4) = IOLDSD(1:4)
          WRITE( NOUT, FMT = 9966 )C3, NRHS
          call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL SCHKBB( NN, MVAL, NVAL, NK, KVAL, MAXTYP, DOTYPE, NRHS, &
@@ -2526,19 +2430,17 @@
          write(10,'(A,F16.10,A)') 'Total time : SCHKBB : ', &
                real(S2-S1)/real(nb_periods_sec), ' s'
          close(10)
-         IF( INFO /= 0 ) &
-            WRITE( NOUT, FMT = 9980 )'SCHKBB', INFO
+         IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCHKBB', INFO
          ENDDO
 !
-   ELSE IF( C3 == 'GLM' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GLM' ) ) THEN
 !
 !        -----------------------------------------
 !        GLM:  Generalized Linear Regression Model
 !        -----------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL SERRGG( 'GLM', NOUT )
+      IF( TSTERR ) CALL SERRGG( 'GLM', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL SCKGLM( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X, &
@@ -2548,18 +2450,16 @@
       write(10,'(A,F16.10,A)') 'Total time : SCKGLM : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCKGLM', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCKGLM', INFO
 !
-   ELSE IF( C3 == 'GQR' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GQR' ) ) THEN
 !
 !        ------------------------------------------
 !        GQR:  Generalized QR and RQ factorizations
 !        ------------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL SERRGG( 'GQR', NOUT )
+      IF( TSTERR ) CALL SERRGG( 'GQR', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL SCKGQR( NN, MVAL, NN, PVAL, NN, NVAL, NTYPES, ISEED, &
                    THRESH, NMAX, A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), &
@@ -2571,18 +2471,16 @@
       write(10,'(A,F16.10,A)') 'Total time : SCKGQR : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCKGQR', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCKGQR', INFO
 !
-   ELSE IF( C3 == 'GSV' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'GSV' ) ) THEN
 !
 !        ----------------------------------------------
 !        GSV:  Generalized Singular Value Decomposition
 !        ----------------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL SERRGG( 'GSV', NOUT )
+      IF( TSTERR ) CALL SERRGG( 'GSV', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL SCKGSV( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), &
@@ -2594,18 +2492,16 @@
       write(10,'(A,F16.10,A)') 'Total time : SCKGSV : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCKGSV', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCKGSV', INFO
 !
-   ELSE IF( C3 == 'CSD' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'CSD' ) ) THEN
 !
 !        ----------------------------------------------
 !        CSD:  CS Decomposition
 !        ----------------------------------------------
 !
       CALL XLAENV(1,1)
-      IF( TSTERR ) &
-         CALL SERRGG( 'CSD', NOUT )
+      IF( TSTERR ) CALL SERRGG( 'CSD', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL SCKCSD( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), A( 1, 3 ), A( 1, 4 ), &
@@ -2616,18 +2512,16 @@
       write(10,'(A,F16.10,A)') 'Total time : SCKCSD : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCKCSD', INFO
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCKCSD', INFO
 !
-   ELSE IF( C3 == 'LSE' ) THEN
+   ELSE IF( LSAMEN( 3, C3, 'LSE' ) ) THEN
 !
 !        --------------------------------------
 !        LSE:  Constrained Linear Least Squares
 !        --------------------------------------
 !
       CALL XLAENV( 1, 1 )
-      IF( TSTERR ) &
-         CALL SERRGG( 'LSE', NOUT )
+      IF( TSTERR ) CALL SERRGG( 'LSE', NOUT )
       call system_clock(count_rate=nb_periods_sec,count=S1)
       CALL SCKLSE( NN, MVAL, PVAL, NVAL, NTYPES, ISEED, THRESH, NMAX, &
                    A( 1, 1 ), A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), X, &
@@ -2637,14 +2531,13 @@
       write(10,'(A,F16.10,A)') 'Total time : SCKLSE : ', &
             real(S2-S1)/real(nb_periods_sec), ' s'
       close(10)
-      IF( INFO /= 0 ) &
-         WRITE( NOUT, FMT = 9980 )'SCKLSE', INFO
-!
+      IF( INFO /= 0 ) WRITE( NOUT, FMT = 9980 )'SCKLSE', INFO
    ELSE
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = * )
       WRITE( NOUT, FMT = 9992 )C3
    END IF
+   ENDDO
    IF( .NOT.( SGX .OR. SXV ) ) GO TO 190
   380 CONTINUE
    WRITE( NOUT, FMT = 9994 )

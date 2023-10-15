@@ -315,7 +315,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0E+0, 1.0E+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests that have been run
 !>                       on this matrix.
@@ -373,8 +373,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TEN = 10.0E0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -403,15 +401,10 @@
                       SLATMS, SSBGV, SSBGVD, SSBGVX, SSGT01, SSPGV, &
                       SSPGVD, SSPGVX, SSYGV, SSYGVD, SSYGVX, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8, 6*9 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3, 6*1 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 6*4 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3, 6*1 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 6*4 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -420,13 +413,8 @@
    NTESTT = 0
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -453,21 +441,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = SLAMCH( 'Safe minimum' )
    OVFL = SLAMCH( 'Overflow' )
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
-   DO I = 1, 4
-      ISEED2( I ) = ISEED( I )
-   ENDDO
+   ISEED2(1:4) = ISEED(1:4)
 !
 !     Loop over sizes, types
 !
@@ -476,7 +461,7 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      ANINV = ONE / REAL( MAX( 1, N ) )
+      ANINV = 1.0E+0 / REAL( MAX( 1, N ) )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -492,9 +477,7 @@
          NMATS = NMATS + 1
          NTEST = 0
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           2)      Compute "A"
 !
@@ -511,29 +494,21 @@
 !           =8                      random hermitian
 !           =9                      banded, w/ eigenvalues
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
-!
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*ANINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*N*ULPINV
-         GO TO 70
-!
-70       CONTINUE
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0E+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*ANINV
+          CASE (3)
+           ANORM = RTUNFL*N*ULPINV
+         END SELECT
 !
          IINFO = 0
          COND = ULPINV
@@ -546,7 +521,7 @@
 !
             KA = 0
             KB = 0
-            CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+            CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
 !
          ELSE IF( ITYPE == 2 ) THEN
 !
@@ -554,7 +529,7 @@
 !
             KA = 0
             KB = 0
-            CALL SLASET( 'Full', LDA, N, ZERO, ZERO, A, LDA )
+            CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
             ENDDO
@@ -585,10 +560,10 @@
 !
             KA = 0
             KB = 0
-            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( N, N, 'S', ISEED, 'S', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, 0, 0, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
@@ -596,10 +571,10 @@
 !
             KA = MAX( 0, N-1 )
             KB = KA
-            CALL SLATMR( N, N, 'S', ISEED, 'H', WORK, 6, ONE, ONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL SLATMR( N, N, 'S', ISEED, 'H', WORK, 6, 1.0E+0, 1.0E+0, &
+                         'T', 'N', WORK( N+1 ), 1, 1.0E+0, &
+                         WORK( 2*N+1 ), 1, 1.0E+0, 'N', IDUMMA, N, N, &
+                         0.0E+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
@@ -674,7 +649,7 @@
 !                 Generate random well-conditioned positive definite
 !                 matrix B, of bandwidth not greater than that of A.
 !
-               CALL SLATMS( N, N, 'U', ISEED, 'P', WORK, 5, TEN, ONE, &
+               CALL SLATMS( N, N, 'U', ISEED, 'P', WORK, 5, 10.0E+0, 1.0E+0, &
                             KB, KB, UPLO, B, LDB, WORK( N+1 ), &
                             IINFO )
 !
@@ -768,7 +743,7 @@
 !                 It is quite possible that there are no eigenvalues
 !                 in this interval.
 !
-               VL = ZERO
+               VL = 0.0E+0
                VU = ANORM
                CALL SSYGVX( IBTYPE, 'V', 'V', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
@@ -922,8 +897,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -931,8 +906,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL SSPGVX( IBTYPE, 'V', 'A', UPLO, N, AP, BP, VL, &
@@ -966,8 +941,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -975,11 +950,11 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
-               VL = ZERO
+               VL = 0.0E+0
                VU = ANORM
                CALL SSPGVX( IBTYPE, 'V', 'V', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
@@ -1012,8 +987,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                ELSE
                   IJ = 1
                   DO J = 1, N
@@ -1021,8 +996,8 @@
                         AP( IJ ) = A( I, J )
                         BP( IJ ) = B( I, J )
                         IJ = IJ + 1
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
 !
                CALL SSPGVX( IBTYPE, 'V', 'I', UPLO, N, AP, BP, VL, &
@@ -1059,20 +1034,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL SSBGV( 'V', UPLO, N, KA, KB, AB, LDA, BB, LDB, &
@@ -1104,20 +1079,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL SSBGVD( 'V', UPLO, N, KA, KB, AB, LDA, BB, &
@@ -1150,20 +1125,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL SSBGVX( 'V', 'A', UPLO, N, KA, KB, AB, LDA, &
@@ -1196,23 +1171,23 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
-                  VL = ZERO
+                  VL = 0.0E+0
                   VU = ANORM
                   CALL SSBGVX( 'V', 'V', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
@@ -1243,20 +1218,20 @@
                      DO J = 1, N
                         DO I = MAX( 1, J-KA ), J
                            AB( KA+1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = MAX( 1, J-KB ), J
                            BB( KB+1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   ELSE
                      DO J = 1, N
                         DO I = J, MIN( N, J+KA )
                            AB( 1+I-J, J ) = A( I, J )
-                           ENDDO
+                        ENDDO
                         DO I = J, MIN( N, J+KB )
                            BB( 1+I-J, J ) = B( I, J )
-                           ENDDO
                         ENDDO
+                     ENDDO
                   END IF
 !
                   CALL SSBGVX( 'V', 'I', UPLO, N, KA, KB, AB, LDA, &
@@ -1306,4 +1281,3 @@
  9999 FORMAT( ' SDRVSG: ', A, ' returned INFO=', I6, '.', / 9X, 'N=', &
          I6, ', JTYPE=', I6, ', ISEED=(', 3( I5, ',' ), I5, ')' )
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

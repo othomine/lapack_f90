@@ -187,12 +187,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0 )
-   REAL               HALF
-   PARAMETER          ( HALF = ONE / TWO )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IOFF, ISDB, ISDE, JC, JD, JR, K, KBEG, KEND, &
@@ -206,19 +200,14 @@
 !     .. External Subroutines ..
    EXTERNAL           SLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, EXP, LOG, MAX, MIN, MOD, REAL, SQRT
-!     ..
 !     .. Executable Statements ..
 !
-   IF( N <= 0 ) &
-      RETURN
-   CALL SLASET( 'Full', N, N, ZERO, ZERO, A, LDA )
+   IF( N <= 0 ) RETURN
+   CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, A, LDA )
 !
 !     Insure a correct ISEED
 !
-   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) &
-      ISEED( 4 ) = ISEED( 4 ) + 1
+   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) ISEED( 4 ) = ISEED( 4 ) + 1
 !
 !     Compute diagonal and subdiagonal according to ITYPE, NZ1, NZ2,
 !     and RCOND
@@ -235,135 +224,107 @@
       END IF
       ISDB = 1
       ISDE = 0
-      GO TO ( 10, 30, 50, 80, 100, 120, 140, 160, &
-              180, 200 )ABS( ITYPE )
+      SELECT CASE (ABS( ITYPE ))
+       CASE (1)
 !
 !        abs(ITYPE) = 1: Identity
 !
-10    CONTINUE
-      DO JD = 1, N
-         A( JD, JD ) = ONE
-      ENDDO
-      GO TO 220
+        FORALL (JD = 1:N) A( JD, JD ) = 1.0E+0
+       CASE (2)
 !
 !        abs(ITYPE) = 2: Transposed Jordan block
 !
-30    CONTINUE
-      DO JD = 1, N - 1
-         A( JD+1, JD ) = ONE
-      ENDDO
-      ISDB = 1
-      ISDE = N - 1
-      GO TO 220
+        FORALL (JD = 1:N-1) A( JD+1, JD ) = 1.0E+0
+        ISDB = 1
+        ISDE = N - 1
+       CASE (3)
 !
 !        abs(ITYPE) = 3: Transposed Jordan block, followed by the
 !                        identity.
 !
-50    CONTINUE
-      K = ( N-1 ) / 2
-      DO JD = 1, K
-         A( JD+1, JD ) = ONE
-      ENDDO
-      ISDB = 1
-      ISDE = K
-      DO JD = K + 2, 2*K + 1
-         A( JD, JD ) = ONE
-      ENDDO
-      GO TO 220
+        K = ( N-1 ) / 2
+        FORALL (JD = 1:K) A( JD+1, JD ) = 1.0E+0
+        ISDB = 1
+        ISDE = K
+        FORALL (JD = K + 2:2*K + 1) A( JD, JD ) = 1.0E+0
+       CASE (4)
 !
 !        abs(ITYPE) = 4: 1,...,k
 !
-80    CONTINUE
-      DO JD = KBEG, KEND
-         A( JD, JD ) = REAL( JD-NZ1 )
-      ENDDO
-      GO TO 220
+        FORALL (JD = KBEG:KEND) A( JD, JD ) = REAL( JD-NZ1 )
+       CASE (5)
 !
 !        abs(ITYPE) = 5: One large D value:
 !
-  100    CONTINUE
-      DO JD = KBEG + 1, KEND
-         A( JD, JD ) = RCOND
-         ENDDO
-      A( KBEG, KBEG ) = ONE
-      GO TO 220
+        FORALL (JD = KBEG+1:KEND) A( JD, JD ) = RCOND
+        A( KBEG, KBEG ) = 1.0E+0
+       CASE (6)
 !
 !        abs(ITYPE) = 6: One small D value:
 !
-  120    CONTINUE
-      DO JD = KBEG, KEND - 1
-         A( JD, JD ) = ONE
-         ENDDO
-      A( KEND, KEND ) = RCOND
-      GO TO 220
+        FORALL (JD = KBEG:KEND-1) A( JD, JD ) = 1.0E+0
+        A( KEND, KEND ) = RCOND
+       CASE (7)
 !
 !        abs(ITYPE) = 7: Exponentially distributed D values:
 !
-  140    CONTINUE
-      A( KBEG, KBEG ) = ONE
+      A( KBEG, KBEG ) = 1.0E+0
       IF( KLEN > 1 ) THEN
-         ALPHA = RCOND**( ONE / REAL( KLEN-1 ) )
+         ALPHA = RCOND**( 1.0E+0 / REAL( KLEN-1 ) )
          DO I = 2, KLEN
             A( NZ1+I, NZ1+I ) = ALPHA**REAL( I-1 )
-            ENDDO
+         ENDDO
       END IF
-      GO TO 220
+       CASE (8)
 !
 !        abs(ITYPE) = 8: Arithmetically distributed D values:
 !
-  160    CONTINUE
-      A( KBEG, KBEG ) = ONE
+      A( KBEG, KBEG ) = 1.0E+0
       IF( KLEN > 1 ) THEN
-         ALPHA = ( ONE-RCOND ) / REAL( KLEN-1 )
+         ALPHA = ( 1.0E+0-RCOND ) / REAL( KLEN-1 )
          DO I = 2, KLEN
             A( NZ1+I, NZ1+I ) = REAL( KLEN-I )*ALPHA + RCOND
-            ENDDO
+         ENDDO
       END IF
-      GO TO 220
+       CASE (9)
 !
 !        abs(ITYPE) = 9: Randomly distributed D values on ( RCOND, 1):
 !
-  180    CONTINUE
       ALPHA = LOG( RCOND )
       DO JD = KBEG, KEND
          A( JD, JD ) = EXP( ALPHA*SLARAN( ISEED ) )
-         ENDDO
-      GO TO 220
+      ENDDO
+       CASE (10)
 !
 !        abs(ITYPE) = 10: Randomly distributed D values from DIST
 !
-  200    CONTINUE
       DO JD = KBEG, KEND
          A( JD, JD ) = SLARND( IDIST, ISEED )
-         ENDDO
+      ENDDO
 !
-  220    CONTINUE
+       END SELECT
 !
 !        Scale by AMAGN
 !
-      DO JD = KBEG, KEND
-         A( JD, JD ) = AMAGN*REAL( A( JD, JD ) )
-         ENDDO
-      DO JD = ISDB, ISDE
-         A( JD+1, JD ) = AMAGN*REAL( A( JD+1, JD ) )
-         ENDDO
+      FORALL (JD = KBEG:KEND) A( JD, JD ) = AMAGN*REAL( A( JD, JD ) )
+      FORALL (JD = ISDB:ISDE) A( JD+1, JD ) = AMAGN*REAL( A( JD+1, JD ) )
 !
 !        If ISIGN = 1 or 2, assign random signs to diagonal and
 !        subdiagonal
 !
       IF( ISIGN > 0 ) THEN
          DO JD = KBEG, KEND
-            IF( REAL( A( JD, JD ) ) /= ZERO ) THEN
-               IF( SLARAN( ISEED ) > HALF ) &
+            IF( REAL( A( JD, JD ) ) /= 0.0E+0 ) THEN
+               IF( SLARAN( ISEED ) > 0.5E+0 ) &
                   A( JD, JD ) = -A( JD, JD )
             END IF
-            ENDDO
+         ENDDO
          DO JD = ISDB, ISDE
-            IF( REAL( A( JD+1, JD ) ) /= ZERO ) THEN
-               IF( SLARAN( ISEED ) > HALF ) &
+            IF( REAL( A( JD+1, JD ) ) /= 0.0E+0 ) THEN
+               IF( SLARAN( ISEED ) > 0.5E+0 ) &
                   A( JD+1, JD ) = -A( JD+1, JD )
             END IF
-            ENDDO
+         ENDDO
       END IF
 !
 !        Reverse if ITYPE < 0
@@ -373,12 +334,12 @@
             TEMP = A( JD, JD )
             A( JD, JD ) = A( KBEG+KEND-JD, KBEG+KEND-JD )
             A( KBEG+KEND-JD, KBEG+KEND-JD ) = TEMP
-            ENDDO
+         ENDDO
          DO JD = 1, ( N-1 ) / 2
             TEMP = A( JD+1, JD )
             A( JD+1, JD ) = A( N+1-JD, N-JD )
             A( N+1-JD, N-JD ) = TEMP
-            ENDDO
+         ENDDO
       END IF
 !
 !        If ISIGN = 2, and no subdiagonals already, then apply
@@ -387,21 +348,21 @@
       IF( ISIGN == 2 .AND. ITYPE /= 2 .AND. ITYPE /= 3 ) THEN
          SAFMIN = SLAMCH( 'S' )
          DO JD = KBEG, KEND - 1, 2
-            IF( SLARAN( ISEED ) > HALF ) THEN
+            IF( SLARAN( ISEED ) > 0.5E+0 ) THEN
 !
 !                 Rotation on left.
 !
-               CL = TWO*SLARAN( ISEED ) - ONE
-               SL = TWO*SLARAN( ISEED ) - ONE
-               TEMP = ONE / MAX( SAFMIN, SQRT( CL**2+SL**2 ) )
+               CL = 2.0E+0*SLARAN( ISEED ) - 1.0E+0
+               SL = 2.0E+0*SLARAN( ISEED ) - 1.0E+0
+               TEMP = 1.0E+0 / MAX( SAFMIN, SQRT( CL**2+SL**2 ) )
                CL = CL*TEMP
                SL = SL*TEMP
 !
 !                 Rotation on right.
 !
-               CR = TWO*SLARAN( ISEED ) - ONE
-               SR = TWO*SLARAN( ISEED ) - ONE
-               TEMP = ONE / MAX( SAFMIN, SQRT( CR**2+SR**2 ) )
+               CR = 2.0E+0*SLARAN( ISEED ) - 1.0E+0
+               SR = 2.0E+0*SLARAN( ISEED ) - 1.0E+0
+               TEMP = 1.0E+0 / MAX( SAFMIN, SQRT( CR**2+SR**2 ) )
                CR = CR*TEMP
                SR = SR*TEMP
 !
@@ -421,13 +382,13 @@
 !
 !     Fill in upper triangle (except for 2x2 blocks)
 !
-   IF( TRIANG /= ZERO ) THEN
+   IF( TRIANG /= 0.0E+0 ) THEN
       IF( ISIGN /= 2 .OR. ITYPE == 2 .OR. ITYPE == 3 ) THEN
          IOFF = 1
       ELSE
          IOFF = 2
          DO JR = 1, N - 1
-            IF( A( JR+1, JR ) == ZERO ) &
+            IF( A( JR+1, JR ) == 0.0E+0 ) &
                A( JR, JR+1 ) = TRIANG*SLARND( IDIST, ISEED )
             ENDDO
       END IF
@@ -444,4 +405,4 @@
 !     End of SLATM4
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

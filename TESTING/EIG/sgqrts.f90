@@ -192,8 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    REAL               ROGUE
    PARAMETER          ( ROGUE = -1.0E+10 )
 !     ..
@@ -208,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           SGEMM, SLACPY, SLASET, SORGQR, &
                       SORGRQ, SSYRK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -254,12 +249,12 @@
 !
 !     Copy R
 !
-   CALL SLASET( 'Full', N, M, ZERO, ZERO, R, LDA )
+   CALL SLASET( 'Full', N, M, 0.0E+0, 0.0E+0, R, LDA )
    CALL SLACPY( 'Upper', N, M, AF, LDA, R, LDA )
 !
 !     Copy T
 !
-   CALL SLASET( 'Full', N, P, ZERO, ZERO, T, LDB )
+   CALL SLASET( 'Full', N, P, 0.0E+0, 0.0E+0, T, LDB )
    IF( N <= P ) THEN
       CALL SLACPY( 'Upper', N, N, BF( 1, P-N+1 ), LDB, T( 1, P-N+1 ), &
                    LDB )
@@ -271,38 +266,38 @@
 !
 !     Compute R - Q'*A
 !
-   CALL SGEMM( 'Transpose', 'No transpose', N, M, N, -ONE, Q, LDA, A, &
-               LDA, ONE, R, LDA )
+   CALL SGEMM( 'Transpose', 'No transpose', N, M, N, -1.0E+0, Q, LDA, A, &
+               LDA, 1.0E+0, R, LDA )
 !
 !     Compute norm( R - Q'*A ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = SLANGE( '1', N, M, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0E+0 ) THEN
       RESULT( 1 ) = ( ( RESID / REAL( MAX(1,M,N) ) ) / ANORM ) / ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0E+0
    END IF
 !
 !     Compute T*Z - Q'*B
 !
-   CALL SGEMM( 'No Transpose', 'No transpose', N, P, P, ONE, T, LDB, &
-               Z, LDB, ZERO, BWK, LDB )
-   CALL SGEMM( 'Transpose', 'No transpose', N, P, N, -ONE, Q, LDA, &
-               B, LDB, ONE, BWK, LDB )
+   CALL SGEMM( 'No Transpose', 'No transpose', N, P, P, 1.0E+0, T, LDB, &
+               Z, LDB, 0.0E+0, BWK, LDB )
+   CALL SGEMM( 'Transpose', 'No transpose', N, P, N, -1.0E+0, Q, LDA, &
+               B, LDB, 1.0E+0, BWK, LDB )
 !
 !     Compute norm( T*Z - Q'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = SLANGE( '1', N, P, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0E+0 ) THEN
       RESULT( 2 ) = ( ( RESID / REAL( MAX(1,P,N ) ) )/BNORM ) / ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0E+0
    END IF
 !
 !     Compute I - Q'*Q
 !
-   CALL SLASET( 'Full', N, N, ZERO, ONE, R, LDA )
-   CALL SSYRK( 'Upper', 'Transpose', N, N, -ONE, Q, LDA, ONE, R, &
+   CALL SLASET( 'Full', N, N, 0.0E+0, 1.0E+0, R, LDA )
+   CALL SSYRK( 'Upper', 'Transpose', N, N, -1.0E+0, Q, LDA, 1.0E+0, R, &
                LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
@@ -312,8 +307,8 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL SLASET( 'Full', P, P, ZERO, ONE, T, LDB )
-   CALL SSYRK( 'Upper', 'Transpose', P, P, -ONE, Z, LDB, ONE, T, &
+   CALL SLASET( 'Full', P, P, 0.0E+0, 1.0E+0, T, LDB )
+   CALL SSYRK( 'Upper', 'Transpose', P, P, -1.0E+0, Z, LDB, 1.0E+0, T, &
                LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
@@ -326,4 +321,4 @@
 !     End of SGQRTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

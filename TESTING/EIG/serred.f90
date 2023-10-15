@@ -81,8 +81,7 @@
 !
 !     .. Parameters ..
    INTEGER            NMAX
-   REAL               ONE, ZERO
-   PARAMETER          ( NMAX = 4, ONE = 1.0E0, ZERO = 0.0E0 )
+   PARAMETER          ( NMAX = 4 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER*2        C2
@@ -104,9 +103,6 @@
 !     .. External Functions ..
    LOGICAL            SSLECT, LSAMEN
    EXTERNAL           SSLECT, LSAMEN
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN_TRIM
 !     ..
 !     .. Arrays in Common ..
    LOGICAL            SELVAL( 20 )
@@ -130,14 +126,8 @@
 !
 !     Initialize A
 !
-   DO J = 1, NMAX
-      DO I = 1, NMAX
-         A( I, J ) = ZERO
-      ENDDO
-   ENDDO
-   DO I = 1, NMAX
-      A( I, I ) = ONE
-   ENDDO
+   A(1:NMAX,1:NMAX) = 0.0E0
+   FORALL (I = 1:NMAX) A( I, I ) = 1.0E0
    OK = .TRUE.
    NT = 0
 !
@@ -431,51 +421,51 @@
 !
       SRNAMT = 'SGESVDX'
       INFOT = 1
-      CALL SGESVDX( 'X', 'N', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'X', 'N', 'A', 0, 0, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL SGESVDX( 'N', 'X', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'X', 'A', 0, 0, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL SGESVDX( 'N', 'N', 'X', 0, 0, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'X', 0, 0, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL SGESVDX( 'N', 'N', 'A', -1, 0, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'A', -1, 0, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL SGESVDX( 'N', 'N', 'A', 0, -1, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'A', 0, -1, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 7
-      CALL SGESVDX( 'N', 'N', 'A', 2, 1, A, 1, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'A', 2, 1, A, 1, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL SGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -ONE, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -1.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL SGESVDX( 'N', 'N', 'V', 2, 1, A, 2, ONE, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'V', 2, 1, A, 2, 1.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 10
-      CALL SGESVDX( 'N', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'N', 'I', 2, 2, A, 2, 0.0E+0, 0.0E+0, &
                     0, 1, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL SGESVDX( 'V', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL SGESVDX( 'V', 'N', 'I', 2, 2, A, 2, 0.0E+0, 0.0E+0, &
                     1, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 15
-      CALL SGESVDX( 'V', 'N', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL SGESVDX( 'V', 'N', 'A', 2, 2, A, 2, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 17
-      CALL SGESVDX( 'N', 'V', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL SGESVDX( 'N', 'V', 'A', 2, 2, A, 2, 0.0E+0, 0.0E+0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, IW, INFO )
       CALL CHKXER( 'SGESVDX', INFOT, NOUT, LERR, OK )
       NT = 12
@@ -561,4 +551,4 @@
 !     End of SERRED
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -180,10 +180,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0, ONE = 1.0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMA, NORME
@@ -203,17 +199,12 @@
 !     .. External Subroutines ..
    EXTERNAL           SAXPY, SGEMM, SLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize RESULT (in case N=0)
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0E0
+   IF( N <= 0 ) RETURN
 !
    UNFL = SLAMCH( 'Safe minimum' )
    ULP = SLAMCH( 'Precision' )
@@ -234,25 +225,21 @@
 !
 !     Check normalization of E
 !
-   ENRMIN = ONE / ULP
-   ENRMAX = ZERO
+   ENRMIN = 1.0E+0 / ULP
+   ENRMAX = 0.0E+0
    IF( ITRNSE == 0 ) THEN
 !
 !        Eigenvectors are column vectors.
 !
       IPAIR = 0
       DO JVEC = 1, N
-         TEMP1 = ZERO
-         IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= ZERO ) &
+         IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= 0.0E+0 ) &
             IPAIR = 1
          IF( IPAIR == 1 ) THEN
 !
 !              Complex eigenvector
 !
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( E( J, JVEC ) )+ &
-                       ABS( E( J, JVEC+1 ) ) )
-            ENDDO
+            TEMP1 = MAXVAL(ABS( E(1:N, JVEC ) )+ABS( E(1:N, JVEC+1 ) ) )
             ENRMIN = MIN( ENRMIN, TEMP1 )
             ENRMAX = MAX( ENRMAX, TEMP1 )
             IPAIR = 2
@@ -262,9 +249,7 @@
 !
 !              Real eigenvector
 !
-            DO J = 1, N
-               TEMP1 = MAX( TEMP1, ABS( E( J, JVEC ) ) )
-            ENDDO
+            TEMP1 = MAXVAL(ABS( E(1:N, JVEC ) ) )
             ENRMIN = MIN( ENRMIN, TEMP1 )
             ENRMAX = MAX( ENRMAX, TEMP1 )
             IPAIR = 0
@@ -275,14 +260,12 @@
 !
 !        Eigenvectors are row vectors.
 !
-      DO JVEC = 1, N
-         WORK( JVEC ) = ZERO
-      ENDDO
+      WORK(1:N) = 0.0E0
 !
       DO J = 1, N
          IPAIR = 0
          DO JVEC = 1, N
-            IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= ZERO ) &
+            IF( IPAIR == 0 .AND. JVEC < N .AND. WI( JVEC ) /= 0.0E+0 ) &
                IPAIR = 1
             IF( IPAIR == 1 ) THEN
                WORK( JVEC ) = MAX( WORK( JVEC ), &
@@ -317,7 +300,7 @@
 !
 !     Error =  AE - EW
 !
-   CALL SLASET( 'Full', N, N, ZERO, ZERO, WORK, N )
+   CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
 !
    IPAIR = 0
    IEROW = 1
@@ -330,7 +313,7 @@
          IECOL = JCOL
       END IF
 !
-      IF( IPAIR == 0 .AND. WI( JCOL ) /= ZERO ) &
+      IF( IPAIR == 0 .AND. WI( JCOL ) /= 0.0E+0 ) &
          IPAIR = 1
 !
       IF( IPAIR == 1 ) THEN
@@ -338,8 +321,8 @@
          WMAT( 2, 1 ) = -WI( JCOL )
          WMAT( 1, 2 ) = WI( JCOL )
          WMAT( 2, 2 ) = WR( JCOL )
-         CALL SGEMM( TRANSE, TRANSW, N, 2, 2, ONE, E( IEROW, IECOL ), &
-                     LDE, WMAT, 2, ZERO, WORK( N*( JCOL-1 )+1 ), N )
+         CALL SGEMM( TRANSE, TRANSW, N, 2, 2, 1.0E+0, E( IEROW, IECOL ), &
+                     LDE, WMAT, 2, 0.0E+0, WORK( N*( JCOL-1 )+1 ), N )
          IPAIR = 2
       ELSE IF( IPAIR == 2 ) THEN
          IPAIR = 0
@@ -353,7 +336,7 @@
 !
    ENDDO
 !
-   CALL SGEMM( TRANSA, TRANSE, N, N, N, ONE, A, LDA, E, LDE, -ONE, &
+   CALL SGEMM( TRANSA, TRANSE, N, N, N, 1.0E+0, A, LDA, E, LDE, -1.0E+0, &
                WORK, N )
 !
    ERRNRM = SLANGE( 'One', N, N, WORK, N, WORK( N*N+1 ) ) / ENORM
@@ -363,16 +346,16 @@
    IF( ANORM > ERRNRM ) THEN
       RESULT( 1 ) = ( ERRNRM / ANORM ) / ULP
    ELSE
-      IF( ANORM < ONE ) THEN
-         RESULT( 1 ) = ONE / ULP
+      IF( ANORM < 1.0E+0 ) THEN
+         RESULT( 1 ) = 1.0E+0 / ULP
       ELSE
-         RESULT( 1 ) = MIN( ERRNRM / ANORM, ONE ) / ULP
+         RESULT( 1 ) = MIN( ERRNRM / ANORM, 1.0E+0 ) / ULP
       END IF
    END IF
 !
 !     Compute RESULT(2) : the normalization error in E.
 !
-   RESULT( 2 ) = MAX( ABS( ENRMAX-ONE ), ABS( ENRMIN-ONE ) ) / &
+   RESULT( 2 ) = MAX( ABS( ENRMAX-1.0E+0 ), ABS( ENRMIN-1.0E+0 ) ) / &
                  ( REAL( N )*ULP )
 !
    RETURN
@@ -380,4 +363,4 @@
 !     End of SGET22
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

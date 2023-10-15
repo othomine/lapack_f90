@@ -364,11 +364,11 @@
                       A, LDA, U, LDU, VT, LDVT, ASAV, USAV, VTSAV, S, &
                       SSAV, E, WORK, LWORK, IWORK, NOUT, INFO )
 !
+   IMPLICIT NONE
+!
 !  -- LAPACK test routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
-!
-   IMPLICIT NONE
 !
 !     .. Scalar Arguments ..
    INTEGER            INFO, LDA, LDU, LDVT, LWORK, NOUT, NSIZES, &
@@ -386,9 +386,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL              ZERO, ONE, TWO, HALF
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0, &
-                      HALF = 0.5E0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 5 )
 !     ..
@@ -423,9 +420,6 @@
                       SGESVDQ, SGESVDX, SGESVJ, SLACPY, SLASET, &
                       SLATMS, SORT01, SORT03, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, INT, MAX, MIN
-!     ..
 !     .. Scalars in Common ..
    LOGICAL            LERR, OK
    CHARACTER*32       SRNAMT
@@ -445,19 +439,13 @@
 !     Check for errors
 !
    INFO = 0
-   BADMM = .FALSE.
-   BADNN = .FALSE.
-   MMAX = 1
-   NMAX = 1
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = any(NN(1:NSIZES) < 0 )
+   MMAX = MAXVAL(MM(1:NSIZES))
+   BADMM = any(MM(1:NSIZES) < 0 )
    MNMAX = 1
    MINWRK = 1
    DO J = 1, NSIZES
-      MMAX = MAX( MMAX, MM( J ) )
-      IF( MM( J ) < 0 ) &
-         BADMM = .TRUE.
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
       MNMAX = MAX( MNMAX, MIN( MM( J ), NN( J ) ) )
       MINWRK = MAX( MINWRK, MAX( 3*MIN( MM( J ), &
                NN( J ) )+MAX( MM( J ), NN( J ) ), 5*MIN( MM( J ), &
@@ -496,10 +484,10 @@
    NFAIL = 0
    NTEST = 0
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Precision' )
    RTUNFL = SQRT( UNFL )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0E+0 / ULP
    INFOT = 0
 !
 !     Loop over sizes, types
@@ -516,40 +504,33 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 230
+         IF( .NOT.DOTYPE( JTYPE ) ) GO TO 230
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 30
+         IF( MTYPES > MAXTYP ) GO TO 30
 !
          IF( JTYPE == 1 ) THEN
 !
 !              Zero matrix
 !
-            CALL SLASET( 'Full', M, N, ZERO, ZERO, A, LDA )
+            CALL SLASET( 'Full', M, N, 0.0E+0, 0.0E+0, A, LDA )
 !
          ELSE IF( JTYPE == 2 ) THEN
 !
 !              Identity matrix
 !
-            CALL SLASET( 'Full', M, N, ZERO, ONE, A, LDA )
+            CALL SLASET( 'Full', M, N, 0.0E+0, 1.0E+0, A, LDA )
 !
          ELSE
 !
 !              (Scaled) random matrix
 !
-            IF( JTYPE == 3 ) &
-               ANORM = ONE
-            IF( JTYPE == 4 ) &
-               ANORM = UNFL / ULP
-            IF( JTYPE == 5 ) &
-               ANORM = OVFL*ULP
+            IF( JTYPE == 3 ) ANORM = 1.0E+0
+            IF( JTYPE == 4 ) ANORM = UNFL / ULP
+            IF( JTYPE == 5 ) ANORM = OVFL*ULP
             CALL SLATMS( M, N, 'U', ISEED, 'N', S, 4, REAL( MNMIN ), &
                          ANORM, M-1, N-1, 'N', A, LDA, WORK, IINFO )
             IF( IINFO /= 0 ) THEN
@@ -567,9 +548,7 @@
 !
          DO IWS = 1, 4
 !
-            DO J = 1, 32
-               RESULT( J ) = -ONE
-            ENDDO
+            RESULT(1:32) = -1.0E0
 !
 !              Test SGESVD: Factorize A
 !
@@ -577,11 +556,9 @@
             LSWORK = IWTMP + ( IWS-1 )*( LWORK-IWTMP ) / 3
             LSWORK = MIN( LSWORK, LWORK )
             LSWORK = MAX( LSWORK, 1 )
-            IF( IWS == 4 ) &
-               LSWORK = LWORK
+            IF( IWS == 4 ) LSWORK = LWORK
 !
-            IF( IWS > 1 ) &
-               CALL SLACPY( 'F', M, N, ASAV, LDA, A, LDA )
+            IF( IWS > 1 ) CALL SLACPY( 'F', M, N, ASAV, LDA, A, LDA )
             SRNAMT = 'SGESVD'
             CALL SGESVD( 'A', 'A', M, N, A, LDA, SSAV, USAV, LDU, &
                          VTSAV, LDVT, WORK, LSWORK, IINFO )
@@ -602,23 +579,18 @@
                CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, LWORK, &
                             RESULT( 3 ) )
             END IF
-            RESULT( 4 ) = ZERO
+            RESULT( 4 ) = 0.0E+0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 4 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 4 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 4 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 4 ) = ULPINV
             ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 4 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 4 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 5 ) = ZERO
-            RESULT( 6 ) = ZERO
-            RESULT( 7 ) = ZERO
+            RESULT( 5:7 ) = 0.0E0
             DO IJU = 0, 3
                DO IJVT = 0, 3
                   IF( ( IJU == 3 .AND. IJVT == 3 ) .OR. &
@@ -632,7 +604,7 @@
 !
 !                    Compare U
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJU == 1 ) THEN
                         CALL SORT03( 'C', M, MNMIN, M, MNMIN, USAV, &
@@ -652,7 +624,7 @@
 !
 !                    Compare VT
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJVT == 1 ) THEN
                         CALL SORT03( 'R', N, MNMIN, N, MNMIN, VTSAV, &
@@ -672,13 +644,11 @@
 !
 !                    Compare S
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   DIV = MAX( MNMIN*ULP*S( 1 ), UNFL )
                   DO I = 1, MNMIN - 1
-                     IF( SSAV( I ) < SSAV( I+1 ) ) &
-                        DIF = ULPINV
-                     IF( SSAV( I ) < ZERO ) &
-                        DIF = ULPINV
+                     IF( SSAV( I ) < SSAV( I+1 ) ) DIF = ULPINV
+                     IF( SSAV( I ) < 0.0E+0 ) DIF = ULPINV
                      DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
                   ENDDO
                   RESULT( 7 ) = MAX( RESULT( 7 ), DIF )
@@ -716,23 +686,18 @@
                CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, LWORK, &
                             RESULT( 10 ) )
             END IF
-            RESULT( 11 ) = ZERO
+            RESULT( 11 ) = 0.0E+0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 11 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 11 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 11 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 11 ) = ULPINV
             ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 11 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 11 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 12 ) = ZERO
-            RESULT( 13 ) = ZERO
-            RESULT( 14 ) = ZERO
+            RESULT(12:14) = 0.0E+0
             DO IJQ = 0, 2
                JOBQ = CJOB( IJQ+1 )
                CALL SLACPY( 'F', M, N, ASAV, LDA, A, LDA )
@@ -742,7 +707,7 @@
 !
 !                 Compare U
 !
-               DIF = ZERO
+               DIF = 0.0E+0
                IF( M > 0 .AND. N > 0 ) THEN
                   IF( IJQ == 1 ) THEN
                      IF( M >= N ) THEN
@@ -763,7 +728,7 @@
 !
 !                 Compare VT
 !
-               DIF = ZERO
+               DIF = 0.0E+0
                IF( M > 0 .AND. N > 0 ) THEN
                   IF( IJQ == 1 ) THEN
                      IF( M >= N ) THEN
@@ -785,12 +750,12 @@
 !
 !                 Compare S
 !
-               DIF = ZERO
+               DIF = 0.0E+0
                DIV = MAX( MNMIN*ULP*S( 1 ), UNFL )
                DO I = 1, MNMIN - 1
                   IF( SSAV( I ) < SSAV( I+1 ) ) &
                      DIF = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
+                  IF( SSAV( I ) < 0.0E+0 ) &
                      DIF = ULPINV
                   DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
                   ENDDO
@@ -800,18 +765,14 @@
 !              Test SGESVDQ
 !              Note: SGESVDQ only works for M >= N
 !
-            RESULT( 36 ) = ZERO
-            RESULT( 37 ) = ZERO
-            RESULT( 38 ) = ZERO
-            RESULT( 39 ) = ZERO
+            RESULT( 36:39 ) = 0.0E0
 !
             IF( M >= N ) THEN
                IWTMP = 5*MNMIN*MNMIN + 9*MNMIN + MAX( M, N )
                LSWORK = IWTMP + ( IWS-1 )*( LWORK-IWTMP ) / 3
                LSWORK = MIN( LSWORK, LWORK )
                LSWORK = MAX( LSWORK, 1 )
-               IF( IWS == 4 ) &
-                  LSWORK = LWORK
+               IF( IWS == 4 ) LSWORK = LWORK
 !
                CALL SLACPY( 'F', M, N, ASAV, LDA, A, LDA )
                SRNAMT = 'SGESVDQ'
@@ -840,26 +801,20 @@
                   CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RESULT( 38 ) )
                END IF
-               RESULT( 39 ) = ZERO
+               RESULT( 39 ) = 0.0E+0
                DO I = 1, MNMIN - 1
-                  IF( SSAV( I ) < SSAV( I+1 ) ) &
-                     RESULT( 39 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
-                     RESULT( 39 ) = ULPINV
+                  IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 39 ) = ULPINV
+                  IF( SSAV( I ) < 0.0E+0 ) RESULT( 39 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
-                     RESULT( 39 ) = ULPINV
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 39 ) = ULPINV
                END IF
             END IF
 !
 !              Test SGESVJ
 !              Note: SGESVJ only works for M >= N
 !
-            RESULT( 15 ) = ZERO
-            RESULT( 16 ) = ZERO
-            RESULT( 17 ) = ZERO
-            RESULT( 18 ) = ZERO
+            RESULT( 15:18 ) = 0.0E0
 !
             IF( M >= N ) THEN
                IWTMP = 5*MNMIN*MNMIN + 9*MNMIN + MAX( M, N )
@@ -877,9 +832,7 @@
 !                 SGESVJ returns V not VT
 !
                DO J=1,N
-                  DO I=1,N
-                     VTSAV(J,I) = A(I,J)
-                  END DO
+                  VTSAV(J,1:N) = A(1:N,J)
                END DO
 !
                IF( IINFO /= 0 ) THEN
@@ -899,15 +852,15 @@
                   CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RESULT( 17 ) )
                END IF
-               RESULT( 18 ) = ZERO
+               RESULT( 18 ) = 0.0E+0
                DO I = 1, MNMIN - 1
                   IF( SSAV( I ) < SSAV( I+1 ) ) &
                      RESULT( 18 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
+                  IF( SSAV( I ) < 0.0E+0 ) &
                      RESULT( 18 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) &
                      RESULT( 18 ) = ULPINV
                END IF
             END IF
@@ -915,10 +868,7 @@
 !              Test SGEJSV
 !              Note: SGEJSV only works for M >= N
 !
-            RESULT( 19 ) = ZERO
-            RESULT( 20 ) = ZERO
-            RESULT( 21 ) = ZERO
-            RESULT( 22 ) = ZERO
+            RESULT( 19:22 ) = 0.0E0
             IF( M >= N ) THEN
                IWTMP = 5*MNMIN*MNMIN + 9*MNMIN + MAX( M, N )
                LSWORK = IWTMP + ( IWS-1 )*( LWORK-IWTMP ) / 3
@@ -936,10 +886,8 @@
 !                 SGEJSV returns V not VT
 !
                DO J=1,N
-                  DO I=1,N
-                     VTSAV(J,I) = A(I,J)
-  130                END DO
-  140             END DO
+                  VTSAV(J,1:N) = A(1:N,J)
+               END DO
 !
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUT, FMT = 9995 )'GEJSV', IINFO, M, N, &
@@ -958,16 +906,13 @@
                   CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, &
                                LWORK, RESULT( 21 ) )
                END IF
-               RESULT( 22 ) = ZERO
+               RESULT( 22 ) = 0.0E+0
                DO I = 1, MNMIN - 1
-                  IF( SSAV( I ) < SSAV( I+1 ) ) &
-                     RESULT( 22 ) = ULPINV
-                  IF( SSAV( I ) < ZERO ) &
-                     RESULT( 22 ) = ULPINV
+                  IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 22 ) = ULPINV
+                  IF( SSAV( I ) < 0.0E+0 ) RESULT( 22 ) = ULPINV
                   ENDDO
                IF( MNMIN >= 1 ) THEN
-                  IF( SSAV( MNMIN ) < ZERO ) &
-                     RESULT( 22 ) = ULPINV
+                  IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 22 ) = ULPINV
                END IF
             END IF
 !
@@ -987,9 +932,7 @@
 !
 !              Do tests 23--29
 !
-            RESULT( 23 ) = ZERO
-            RESULT( 24 ) = ZERO
-            RESULT( 25 ) = ZERO
+            RESULT( 23:25 ) = 0.0E0
             CALL SBDT01( M, N, 0, ASAV, LDA, USAV, LDU, SSAV, E, &
                          VTSAV, LDVT, WORK, RESULT( 23 ) )
             IF( M /= 0 .AND. N /= 0 ) THEN
@@ -998,23 +941,18 @@
                CALL SORT01( 'Rows', N, N, VTSAV, LDVT, WORK, LWORK, &
                             RESULT( 25 ) )
             END IF
-            RESULT( 26 ) = ZERO
+            RESULT( 26 ) = 0.0E+0
             DO I = 1, MNMIN - 1
-               IF( SSAV( I ) < SSAV( I+1 ) ) &
-                  RESULT( 26 ) = ULPINV
-               IF( SSAV( I ) < ZERO ) &
-                  RESULT( 26 ) = ULPINV
+               IF( SSAV( I ) < SSAV( I+1 ) ) RESULT( 26 ) = ULPINV
+               IF( SSAV( I ) < 0.0E+0 ) RESULT( 26 ) = ULPINV
                ENDDO
             IF( MNMIN >= 1 ) THEN
-               IF( SSAV( MNMIN ) < ZERO ) &
-                  RESULT( 26 ) = ULPINV
+               IF( SSAV( MNMIN ) < 0.0E+0 ) RESULT( 26 ) = ULPINV
             END IF
 !
 !              Do partial SVDs, comparing to SSAV, USAV, and VTSAV
 !
-            RESULT( 27 ) = ZERO
-            RESULT( 28 ) = ZERO
-            RESULT( 29 ) = ZERO
+            RESULT( 27:29 ) = 0.0E0
             DO IJU = 0, 1
                DO IJVT = 0, 1
                   IF( ( IJU == 0 .AND. IJVT == 0 ) .OR. &
@@ -1030,7 +968,7 @@
 !
 !                    Compare U
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJU == 1 ) THEN
                         CALL SORT03( 'C', M, MNMIN, M, MNMIN, USAV, &
@@ -1042,7 +980,7 @@
 !
 !                    Compare VT
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   IF( M > 0 .AND. N > 0 ) THEN
                      IF( IJVT == 1 ) THEN
                         CALL SORT03( 'R', N, MNMIN, N, MNMIN, VTSAV, &
@@ -1054,12 +992,12 @@
 !
 !                    Compare S
 !
-                  DIF = ZERO
+                  DIF = 0.0E+0
                   DIV = MAX( MNMIN*ULP*S( 1 ), UNFL )
                   DO I = 1, MNMIN - 1
                      IF( SSAV( I ) < SSAV( I+1 ) ) &
                         DIF = ULPINV
-                     IF( SSAV( I ) < ZERO ) &
+                     IF( SSAV( I ) < 0.0E+0 ) &
                         DIF = ULPINV
                      DIF = MAX( DIF, ABS( SSAV( I )-S( I ) ) / DIV )
                      ENDDO
@@ -1070,9 +1008,7 @@
 !
 !              Do tests 30--32: SGESVDX( 'V', 'V', 'I' )
 !
-            DO I = 1, 4
-               ISEED2( I ) = ISEED( I )
-               ENDDO
+            ISEED2(1:4) = ISEED(1:4)
             IF( MNMIN <= 1 ) THEN
                IL = 1
                IU = MAX( 1, MNMIN )
@@ -1097,9 +1033,7 @@
                RETURN
             END IF
 !
-            RESULT( 30 ) = ZERO
-            RESULT( 31 ) = ZERO
-            RESULT( 32 ) = ZERO
+            RESULT( 30:32 ) = 0.0E0
             CALL SBDT05( M, N, ASAV, LDA, S, NSI, U, LDU, &
                          VT, LDVT, WORK, RESULT( 30 ) )
             CALL SORT01( 'Columns', M, NSI, U, LDU, WORK, LWORK, &
@@ -1112,26 +1046,26 @@
             IF( MNMIN > 0 .AND. NSI > 1 ) THEN
                IF( IL /= 1 ) THEN
                   VU = SSAV( IL ) + &
-                       MAX( HALF*ABS( SSAV( IL )-SSAV( IL-1 ) ), &
-                       ULP*ANORM, TWO*RTUNFL )
+                       MAX( 0.5E+0*ABS( SSAV( IL )-SSAV( IL-1 ) ), &
+                       ULP*ANORM, 2.0E+0*RTUNFL )
                ELSE
                   VU = SSAV( 1 ) + &
-                       MAX( HALF*ABS( SSAV( NS )-SSAV( 1 ) ), &
-                       ULP*ANORM, TWO*RTUNFL )
+                       MAX( 0.5E+0*ABS( SSAV( NS )-SSAV( 1 ) ), &
+                       ULP*ANORM, 2.0E+0*RTUNFL )
                END IF
                IF( IU /= NS ) THEN
-                  VL = SSAV( IU ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                       HALF*ABS( SSAV( IU+1 )-SSAV( IU ) ) )
+                  VL = SSAV( IU ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                       0.5E+0*ABS( SSAV( IU+1 )-SSAV( IU ) ) )
                ELSE
-                  VL = SSAV( NS ) - MAX( ULP*ANORM, TWO*RTUNFL, &
-                       HALF*ABS( SSAV( NS )-SSAV( 1 ) ) )
+                  VL = SSAV( NS ) - MAX( ULP*ANORM, 2.0E+0*RTUNFL, &
+                       0.5E+0*ABS( SSAV( NS )-SSAV( 1 ) ) )
                END IF
-               VL = MAX( VL,ZERO )
-               VU = MAX( VU,ZERO )
-               IF( VL >= VU ) VU = MAX( VU*2, VU+VL+HALF )
+               VL = MAX( VL,0.0E+0 )
+               VU = MAX( VU,0.0E+0 )
+               IF( VL >= VU ) VU = MAX( VU*2, VU+VL+0.5E+0 )
             ELSE
-               VL = ZERO
-               VU = ONE
+               VL = 0.0E+0
+               VU = 1.0E+0
             END IF
             CALL SLACPY( 'F', M, N, ASAV, LDA, A, LDA )
             CALL SGESVDX( 'V', 'V', 'V', M, N, A, LDA, &
@@ -1145,9 +1079,7 @@
                RETURN
             END IF
 !
-            RESULT( 33 ) = ZERO
-            RESULT( 34 ) = ZERO
-            RESULT( 35 ) = ZERO
+            RESULT( 33:35 ) = 0.0E0
             CALL SBDT05( M, N, ASAV, LDA, S, NSV, U, LDU, &
                          VT, LDVT, WORK, RESULT( 33 ) )
             CALL SORT01( 'Columns', M, NSV, U, LDU, WORK, LWORK, &
@@ -1251,4 +1183,3 @@
 !     End of SDRVBD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

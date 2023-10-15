@@ -95,10 +95,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, HALF, ONE
-   PARAMETER          ( ZERO = 0.0E0, HALF = 0.5E0, ONE = 1.0E0 )
-   REAL               TWO, THREE
-   PARAMETER          ( TWO = 2.0E0, THREE = 3.0E0 )
    INTEGER            LWORK
    PARAMETER          ( LWORK = 32 )
 !     ..
@@ -118,37 +114,34 @@
 !     .. External Subroutines ..
    EXTERNAL           SCOPY, SLAEXC
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, REAL, SIGN, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Get machine parameters
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Set up test case parameters
 !
-   VAL( 1 ) = ZERO
+   VAL( 1 ) = 0.0E+0
    VAL( 2 ) = SQRT( SMLNUM )
-   VAL( 3 ) = ONE
-   VAL( 4 ) = TWO
+   VAL( 3 ) = 1.0E+0
+   VAL( 4 ) = 2.0E+0
    VAL( 5 ) = SQRT( BIGNUM )
    VAL( 6 ) = -SQRT( SMLNUM )
-   VAL( 7 ) = -ONE
-   VAL( 8 ) = -TWO
+   VAL( 7 ) = -1.0E+0
+   VAL( 8 ) = -2.0E+0
    VAL( 9 ) = -SQRT( BIGNUM )
-   VM( 1 ) = ONE
-   VM( 2 ) = ONE + TWO*EPS
+   VM( 1 ) = 1.0E+0
+   VM( 2 ) = 1.0E+0 + 2.0E+0*EPS
    CALL SCOPY( 16, VAL( 4 ), 0, T( 1, 1 ), 1 )
 !
    NINFO( 1 ) = 0
    NINFO( 2 ) = 0
    KNT = 0
    LMAX = 0
-   RMAX = ZERO
+   RMAX = 0.0E+0
 !
 !     Begin test loop
 !
@@ -159,7 +152,7 @@
                T( 1, 1 ) = VAL( IA )*VM( IAM )
                T( 2, 2 ) = VAL( IC )
                T( 1, 2 ) = VAL( IB )
-               T( 2, 1 ) = ZERO
+               T( 2, 1 ) = 0.0E+0
                TNRM = MAX( ABS( T( 1, 1 ) ), ABS( T( 2, 2 ) ), &
                       ABS( T( 1, 2 ) ) )
                CALL SCOPY( 16, T, 1, T1, 1 )
@@ -173,13 +166,13 @@
                             RESULT )
                RES = RESULT( 1 ) + RESULT( 2 )
                IF( INFO /= 0 ) &
-                  RES = RES + ONE / EPS
+                  RES = RES + 1.0E+0 / EPS
                IF( T( 1, 1 ) /= T1( 2, 2 ) ) &
-                  RES = RES + ONE / EPS
+                  RES = RES + 1.0E+0 / EPS
                IF( T( 2, 2 ) /= T1( 1, 1 ) ) &
-                  RES = RES + ONE / EPS
-               IF( T( 2, 1 ) /= ZERO ) &
-                  RES = RES + ONE / EPS
+                  RES = RES + 1.0E+0 / EPS
+               IF( T( 2, 1 ) /= 0.0E+0 ) &
+                  RES = RES + 1.0E+0 / EPS
                KNT = KNT + 1
                IF( RES > RMAX ) THEN
                   LMAX = KNT
@@ -199,11 +192,11 @@
                      DO IC22 = -1, 1, 2
                         T( 1, 1 ) = VAL( IA )*VM( IAM )
                         T( 1, 2 ) = VAL( IB )
-                        T( 1, 3 ) = -TWO*VAL( IB )
-                        T( 2, 1 ) = ZERO
+                        T( 1, 3 ) = -2.0E+0*VAL( IB )
+                        T( 2, 1 ) = 0.0E+0
                         T( 2, 2 ) = VAL( IC11 )
                         T( 2, 3 ) = VAL( IC12 )
-                        T( 3, 1 ) = ZERO
+                        T( 3, 1 ) = 0.0E+0
                         T( 3, 2 ) = -VAL( IC21 )
                         T( 3, 3 ) = VAL( IC11 )*REAL( IC22 )
                         TNRM = MAX( ABS( T( 1, 1 ) ), &
@@ -222,16 +215,16 @@
                         RES = RESULT( 1 ) + RESULT( 2 )
                         IF( INFO == 0 ) THEN
                            IF( T1( 1, 1 ) /= T( 3, 3 ) ) &
-                              RES = RES + ONE / EPS
-                           IF( T( 3, 1 ) /= ZERO ) &
-                              RES = RES + ONE / EPS
-                           IF( T( 3, 2 ) /= ZERO ) &
-                              RES = RES + ONE / EPS
+                              RES = RES + 1.0E+0 / EPS
+                           IF( T( 3, 1 ) /= 0.0E+0 ) &
+                              RES = RES + 1.0E+0 / EPS
+                           IF( T( 3, 2 ) /= 0.0E+0 ) &
+                              RES = RES + 1.0E+0 / EPS
                            IF( T( 2, 1 ) /= 0 .AND. &
                                ( T( 1, 1 ) /= T( 2, &
-                               2 ) .OR. SIGN( ONE, T( 1, &
-                               2 ) ) == SIGN( ONE, T( 2, 1 ) ) ) ) &
-                               RES = RES + ONE / EPS
+                               2 ) .OR. SIGN( 1.0E+0, T( 1, &
+                               2 ) ) == SIGN( 1.0E+0, T( 2, 1 ) ) ) ) &
+                               RES = RES + 1.0E+0 / EPS
                         END IF
                         KNT = KNT + 1
                         IF( RES > RMAX ) THEN
@@ -255,12 +248,12 @@
                      DO IC = 1, 5
                         T( 1, 1 ) = VAL( IA11 )
                         T( 1, 2 ) = VAL( IA12 )
-                        T( 1, 3 ) = -TWO*VAL( IB )
+                        T( 1, 3 ) = -2.0E+0*VAL( IB )
                         T( 2, 1 ) = -VAL( IA21 )
                         T( 2, 2 ) = VAL( IA11 )*REAL( IA22 )
                         T( 2, 3 ) = VAL( IB )
-                        T( 3, 1 ) = ZERO
-                        T( 3, 2 ) = ZERO
+                        T( 3, 1 ) = 0.0E+0
+                        T( 3, 2 ) = 0.0E+0
                         T( 3, 3 ) = VAL( IC )*VM( ICM )
                         TNRM = MAX( ABS( T( 1, 1 ) ), &
                                ABS( T( 1, 2 ) ), ABS( T( 1, 3 ) ), &
@@ -278,16 +271,16 @@
                         RES = RESULT( 1 ) + RESULT( 2 )
                         IF( INFO == 0 ) THEN
                            IF( T1( 3, 3 ) /= T( 1, 1 ) ) &
-                              RES = RES + ONE / EPS
-                           IF( T( 2, 1 ) /= ZERO ) &
-                              RES = RES + ONE / EPS
-                           IF( T( 3, 1 ) /= ZERO ) &
-                              RES = RES + ONE / EPS
+                              RES = RES + 1.0E+0 / EPS
+                           IF( T( 2, 1 ) /= 0.0E+0 ) &
+                              RES = RES + 1.0E+0 / EPS
+                           IF( T( 3, 1 ) /= 0.0E+0 ) &
+                              RES = RES + 1.0E+0 / EPS
                            IF( T( 3, 2 ) /= 0 .AND. &
                                ( T( 2, 2 ) /= T( 3, &
-                               3 ) .OR. SIGN( ONE, T( 2, &
-                               3 ) ) == SIGN( ONE, T( 3, 2 ) ) ) ) &
-                               RES = RES + ONE / EPS
+                               3 ) .OR. SIGN( 1.0E+0, T( 2, &
+                               3 ) ) == SIGN( 1.0E+0, T( 3, 2 ) ) ) ) &
+                               RES = RES + 1.0E+0 / EPS
                         END IF
                         KNT = KNT + 1
                         IF( RES > RMAX ) THEN
@@ -315,27 +308,27 @@
                                  IAM = 1
                                  T( 1, 1 ) = VAL( IA11 )*VM( IAM )
                                  T( 1, 2 ) = VAL( IA12 )*VM( IAM )
-                                 T( 1, 3 ) = -TWO*VAL( IB )
-                                 T( 1, 4 ) = HALF*VAL( IB )
+                                 T( 1, 3 ) = -2.0E+0*VAL( IB )
+                                 T( 1, 4 ) = 0.5E+0*VAL( IB )
                                  T( 2, 1 ) = -T( 1, 2 )*VAL( IA21 )
                                  T( 2, 2 ) = VAL( IA11 )* &
                                              REAL( IA22 )*VM( IAM )
                                  T( 2, 3 ) = VAL( IB )
-                                 T( 2, 4 ) = THREE*VAL( IB )
-                                 T( 3, 1 ) = ZERO
-                                 T( 3, 2 ) = ZERO
+                                 T( 2, 4 ) = 3.0E+0*VAL( IB )
+                                 T( 3, 1 ) = 0.0E+0
+                                 T( 3, 2 ) = 0.0E+0
                                  T( 3, 3 ) = VAL( IC11 )* &
                                              ABS( VAL( ICM ) )
                                  T( 3, 4 ) = VAL( IC12 )* &
                                              ABS( VAL( ICM ) )
-                                 T( 4, 1 ) = ZERO
-                                 T( 4, 2 ) = ZERO
+                                 T( 4, 1 ) = 0.0E+0
+                                 T( 4, 2 ) = 0.0E+0
                                  T( 4, 3 ) = -T( 3, 4 )*VAL( IC21 )* &
                                              ABS( VAL( ICM ) )
                                  T( 4, 4 ) = VAL( IC11 )* &
                                              REAL( IC22 )* &
                                              ABS( VAL( ICM ) )
-                                 TNRM = ZERO
+                                 TNRM = 0.0E+0
                                  DO I = 1, 4
                                     DO J = 1, 4
                                        TNRM = MAX( TNRM, &
@@ -354,26 +347,26 @@
                                               RESULT )
                                  RES = RESULT( 1 ) + RESULT( 2 )
                                  IF( INFO == 0 ) THEN
-                                    IF( T( 3, 1 ) /= ZERO ) &
-                                       RES = RES + ONE / EPS
-                                    IF( T( 4, 1 ) /= ZERO ) &
-                                       RES = RES + ONE / EPS
-                                    IF( T( 3, 2 ) /= ZERO ) &
-                                       RES = RES + ONE / EPS
-                                    IF( T( 4, 2 ) /= ZERO ) &
-                                       RES = RES + ONE / EPS
+                                    IF( T( 3, 1 ) /= 0.0E+0 ) &
+                                       RES = RES + 1.0E+0 / EPS
+                                    IF( T( 4, 1 ) /= 0.0E+0 ) &
+                                       RES = RES + 1.0E+0 / EPS
+                                    IF( T( 3, 2 ) /= 0.0E+0 ) &
+                                       RES = RES + 1.0E+0 / EPS
+                                    IF( T( 4, 2 ) /= 0.0E+0 ) &
+                                       RES = RES + 1.0E+0 / EPS
                                     IF( T( 2, 1 ) /= 0 .AND. &
                                         ( T( 1, 1 ) /= T( 2, &
-                                        2 ) .OR. SIGN( ONE, T( 1, &
-                                        2 ) ) == SIGN( ONE, T( 2, &
+                                        2 ) .OR. SIGN( 1.0E+0, T( 1, &
+                                        2 ) ) == SIGN( 1.0E+0, T( 2, &
                                         1 ) ) ) )RES = RES + &
-                                        ONE / EPS
+                                        1.0E+0 / EPS
                                     IF( T( 4, 3 ) /= 0 .AND. &
                                         ( T( 3, 3 ) /= T( 4, &
-                                        4 ) .OR. SIGN( ONE, T( 3, &
-                                        4 ) ) == SIGN( ONE, T( 4, &
+                                        4 ) .OR. SIGN( 1.0E+0, T( 3, &
+                                        4 ) ) == SIGN( 1.0E+0, T( 4, &
                                         3 ) ) ) )RES = RES + &
-                                        ONE / EPS
+                                        1.0E+0 / EPS
                                  END IF
                                  KNT = KNT + 1
                                  IF( RES > RMAX ) THEN
@@ -396,4 +389,4 @@
 !     End of SGET34
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
