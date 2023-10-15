@@ -320,7 +320,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0D+0, 1.0D+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -380,11 +380,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -473,15 +468,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D+0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -494,12 +488,11 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / DBLE( MAX( 1, M, N ) )
+      AMNINV = 1.0D+0 / DBLE( MAX( 1, M, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K >= M .AND. K >= N ) &
-            GO TO 150
+         IF( K < M .OR. K < N ) THEN
          KL = MAX( 0, MIN( M-1, K ) )
          KU = MAX( 0, MIN( N-1, K ) )
 !
@@ -510,14 +503,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 140
+            IF (DOTYPE( JTYPE ) ) THEN
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !
@@ -534,32 +524,24 @@
 !              =8                      (none)
 !              =9                      random nonhermitian
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 90
+            IF( MTYPES <= MAXTYP ) THEN
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
 !
 !              Compute norm
 !
-            GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+            SELECT CASE (KMAGN(JTYPE))
+             CASE (1)
+              ANORM = 1.0D+0
+             case (2)
+              ANORM = ( RTOVFL*ULP )*AMNINV
+             case (3)
+              ANORM = RTUNFL*MAX( M, N )*ULPINV
+            END SELECT
 !
-40          CONTINUE
-            ANORM = ONE
-            GO TO 70
-!
-50          CONTINUE
-            ANORM = ( RTOVFL*ULP )*AMNINV
-            GO TO 70
-!
-60          CONTINUE
-            ANORM = RTUNFL*MAX( M, N )*ULPINV
-            GO TO 70
-!
-70          CONTINUE
-!
-            CALL ZLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
-            CALL ZLASET( 'Full', LDAB, N, CZERO, CZERO, AB, LDAB )
+            CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
+            CALL ZLASET( 'Full', LDAB, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), AB, LDAB )
             IINFO = 0
             COND = ULPINV
 !
@@ -574,9 +556,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( JCOL, JCOL ) = ANORM
-               ENDDO
+               FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -598,10 +578,10 @@
 !
 !                 Nonhermitian, random entries
 !
-               CALL ZLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, &
-                            CONE, 'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, KL, &
-                            KU, ZERO, ANORM, 'N', A, LDA, IDUMMA, &
+               CALL ZLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0D+0, &
+                            (1.0D+0,0.0D+0), 'T', 'N', WORK( N+1 ), 1, 1.0D+0, &
+                            WORK( 2*N+1 ), 1, 1.0D+0, 'N', IDUMMA, KL, &
+                            KU, 0.0D+0, ANORM, 'N', A, LDA, IDUMMA, &
                             IINFO )
 !
             ELSE
@@ -611,10 +591,10 @@
 !
 !              Generate Right-Hand Side
 !
-            CALL ZLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, &
-                         CONE, 'T', 'N', WORK( M+1 ), 1, ONE, &
-                         WORK( 2*M+1 ), 1, ONE, 'N', IDUMMA, M, NRHS, &
-                         ZERO, ONE, 'NO', C, LDC, IDUMMA, IINFO )
+            CALL ZLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0D+0, &
+                         (1.0D+0,0.0D+0), 'T', 'N', WORK( M+1 ), 1, 1.0D+0, &
+                         WORK( 2*M+1 ), 1, 1.0D+0, 'N', IDUMMA, M, NRHS, &
+                         0.0D+0, 1.0D+0, 'NO', C, LDC, IDUMMA, IINFO )
 !
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'Generator', IINFO, N, &
@@ -623,15 +603,15 @@
                RETURN
             END IF
 !
-90          CONTINUE
+            ENDIF
 !
 !              Copy A to band storage.
 !
             DO J = 1, N
                DO I = MAX( 1, J-KU ), MIN( M, J+KL )
                   AB( KU+1+I-J, J ) = A( I, J )
-                  ENDDO
                ENDDO
+            ENDDO
 !
 !              Copy C
 !
@@ -687,9 +667,9 @@
                END IF
                ENDDO
 !
-  140       CONTINUE
+            ENDIF
             ENDDO
-  150    CONTINUE
+            ENDIF
          ENDDO
       ENDDO
 !

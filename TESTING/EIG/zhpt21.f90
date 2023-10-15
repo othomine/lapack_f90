@@ -241,15 +241,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TEN = 10.0D+0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = 1.0D+0 / 2.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER
@@ -268,18 +259,13 @@
    EXTERNAL           ZAXPY, ZCOPY, ZGEMM, ZHPMV, ZHPR, ZHPR2, &
                       ZLACPY, ZLASET, ZUPMTR
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, DCMPLX, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Constants
 !
-   RESULT( 1 ) = ZERO
-   IF( ITYPE == 1 ) &
-      RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1 ) = 0.0D0
+   IF( ITYPE == 1 ) RESULT( 2 ) = 0.0D0
+   IF( N <= 0 ) RETURN
 !
    LAP = ( N*( N+1 ) ) / 2
 !
@@ -297,7 +283,7 @@
 !     Some Error Checks
 !
    IF( ITYPE < 1 .OR. ITYPE > 3 ) THEN
-      RESULT( 1 ) = TEN / ULP
+      RESULT( 1 ) = 10.0D0 / ULP
       RETURN
    END IF
 !
@@ -306,7 +292,7 @@
 !     Norm of A:
 !
    IF( ITYPE == 3 ) THEN
-      ANORM = ONE
+      ANORM = 1.0D0
    ELSE
       ANORM = MAX( ZLANHP( '1', CUPLO, N, AP, RWORK ), UNFL )
    END IF
@@ -317,7 +303,7 @@
 !
 !        ITYPE=1: error = A - U S U**H
 !
-      CALL ZLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+      CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
       CALL ZCOPY( LAP, AP, 1, WORK, 1 )
 !
       DO J = 1, N
@@ -336,7 +322,7 @@
 !
 !        ITYPE=2: error = V S V**H - A
 !
-      CALL ZLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+      CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
 !
       IF( LOWER ) THEN
          WORK( LAP ) = D( N )
@@ -344,18 +330,18 @@
             JP = ( ( 2*N-J )*( J-1 ) ) / 2
             JP1 = JP + N - J
             IF( KBAND == 1 ) THEN
-               WORK( JP+J+1 ) = ( CONE-TAU( J ) )*E( J )
+               WORK( JP+J+1 ) = ( (1.0D0,0.0D0)-TAU( J ) )*E( J )
                DO JR = J + 2, N
                   WORK( JP+JR ) = -TAU( J )*E( J )*VP( JP+JR )
                ENDDO
             END IF
 !
-            IF( TAU( J ) /= CZERO ) THEN
+            IF( TAU( J ) /= (0.0D+0,0.0D+0) ) THEN
                VSAVE = VP( JP+J+1 )
-               VP( JP+J+1 ) = CONE
-               CALL ZHPMV( 'L', N-J, CONE, WORK( JP1+J+1 ), &
-                           VP( JP+J+1 ), 1, CZERO, WORK( LAP+1 ), 1 )
-               TEMP = -HALF*TAU( J )*ZDOTC( N-J, WORK( LAP+1 ), 1, &
+               VP( JP+J+1 ) = (1.0D0,0.0D0)
+               CALL ZHPMV( 'L', N-J, (1.0D0,0.0D0), WORK( JP1+J+1 ), &
+                           VP( JP+J+1 ), 1, (0.0D+0,0.0D+0), WORK( LAP+1 ), 1 )
+               TEMP = -0.5D+0*TAU( J )*ZDOTC( N-J, WORK( LAP+1 ), 1, &
                       VP( JP+J+1 ), 1 )
                CALL ZAXPY( N-J, TEMP, VP( JP+J+1 ), 1, WORK( LAP+1 ), &
                            1 )
@@ -372,18 +358,18 @@
             JP = ( J*( J-1 ) ) / 2
             JP1 = JP + J
             IF( KBAND == 1 ) THEN
-               WORK( JP1+J ) = ( CONE-TAU( J ) )*E( J )
+               WORK( JP1+J ) = ( (1.0D0,0.0D0)-TAU( J ) )*E( J )
                DO JR = 1, J - 1
                   WORK( JP1+JR ) = -TAU( J )*E( J )*VP( JP1+JR )
                ENDDO
             END IF
 !
-            IF( TAU( J ) /= CZERO ) THEN
+            IF( TAU( J ) /= (0.0D+0,0.0D+0) ) THEN
                VSAVE = VP( JP1+J )
-               VP( JP1+J ) = CONE
-               CALL ZHPMV( 'U', J, CONE, WORK, VP( JP1+1 ), 1, CZERO, &
+               VP( JP1+J ) = (1.0D0,0.0D0)
+               CALL ZHPMV( 'U', J, (1.0D0,0.0D0), WORK, VP( JP1+1 ), 1, (0.0D+0,0.0D+0), &
                            WORK( LAP+1 ), 1 )
-               TEMP = -HALF*TAU( J )*ZDOTC( J, WORK( LAP+1 ), 1, &
+               TEMP = -0.5D+0*TAU( J )*ZDOTC( J, WORK( LAP+1 ), 1, &
                       VP( JP1+1 ), 1 )
                CALL ZAXPY( J, TEMP, VP( JP1+1 ), 1, WORK( LAP+1 ), &
                            1 )
@@ -410,12 +396,12 @@
       CALL ZUPMTR( 'R', CUPLO, 'C', N, N, VP, TAU, WORK, N, &
                    WORK( N**2+1 ), IINFO )
       IF( IINFO /= 0 ) THEN
-         RESULT( 1 ) = TEN / ULP
+         RESULT( 1 ) = 10.0D0 / ULP
          RETURN
       END IF
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - CONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0D0,0.0D0)
       ENDDO
 !
       WNORM = ZLANGE( '1', N, N, WORK, N, RWORK )
@@ -424,7 +410,7 @@
    IF( ANORM > WNORM ) THEN
       RESULT( 1 ) = ( WNORM / ANORM ) / ( N*ULP )
    ELSE
-      IF( ANORM < ONE ) THEN
+      IF( ANORM < 1.0D0 ) THEN
          RESULT( 1 ) = ( MIN( WNORM, N*ANORM ) / ANORM ) / ( N*ULP )
       ELSE
          RESULT( 1 ) = MIN( WNORM / ANORM, DBLE( N ) ) / ( N*ULP )
@@ -436,11 +422,11 @@
 !     Compute  U U**H - I
 !
    IF( ITYPE == 1 ) THEN
-      CALL ZGEMM( 'N', 'C', N, N, N, CONE, U, LDU, U, LDU, CZERO, &
+      CALL ZGEMM( 'N', 'C', N, N, N, (1.0D0,0.0D0), U, LDU, U, LDU, (0.0D+0,0.0D+0), &
                   WORK, N )
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - CONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0D0,0.0D0)
       ENDDO
 !
       RESULT( 2 ) = MIN( ZLANGE( '1', N, N, WORK, N, RWORK ), &
@@ -452,4 +438,4 @@
 !     End of ZHPT21
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

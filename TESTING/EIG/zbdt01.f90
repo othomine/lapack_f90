@@ -160,10 +160,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -176,21 +172,18 @@
 !     .. External Subroutines ..
    EXTERNAL           ZCOPY, ZGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, DCMPLX, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
    IF( M <= 0 .OR. N <= 0 ) THEN
-      RESID = ZERO
+      RESID = 0.0D+0
       RETURN
    END IF
 !
 !     Compute A - Q * B * P**H one column at a time.
 !
-   RESID = ZERO
+   RESID = 0.0D+0
    IF( KD /= 0 ) THEN
 !
 !        B is bidiagonal.
@@ -205,8 +198,8 @@
                WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
             ENDDO
             WORK( M+N ) = D( N )*PT( N, J )
-            CALL ZGEMV( 'No transpose', M, N, -DCMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, DCMPLX( ONE ), WORK, 1 )
+            CALL ZGEMV( 'No transpose', M, N, -DCMPLX( 1.0D+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
             RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -219,8 +212,8 @@
                WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
             ENDDO
             WORK( M+M ) = D( M )*PT( M, J )
-            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, DCMPLX( ONE ), WORK, 1 )
+            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( 1.0D+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
             RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -234,8 +227,8 @@
                WORK( M+I ) = E( I-1 )*PT( I-1, J ) + &
                              D( I )*PT( I, J )
             ENDDO
-            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, DCMPLX( ONE ), WORK, 1 )
+            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( 1.0D+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
             RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
          ENDDO
       END IF
@@ -249,8 +242,8 @@
             DO I = 1, N
                WORK( M+I ) = D( I )*PT( I, J )
             ENDDO
-            CALL ZGEMV( 'No transpose', M, N, -DCMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, DCMPLX( ONE ), WORK, 1 )
+            CALL ZGEMV( 'No transpose', M, N, -DCMPLX( 1.0D+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
             RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -259,8 +252,8 @@
             DO I = 1, M
                WORK( M+I ) = D( I )*PT( I, J )
             ENDDO
-            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( ONE ), Q, LDQ, &
-                        WORK( M+1 ), 1, DCMPLX( ONE ), WORK, 1 )
+            CALL ZGEMV( 'No transpose', M, M, -DCMPLX( 1.0D+0 ), Q, LDQ, &
+                        WORK( M+1 ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
             RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
             ENDDO
       END IF
@@ -271,14 +264,14 @@
    ANORM = ZLANGE( '1', M, N, A, LDA, RWORK )
    EPS = DLAMCH( 'Precision' )
 !
-   IF( ANORM <= ZERO ) THEN
-      IF( RESID /= ZERO ) &
-         RESID = ONE / EPS
+   IF( ANORM <= 0.0D+0 ) THEN
+      IF( RESID /= 0.0D+0 ) &
+         RESID = 1.0D+0 / EPS
    ELSE
       IF( ANORM >= RESID ) THEN
          RESID = ( RESID / ANORM ) / ( DBLE( N )*EPS )
       ELSE
-         IF( ANORM < ONE ) THEN
+         IF( ANORM < 1.0D+0 ) THEN
             RESID = ( MIN( RESID, DBLE( N )*ANORM ) / ANORM ) / &
                     ( DBLE( N )*EPS )
          ELSE
@@ -293,4 +286,4 @@
 !     End of ZBDT01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -227,13 +227,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TEN
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TEN = 10.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER
@@ -251,16 +244,11 @@
    EXTERNAL           ZGEMM, ZHER, ZHER2, ZLACPY, ZLARFY, ZLASET, &
                       ZUNM2L, ZUNM2R
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, DCMPLX, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = ZERO
-   IF( ITYPE == 1 ) &
-      RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1 ) = 0.0D0
+   IF( ITYPE == 1 ) RESULT( 2 ) = 0.0D0
+   IF( N <= 0 ) RETURN
 !
    IF( LSAME( UPLO, 'U' ) ) THEN
       LOWER = .FALSE.
@@ -276,7 +264,7 @@
 !     Some Error Checks
 !
    IF( ITYPE < 1 .OR. ITYPE > 3 ) THEN
-      RESULT( 1 ) = TEN / ULP
+      RESULT( 1 ) = 10.0D0 / ULP
       RETURN
    END IF
 !
@@ -285,7 +273,7 @@
 !     Norm of A:
 !
    IF( ITYPE == 3 ) THEN
-      ANORM = ONE
+      ANORM = 1.0D0
    ELSE
       ANORM = MAX( ZLANHE( '1', CUPLO, N, A, LDA, RWORK ), UNFL )
    END IF
@@ -296,7 +284,7 @@
 !
 !        ITYPE=1: error = A - U S U**H
 !
-      CALL ZLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+      CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
       CALL ZLACPY( CUPLO, N, N, A, LDA, WORK, N )
 !
       DO J = 1, N
@@ -315,20 +303,20 @@
 !
 !        ITYPE=2: error = V S V**H - A
 !
-      CALL ZLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+      CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
 !
       IF( LOWER ) THEN
          WORK( N**2 ) = D( N )
          DO J = N - 1, 1, -1
             IF( KBAND == 1 ) THEN
-               WORK( ( N+1 )*( J-1 )+2 ) = ( CONE-TAU( J ) )*E( J )
+               WORK( ( N+1 )*( J-1 )+2 ) = ( (1.0D0,0.0D0)-TAU( J ) )*E( J )
                DO JR = J + 2, N
                   WORK( ( J-1 )*N+JR ) = -TAU( J )*E( J )*V( JR, J )
                ENDDO
             END IF
 !
             VSAVE = V( J+1, J )
-            V( J+1, J ) = ONE
+            V( J+1, J ) = 1.0D0
             CALL ZLARFY( 'L', N-J, V( J+1, J ), 1, TAU( J ), &
                          WORK( ( N+1 )*J+1 ), N, WORK( N**2+1 ) )
             V( J+1, J ) = VSAVE
@@ -338,14 +326,14 @@
          WORK( 1 ) = D( 1 )
          DO J = 1, N - 1
             IF( KBAND == 1 ) THEN
-               WORK( ( N+1 )*J ) = ( CONE-TAU( J ) )*E( J )
+               WORK( ( N+1 )*J ) = ( (1.0D0,0.0D0)-TAU( J ) )*E( J )
                DO JR = 1, J - 1
                   WORK( J*N+JR ) = -TAU( J )*E( J )*V( JR, J+1 )
                ENDDO
             END IF
 !
             VSAVE = V( J, J+1 )
-            V( J, J+1 ) = ONE
+            V( J, J+1 ) = 1.0D0
             CALL ZLARFY( 'U', J, V( 1, J+1 ), 1, TAU( J ), WORK, N, &
                          WORK( N**2+1 ) )
             V( J, J+1 ) = VSAVE
@@ -383,12 +371,12 @@
                       WORK, N, WORK( N**2+1 ), IINFO )
       END IF
       IF( IINFO /= 0 ) THEN
-         RESULT( 1 ) = TEN / ULP
+         RESULT( 1 ) = 10.0D0 / ULP
          RETURN
       END IF
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - CONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0D0,0.0D0)
          ENDDO
 !
       WNORM = ZLANGE( '1', N, N, WORK, N, RWORK )
@@ -397,7 +385,7 @@
    IF( ANORM > WNORM ) THEN
       RESULT( 1 ) = ( WNORM / ANORM ) / ( N*ULP )
    ELSE
-      IF( ANORM < ONE ) THEN
+      IF( ANORM < 1.0D0 ) THEN
          RESULT( 1 ) = ( MIN( WNORM, N*ANORM ) / ANORM ) / ( N*ULP )
       ELSE
          RESULT( 1 ) = MIN( WNORM / ANORM, DBLE( N ) ) / ( N*ULP )
@@ -409,11 +397,11 @@
 !     Compute  U U**H - I
 !
    IF( ITYPE == 1 ) THEN
-      CALL ZGEMM( 'N', 'C', N, N, N, CONE, U, LDU, U, LDU, CZERO, &
+      CALL ZGEMM( 'N', 'C', N, N, N, (1.0D0,0.0D0), U, LDU, U, LDU, (0.0D+0,0.0D+0), &
                   WORK, N )
 !
       DO J = 1, N
-         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - CONE
+         WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0D0,0.0D0)
          ENDDO
 !
       RESULT( 2 ) = MIN( ZLANGE( '1', N, N, WORK, N, RWORK ), &
@@ -425,4 +413,4 @@
 !     End of ZHET21
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

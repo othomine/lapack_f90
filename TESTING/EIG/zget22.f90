@@ -156,13 +156,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMA, NORME
@@ -179,17 +172,12 @@
 !     .. External Subroutines ..
    EXTERNAL           ZGEMM, ZLASET
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, DIMAG, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Initialize RESULT (in case N=0)
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0D0
+   IF( N <= 0 ) RETURN
 !
    UNFL = DLAMCH( 'Safe minimum' )
    ULP = DLAMCH( 'Precision' )
@@ -217,11 +205,11 @@
 !
 !     Normalization of E:
 !
-   ENRMIN = ONE / ULP
-   ENRMAX = ZERO
+   ENRMIN = 1.0D0 / ULP
+   ENRMAX = 0.0D0
    IF( ITRNSE == 0 ) THEN
       DO JVEC = 1, N
-         TEMP1 = ZERO
+         TEMP1 = 0.0D0
          DO J = 1, N
             TEMP1 = MAX( TEMP1, ABS( DBLE( E( J, JVEC ) ) )+ &
                     ABS( DIMAG( E( J, JVEC ) ) ) )
@@ -231,7 +219,7 @@
       ENDDO
    ELSE
       DO JVEC = 1, N
-         RWORK( JVEC ) = ZERO
+         RWORK( JVEC ) = 0.0D0
       ENDDO
 !
       DO J = 1, N
@@ -260,7 +248,7 @@
 !
 !     Error =  AE - EW
 !
-   CALL ZLASET( 'Full', N, N, CZERO, CZERO, WORK, N )
+   CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
 !
    JOFF = 0
    DO JCOL = 1, N
@@ -286,7 +274,7 @@
       JOFF = JOFF + N
       ENDDO
 !
-   CALL ZGEMM( TRANSA, TRANSE, N, N, N, CONE, A, LDA, E, LDE, -CONE, &
+   CALL ZGEMM( TRANSA, TRANSE, N, N, N, (1.0D0,0.0D0), A, LDA, E, LDE, -(1.0D0,0.0D0), &
                WORK, N )
 !
    ERRNRM = ZLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
@@ -296,16 +284,16 @@
    IF( ANORM > ERRNRM ) THEN
       RESULT( 1 ) = ( ERRNRM / ANORM ) / ULP
    ELSE
-      IF( ANORM < ONE ) THEN
-         RESULT( 1 ) = ONE / ULP
+      IF( ANORM < 1.0D0 ) THEN
+         RESULT( 1 ) = 1.0D0 / ULP
       ELSE
-         RESULT( 1 ) = MIN( ERRNRM / ANORM, ONE ) / ULP
+         RESULT( 1 ) = MIN( ERRNRM / ANORM, 1.0D0 ) / ULP
       END IF
    END IF
 !
 !     Compute RESULT(2) : the normalization error in E.
 !
-   RESULT( 2 ) = MAX( ABS( ENRMAX-ONE ), ABS( ENRMIN-ONE ) ) / &
+   RESULT( 2 ) = MAX( ABS( ENRMAX-1.0D0 ), ABS( ENRMIN-1.0D0 ) ) / &
                  ( DBLE( N )*ULP )
 !
    RETURN
@@ -313,4 +301,4 @@
 !     End of ZGET22
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

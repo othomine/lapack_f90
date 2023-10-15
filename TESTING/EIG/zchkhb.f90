@@ -258,7 +258,7 @@
 !>
 !>       Some Local Variables and Parameters:
 !>       ---- ----- --------- --- ----------
-!>       ZERO, ONE       Real 0 and 1.
+!>       0.0D+0, 1.0D+0       Real 0 and 1.
 !>       MAXTYP          The number of types defined.
 !>       NTEST           The number of tests performed, or which can
 !>                       be performed so far, for the current matrix.
@@ -315,14 +315,7 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
-   DOUBLE PRECISION   ZERO, ONE, TWO, TEN
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0, &
-                      TEN = 10.0D+0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = ONE / TWO )
+
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 15 )
 !     ..
@@ -346,15 +339,10 @@
    EXTERNAL           DLASUM, XERBLA, ZHBT21, ZHBTRD, ZLACPY, ZLASET, &
                       ZLATMR, ZLATMS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 5*4, 5*5, 3*8 /
-   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, &
-                      2, 3 /
-   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0 /
+   DATA               KMAGN / 2*1, 1, 1, 1, 2, 3, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -365,21 +353,14 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = ANY(NN(1:NSIZES) < 0 )
 !
-   BADNNB = .FALSE.
-   KMAX = 0
-   DO J = 1, NSIZES
-      KMAX = MAX( KMAX, KK( J ) )
-      IF( KK( J ) < 0 ) &
-         BADNNB = .TRUE.
-   ENDDO
+   NMAX = MAXVAL(NN(1:NSIZES))
+   BADNN = ANY(NN(1:NSIZES) < 0 )
+
+   KMAX = MAXVAL(KK(1:NSIZES))
+   BADNNB = ANY(KK(1:NSIZES) < 0 )
    KMAX = MIN( NMAX-1, KMAX )
 !
 !     Check for errors
@@ -409,15 +390,14 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 .OR. NWDTHS == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D+0 / UNFL
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D+0 / ULP
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
 !
@@ -428,12 +408,11 @@
 !
    DO JSIZE = 1, NSIZES
       N = NN( JSIZE )
-      ANINV = ONE / DBLE( MAX( 1, N ) )
+      ANINV = 1.0D+0 / DBLE( MAX( 1, N ) )
 !
       DO JWIDTH = 1, NWDTHS
          K = KK( JWIDTH )
-         IF( K > N ) &
-            GO TO 180
+         IF( K > N ) GO TO 180
          K = MAX( 0, MIN( N-1, K ) )
 !
          IF( NSIZES /= 1 ) THEN
@@ -443,14 +422,11 @@
          END IF
 !
          DO JTYPE = 1, MTYPES
-            IF( .NOT.DOTYPE( JTYPE ) ) &
-               GO TO 170
+            IF( .NOT.DOTYPE( JTYPE ) ) GO TO 170
             NMATS = NMATS + 1
             NTEST = 0
 !
-            DO J = 1, 4
-               IOLDSD( J ) = ISEED( J )
-            ENDDO
+            IOLDSD(1:4) = ISEED(1:4)
 !
 !              Compute "A".
 !              Store as "Upper"; later, we will copy to other format.
@@ -469,8 +445,7 @@
 !              =9                      positive definite
 !              =10                     diagonally dominant tridiagonal
 !
-            IF( MTYPES > MAXTYP ) &
-               GO TO 100
+            IF( MTYPES > MAXTYP ) GO TO 100
 !
             ITYPE = KTYPE( JTYPE )
             IMODE = KMODE( JTYPE )
@@ -486,12 +461,12 @@
               ANORM = RTUNFL*N*ULPINV
             END SELECT
 !
-            CALL ZLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+            CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
             IINFO = 0
             IF( JTYPE <= 15 ) THEN
                COND = ULPINV
             ELSE
-               COND = ULPINV*ANINV / TEN
+               COND = ULPINV*ANINV / 10.0D+0
             END IF
 !
 !              Special Matrices -- Identity & Jordan block
@@ -505,9 +480,7 @@
 !
 !                 Identity
 !
-               DO JCOL = 1, N
-                  A( K+1, JCOL ) = ANORM
-               ENDDO
+               A(K+1,1:N) = ANORM
 !
             ELSE IF( ITYPE == 4 ) THEN
 !
@@ -529,20 +502,20 @@
 !
 !                 Diagonal, random eigenvalues
 !
-               CALL ZLATMR( N, N, 'S', ISEED, 'H', WORK, 6, ONE, &
-                            CONE, 'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                            ZERO, ANORM, 'Q', A( K+1, 1 ), LDA, &
+               CALL ZLATMR( N, N, 'S', ISEED, 'H', WORK, 6, 1.0D+0, &
+                            (1.0D+0,0.0D+0), 'T', 'N', WORK( N+1 ), 1, 1.0D+0, &
+                            WORK( 2*N+1 ), 1, 1.0D+0, 'N', IDUMMA, 0, 0, &
+                            0.0D+0, ANORM, 'Q', A( K+1, 1 ), LDA, &
                             IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 8 ) THEN
 !
 !                 Hermitian, random eigenvalues
 !
-               CALL ZLATMR( N, N, 'S', ISEED, 'H', WORK, 6, ONE, &
-                            CONE, 'T', 'N', WORK( N+1 ), 1, ONE, &
-                            WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, K, K, &
-                            ZERO, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
+               CALL ZLATMR( N, N, 'S', ISEED, 'H', WORK, 6, 1.0D+0, &
+                            (1.0D+0,0.0D+0), 'T', 'N', WORK( N+1 ), 1, 1.0D+0, &
+                            WORK( 2*N+1 ), 1, 1.0D+0, 'N', IDUMMA, K, K, &
+                            0.0D+0, ANORM, 'Q', A, LDA, IDUMMA, IINFO )
 !
             ELSE IF( ITYPE == 9 ) THEN
 !
@@ -556,18 +529,13 @@
 !
 !                 Positive definite tridiagonal, eigenvalues specified.
 !
-               IF( N > 1 ) &
-                  K = MAX( 1, K )
+               IF( N > 1 ) K = MAX( 1, K )
                CALL ZLATMS( N, N, 'S', ISEED, 'P', RWORK, IMODE, &
                             COND, ANORM, 1, 1, 'Q', A( K, 1 ), LDA, &
                             WORK, IINFO )
                DO I = 2, N
-                  TEMP1 = ABS( A( K, I ) ) / &
-                          SQRT( ABS( A( K+1, I-1 )*A( K+1, I ) ) )
-                  IF( TEMP1 > HALF ) THEN
-                     A( K, I ) = HALF*SQRT( ABS( A( K+1, &
-                                 I-1 )*A( K+1, I ) ) )
-                  END IF
+                  TEMP1 = ABS(A(K,I))/SQRT(ABS(A(K+1,I-1)*A(K+1,I)))
+                  IF(TEMP1>0.5D+0) A(K,I) = 0.5D+0*SQRT(ABS(A(K+1,I-1)*A(K+1,I)))
                ENDDO
 !
             ELSE
@@ -615,13 +583,13 @@
             DO JC = 1, N
                DO JR = 0, MIN( K, N-JC )
                   A( JR+1, JC ) = DCONJG( A( K+1-JR, JC+JR ) )
-                  ENDDO
                ENDDO
+            ENDDO
             DO JC = N + 1 - K, N
                DO JR = MIN( K, N-JC ) + 1, K
-                  A( JR+1, JC ) = ZERO
-                  ENDDO
+                  A( JR+1, JC ) = 0.0D+0
                ENDDO
+            ENDDO
 !
 !              Call ZHBTRD to compute S and U from lower triangle
 !

@@ -355,11 +355,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    DOUBLE PRECISION   EPSIN
    PARAMETER          ( EPSIN = 5.9605D-8 )
 !     ..
@@ -383,9 +378,6 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, ZCOPY, ZGEESX, ZGEMM, ZLACPY, ZUNT01
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DIMAG, MAX, MIN
-!     ..
 !     .. Arrays in Common ..
    LOGICAL            SELVAL( 20 )
    DOUBLE PRECISION   SELWI( 20 ), SELWR( 20 )
@@ -401,7 +393,7 @@
 !     Check for errors
 !
    INFO = 0
-   IF( THRESH < ZERO ) THEN
+   IF( THRESH < 0.0D0 ) THEN
       INFO = -3
    ELSE IF( NOUNIT <= 0 ) THEN
       INFO = -5
@@ -422,18 +414,15 @@
 !
 !     Quick return if nothing to do
 !
-   DO I = 1, 17
-      RESULT( I ) = -ONE
-   ENDDO
+   RESULT(1:17) = -1.0D+0
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Important constants
 !
    SMLNUM = DLAMCH( 'Safe minimum' )
    ULP = DLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
 !
 !     Perform tests (1)-(13)
 !
@@ -471,11 +460,10 @@
 !
 !        Do Test (1) or Test (7)
 !
-      RESULT( 1+RSUB ) = ZERO
+      RESULT( 1+RSUB ) = 0.0D0
       DO J = 1, N - 1
          DO I = J + 1, N
-            IF( H( I, J ) /= CZERO ) &
-               RESULT( 1+RSUB ) = ULPINV
+            IF( H( I, J ) /= (0.0D+0,0.0D+0) ) RESULT( 1+RSUB ) = ULPINV
          ENDDO
       ENDDO
 !
@@ -487,13 +475,13 @@
 !
 !        Compute Q*H and store in HT.
 !
-      CALL ZGEMM( 'No transpose', 'No transpose', N, N, N, CONE, VS, &
-                  LDVS, H, LDA, CZERO, HT, LDA )
+      CALL ZGEMM( 'No transpose', 'No transpose', N, N, N, (1.0D0,0.0D0), VS, &
+                  LDVS, H, LDA, (0.0D+0,0.0D+0), HT, LDA )
 !
 !        Compute A - Q*H*Q'
 !
       CALL ZGEMM( 'No transpose', 'Conjugate transpose', N, N, N, &
-                  -CONE, HT, LDA, VS, LDVS, CONE, VS1, LDVS )
+                  -(1.0D0,0.0D0), HT, LDA, VS, LDVS, (1.0D0,0.0D0), VS1, LDVS )
 !
       ANORM = MAX( ZLANGE( '1', N, N, A, LDA, RWORK ), SMLNUM )
       WNORM = ZLANGE( '1', N, N, VS1, LDVS, RWORK )
@@ -501,7 +489,7 @@
       IF( ANORM > WNORM ) THEN
          RESULT( 2+RSUB ) = ( WNORM / ANORM ) / ( N*ULP )
       ELSE
-         IF( ANORM < ONE ) THEN
+         IF( ANORM < 1.0D0 ) THEN
             RESULT( 2+RSUB ) = ( MIN( WNORM, N*ANORM ) / ANORM ) / &
                                ( N*ULP )
          ELSE
@@ -517,7 +505,7 @@
 !
 !        Do Test (4) or Test (10)
 !
-      RESULT( 4+RSUB ) = ZERO
+      RESULT( 4+RSUB ) = 0.0D0
       DO I = 1, N
          IF( H( I, I ) /= W( I ) ) &
             RESULT( 4+RSUB ) = ULPINV
@@ -542,7 +530,7 @@
          GO TO 220
       END IF
 !
-      RESULT( 5+RSUB ) = ZERO
+      RESULT( 5+RSUB ) = 0.0D0
       DO J = 1, N
          DO I = 1, N
             IF( H( I, J ) /= HT( I, J ) ) &
@@ -552,27 +540,22 @@
 !
 !        Do Test (6) or Test (12)
 !
-      RESULT( 6+RSUB ) = ZERO
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 6+RSUB ) = ULPINV
-      ENDDO
+      RESULT( 6+RSUB ) = 0.0E+0
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 6+RSUB ) = ULPINV
 !
 !        Do Test (13)
 !
       IF( ISORT == 1 ) THEN
-         RESULT( 13 ) = ZERO
+         RESULT( 13 ) = 0.0D0
          KNTEIG = 0
          DO I = 1, N
-            IF( ZSLECT( W( I ) ) ) &
-               KNTEIG = KNTEIG + 1
+            IF( ZSLECT( W( I ) ) ) KNTEIG = KNTEIG + 1
             IF( I < N ) THEN
                IF( ZSLECT( W( I+1 ) ) .AND. &
                    ( .NOT.ZSLECT( W( I ) ) ) )RESULT( 13 ) = ULPINV
             END IF
          ENDDO
-         IF( SDIM /= KNTEIG ) &
-            RESULT( 13 ) = ULPINV
+         IF( SDIM /= KNTEIG ) RESULT( 13 ) = ULPINV
       END IF
 !
    ENDDO
@@ -585,8 +568,7 @@
 !        Compute both RCONDE and RCONDV with VS
 !
       SORT = 'S'
-      RESULT( 14 ) = ZERO
-      RESULT( 15 ) = ZERO
+      RESULT( 14:15 ) = 0.0D0
       CALL ZLACPY( 'F', N, N, A, LDA, HT, LDA )
       CALL ZGEESX( 'V', SORT, ZSLECT, 'B', N, HT, LDA, SDIM1, WT, &
                    VS1, LDVS, RCONDE, RCONDV, WORK, LWORK, RWORK, &
@@ -607,18 +589,10 @@
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute both RCONDE and RCONDV without VS, and compare
 !
@@ -630,11 +604,9 @@
          RESULT( 14 ) = ULPINV
          RESULT( 15 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'ZGEESX4', IINFO, N, JTYPE, &
-               ISEED
+            WRITE( NOUNIT, FMT = 9998 )'ZGEESX4', IINFO, N, JTYPE, ISEED
          ELSE
-            WRITE( NOUNIT, FMT = 9999 )'ZGEESX4', IINFO, N, &
-               ISEED( 1 )
+            WRITE( NOUNIT, FMT = 9999 )'ZGEESX4', IINFO, N, ISEED( 1 )
          END IF
          INFO = ABS( IINFO )
          GO TO 220
@@ -642,25 +614,15 @@
 !
 !        Perform tests (14) and (15)
 !
-      IF( RCNDE1 /= RCONDE ) &
-         RESULT( 14 ) = ULPINV
-      IF( RCNDV1 /= RCONDV ) &
-         RESULT( 15 ) = ULPINV
+      IF( RCNDE1 /= RCONDE ) RESULT( 14 ) = ULPINV
+      IF( RCNDV1 /= RCONDV ) RESULT( 15 ) = ULPINV
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDE with VS, and compare
 !
@@ -683,23 +645,14 @@
 !
 !        Perform test (14)
 !
-      IF( RCNDE1 /= RCONDE ) &
-         RESULT( 14 ) = ULPINV
+      IF( RCNDE1 /= RCONDE ) RESULT( 14 ) = ULPINV
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDE without VS, and compare
 !
@@ -710,11 +663,9 @@
       IF( IINFO /= 0 ) THEN
          RESULT( 14 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'ZGEESX6', IINFO, N, JTYPE, &
-               ISEED
+            WRITE( NOUNIT, FMT = 9998 )'ZGEESX6', IINFO, N, JTYPE, ISEED
          ELSE
-            WRITE( NOUNIT, FMT = 9999 )'ZGEESX6', IINFO, N, &
-               ISEED( 1 )
+            WRITE( NOUNIT, FMT = 9999 )'ZGEESX6', IINFO, N, ISEED( 1 )
          END IF
          INFO = ABS( IINFO )
          GO TO 220
@@ -722,23 +673,14 @@
 !
 !        Perform test (14)
 !
-      IF( RCNDE1 /= RCONDE ) &
-         RESULT( 14 ) = ULPINV
+      IF( RCNDE1 /= RCONDE ) RESULT( 14 ) = ULPINV
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDV with VS, and compare
 !
@@ -749,11 +691,9 @@
       IF( IINFO /= 0 ) THEN
          RESULT( 15 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'ZGEESX7', IINFO, N, JTYPE, &
-               ISEED
+            WRITE( NOUNIT, FMT = 9998 )'ZGEESX7', IINFO, N, JTYPE, ISEED
          ELSE
-            WRITE( NOUNIT, FMT = 9999 )'ZGEESX7', IINFO, N, &
-               ISEED( 1 )
+            WRITE( NOUNIT, FMT = 9999 )'ZGEESX7', IINFO, N, ISEED( 1 )
          END IF
          INFO = ABS( IINFO )
          GO TO 220
@@ -761,23 +701,14 @@
 !
 !        Perform test (15)
 !
-      IF( RCNDV1 /= RCONDV ) &
-         RESULT( 15 ) = ULPINV
+      IF( RCNDV1 /= RCONDV ) RESULT( 15 ) = ULPINV
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
 !        Compute RCONDV without VS, and compare
 !
@@ -788,11 +719,9 @@
       IF( IINFO /= 0 ) THEN
          RESULT( 15 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
-            WRITE( NOUNIT, FMT = 9998 )'ZGEESX8', IINFO, N, JTYPE, &
-               ISEED
+            WRITE( NOUNIT, FMT = 9998 )'ZGEESX8', IINFO, N, JTYPE, ISEED
          ELSE
-            WRITE( NOUNIT, FMT = 9999 )'ZGEESX8', IINFO, N, &
-               ISEED( 1 )
+            WRITE( NOUNIT, FMT = 9999 )'ZGEESX8', IINFO, N, ISEED( 1 )
          END IF
          INFO = ABS( IINFO )
          GO TO 220
@@ -800,23 +729,14 @@
 !
 !        Perform test (15)
 !
-      IF( RCNDV1 /= RCONDV ) &
-         RESULT( 15 ) = ULPINV
+      IF( RCNDV1 /= RCONDV ) RESULT( 15 ) = ULPINV
 !
 !        Perform tests (10), (11), (12), and (13)
 !
-      DO I = 1, N
-         IF( W( I ) /= WT( I ) ) &
-            RESULT( 10 ) = ULPINV
-         DO J = 1, N
-            IF( H( I, J ) /= HT( I, J ) ) &
-               RESULT( 11 ) = ULPINV
-            IF( VS( I, J ) /= VS1( I, J ) ) &
-               RESULT( 12 ) = ULPINV
-            ENDDO
-         ENDDO
-      IF( SDIM /= SDIM1 ) &
-         RESULT( 13 ) = ULPINV
+      IF (ANY(W(1:N) /= WT(1:N))) RESULT( 10 ) = ULPINV
+      IF (ANY(H(1:N,1:N) /= HT(1:N,1:N))) RESULT( 11 ) = ULPINV
+      IF (ANY(VS(1:N,1:N) /= VS1(1:N,1:N))) RESULT( 12 ) = ULPINV
+      IF( SDIM /= SDIM1 ) RESULT( 13 ) = ULPINV
 !
    END IF
 !
@@ -836,10 +756,10 @@
       EPS = MAX( ULP, EPSIN )
       DO I = 1, N
          IPNT( I ) = I
-         SELVAL( I ) = .FALSE.
-         SELWR( I ) = DBLE( WTMP( I ) )
-         SELWI( I ) = DIMAG( WTMP( I ) )
-         ENDDO
+      ENDDO
+      SELVAL(1:N) = .FALSE.
+      SELWR(1:N) = DBLE( WTMP(1:N) )
+      SELWI(1:N) = DIMAG( WTMP(1:N) )
       DO I = 1, N - 1
          KMIN = I
          IF( ISRT == 0 ) THEN
@@ -864,10 +784,8 @@
          ITMP = IPNT( I )
          IPNT( I ) = IPNT( KMIN )
          IPNT( KMIN ) = ITMP
-         ENDDO
-      DO I = 1, NSLCT
-         SELVAL( IPNT( ISLCT( I ) ) ) = .TRUE.
-         ENDDO
+      ENDDO
+      SELVAL( IPNT( ISLCT( 1:NSLCT ) ) ) = .TRUE.
 !
 !        Compute condition numbers
 !
@@ -888,15 +806,15 @@
 !
       ANORM = ZLANGE( '1', N, N, A, LDA, RWORK )
       V = MAX( DBLE( N )*EPS*ANORM, SMLNUM )
-      IF( ANORM == ZERO ) &
-         V = ONE
+      IF( ANORM == 0.0D0 ) &
+         V = 1.0D0
       IF( V > RCONDV ) THEN
-         TOL = ONE
+         TOL = 1.0D0
       ELSE
          TOL = V / RCONDV
       END IF
       IF( V > RCDVIN ) THEN
-         TOLIN = ONE
+         TOLIN = 1.0D0
       ELSE
          TOLIN = V / RCDVIN
       END IF
@@ -911,7 +829,7 @@
       ELSE IF( RCDEIN+TOLIN < RCONDE-TOL ) THEN
          RESULT( 16 ) = ( RCONDE-TOL ) / ( RCDEIN+TOLIN )
       ELSE
-         RESULT( 16 ) = ONE
+         RESULT( 16 ) = 1.0D0
       END IF
 !
 !        Compare condition numbers for right invariant subspace
@@ -938,7 +856,7 @@
       ELSE IF( RCDVIN+TOLIN < RCONDV-TOL ) THEN
          RESULT( 17 ) = ( RCONDV-TOL ) / ( RCDVIN+TOLIN )
       ELSE
-         RESULT( 17 ) = ONE
+         RESULT( 17 ) = 1.0D0
       END IF
 !
   270    CONTINUE
@@ -955,4 +873,4 @@
 !     End of ZGET24
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

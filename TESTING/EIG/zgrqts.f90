@@ -192,11 +192,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
    COMPLEX*16         CROGUE
    PARAMETER          ( CROGUE = ( -1.0D+10, 0.0D+0 ) )
 !     ..
@@ -211,9 +206,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ZGEMM, ZGGRQF, ZHERK, ZLACPY, ZLASET, ZUNGQR, &
                       ZUNGRQ
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -258,7 +250,7 @@
 !
 !     Copy R
 !
-   CALL ZLASET( 'Full', M, N, CZERO, CZERO, R, LDA )
+   CALL ZLASET( 'Full', M, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), R, LDA )
    IF( M <= N ) THEN
       CALL ZLACPY( 'Upper', M, M, AF( 1, N-M+1 ), LDA, R( 1, N-M+1 ), &
                    LDA )
@@ -270,45 +262,45 @@
 !
 !     Copy T
 !
-   CALL ZLASET( 'Full', P, N, CZERO, CZERO, T, LDB )
+   CALL ZLASET( 'Full', P, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), T, LDB )
    CALL ZLACPY( 'Upper', P, N, BF, LDB, T, LDB )
 !
 !     Compute R - A*Q'
 !
-   CALL ZGEMM( 'No transpose', 'Conjugate transpose', M, N, N, -CONE, &
-               A, LDA, Q, LDA, CONE, R, LDA )
+   CALL ZGEMM( 'No transpose', 'Conjugate transpose', M, N, N, -(1.0D0,0.0D0), &
+               A, LDA, Q, LDA, (1.0D0,0.0D0), R, LDA )
 !
 !     Compute norm( R - A*Q' ) / ( MAX(M,N)*norm(A)*ULP ) .
 !
    RESID = ZLANGE( '1', M, N, R, LDA, RWORK )
-   IF( ANORM > ZERO ) THEN
+   IF( ANORM > 0.0D0 ) THEN
       RESULT( 1 ) = ( ( RESID / DBLE( MAX( 1, M, N ) ) ) / ANORM ) / &
                     ULP
    ELSE
-      RESULT( 1 ) = ZERO
+      RESULT( 1 ) = 0.0D0
    END IF
 !
 !     Compute T*Q - Z'*B
 !
-   CALL ZGEMM( 'Conjugate transpose', 'No transpose', P, N, P, CONE, &
-               Z, LDB, B, LDB, CZERO, BWK, LDB )
-   CALL ZGEMM( 'No transpose', 'No transpose', P, N, N, CONE, T, LDB, &
-               Q, LDA, -CONE, BWK, LDB )
+   CALL ZGEMM( 'Conjugate transpose', 'No transpose', P, N, P, (1.0D0,0.0D0), &
+               Z, LDB, B, LDB, (0.0D+0,0.0D+0), BWK, LDB )
+   CALL ZGEMM( 'No transpose', 'No transpose', P, N, N, (1.0D0,0.0D0), T, LDB, &
+               Q, LDA, -(1.0D0,0.0D0), BWK, LDB )
 !
 !     Compute norm( T*Q - Z'*B ) / ( MAX(P,N)*norm(A)*ULP ) .
 !
    RESID = ZLANGE( '1', P, N, BWK, LDB, RWORK )
-   IF( BNORM > ZERO ) THEN
+   IF( BNORM > 0.0D0 ) THEN
       RESULT( 2 ) = ( ( RESID / DBLE( MAX( 1, P, M ) ) ) / BNORM ) / &
                     ULP
    ELSE
-      RESULT( 2 ) = ZERO
+      RESULT( 2 ) = 0.0D0
    END IF
 !
 !     Compute I - Q*Q'
 !
-   CALL ZLASET( 'Full', N, N, CZERO, CONE, R, LDA )
-   CALL ZHERK( 'Upper', 'No Transpose', N, N, -ONE, Q, LDA, ONE, R, &
+   CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D0,0.0D0), R, LDA )
+   CALL ZHERK( 'Upper', 'No Transpose', N, N, -1.0D0, Q, LDA, 1.0D0, R, &
                LDA )
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
@@ -318,9 +310,9 @@
 !
 !     Compute I - Z'*Z
 !
-   CALL ZLASET( 'Full', P, P, CZERO, CONE, T, LDB )
-   CALL ZHERK( 'Upper', 'Conjugate transpose', P, P, -ONE, Z, LDB, &
-               ONE, T, LDB )
+   CALL ZLASET( 'Full', P, P, (0.0D+0,0.0D+0), (1.0D0,0.0D0), T, LDB )
+   CALL ZHERK( 'Upper', 'Conjugate transpose', P, P, -1.0D0, Z, LDB, &
+               1.0D0, T, LDB )
 !
 !     Compute norm( I - Z'*Z ) / ( P*ULP ) .
 !
@@ -332,4 +324,4 @@
 !     End of ZGRQTS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

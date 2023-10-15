@@ -340,7 +340,7 @@
 !>
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0D0, 1.0D0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     NMAX            Largest value in NN.
 !>     NERRS           The number of tests which have exceeded THRESH
@@ -395,12 +395,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX*16         CZERO
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ) )
-   COMPLEX*16         CONE
-   PARAMETER          ( CONE = ( 1.0D+0, 0.0D+0 ) )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 21 )
 !     ..
@@ -440,15 +434,10 @@
    EXTERNAL           DLASUM, XERBLA, ZGEES, ZHST01, ZLACPY, ZLASET, &
                       ZLATME, ZLATMR, ZLATMS
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DCMPLX, MAX, MIN, SQRT
-!     ..
 !     .. Data statements ..
    DATA               KTYPE / 1, 2, 3, 5*4, 4*6, 6*6, 3*9 /
-   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, &
-                      3, 1, 2, 3 /
-   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, &
-                      1, 5, 5, 5, 4, 3, 1 /
+   DATA               KMAGN / 3*1, 1, 1, 1, 2, 3, 4*1, 1, 1, 1, 1, 2, 3, 1, 2, 3 /
+   DATA               KMODE / 3*0, 4, 3, 1, 4, 4, 4, 3, 1, 5, 4, 3, 1, 5, 5, 5, 4, 3, 1 /
    DATA               KCONDS / 3*0, 5*0, 4*1, 6*2, 3*0 /
 !     ..
 !     .. Executable Statements ..
@@ -465,13 +454,8 @@
 !
 !     Important constants
 !
-   BADNN = .FALSE.
-   NMAX = 0
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
 !     Check for errors
 !
@@ -481,7 +465,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D0 ) THEN
       INFO = -6
    ELSE IF( NOUNIT <= 0 ) THEN
       INFO = -7
@@ -500,17 +484,16 @@
 !
 !     Quick return if nothing to do
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
 !     More Important constants
 !
    UNFL = DLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0D0 / UNFL
    ULP = DLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
+   ULPINV = 1.0D0 / ULP
    RTULP = SQRT( ULP )
-   RTULPI = ONE / RTULP
+   RTULPI = 1.0D0 / RTULP
 !
 !     Loop over sizes, types
 !
@@ -525,14 +508,11 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 230
+         IF (DOTYPE( JTYPE ) ) THEN
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Compute "A"
 !
@@ -550,31 +530,23 @@
 !       =9                              random general
 !       =10                             random triangular
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 90
+         IF( MTYPES > MAXTYP ) GO TO 90
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 30, 40, 50 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0D+0
+          CASE (2)
+           ANORM = OVFL*ULP
+          CASE (3)
+           ANORM = UNFL*ULPINV
+         END SELECT
 !
-30       CONTINUE
-         ANORM = ONE
-         GO TO 60
-!
-40       CONTINUE
-         ANORM = OVFL*ULP
-         GO TO 60
-!
-50       CONTINUE
-         ANORM = UNFL*ULPINV
-         GO TO 60
-!
-60       CONTINUE
-!
-         CALL ZLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+         CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -590,9 +562,7 @@
 !
 !              Identity
 !
-            DO JCOL = 1, N
-               A( JCOL, JCOL ) = DCMPLX( ANORM )
-            ENDDO
+            FORALL (JCOL = 1:N) A( JCOL, JCOL ) = ANORM
 !
          ELSE IF( ITYPE == 3 ) THEN
 !
@@ -600,8 +570,7 @@
 !
             DO JCOL = 1, N
                A( JCOL, JCOL ) = DCMPLX( ANORM )
-               IF( JCOL > 1 ) &
-                  A( JCOL, JCOL-1 ) = CONE
+               IF( JCOL > 1 ) A( JCOL, JCOL-1 ) = (1.0D+0,0.0D+0)
             ENDDO
 !
          ELSE IF( ITYPE == 4 ) THEN
@@ -625,14 +594,14 @@
 !              General, eigenvalues specified
 !
             IF( KCONDS( JTYPE ) == 1 ) THEN
-               CONDS = ONE
+               CONDS = 1.0D0
             ELSE IF( KCONDS( JTYPE ) == 2 ) THEN
                CONDS = RTULPI
             ELSE
-               CONDS = ZERO
+               CONDS = 0.0D0
             END IF
 !
-            CALL ZLATME( N, 'D', ISEED, WORK, IMODE, COND, CONE, &
+            CALL ZLATME( N, 'D', ISEED, WORK, IMODE, COND, (1.0D+0,0.0D+0), &
                          'T', 'T', 'T', RWORK, 4, CONDS, N, N, ANORM, &
                          A, LDA, WORK( 2*N+1 ), IINFO )
 !
@@ -640,35 +609,35 @@
 !
 !              Diagonal, random eigenvalues
 !
-            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0D0, (1.0D+0,0.0D+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, 0, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random eigenvalues
 !
-            CALL ZLATMR( N, N, 'D', ISEED, 'H', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( N, N, 'D', ISEED, 'H', WORK, 6, 1.0D0, (1.0D+0,0.0D+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              General, random eigenvalues
 !
-            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0D0, (1.0D+0,0.0D+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
             IF( N >= 4 ) THEN
-               CALL ZLASET( 'Full', 2, N, CZERO, CZERO, A, LDA )
-               CALL ZLASET( 'Full', N-3, 1, CZERO, CZERO, A( 3, 1 ), &
+               CALL ZLASET( 'Full', 2, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
+               CALL ZLASET( 'Full', N-3, 1, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A( 3, 1 ), &
                             LDA )
-               CALL ZLASET( 'Full', N-3, 2, CZERO, CZERO, &
+               CALL ZLASET( 'Full', N-3, 2, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), &
                             A( 3, N-1 ), LDA )
-               CALL ZLASET( 'Full', 1, N, CZERO, CZERO, A( N, 1 ), &
+               CALL ZLASET( 'Full', 1, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A( N, 1 ), &
                             LDA )
             END IF
 !
@@ -676,10 +645,10 @@
 !
 !              Triangular, random eigenvalues
 !
-            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( N+1 ), 1, ONE, &
-                         WORK( 2*N+1 ), 1, ONE, 'N', IDUMMA, N, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( N, N, 'D', ISEED, 'N', WORK, 6, 1.0D0, (1.0D+0,0.0D+0), &
+                         'T', 'N', WORK( N+1 ), 1, 1.0D0, &
+                         WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, 0, &
+                         0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE
 !
@@ -707,9 +676,7 @@
 !
 !              Initialize RESULT
 !
-            DO J = 1, 13
-               RESULT( J ) = -ONE
-               ENDDO
+            RESULT(1:13) = -1.0D+0
 !
 !              Test with and without sorting of eigenvalues
 !
@@ -737,10 +704,10 @@
 !
 !                 Do Test (1) or Test (7)
 !
-               RESULT( 1+RSUB ) = ZERO
+               RESULT( 1+RSUB ) = 0.0D0
                DO J = 1, N - 1
                   DO I = J + 1, N
-                     IF( H( I, J ) /= ZERO ) &
+                     IF( H( I, J ) /= 0.0D0 ) &
                         RESULT( 1+RSUB ) = ULPINV
                      ENDDO
                   ENDDO
@@ -755,7 +722,7 @@
 !
 !                 Do Test (4) or Test (10)
 !
-               RESULT( 4+RSUB ) = ZERO
+               RESULT( 4+RSUB ) = 0.0D0
                DO I = 1, N
                   IF( H( I, I ) /= W( I ) ) &
                      RESULT( 4+RSUB ) = ULPINV
@@ -775,7 +742,7 @@
                   GO TO 190
                END IF
 !
-               RESULT( 5+RSUB ) = ZERO
+               RESULT( 5+RSUB ) = 0.0D0
                DO J = 1, N
                   DO I = 1, N
                      IF( H( I, J ) /= HT( I, J ) ) &
@@ -785,16 +752,13 @@
 !
 !                 Do Test (6) or Test (12)
 !
-               RESULT( 6+RSUB ) = ZERO
-               DO I = 1, N
-                  IF( W( I ) /= WT( I ) ) &
-                     RESULT( 6+RSUB ) = ULPINV
-                  ENDDO
+               RESULT( 6+RSUB ) = 0.0D0
+               IF (ANY(W(1:N) /= WT(1:N))) RESULT( 6+RSUB ) = ULPINV
 !
 !                 Do Test (13)
 !
                IF( ISORT == 1 ) THEN
-                  RESULT( 13 ) = ZERO
+                  RESULT( 13 ) = 0.0D0
                   KNTEIG = 0
                   DO I = 1, N
                      IF( ZSLECT( W( I ) ) ) &
@@ -818,7 +782,7 @@
             NTEST = 0
             NFAIL = 0
             DO J = 1, 13
-               IF( RESULT( J ) >= ZERO ) &
+               IF( RESULT( J ) >= 0.0D0 ) &
                   NTEST = NTEST + 1
                IF( RESULT( J ) >= THRESH ) &
                   NFAIL = NFAIL + 1
@@ -838,16 +802,15 @@
 !
             DO J = 1, 13
                IF( RESULT( J ) >= THRESH ) THEN
-                  WRITE( NOUNIT, FMT = 9993 )N, IWK, IOLDSD, JTYPE, &
-                     J, RESULT( J )
+                  WRITE( NOUNIT, FMT = 9993 )N, IWK, IOLDSD, JTYPE, J, RESULT( J )
                END IF
-               ENDDO
+            ENDDO
 !
             NERRS = NERRS + NFAIL
             NTESTT = NTESTT + NTEST
 !
             ENDDO
-  230    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !
@@ -909,4 +872,4 @@
 !     End of ZDRVES
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

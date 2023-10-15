@@ -175,13 +175,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMAB, TRANS
@@ -198,9 +191,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ZGEMV
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, DIMAG, MAX
-!     ..
 !     .. Statement Functions ..
    DOUBLE PRECISION   ABS1
 !     ..
@@ -209,13 +199,11 @@
 !     ..
 !     .. Executable Statements ..
 !
-   RESULT( 1 ) = ZERO
-   RESULT( 2 ) = ZERO
-   IF( N <= 0 ) &
-      RETURN
+   RESULT( 1:2 ) = 0.0D0
+   IF( N <= 0 ) RETURN
 !
    SAFMIN = DLAMCH( 'Safe minimum' )
-   SAFMAX = ONE / SAFMIN
+   SAFMAX = 1.0D0 / SAFMIN
    ULP = DLAMCH( 'Epsilon' )*DLAMCH( 'Base' )
 !
    IF( LEFT ) THEN
@@ -231,8 +219,8 @@
    ANORM = MAX( ZLANGE( NORMAB, N, N, A, LDA, RWORK ), SAFMIN )
    BNORM = MAX( ZLANGE( NORMAB, N, N, B, LDB, RWORK ), SAFMIN )
    ENORM = MAX( ZLANGE( 'O', N, N, E, LDE, RWORK ), ULP )
-   ALFMAX = SAFMAX / MAX( ONE, BNORM )
-   BETMAX = SAFMAX / MAX( ONE, ANORM )
+   ALFMAX = SAFMAX / MAX( 1.0D0, BNORM )
+   BETMAX = SAFMAX / MAX( 1.0D0, ANORM )
 !
 !     Compute error matrix.
 !     Column i = ( b(i) A - a(i) B ) E(i) / max( |a(i) B|, |b(i) A| )
@@ -242,12 +230,12 @@
       BETAI = BETA( JVEC )
       ABMAX = MAX( ABS1( ALPHAI ), ABS1( BETAI ) )
       IF( ABS1( ALPHAI ) > ALFMAX .OR. ABS1( BETAI ) > BETMAX .OR. &
-          ABMAX < ONE ) THEN
-         SCALE = ONE / MAX( ABMAX, SAFMIN )
+          ABMAX < 1.0D0 ) THEN
+         SCALE = 1.0D0 / MAX( ABMAX, SAFMIN )
          ALPHAI = SCALE*ALPHAI
          BETAI = SCALE*BETAI
       END IF
-      SCALE = ONE / MAX( ABS1( ALPHAI )*BNORM, ABS1( BETAI )*ANORM, &
+      SCALE = 1.0D0 / MAX( ABS1( ALPHAI )*BNORM, ABS1( BETAI )*ANORM, &
               SAFMIN )
       ACOEFF = SCALE*BETAI
       BCOEFF = SCALE*ALPHAI
@@ -256,9 +244,9 @@
          BCOEFF = DCONJG( BCOEFF )
       END IF
       CALL ZGEMV( TRANS, N, N, ACOEFF, A, LDA, E( 1, JVEC ), 1, &
-                  CZERO, WORK( N*( JVEC-1 )+1 ), 1 )
+                  (0.0D+0,0.0D+0), WORK( N*( JVEC-1 )+1 ), 1 )
       CALL ZGEMV( TRANS, N, N, -BCOEFF, B, LDA, E( 1, JVEC ), 1, &
-                  CONE, WORK( N*( JVEC-1 )+1 ), 1 )
+                  (1.0D0,0.0D0), WORK( N*( JVEC-1 )+1 ), 1 )
    ENDDO
 !
    ERRNRM = ZLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
@@ -269,13 +257,13 @@
 !
 !     Normalization of E:
 !
-   ENRMER = ZERO
+   ENRMER = 0.0D0
    DO JVEC = 1, N
-      TEMP1 = ZERO
+      TEMP1 = 0.0D0
       DO J = 1, N
          TEMP1 = MAX( TEMP1, ABS1( E( J, JVEC ) ) )
       ENDDO
-      ENRMER = MAX( ENRMER, ABS( TEMP1-ONE ) )
+      ENRMER = MAX( ENRMER, ABS( TEMP1-1.0D0 ) )
    ENDDO
 !
 !     Compute RESULT(2) : the normalization error in E.
@@ -287,4 +275,4 @@
 !     End of ZGET52
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

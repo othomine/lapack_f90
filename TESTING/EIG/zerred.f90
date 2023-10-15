@@ -82,8 +82,6 @@
 !     .. Parameters ..
    INTEGER            NMAX, LW
    PARAMETER          ( NMAX = 4, LW = 5*NMAX )
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ONE = 1.0D0, ZERO = 0.0D0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER*2        C2
@@ -105,9 +103,6 @@
 !     .. External Functions ..
    LOGICAL            LSAMEN, ZSLECT
    EXTERNAL           LSAMEN, ZSLECT
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          LEN_TRIM
 !     ..
 !     .. Arrays in Common ..
    LOGICAL            SELVAL( 20 )
@@ -131,14 +126,8 @@
 !
 !     Initialize A
 !
-   DO J = 1, NMAX
-      DO I = 1, NMAX
-         A( I, J ) = ZERO
-      ENDDO
-   ENDDO
-   DO I = 1, NMAX
-      A( I, I ) = ONE
-   ENDDO
+   A(1:NMAX,1:NMAX) = 0.0D0
+   FORALL (I = 1:NMAX) A( I, I ) = 1.0D0
    OK = .TRUE.
    NT = 0
 !
@@ -430,8 +419,7 @@
       CALL CHKXER( 'ZGEJSV', INFOT, NOUT, LERR, OK )
       NT = 11
       IF( OK ) THEN
-         WRITE( NOUT, FMT = 9999 )SRNAMT( 1:LEN_TRIM( SRNAMT ) ), &
-              NT
+         WRITE( NOUT, FMT = 9999 )SRNAMT( 1:LEN_TRIM( SRNAMT ) ), NT
       ELSE
          WRITE( NOUT, FMT = 9998 )
       END IF
@@ -440,51 +428,51 @@
 !
       SRNAMT = 'ZGESVDX'
       INFOT = 1
-      CALL ZGESVDX( 'X', 'N', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'X', 'N', 'A', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 2
-      CALL ZGESVDX( 'N', 'X', 'A', 0, 0, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'X', 'A', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 3
-      CALL ZGESVDX( 'N', 'N', 'X', 0, 0, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'X', 0, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 4
-      CALL ZGESVDX( 'N', 'N', 'A', -1, 0, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'A', -1, 0, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 5
-      CALL ZGESVDX( 'N', 'N', 'A', 0, -1, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'A', 0, -1, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 7
-      CALL ZGESVDX( 'N', 'N', 'A', 2, 1, A, 1, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'A', 2, 1, A, 1, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 8
-      CALL ZGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -ONE, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'V', 2, 1, A, 2, -1.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 9
-      CALL ZGESVDX( 'N', 'N', 'V', 2, 1, A, 2, ONE, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'V', 2, 1, A, 2, 1.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 10
-      CALL ZGESVDX( 'N', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'N', 'I', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 1, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 11
-      CALL ZGESVDX( 'V', 'N', 'I', 2, 2, A, 2, ZERO, ZERO, &
+      CALL ZGESVDX( 'V', 'N', 'I', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     1, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 15
-      CALL ZGESVDX( 'V', 'N', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL ZGESVDX( 'V', 'N', 'A', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       INFOT = 17
-      CALL ZGESVDX( 'N', 'V', 'A', 2, 2, A, 2, ZERO, ZERO, &
+      CALL ZGESVDX( 'N', 'V', 'A', 2, 2, A, 2, 0.0D0, 0.0D0, &
                     0, 0, NS, S, U, 1, VT, 1, W, 1, RW, IW, INFO )
       CALL CHKXER( 'ZGESVDX', INFOT, NOUT, LERR, OK )
       NT = 12
@@ -555,19 +543,17 @@
 !
    IF( .NOT.LSAMEN( 2, C2, 'BD' ) ) THEN
       IF( OK ) THEN
-         WRITE( NOUT, FMT = 9999 )SRNAMT( 1:LEN_TRIM( SRNAMT ) ), &
-              NT
+         WRITE( NOUT, FMT = 9999 )SRNAMT( 1:LEN_TRIM( SRNAMT ) ), NT
       ELSE
          WRITE( NOUT, FMT = 9998 )
       END IF
    END IF
 !
- 9999 FORMAT( 1X, A, ' passed the tests of the error exits (', I3, &
-         ' tests done)' )
+ 9999 FORMAT( 1X, A, ' passed the tests of the error exits (', I3, ' tests done)' )
  9998 FORMAT( ' *** ', A, ' failed the tests of the error exits ***' )
    RETURN
 !
 !     End of ZERRED
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

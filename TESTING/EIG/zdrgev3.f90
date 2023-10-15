@@ -454,18 +454,12 @@
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
    DATA               KZ2 / 0, 0, 1, 2, 1, 1 /
    DATA               KADD / 0, 0, 0, 0, 3, 2 /
-   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, &
-                      4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
-   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, &
-                      1, 1, -4, 2, -4, 8*8, 0 /
-   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, &
-                      4*5, 4*3, 1 /
-   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, &
-                      4*6, 4*4, 1 /
-   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, &
-                      2, 1 /
-   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, &
-                      2, 1 /
+   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, 4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
+   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, 1, 1, -4, 2, -4, 8*8, 0 /
+   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, 4*5, 4*3, 1 /
+   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, 4*6, 4*4, 1 /
+   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, 2, 1 /
+   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, 2, 1 /
    DATA               KTRIAN / 16*0, 10*1 /
    DATA               LASIGN / 6*.FALSE., .TRUE., .FALSE., 2*.TRUE., &
                       2*.FALSE., 3*.TRUE., .FALSE., .TRUE., &
@@ -480,8 +474,8 @@
 !
    INFO = 0
 !
-   NMAX = maxval(NN(1:NSIZES))
-   BADNN = ANY(NN(1:NSIZES) < 0 )
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
    IF( NSIZES < 0 ) THEN
       INFO = -1
@@ -656,10 +650,8 @@
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
-                  DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )* DCONJG( WORK( 3*N+JC ) )* A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )* DCONJG( WORK( 3*N+JC ) )* B( JR, JC )
-                  ENDDO
+                  A(1:N,JC) = WORK(2*N+1:2*N+N)*DCONJG(WORK(3*N+JC))*A(1:N,JC)
+                  B(1:N,JC) = WORK(2*N+1:2*N+N)*DCONJG(WORK(3*N+JC))*B(1:N,JC)
                ENDDO
                CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, LDA, WORK( 2*N+1 ), IERR )
                IF( IERR /= 0 ) GO TO 90
@@ -780,17 +772,9 @@
             GO TO 190
          END IF
 !
-         DO J = 1, N
-            IF( ALPHA( J ) /= ALPHA1( J ) .OR. BETA( J ) /= &
-                BETA1( J ) )RESULT( 7 ) = ULPINV
-        ENDDO
+         IF (ANY(ALPHA(1:N) /= ALPHA1(1:N) .OR. BETA(1:N) /= BETA1(1:N))) RESULT( 7 ) = ULPINV
 !
-         DO J = 1, N
-            DO JC = 1, N
-               IF( Z( J, JC ) /= QE( J, JC ) ) &
-                  RESULT( 7 ) = ULPINV
-           ENDDO
-        ENDDO
+         IF (ANY(Z(1:N,1:N) /= QE(1:N,1:N))) RESULT( 7 ) = ULPINV
 !
 !           End of Loop -- Check for RESULT(j) > THRESH
 !
@@ -831,7 +815,6 @@
             END IF
          ENDDO
 !
-  210    CONTINUE
          ENDIF
       ENDDO
    ENDDO

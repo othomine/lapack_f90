@@ -580,10 +580,7 @@
 !        Do Test (6) or Test (12)
 !
       RESULT( 6+RSUB ) = 0.0D0
-      DO I = 1, N
-         IF( WR( I ) /= WRT( I ) .OR. WI( I ) /= WIT( I ) ) &
-            RESULT( 6+RSUB ) = ULPINV
-         ENDDO
+      IF (ANY(WR(1:N) /= WRT(1:N) .or. WI(1:N) /= WIT(1:N))) RESULT( 6+RSUB ) = ULPINV
 !
 !        Do Test (13)
 !

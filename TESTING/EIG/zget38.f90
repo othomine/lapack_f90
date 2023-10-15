@@ -106,12 +106,8 @@
 !     .. Parameters ..
    INTEGER            LDT, LWORK
    PARAMETER          ( LDT = 20, LWORK = 2*LDT*( 10+LDT ) )
-   DOUBLE PRECISION   ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0 )
    DOUBLE PRECISION   EPSIN
    PARAMETER          ( EPSIN = 5.9605D-8 )
-   COMPLEX*16         CZERO
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, ISCL, ISRT, ITMP, J, KMIN, M, N, NDIM
@@ -138,45 +134,35 @@
    EXTERNAL           ZDSCAL, ZGEHRD, ZHSEQR, ZHST01, ZLACPY, ZTRSEN, &
                       ZUNGHR
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, DIMAG, MAX, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     EPSIN = 2**(-24) = precision to which input data computed
 !
    EPS = MAX( EPS, EPSIN )
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
-   RMAX( 3 ) = ZERO
-   LMAX( 1 ) = 0
-   LMAX( 2 ) = 0
-   LMAX( 3 ) = 0
+   RMAX( 1:3 ) = 0.0D+0
+   LMAX( 1:3 ) = 0
    KNT = 0
-   NINFO( 1 ) = 0
-   NINFO( 2 ) = 0
-   NINFO( 3 ) = 0
+   NINFO( 1:3 ) = 0
    VAL( 1 ) = SQRT( SMLNUM )
-   VAL( 2 ) = ONE
+   VAL( 2 ) = 1.0D0
    VAL( 3 ) = SQRT( SQRT( BIGNUM ) )
 !
 !     Read input data until N=0.  Assume input eigenvalues are sorted
 !     lexicographically (increasing by real part, then decreasing by
 !     imaginary part)
 !
-10 CONTINUE
-   READ( NIN, FMT = * )N, NDIM, ISRT
-   IF( N == 0 ) &
-      RETURN
-   READ( NIN, FMT = * )( ISELEC( I ), I = 1, NDIM )
+   DO
+   READ(NIN,*) N, NDIM, ISRT
+   IF( N == 0 ) RETURN
+   READ(NIN,*) ISELEC(1:NDIM)
    DO I = 1, N
-      READ( NIN, FMT = * )( TMP( I, J ), J = 1, N )
+      READ(NIN,*) TMP(I,1:N)
    ENDDO
-   READ( NIN, FMT = * )SIN, SEPIN
+   READ(NIN,*) SIN, SEPIN
 !
    TNRM = ZLANGE( 'M', N, N, TMP, LDT, RWORK )
    DO ISCL = 1, 3
@@ -189,8 +175,8 @@
       DO I = 1, N
          CALL ZDSCAL( N, VMUL, T( 1, I ), 1 )
       ENDDO
-      IF( TNRM == ZERO ) &
-         VMUL = ONE
+      IF( TNRM == 0.0D0 ) &
+         VMUL = 1.0D0
       CALL ZLACPY( 'F', N, N, T, LDT, TSAV, LDT )
 !
 !        Compute Schur form
@@ -212,9 +198,7 @@
 !        Compute Schur form
 !
       DO J = 1, N - 2
-         DO I = J + 2, N
-            T( I, J ) = CZERO
-         ENDDO
+         T(J+2:N,J) = (0.0D+0,0.0D+0)
       ENDDO
       CALL ZHSEQR( 'S', 'V', N, 1, N, T, LDT, W, Q, LDT, WORK, LWORK, &
                    INFO )
@@ -228,16 +212,12 @@
 !
       DO I = 1, N
          IPNT( I ) = I
-         SELECT( I ) = .FALSE.
       ENDDO
+      SELECT(1:N) = .FALSE.
       IF( ISRT == 0 ) THEN
-         DO I = 1, N
-            WSRT( I ) = DBLE( W( I ) )
-         ENDDO
+         WSRT(1:N) = DBLE( W(1:N) )
       ELSE
-         DO I = 1, N
-            WSRT( I ) = DIMAG( W( I ) )
-         ENDDO
+         WSRT(1:N) = DIMAG( W(1:N) )
       END IF
       DO I = 1, N - 1
          KMIN = I
@@ -253,10 +233,8 @@
          ITMP = IPNT( I )
          IPNT( I ) = IPNT( KMIN )
          IPNT( KMIN ) = ITMP
-         ENDDO
-      DO I = 1, NDIM
-         SELECT( IPNT( ISELEC( I ) ) ) = .TRUE.
-         ENDDO
+      ENDDO
+      SELECT( IPNT( ISELEC(1:NDIM) ) ) = .TRUE.
 !
 !        Compute condition numbers
 !
@@ -286,31 +264,31 @@
 !        Compare condition number for eigenvalue cluster
 !        taking its condition number into account
 !
-      V = MAX( TWO*DBLE( N )*EPS*TNRM, SMLNUM )
-      IF( TNRM == ZERO ) &
-         V = ONE
+      V = MAX( 2.0D+0*DBLE( N )*EPS*TNRM, SMLNUM )
+      IF( TNRM == 0.0D0 ) &
+         V = 1.0D0
       IF( V > SEPTMP ) THEN
-         TOL = ONE
+         TOL = 1.0D0
       ELSE
          TOL = V / SEPTMP
       END IF
       IF( V > SEPIN ) THEN
-         TOLIN = ONE
+         TOLIN = 1.0D0
       ELSE
          TOLIN = V / SEPIN
       END IF
       TOL = MAX( TOL, SMLNUM / EPS )
       TOLIN = MAX( TOLIN, SMLNUM / EPS )
       IF( EPS*( SIN-TOLIN ) > STMP+TOL ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SIN-TOLIN > STMP+TOL ) THEN
          VMAX = ( SIN-TOLIN ) / ( STMP+TOL )
       ELSE IF( SIN+TOLIN < EPS*( STMP-TOL ) ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SIN+TOLIN < STMP-TOL ) THEN
          VMAX = ( STMP-TOL ) / ( SIN+TOLIN )
       ELSE
-         VMAX = ONE
+         VMAX = 1.0D0
       END IF
       IF( VMAX > RMAX( 2 ) ) THEN
          RMAX( 2 ) = VMAX
@@ -334,15 +312,15 @@
       TOL = MAX( TOL, SMLNUM / EPS )
       TOLIN = MAX( TOLIN, SMLNUM / EPS )
       IF( EPS*( SEPIN-TOLIN ) > SEPTMP+TOL ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SEPIN-TOLIN > SEPTMP+TOL ) THEN
          VMAX = ( SEPIN-TOLIN ) / ( SEPTMP+TOL )
       ELSE IF( SEPIN+TOLIN < EPS*( SEPTMP-TOL ) ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SEPIN+TOLIN < SEPTMP-TOL ) THEN
          VMAX = ( SEPTMP-TOL ) / ( SEPIN+TOLIN )
       ELSE
-         VMAX = ONE
+         VMAX = 1.0D0
       END IF
       IF( VMAX > RMAX( 2 ) ) THEN
          RMAX( 2 ) = VMAX
@@ -354,17 +332,17 @@
 !        without taking its condition number into account
 !
       IF( SIN <= DBLE( 2*N )*EPS .AND. STMP <= DBLE( 2*N )*EPS ) THEN
-         VMAX = ONE
+         VMAX = 1.0D0
       ELSE IF( EPS*SIN > STMP ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SIN > STMP ) THEN
          VMAX = SIN / STMP
       ELSE IF( SIN < EPS*STMP ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SIN < STMP ) THEN
          VMAX = STMP / SIN
       ELSE
-         VMAX = ONE
+         VMAX = 1.0D0
       END IF
       IF( VMAX > RMAX( 3 ) ) THEN
          RMAX( 3 ) = VMAX
@@ -376,17 +354,17 @@
 !        without taking its condition number into account
 !
       IF( SEPIN <= V .AND. SEPTMP <= V ) THEN
-         VMAX = ONE
+         VMAX = 1.0D0
       ELSE IF( EPS*SEPIN > SEPTMP ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SEPIN > SEPTMP ) THEN
          VMAX = SEPIN / SEPTMP
       ELSE IF( SEPIN < EPS*SEPTMP ) THEN
-         VMAX = ONE / EPS
+         VMAX = 1.0D0 / EPS
       ELSE IF( SEPIN < SEPTMP ) THEN
          VMAX = SEPTMP / SEPIN
       ELSE
-         VMAX = ONE
+         VMAX = 1.0D0
       END IF
       IF( VMAX > RMAX( 3 ) ) THEN
          RMAX( 3 ) = VMAX
@@ -397,11 +375,11 @@
 !        Compute eigenvalue condition number only and compare
 !        Update Q
 !
-      VMAX = ZERO
+      VMAX = 0.0D0
       CALL ZLACPY( 'F', N, N, TSAV1, LDT, TTMP, LDT )
       CALL ZLACPY( 'F', N, N, QSAV, LDT, QTMP, LDT )
-      SEPTMP = -ONE
-      STMP = -ONE
+      SEPTMP = -1.0D0
+      STMP = -1.0D0
       CALL ZTRSEN( 'E', 'V', SELECT, N, TTMP, LDT, QTMP, LDT, WTMP, &
                    M, STMP, SEPTMP, WORK, LWORK, INFO )
       IF( INFO /= 0 ) THEN
@@ -410,25 +388,19 @@
          GO TO 200
       END IF
       IF( S /= STMP ) &
-         VMAX = ONE / EPS
-      IF( -ONE /= SEPTMP ) &
-         VMAX = ONE / EPS
-      DO I = 1, N
-         DO J = 1, N
-            IF( TTMP( I, J ) /= T( I, J ) ) &
-               VMAX = ONE / EPS
-            IF( QTMP( I, J ) /= Q( I, J ) ) &
-               VMAX = ONE / EPS
-            ENDDO
-         ENDDO
+         VMAX = 1.0D0 / EPS
+      IF( -1.0D0 /= SEPTMP ) &
+         VMAX = 1.0D0 / EPS
+      IF (ANY(TTMP(1:N,1:N) /= T(1:N,1:N))) VMAX = 1.0D+0 / EPS
+      IF(ANY(QTMP(1:N,1:N) /= Q(1:N,1:N))) VMAX = 1.0D+0 / EPS
 !
 !        Compute invariant subspace condition number only and compare
 !        Update Q
 !
       CALL ZLACPY( 'F', N, N, TSAV1, LDT, TTMP, LDT )
       CALL ZLACPY( 'F', N, N, QSAV, LDT, QTMP, LDT )
-      SEPTMP = -ONE
-      STMP = -ONE
+      SEPTMP = -1.0D0
+      STMP = -1.0D0
       CALL ZTRSEN( 'V', 'V', SELECT, N, TTMP, LDT, QTMP, LDT, WTMP, &
                    M, STMP, SEPTMP, WORK, LWORK, INFO )
       IF( INFO /= 0 ) THEN
@@ -436,26 +408,18 @@
          NINFO( 3 ) = NINFO( 3 ) + 1
          GO TO 200
       END IF
-      IF( -ONE /= STMP ) &
-         VMAX = ONE / EPS
-      IF( SEP /= SEPTMP ) &
-         VMAX = ONE / EPS
-      DO I = 1, N
-         DO J = 1, N
-            IF( TTMP( I, J ) /= T( I, J ) ) &
-               VMAX = ONE / EPS
-            IF( QTMP( I, J ) /= Q( I, J ) ) &
-               VMAX = ONE / EPS
-            ENDDO
-         ENDDO
+      IF( -1.0D0 /= STMP ) VMAX = 1.0D0 / EPS
+      IF( SEP /= SEPTMP ) VMAX = 1.0D0 / EPS
+      IF (ANY(TTMP(1:N,1:N) /= T(1:N,1:N))) VMAX = 1.0D+0 / EPS
+      IF(ANY(QTMP(1:N,1:N) /= Q(1:N,1:N))) VMAX = 1.0D+0 / EPS
 !
 !        Compute eigenvalue condition number only and compare
 !        Do not update Q
 !
       CALL ZLACPY( 'F', N, N, TSAV1, LDT, TTMP, LDT )
       CALL ZLACPY( 'F', N, N, QSAV, LDT, QTMP, LDT )
-      SEPTMP = -ONE
-      STMP = -ONE
+      SEPTMP = -1.0D0
+      STMP = -1.0D0
       CALL ZTRSEN( 'E', 'N', SELECT, N, TTMP, LDT, QTMP, LDT, WTMP, &
                    M, STMP, SEPTMP, WORK, LWORK, INFO )
       IF( INFO /= 0 ) THEN
@@ -464,25 +428,19 @@
          GO TO 200
       END IF
       IF( S /= STMP ) &
-         VMAX = ONE / EPS
-      IF( -ONE /= SEPTMP ) &
-         VMAX = ONE / EPS
-      DO I = 1, N
-         DO J = 1, N
-            IF( TTMP( I, J ) /= T( I, J ) ) &
-               VMAX = ONE / EPS
-            IF( QTMP( I, J ) /= QSAV( I, J ) ) &
-               VMAX = ONE / EPS
-            ENDDO
-         ENDDO
+         VMAX = 1.0D0 / EPS
+      IF( -1.0D0 /= SEPTMP ) &
+         VMAX = 1.0D0 / EPS
+      IF (ANY(TTMP(1:N,1:N) /= T(1:N,1:N))) VMAX = 1.0D+0 / EPS
+      IF (ANY(QTMP(1:N,1:N) /= QSAV(1:N,1:N))) VMAX = 1.0D+0 / EPS
 !
 !        Compute invariant subspace condition number only and compare
 !        Do not update Q
 !
       CALL ZLACPY( 'F', N, N, TSAV1, LDT, TTMP, LDT )
       CALL ZLACPY( 'F', N, N, QSAV, LDT, QTMP, LDT )
-      SEPTMP = -ONE
-      STMP = -ONE
+      SEPTMP = -1.0D0
+      STMP = -1.0D0
       CALL ZTRSEN( 'V', 'N', SELECT, N, TTMP, LDT, QTMP, LDT, WTMP, &
                    M, STMP, SEPTMP, WORK, LWORK, INFO )
       IF( INFO /= 0 ) THEN
@@ -490,28 +448,20 @@
          NINFO( 3 ) = NINFO( 3 ) + 1
          GO TO 200
       END IF
-      IF( -ONE /= STMP ) &
-         VMAX = ONE / EPS
+      IF( -1.0D0 /= STMP ) &
+         VMAX = 1.0D0 / EPS
       IF( SEP /= SEPTMP ) &
-         VMAX = ONE / EPS
-      DO I = 1, N
-         DO J = 1, N
-            IF( TTMP( I, J ) /= T( I, J ) ) &
-               VMAX = ONE / EPS
-            IF( QTMP( I, J ) /= QSAV( I, J ) ) &
-               VMAX = ONE / EPS
-            ENDDO
-         ENDDO
+         VMAX = 1.0D0 / EPS
+      IF (ANY(TTMP(1:N,1:N) /= T(1:N,1:N))) VMAX = 1.0D+0 / EPS
+      IF (ANY(QTMP(1:N,1:N) /= QSAV(1:N,1:N))) VMAX = 1.0D+0 / EPS
       IF( VMAX > RMAX( 1 ) ) THEN
          RMAX( 1 ) = VMAX
-         IF( NINFO( 1 ) == 0 ) &
-            LMAX( 1 ) = KNT
+         IF( NINFO( 1 ) == 0 ) LMAX( 1 ) = KNT
       END IF
   200 CONTINUE
       ENDDO
-   GO TO 10
+   ENDDO
 !
 !     End of ZGET38
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

@@ -175,11 +175,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IRC, J, LMX
@@ -191,9 +186,6 @@
    INTEGER            IZAMAX
    DOUBLE PRECISION   DLAMCH
    EXTERNAL           LSAME, IZAMAX, DLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCMPLX, MAX, MIN
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, ZUNT01
@@ -234,9 +226,8 @@
 !
 !     Initialize result
 !
-   RESULT = ZERO
-   IF( MU == 0 .OR. MV == 0 .OR. N == 0 ) &
-      RETURN
+   RESULT = 0.0D0
+   IF( MU == 0 .OR. MV == 0 .OR. N == 0 ) RETURN
 !
 !     Machine constants
 !
@@ -246,23 +237,21 @@
 !
 !        Compare rows
 !
-      RES1 = ZERO
+      RES1 = 0.0D0
       DO I = 1, K
          LMX = IZAMAX( N, U( I, 1 ), LDU )
-         IF( V( I, LMX ) == DCMPLX( ZERO ) ) THEN
-            SV = ONE
+         IF( V( I, LMX ) == DCMPLX( 0.0D0 ) ) THEN
+            SV = 1.0D0
          ELSE
             SV = ABS( V( I, LMX ) ) / V( I, LMX )
          END IF
-         IF( U( I, LMX ) == DCMPLX( ZERO ) ) THEN
-            SU = ONE
+         IF( U( I, LMX ) == DCMPLX( 0.0D0 ) ) THEN
+            SU = 1.0D0
          ELSE
             SU = ABS( U( I, LMX ) ) / U( I, LMX )
          END IF
          S = SV / SU
-         DO J = 1, N
-            RES1 = MAX( RES1, ABS( U( I, J )-S*V( I, J ) ) )
-         ENDDO
+         RES1 = MAX(RES1,MAXVAL(ABS(U(I,1:N)-S*V(I,1:N))))
       ENDDO
       RES1 = RES1 / ( DBLE( N )*ULP )
 !
@@ -274,23 +263,21 @@
 !
 !        Compare columns
 !
-      RES1 = ZERO
+      RES1 = 0.0D0
       DO I = 1, K
          LMX = IZAMAX( N, U( 1, I ), 1 )
-         IF( V( LMX, I ) == DCMPLX( ZERO ) ) THEN
-            SV = ONE
+         IF( V( LMX, I ) == DCMPLX( 0.0D0 ) ) THEN
+            SV = 1.0D0
          ELSE
             SV = ABS( V( LMX, I ) ) / V( LMX, I )
          END IF
-         IF( U( LMX, I ) == DCMPLX( ZERO ) ) THEN
-            SU = ONE
+         IF( U( LMX, I ) == DCMPLX( 0.0D0 ) ) THEN
+            SU = 1.0D0
          ELSE
             SU = ABS( U( LMX, I ) ) / U( LMX, I )
          END IF
          S = SV / SU
-         DO J = 1, N
-            RES1 = MAX( RES1, ABS( U( J, I )-S*V( J, I ) ) )
-         ENDDO
+         RES1 = MAX(RES1,MAXVAL(ABS(U(1:N,I)-S*V(1:N,I))))
       ENDDO
       RES1 = RES1 / ( DBLE( N )*ULP )
 !
@@ -300,10 +287,10 @@
                    RES2 )
    END IF
 !
-   RESULT = MIN( MAX( RES1, RES2 ), ONE / ULP )
+   RESULT = MIN( MAX( RES1, RES2 ), 1.0D0 / ULP )
    RETURN
 !
 !     End of ZUNT03
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

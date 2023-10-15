@@ -45,12 +45,6 @@
       integer, parameter :: WP = real64
 
 !............................................................
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
-
-      COMPLEX(KIND=WP), PARAMETER ::  ZONE = ( 1.0_WP, 0.0_WP )
-      COMPLEX(KIND=WP), PARAMETER :: ZZERO = ( 0.0_WP, 0.0_WP )
-!............................................................
       REAL(KIND=WP), ALLOCATABLE, DIMENSION(:)   :: RES, &
                      RES1, RESEX, SINGVX, SINGVQX, WORK
       INTEGER      , ALLOCATABLE, DIMENSION(:)   :: IWORK
@@ -99,8 +93,6 @@
       INTEGER  IZAMAX
       EXTERNAL LSAME
       LOGICAL  LSAME
-
-      INTRINSIC ABS, INT, MIN, MAX, SIGN
 !............................................................
 
       ! The test is always in pairs : ( ZGEDMD and ZGEDMDQ )
@@ -161,12 +153,12 @@
       LDAU = M
       LDS  = N
 
-      TMP_ZXW  = ZERO
-      TMP_AU   = ZERO
-      TMP_REZ  = ZERO
-      TMP_REZQ = ZERO
-      SVDIFF   = ZERO
-      TMP_EX   = ZERO
+      TMP_ZXW  = 0.0_WP
+      TMP_AU   = 0.0_WP
+      TMP_REZ  = 0.0_WP
+      TMP_REZQ = 0.0_WP
+      SVDIFF   = 0.0_WP
+      TMP_EX   = 0.0_WP
 
       ALLOCATE( ZA(LDA,M) )
       ALLOCATE( ZAC(LDA,M) )
@@ -221,7 +213,7 @@
       CALL ZLATMR( M, M, 'N', ISEED, 'N', ZDA, MODE, COND, &
                    ZMAX, RSIGN, GRADE, ZDL, MODEL,  CONDL, &
                    ZDR, MODER, CONDR, PIVTNG, IWORK, M, M, &
-                   ZERO, -ONE, 'N', ZA, LDA, IWORK(M+1), INFO )
+                   0.0_WP, -1.0_WP, 'N', ZA, LDA, IWORK(M+1), INFO )
       DEALLOCATE( ZDR )
       DEALLOCATE( ZDL )
       DEALLOCATE( ZDA )
@@ -239,9 +231,9 @@
 
       TMP = ABS(ZEIGSA(IZAMAX(M, ZEIGSA, 1))) ! The spectral radius of ZA
       ! Scale the matrix ZA to have unit spectral radius.
-      CALL ZLASCL( 'G',0, 0, TMP, ONE, M, M, &
+      CALL ZLASCL( 'G',0, 0, TMP, 1.0_WP, M, M, &
                    ZA, LDA, INFO )
-      CALL ZLASCL( 'G',0, 0, TMP, ONE, M, 1, &
+      CALL ZLASCL( 'G',0, 0, TMP, 1.0_WP, M, 1, &
                    ZEIGSA, M, INFO )
       ANORM = ZLANGE( 'F', M, M, ZA, LDA, WDUMMY )
 
@@ -250,24 +242,24 @@
           ! with two inital conditions
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
           DO i = 1, N/2
-             CALL ZGEMV( 'N', M, M, ZONE, ZA, LDA, ZF(1,i), 1,  &
-                  ZZERO, ZF(1,i+1), 1 )
+             CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, LDA, ZF(1,i), 1,  &
+                  (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
           END DO
           ZX0(1:M,1:N/2) = ZF(1:M,1:N/2)
           ZY0(1:M,1:N/2) = ZF(1:M,2:N/2+1)
 
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
           DO i = 1, N-N/2
-             CALL ZGEMV( 'N', M, M, ZONE, ZA, LDA, ZF(1,i), 1,  &
-                  ZZERO, ZF(1,i+1), 1 )
+             CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, LDA, ZF(1,i), 1,  &
+                  (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
           END DO
           ZX0(1:M,N/2+1:N) = ZF(1:M,1:N-N/2)
           ZY0(1:M,N/2+1:N) = ZF(1:M,2:N-N/2+1)
       ELSE
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
           DO i = 1, N
-             CALL ZGEMV( 'N', M, M, ZONE, ZA, M, ZF(1,i), 1,  &
-                  ZZERO, ZF(1,i+1), 1 )
+             CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, M, ZF(1,i), 1,  &
+                  (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
           END DO
           ZF0(1:M,1:N+1) = ZF(1:M,1:N+1)
           ZX0(1:M,1:N) = ZF0(1:M,1:N)
@@ -387,11 +379,11 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the rayleigh quotient
           ! returned in W
-          CALL ZGEMM( 'N', 'N', M, K, K, ZONE, ZX, LDX, ZW, LDW, &
-                      ZZERO, ZZ1, LDZ )
-          TMP = ZERO
+          CALL ZGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), ZX, LDX, ZW, LDW, &
+                      (0.0_WP,0.0_WP), ZZ1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-             CALL ZAXPY( M, -ZONE, ZZ(1,i), 1, ZZ1(1,i), 1)
+             CALL ZAXPY( M, -(1.0_WP,0.0_WP), ZZ(1,i), 1, ZZ1(1,i), 1)
              TMP = MAX(TMP, DZNRM2( M, ZZ1(1,i), 1 ) )
           END DO
           TMP_ZXW = MAX(TMP_ZXW, TMP )
@@ -417,11 +409,11 @@
            ! See the paper for an error analysis.
            ! Note that the left singular vectors of the input matrix X
            ! are returned in the array X.
-           CALL ZGEMM( 'N', 'N', M, K, M, ZONE, ZA, LDA, ZX, LDX, &
-                      ZZERO, ZZ1, LDZ )
-          TMP = ZERO
+           CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZX, LDX, &
+                      (0.0_WP,0.0_WP), ZZ1, LDZ )
+          TMP = 0.0_WP
           DO i = 1, K
-            CALL ZAXPY( M, -ZONE, ZAU(1,i), 1, ZZ1(1,i), 1)
+            CALL ZAXPY( M, -(1.0_WP,0.0_WP), ZAU(1,i), 1, ZZ1(1,i), 1)
             TMP = MAX( TMP, DZNRM2( M, ZZ1(1,i),1 ) * &
                      SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -445,7 +437,7 @@
        ! and test them separately using a Matlab script.
 
 
-       CALL ZGEMM( 'N', 'N', M, K, M, ZONE, ZA, LDA, ZAU, LDAU, ZZERO, ZY1, LDY )
+       CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZAU, LDAU, (0.0_WP,0.0_WP), ZY1, LDY )
 
                DO i=1, K
                   ! have a real eigenvalue with real eigenvector
@@ -459,7 +451,7 @@
           ! Compare the residuals returned by ZGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
-          CALL ZGEMM( 'N', 'N', M, K, M, ZONE, ZA, LDA, ZZ, LDZ, ZZERO, ZY1, LDY )
+          CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZZ, LDZ, (0.0_WP,0.0_WP), ZY1, LDY )
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in ZGEDMD,)
@@ -469,7 +461,7 @@
                 CALL ZAXPY( M, -ZEIGS(i), ZZ(1,i), 1, ZY1(1,i), 1 )
                 RES1(i) = DZNRM2( M, ZY1(1,i), 1)
           END DO
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, K
           TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
                     SINGVX(K)/(ANORM*SINGVX(1)) )
@@ -488,7 +480,7 @@
 
 
          IF ( LSAME(JOBREF,'E') ) THEN
-            TMP = ZERO
+            TMP = 0.0_WP
           DO i = 1, K
           TMP = MAX( TMP, ABS(RES1(i) - RESEX(i))/(RES1(i)+RESEX(i)) )
           END DO
@@ -539,7 +531,7 @@
 
           IF ( 1 == 0 ) THEN
               ! Comparison of ZGEDMD and ZGEDMDQ singular values disabled
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, MIN(K, KQ)
              TMP = MAX(TMP, ABS(SINGVX(i)-SINGVQX(i)) / &
                                    SINGVX(1) )
@@ -562,8 +554,8 @@
          ! as requested. The residual ||F-Q*R||_F / ||F||_F
          ! is compared to M*N*EPS.
          ZF1(1:M,1:N+1) = ZF0(1:M,1:N+1)
-         CALL ZGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -ZONE, ZF, &
-                     LDF, ZY, LDY, ZONE, ZF1, LDF )
+         CALL ZGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -(1.0_WP,0.0_WP), ZF, &
+                     LDF, ZY, LDY, (1.0_WP,0.0_WP), ZF1, LDF )
          TMP_FQR = ZLANGE( 'F', M, N+1, ZF1, LDF, WORK ) / &
                ZLANGE( 'F', M, N+1, ZF0,  LDF, WORK )
          IF ( TMP_FQR > TOL2 ) THEN
@@ -579,7 +571,7 @@
           ! Compare the residuals returned by ZGEDMDQ with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
-          CALL ZGEMM( 'N', 'N', M, KQ, M, ZONE, ZA, LDA, ZZ, LDZ, ZZERO, ZY1, LDY )
+          CALL ZGEMM( 'N', 'N', M, KQ, M, (1.0_WP,0.0_WP), ZA, LDA, ZZ, LDZ, (0.0_WP,0.0_WP), ZY1, LDY )
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in ZGEDMDQ)
@@ -590,7 +582,7 @@
                 ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
                 RES1(i) = DZNRM2( M, ZY1(1,i), 1)
           END DO
-          TMP = ZERO
+          TMP = 0.0_WP
           DO i = 1, KQ
           TMP = MAX( TMP, ABS(RES(i) - RES1(i)) * &
               SINGVQX(KQ)/(ANORM*SINGVQX(1)) )
@@ -743,4 +735,4 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

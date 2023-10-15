@@ -372,7 +372,7 @@
 !>     Some Local Variables and Parameters:
 !>     ---- ----- --------- --- ----------
 !>
-!>     ZERO, ONE       Real 0 and 1.
+!>     0.0D+0, 1.0D+0       Real 0 and 1.
 !>     MAXTYP          The number of types defined.
 !>     NTEST           The number of tests performed, or which can
 !>                     be performed so far, for the current matrix.
@@ -434,12 +434,6 @@
 ! ======================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO, HALF
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0, &
-                      HALF = 0.5D0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 16 )
 !     ..
@@ -479,8 +473,7 @@
 !     .. Data statements ..
    DATA            KTYPE / 1, 2, 5*4, 5*6, 3*9, 10 /
    DATA            KMAGN / 2*1, 3*1, 2, 3, 3*1, 2, 3, 1, 2, 3, 0 /
-   DATA            KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, &
-                      0, 0, 0 /
+   DATA            KMODE / 2*0, 4, 3, 1, 4, 4, 4, 3, 1, 4, 4, 0, 0, 0, 0 /
 !     ..
 !     .. Executable Statements ..
 !
@@ -538,8 +531,8 @@
    UNFL = DLAMCH( 'Safe minimum' )
    OVFL = DLAMCH( 'Overflow' )
    ULP = DLAMCH( 'Precision' )
-   ULPINV = ONE / ULP
-   LOG2UI = INT( LOG( ULPINV ) / LOG( TWO ) )
+   ULPINV = 1.0D+0 / ULP
+   LOG2UI = INT( LOG( ULPINV ) / LOG( 2.0D+0 ) )
    RTUNFL = SQRT( UNFL )
    RTOVFL = SQRT( OVFL )
    INFOT = 0
@@ -550,7 +543,7 @@
       M = MVAL( JSIZE )
       N = NVAL( JSIZE )
       MNMIN = MIN( M, N )
-      AMNINV = ONE / MAX( M, N, 1 )
+      AMNINV = 1.0D+0 / MAX( M, N, 1 )
 !
       IF( NSIZES /= 1 ) THEN
          MTYPES = MIN( MAXTYP, NTYPES )
@@ -559,16 +552,11 @@
       END IF
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 170
+         IF(DOTYPE( JTYPE ) ) THEN
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
-         DO J = 1, 14
-            RESULT( J ) = -ONE
-         ENDDO
+         RESULT(1:14) = -1.0D+0
 !
          UPLO = ' '
 !
@@ -588,31 +576,23 @@
 !       =9                      random nonsymmetric
 !       =10                     random bidiagonal (log. distrib.)
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 100
+         IF( MTYPES <= MAXTYP ) THEN
 !
          ITYPE = KTYPE( JTYPE )
          IMODE = KMODE( JTYPE )
 !
 !           Compute norm
 !
-         GO TO ( 40, 50, 60 )KMAGN( JTYPE )
+         SELECT CASE (KMAGN(JTYPE))
+          CASE (1)
+           ANORM = 1.0D+0
+          CASE (2)
+           ANORM = ( RTOVFL*ULP )*AMNINV
+          CASE (3)
+           ANORM = RTUNFL*MAX( M, N )*ULPINV
+         END SELECT
 !
-40       CONTINUE
-         ANORM = ONE
-         GO TO 70
-!
-50       CONTINUE
-         ANORM = ( RTOVFL*ULP )*AMNINV
-         GO TO 70
-!
-60       CONTINUE
-         ANORM = RTUNFL*MAX( M, N )*ULPINV
-         GO TO 70
-!
-70       CONTINUE
-!
-         CALL ZLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+         CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
          IINFO = 0
          COND = ULPINV
 !
@@ -627,9 +607,7 @@
 !
 !              Identity
 !
-            DO JCOL = 1, MNMIN
-               A( JCOL, JCOL ) = ANORM
-            ENDDO
+            FORALL (JCOL = 1:MNMIN) A( JCOL, JCOL ) = ANORM
 !
          ELSE IF( ITYPE == 4 ) THEN
 !
@@ -658,38 +636,37 @@
 !
 !              Diagonal, random entries
 !
-            CALL ZLATMR( MNMIN, MNMIN, 'S', ISEED, 'N', WORK, 6, ONE, &
-                         CONE, 'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( 2*MNMIN+1 ), 1, ONE, 'N', IWORK, 0, 0, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( MNMIN, MNMIN, 'S', ISEED, 'N', WORK, 6, 1.0D+0, &
+                         (1.0D+0,0.0D+0), 'T', 'N', WORK( MNMIN+1 ), 1, 1.0D+0, &
+                         WORK( 2*MNMIN+1 ), 1, 1.0D+0, 'N', IWORK, 0, 0, &
+                         0.0D+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 8 ) THEN
 !
 !              Symmetric, random entries
 !
-            CALL ZLATMR( MNMIN, MNMIN, 'S', ISEED, 'S', WORK, 6, ONE, &
-                         CONE, 'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( M+MNMIN+1 ), 1, ONE, 'N', IWORK, M, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( MNMIN, MNMIN, 'S', ISEED, 'S', WORK, 6, 1.0D+0, &
+                         (1.0D+0,0.0D+0), 'T', 'N', WORK( MNMIN+1 ), 1, 1.0D+0, &
+                         WORK( M+MNMIN+1 ), 1, 1.0D+0, 'N', IWORK, M, N, &
+                         0.0D+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 9 ) THEN
 !
 !              Nonsymmetric, random entries
 !
-            CALL ZLATMR( M, N, 'S', ISEED, 'N', WORK, 6, ONE, CONE, &
-                         'T', 'N', WORK( MNMIN+1 ), 1, ONE, &
-                         WORK( M+MNMIN+1 ), 1, ONE, 'N', IWORK, M, N, &
-                         ZERO, ANORM, 'NO', A, LDA, IWORK, IINFO )
+            CALL ZLATMR( M, N, 'S', ISEED, 'N', WORK, 6, 1.0D+0, (1.0D+0,0.0D+0), &
+                         'T', 'N', WORK( MNMIN+1 ), 1, 1.0D+0, &
+                         WORK( M+MNMIN+1 ), 1, 1.0D+0, 'N', IWORK, M, N, &
+                         0.0D+0, ANORM, 'NO', A, LDA, IWORK, IINFO )
 !
          ELSE IF( ITYPE == 10 ) THEN
 !
 !              Bidiagonal, random entries
 !
-            TEMP1 = -TWO*LOG( ULP )
+            TEMP1 = -2.0D+0*LOG( ULP )
             DO J = 1, MNMIN
                BD( J ) = EXP( TEMP1*DLARND( 2, ISEED ) )
-               IF( J < MNMIN ) &
-                  BE( J ) = EXP( TEMP1*DLARND( 2, ISEED ) )
+               IF( J < MNMIN ) BE( J ) = EXP( TEMP1*DLARND( 2, ISEED ) )
             ENDDO
 !
             IINFO = 0
@@ -709,15 +686,15 @@
 !
             IF( BIDIAG ) THEN
                CALL ZLATMR( MNMIN, NRHS, 'S', ISEED, 'N', WORK, 6, &
-                            ONE, CONE, 'T', 'N', WORK( MNMIN+1 ), 1, &
-                            ONE, WORK( 2*MNMIN+1 ), 1, ONE, 'N', &
-                            IWORK, MNMIN, NRHS, ZERO, ONE, 'NO', Y, &
+                            1.0D+0, (1.0D+0,0.0D+0), 'T', 'N', WORK( MNMIN+1 ), 1, &
+                            1.0D+0, WORK( 2*MNMIN+1 ), 1, 1.0D+0, 'N', &
+                            IWORK, MNMIN, NRHS, 0.0D+0, 1.0D+0, 'NO', Y, &
                             LDX, IWORK, IINFO )
             ELSE
-               CALL ZLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, ONE, &
-                            CONE, 'T', 'N', WORK( M+1 ), 1, ONE, &
-                            WORK( 2*M+1 ), 1, ONE, 'N', IWORK, M, &
-                            NRHS, ZERO, ONE, 'NO', X, LDX, IWORK, &
+               CALL ZLATMR( M, NRHS, 'S', ISEED, 'N', WORK, 6, 1.0D+0, &
+                            (1.0D+0,0.0D+0), 'T', 'N', WORK( M+1 ), 1, 1.0D+0, &
+                            WORK( 2*M+1 ), 1, 1.0D+0, 'N', IWORK, M, &
+                            NRHS, 0.0D+0, 1.0D+0, 'NO', X, LDX, IWORK, &
                             IINFO )
             END IF
          END IF
@@ -731,7 +708,7 @@
             RETURN
          END IF
 !
-  100       CONTINUE
+         ENDIF
 !
 !           Call ZGEBRD and ZUNGBR to compute B, Q, and P, do tests.
 !
@@ -747,8 +724,7 @@
 !              Check error code from ZGEBRD.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'ZGEBRD', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'ZGEBRD', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
@@ -763,16 +739,14 @@
 !              Generate Q
 !
             MQ = M
-            IF( NRHS <= 0 ) &
-               MQ = MNMIN
+            IF( NRHS <= 0 ) MQ = MNMIN
             CALL ZUNGBR( 'Q', M, MQ, N, Q, LDQ, WORK, &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
 !
 !              Check error code from ZUNGBR.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'ZUNGBR(Q)', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'ZUNGBR(Q)', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
@@ -785,8 +759,7 @@
 !              Check error code from ZUNGBR.
 !
             IF( IINFO /= 0 ) THEN
-               WRITE( NOUT, FMT = 9998 )'ZUNGBR(P)', IINFO, M, N, &
-                  JTYPE, IOLDSD
+               WRITE( NOUT, FMT = 9998 )'ZUNGBR(P)', IINFO, M, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
                RETURN
             END IF
@@ -794,30 +767,26 @@
 !              Apply Q' to an M by NRHS matrix X:  Y := Q' * X.
 !
             CALL ZGEMM( 'Conjugate transpose', 'No transpose', M, &
-                        NRHS, M, CONE, Q, LDQ, X, LDX, CZERO, Y, &
+                        NRHS, M, (1.0D+0,0.0D+0), Q, LDQ, X, LDX, (0.0D+0,0.0D+0), Y, &
                         LDX )
 !
 !              Test 1:  Check the decomposition A := Q * B * PT
 !                   2:  Check the orthogonality of Q
 !                   3:  Check the orthogonality of PT
 !
-            CALL ZBDT01( M, N, 1, A, LDA, Q, LDQ, BD, BE, PT, LDPT, &
-                         WORK, RWORK, RESULT( 1 ) )
-            CALL ZUNT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, &
-                         RWORK, RESULT( 2 ) )
-            CALL ZUNT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, &
-                         RWORK, RESULT( 3 ) )
+            CALL ZBDT01( M, N, 1, A, LDA, Q, LDQ, BD, BE, PT, LDPT, WORK, RWORK, RESULT( 1 ) )
+            CALL ZUNT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, RWORK, RESULT( 2 ) )
+            CALL ZUNT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, RWORK, RESULT( 3 ) )
          END IF
 !
 !           Use ZBDSQR to form the SVD of the bidiagonal matrix B:
 !           B := U * S1 * VT, and compute Z = U' * Y.
 !
          CALL DCOPY( MNMIN, BD, 1, S1, 1 )
-         IF( MNMIN > 0 ) &
-            CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
+         IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
          CALL ZLACPY( ' ', M, NRHS, Y, LDX, Z, LDX )
-         CALL ZLASET( 'Full', MNMIN, MNMIN, CZERO, CONE, U, LDPT )
-         CALL ZLASET( 'Full', MNMIN, MNMIN, CZERO, CONE, VT, LDPT )
+         CALL ZLASET( 'Full', MNMIN, MNMIN, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), U, LDPT )
+         CALL ZLASET( 'Full', MNMIN, MNMIN, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), VT, LDPT )
 !
          CALL ZBDSQR( UPLO, MNMIN, MNMIN, MNMIN, NRHS, S1, RWORK, VT, &
                       LDPT, U, LDPT, Z, LDX, RWORK( MNMIN+1 ), &
@@ -826,8 +795,7 @@
 !           Check error code from ZBDSQR.
 !
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUT, FMT = 9998 )'ZBDSQR(vects)', IINFO, M, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUT, FMT = 9998 )'ZBDSQR(vects)', IINFO, M, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -841,8 +809,7 @@
 !           bidiagonal matrix B;  U, VT, and Z should not be modified.
 !
          CALL DCOPY( MNMIN, BD, 1, S2, 1 )
-         IF( MNMIN > 0 ) &
-            CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
+         IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
 !
          CALL ZBDSQR( UPLO, MNMIN, 0, 0, 0, S2, RWORK, VT, LDPT, U, &
                       LDPT, Z, LDX, RWORK( MNMIN+1 ), IINFO )
@@ -850,8 +817,7 @@
 !           Check error code from ZBDSQR.
 !
          IF( IINFO /= 0 ) THEN
-            WRITE( NOUT, FMT = 9998 )'ZBDSQR(values)', IINFO, M, N, &
-               JTYPE, IOLDSD
+            WRITE( NOUT, FMT = 9998 )'ZBDSQR(values)', IINFO, M, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
             IF( IINFO < 0 ) THEN
                RETURN
@@ -866,37 +832,31 @@
 !                6:  Check the orthogonality of U
 !                7:  Check the orthogonality of VT
 !
-         CALL ZBDT03( UPLO, MNMIN, 1, BD, BE, U, LDPT, S1, VT, LDPT, &
-                      WORK, RESULT( 4 ) )
-         CALL ZBDT02( MNMIN, NRHS, Y, LDX, Z, LDX, U, LDPT, WORK, &
-                      RWORK, RESULT( 5 ) )
-         CALL ZUNT01( 'Columns', MNMIN, MNMIN, U, LDPT, WORK, LWORK, &
-                      RWORK, RESULT( 6 ) )
-         CALL ZUNT01( 'Rows', MNMIN, MNMIN, VT, LDPT, WORK, LWORK, &
-                      RWORK, RESULT( 7 ) )
+         CALL ZBDT03( UPLO, MNMIN, 1, BD, BE, U, LDPT, S1, VT, LDPT, WORK, RESULT( 4 ) )
+         CALL ZBDT02( MNMIN, NRHS, Y, LDX, Z, LDX, U, LDPT, WORK, RWORK, RESULT( 5 ) )
+         CALL ZUNT01( 'Columns', MNMIN, MNMIN, U, LDPT, WORK, LWORK, RWORK, RESULT( 6 ) )
+         CALL ZUNT01( 'Rows', MNMIN, MNMIN, VT, LDPT, WORK, LWORK, RWORK, RESULT( 7 ) )
 !
 !           Test 8:  Check that the singular values are sorted in
 !                    non-increasing order and are non-negative
 !
-         RESULT( 8 ) = ZERO
+         RESULT( 8 ) = 0.0D+0
          DO I = 1, MNMIN - 1
             IF( S1( I ) < S1( I+1 ) ) &
                RESULT( 8 ) = ULPINV
-            IF( S1( I ) < ZERO ) &
+            IF( S1( I ) < 0.0D+0 ) &
                RESULT( 8 ) = ULPINV
             ENDDO
          IF( MNMIN >= 1 ) THEN
-            IF( S1( MNMIN ) < ZERO ) &
-               RESULT( 8 ) = ULPINV
+            IF (S1( MNMIN ) < 0.0D+0 ) RESULT( 8 ) = ULPINV
          END IF
 !
 !           Test 9:  Compare ZBDSQR with and without singular vectors
 !
-         TEMP2 = ZERO
+         TEMP2 = 0.0D+0
 !
          DO J = 1, MNMIN
-            TEMP1 = ABS( S1( J )-S2( J ) ) / &
-                    MAX( SQRT( UNFL )*MAX( S1( 1 ), ONE ), &
+            TEMP1 = ABS( S1( J )-S2( J ) ) / MAX( SQRT( UNFL )*MAX( S1( 1 ), 1.0D+0 ), &
                     ULP*MAX( ABS( S1( J ) ), ABS( S2( J ) ) ) )
             TEMP2 = MAX( TEMP1, TEMP2 )
             ENDDO
@@ -906,16 +866,15 @@
 !           Test 10:  Sturm sequence test of singular values
 !                     Go up by factors of two until it succeeds
 !
-         TEMP1 = THRESH*( HALF-ULP )
+         TEMP1 = THRESH*( 0.5D+0-ULP )
 !
          DO J = 0, LOG2UI
             CALL DSVDCH( MNMIN, BD, BE, S1, TEMP1, IINFO )
-            IF( IINFO == 0 ) &
-               GO TO 140
-            TEMP1 = TEMP1*TWO
-            ENDDO
+            IF( IINFO == 0 ) GO TO 140
+            TEMP1 = TEMP1*2.0D+0
+         ENDDO
 !
-  140       CONTINUE
+140      CONTINUE
          RESULT( 10 ) = TEMP1
 !
 !           Use ZBDSQR to form the decomposition A := (QU) S (VT PT)
@@ -923,8 +882,7 @@
 !
          IF( .NOT.BIDIAG ) THEN
             CALL DCOPY( MNMIN, BD, 1, S2, 1 )
-            IF( MNMIN > 0 ) &
-               CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
+            IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, RWORK, 1 )
 !
             CALL ZBDSQR( UPLO, MNMIN, N, M, NRHS, S2, RWORK, PT, &
                          LDPT, Q, LDQ, Y, LDX, RWORK( MNMIN+1 ), &
@@ -935,14 +893,10 @@
 !                   13:  Check the orthogonality of Q*U
 !                   14:  Check the orthogonality of VT*PT
 !
-            CALL ZBDT01( M, N, 0, A, LDA, Q, LDQ, S2, DUMMA, PT, &
-                         LDPT, WORK, RWORK, RESULT( 11 ) )
-            CALL ZBDT02( M, NRHS, X, LDX, Y, LDX, Q, LDQ, WORK, &
-                         RWORK, RESULT( 12 ) )
-            CALL ZUNT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, &
-                         RWORK, RESULT( 13 ) )
-            CALL ZUNT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, &
-                         RWORK, RESULT( 14 ) )
+            CALL ZBDT01( M, N, 0, A, LDA, Q, LDQ, S2, DUMMA, PT, LDPT, WORK, RWORK, RESULT( 11 ) )
+            CALL ZBDT02( M, NRHS, X, LDX, Y, LDX, Q, LDQ, WORK, RWORK, RESULT( 12 ) )
+            CALL ZUNT01( 'Columns', M, MQ, Q, LDQ, WORK, LWORK, RWORK, RESULT( 13 ) )
+            CALL ZUNT01( 'Rows', MNMIN, N, PT, LDPT, WORK, LWORK, RWORK, RESULT( 14 ) )
          END IF
 !
 !           End of Loop -- Check for RESULT(j) > THRESH
@@ -950,20 +904,18 @@
   150       CONTINUE
          DO J = 1, 14
             IF( RESULT( J ) >= THRESH ) THEN
-               IF( NFAIL == 0 ) &
-                  CALL DLAHD2( NOUT, PATH )
-               WRITE( NOUT, FMT = 9999 )M, N, JTYPE, IOLDSD, J, &
-                  RESULT( J )
+               IF( NFAIL == 0 ) CALL DLAHD2( NOUT, PATH )
+               WRITE( NOUT, FMT = 9999 )M, N, JTYPE, IOLDSD, J, RESULT( J )
                NFAIL = NFAIL + 1
             END IF
-            ENDDO
+         ENDDO
          IF( .NOT.BIDIAG ) THEN
             NTEST = NTEST + 14
          ELSE
             NTEST = NTEST + 5
          END IF
 !
-  170    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !

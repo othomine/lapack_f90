@@ -205,12 +205,8 @@
    PARAMETER          ( NTESTS = 15 )
    INTEGER            NTYPES
    PARAMETER          ( NTYPES = 4 )
-   DOUBLE PRECISION   GAPDIGIT, ORTH, REALONE, REALZERO, TEN
-   PARAMETER          ( GAPDIGIT = 18.0D0, ORTH = 1.0D-12, &
-                        REALONE = 1.0D0, REALZERO = 0.0D0, &
-                        TEN = 10.0D0 )
-   COMPLEX*16         ONE, ZERO
-   PARAMETER          ( ONE = (1.0D0,0.0D0), ZERO = (0.0D0,0.0D0) )
+   DOUBLE PRECISION   GAPDIGIT, ORTH
+   PARAMETER          ( GAPDIGIT = 18.0D0, ORTH = 1.0D-12 )
    DOUBLE PRECISION   PIOVER2
    PARAMETER ( PIOVER2 = 1.57079632679489661923132169163975144210D0 )
 !     ..
@@ -227,9 +223,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ALAHDG, ALAREQ, ALASUM, ZCSDTS, ZLACSG, ZLAROR, &
                       ZLASET, ZDROT
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MIN
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLARAN, DLARND
@@ -263,8 +256,7 @@
 !
 !           Do the tests only if DOTYPE( IMAT ) is true.
 !
-         IF( .NOT.DOTYPE( IMAT ) ) &
-            GO TO 20
+         IF ( .NOT.DOTYPE( IMAT ) ) GO TO 20
 !
 !           Generate X
 !
@@ -290,7 +282,7 @@
          ELSE IF( IMAT == 3 ) THEN
             R = MIN( P, M-P, Q, M-Q )
             DO I = 1, R+1
-               THETA(I) = TEN**(-DLARND(1,ISEED)*GAPDIGIT)
+               THETA(I) = 10.0D0**(-DLARND(1,ISEED)*GAPDIGIT)
             END DO
             DO I = 2, R+1
                THETA(I) = THETA(I-1) + THETA(I)
@@ -300,12 +292,12 @@
             END DO
             CALL ZLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
          ELSE
-            CALL ZLASET( 'F', M, M, ZERO, ONE, X, LDX )
+            CALL ZLASET( 'F', M, M, (0.0D0,0.0D0), (1.0D0,0.0D0), X, LDX )
             DO I = 1, M
                J = INT( DLARAN( ISEED ) * M ) + 1
                IF( J  /=  I ) THEN
                   CALL ZDROT( M, X(1+(I-1)*LDX), 1, X(1+(J-1)*LDX), &
-                    1, REALZERO, REALONE )
+                    1, 0.0D0, 1.0D0 )
                END IF
             END DO
          END IF
@@ -358,37 +350,34 @@
    DOUBLE PRECISION   THETA( * )
    COMPLEX*16         WORK( * ), X( LDX, * )
 !
-   COMPLEX*16         ONE, ZERO
-   PARAMETER          ( ONE = (1.0D0,0.0D0), ZERO = (0.0D0,0.0D0) )
-!
    INTEGER            I, INFO, R
 !
    R = MIN( P, M-P, Q, M-Q )
 !
-   CALL ZLASET( 'Full', M, M, ZERO, ZERO, X, LDX )
+   CALL ZLASET( 'Full', M, M, (0.0D0,0.0D0), (0.0D0,0.0D0), X, LDX )
 !
    DO I = 1, MIN(P,Q)-R
-      X(I,I) = ONE
+      X(I,I) = (1.0D0,0.0D0)
    END DO
    DO I = 1, R
       X(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = DCMPLX( COS(THETA(I)), 0.0D0 )
    END DO
    DO I = 1, MIN(P,M-Q)-R
-      X(P-I+1,M-I+1) = -ONE
+      X(P-I+1,M-I+1) = -(1.0D0,0.0D0)
    END DO
    DO I = 1, R
       X(P-(MIN(P,M-Q)-R)+1-I,M-(MIN(P,M-Q)-R)+1-I) = &
          DCMPLX( -SIN(THETA(R-I+1)), 0.0D0 )
    END DO
    DO I = 1, MIN(M-P,Q)-R
-      X(M-I+1,Q-I+1) = ONE
+      X(M-I+1,Q-I+1) = (1.0D0,0.0D0)
    END DO
    DO I = 1, R
       X(M-(MIN(M-P,Q)-R)+1-I,Q-(MIN(M-P,Q)-R)+1-I) = &
          DCMPLX( SIN(THETA(R-I+1)), 0.0D0 )
    END DO
    DO I = 1, MIN(M-P,M-Q)-R
-      X(P+I,Q+I) = ONE
+      X(P+I,Q+I) = (1.0D0,0.0D0)
    END DO
    DO I = 1, R
       X(P+(MIN(M-P,M-Q)-R)+I,Q+(MIN(M-P,M-Q)-R)+I) = &
@@ -404,4 +393,4 @@
 !
    END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -68,11 +68,6 @@
    INTEGER            LDE, LDF, LDWORK, LRWORK
    PARAMETER          ( LDE = 50, LDF = 50, LDWORK = 50, &
                       LRWORK = 6*50 )
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IHI, ILO, INFO, J, KNT, M, N, NINFO
@@ -95,9 +90,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ZGEMM, ZGGBAK, ZGGBAL, ZLACPY
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DIMAG, MAX
-!     ..
 !     .. Statement Functions ..
    DOUBLE PRECISION   CABS1
 !     ..
@@ -106,30 +98,27 @@
 !     ..
 !     .. Executable Statements ..
 !
-   LMAX( 1 ) = 0
-   LMAX( 2 ) = 0
-   LMAX( 3 ) = 0
-   LMAX( 4 ) = 0
+   LMAX(1:4) = 0
    NINFO = 0
    KNT = 0
-   RMAX = ZERO
+   RMAX = 0.0D+0
 !
    EPS = DLAMCH( 'Precision' )
 !
-10 CONTINUE
-   READ( NIN, FMT = * )N, M
+   DO
+   READ(NIN,*) N, M
    IF( N == 0 ) GO TO 100
    DO I = 1, N
-      READ( NIN, FMT = * )( A( I, J ), J = 1, N )
+      READ(NIN,*) A(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( B( I, J ), J = 1, N )
+      READ(NIN,*) B(I,1:N)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( VL( I, J ), J = 1, M )
+     READ(NIN,*) VL( I,1:M)
    ENDDO
    DO I = 1, N
-      READ( NIN, FMT = * )( VR( I, J ), J = 1, M )
+     READ(NIN,*) VR( I,1:M)
    ENDDO
 !
    KNT = KNT + 1
@@ -169,17 +158,17 @@
 !     Check tilde(VL)'*A*tilde(VR) - VL'*tilde(A)*VR
 !     where tilde(A) denotes the transformed matrix.
 !
-   CALL ZGEMM( 'N', 'N', N, M, N, CONE, AF, LDA, VR, LDVR, CZERO, &
+   CALL ZGEMM( 'N', 'N', N, M, N, (1.0D+0,0.0D+0), AF, LDA, VR, LDVR, (0.0D+0,0.0D+0), &
                WORK, LDWORK )
-   CALL ZGEMM( 'C', 'N', M, M, N, CONE, VL, LDVL, WORK, LDWORK, &
-               CZERO, E, LDE )
+   CALL ZGEMM( 'C', 'N', M, M, N, (1.0D+0,0.0D+0), VL, LDVL, WORK, LDWORK, &
+               (0.0D+0,0.0D+0), E, LDE )
 !
-   CALL ZGEMM( 'N', 'N', N, M, N, CONE, A, LDA, VRF, LDVR, CZERO, &
+   CALL ZGEMM( 'N', 'N', N, M, N, (1.0D+0,0.0D+0), A, LDA, VRF, LDVR, (0.0D+0,0.0D+0), &
                WORK, LDWORK )
-   CALL ZGEMM( 'C', 'N', M, M, N, CONE, VLF, LDVL, WORK, LDWORK, &
-               CZERO, F, LDF )
+   CALL ZGEMM( 'C', 'N', M, M, N, (1.0D+0,0.0D+0), VLF, LDVL, WORK, LDWORK, &
+               (0.0D+0,0.0D+0), F, LDF )
 !
-   VMAX = ZERO
+   VMAX = 0.0D+0
    DO J = 1, M
       DO I = 1, M
          VMAX = MAX( VMAX, CABS1( E( I, J )-F( I, J ) ) )
@@ -193,17 +182,17 @@
 !
 !     Check tilde(VL)'*B*tilde(VR) - VL'*tilde(B)*VR
 !
-   CALL ZGEMM( 'N', 'N', N, M, N, CONE, BF, LDB, VR, LDVR, CZERO, &
+   CALL ZGEMM( 'N', 'N', N, M, N, (1.0D+0,0.0D+0), BF, LDB, VR, LDVR, (0.0D+0,0.0D+0), &
                WORK, LDWORK )
-   CALL ZGEMM( 'C', 'N', M, M, N, CONE, VL, LDVL, WORK, LDWORK, &
-               CZERO, E, LDE )
+   CALL ZGEMM( 'C', 'N', M, M, N, (1.0D+0,0.0D+0), VL, LDVL, WORK, LDWORK, &
+               (0.0D+0,0.0D+0), E, LDE )
 !
-   CALL ZGEMM( 'n', 'n', N, M, N, CONE, B, LDB, VRF, LDVR, CZERO, &
+   CALL ZGEMM( 'n', 'n', N, M, N, (1.0D+0,0.0D+0), B, LDB, VRF, LDVR, (0.0D+0,0.0D+0), &
                WORK, LDWORK )
-   CALL ZGEMM( 'C', 'N', M, M, N, CONE, VLF, LDVL, WORK, LDWORK, &
-               CZERO, F, LDF )
+   CALL ZGEMM( 'C', 'N', M, M, N, (1.0D+0,0.0D+0), VLF, LDVL, WORK, LDWORK, &
+               (0.0D+0,0.0D+0), F, LDF )
 !
-   VMAX = ZERO
+   VMAX = 0.0D+0
    DO J = 1, M
       DO I = 1, M
          VMAX = MAX( VMAX, CABS1( E( I, J )-F( I, J ) ) )
@@ -215,7 +204,7 @@
       RMAX = VMAX
    END IF
 !
-   GO TO 10
+   ENDDO
 !
   100 CONTINUE
 !

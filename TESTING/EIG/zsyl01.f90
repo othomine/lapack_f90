@@ -104,10 +104,6 @@
 !  =====================================================================
 !     ..
 !     .. Parameters ..
-   COMPLEX*16         CONE
-   PARAMETER          ( CONE = ( 1.0D0, 0.0D+0 ) )
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            MAXM, MAXN, LDSWORK
    PARAMETER          ( MAXM = 185, MAXN = 192, LDSWORK = 36 )
 !     ..
@@ -138,9 +134,6 @@
 !     .. External Subroutines ..
    EXTERNAL           ZLATMR, ZLACPY, ZGEMM, ZTRSYL, ZTRSYL3
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX, SQRT
-!     ..
 !     .. Allocate memory dynamically ..
    ALLOCATE ( A( MAXM, MAXM ), STAT = AllocateStatus )
    IF( AllocateStatus /= 0 ) STOP "*** Not enough memory ***"
@@ -161,57 +154,45 @@
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Expect INFO = 0
-   VM( 1 ) = ONE
+   VM( 1 ) = 1.0D0
 !     Expect INFO = 1
    VM( 2 ) = 0.05D+0
 !
 !     Begin test loop
 !
-   NINFO( 1 ) = 0
-   NINFO( 2 ) = 0
-   NFAIL( 1 ) = 0
-   NFAIL( 2 ) = 0
-   NFAIL( 3 ) = 0
-   RMAX( 1 ) = ZERO
-   RMAX( 2 ) = ZERO
+   NINFO( 1:2 ) = 0
+   NFAIL( 1:3 ) = 0
+   RMAX( 1:2 ) = 0.0D+0
    KNT = 0
-   ISEED( 1 ) = 1
-   ISEED( 2 ) = 1
-   ISEED( 3 ) = 1
-   ISEED( 4 ) = 1
-   SCALE = ONE
-   SCALE3 = ONE
+   ISEED( 1:4 ) = 1
+   SCALE = 1.0D0
+   SCALE3 = 1.0D0
    DO J = 1, 2
       DO ISGN = -1, 1, 2
 !           Reset seed (overwritten by LATMR)
-         ISEED( 1 ) = 1
-         ISEED( 2 ) = 1
-         ISEED( 3 ) = 1
-         ISEED( 4 ) = 1
+         ISEED( 1:4 ) = 1
          DO M = 32, MAXM, 51
             KLA = 0
             KUA = M - 1
             CALL ZLATMR( M, M, 'S', ISEED, 'N', D, &
-                         6, ONE, CONE, 'T', 'N', &
-                         DUML, 1, ONE, DUMR, 1, ONE, &
-                         'N', IWORK, KLA, KUA, ZERO, &
-                         ONE, 'NO', A, MAXM, IWORK, &
+                         6, 1.0D0, (1.0D0,0.0D0), 'T', 'N', &
+                         DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                         'N', IWORK, KLA, KUA, 0.0D0, &
+                         1.0D0, 'NO', A, MAXM, IWORK, &
                          IINFO )
-            DO I = 1, M
-               A( I, I ) = A( I, I ) * VM( J )
-            END DO
+            FORALL (I = 1:M) A( I, I ) = A( I, I ) * VM( J )
             ANRM = ZLANGE( 'M', M, M, A, MAXM, DUM )
             DO N = 51, MAXN, 47
                KLB = 0
                KUB = N - 1
                CALL ZLATMR( N, N, 'S', ISEED, 'N', D, &
-                            6, ONE, CONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, KLB, KUB, ZERO, &
-                            ONE, 'NO', B, MAXN, IWORK, &
+                            6, 1.0D0, (1.0D0,0.0D0), 'T', 'N', &
+                            DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                            'N', IWORK, KLB, KUB, 0.0D0, &
+                            1.0D0, 'NO', B, MAXN, IWORK, &
                             IINFO )
                DO I = 1, N
                   B( I, I ) = B( I, I ) * VM ( J )
@@ -219,20 +200,16 @@
                BNRM = ZLANGE( 'M', N, N, B, MAXN, DUM )
                TNRM = MAX( ANRM, BNRM )
                CALL ZLATMR( M, N, 'S', ISEED, 'N', D, &
-                            6, ONE, CONE, 'T', 'N', &
-                            DUML, 1, ONE, DUMR, 1, ONE, &
-                            'N', IWORK, M, N, ZERO, ONE, &
+                            6, 1.0D0, (1.0D0,0.0D0), 'T', 'N', &
+                            DUML, 1, 1.0D0, DUMR, 1, 1.0D0, &
+                            'N', IWORK, M, N, 0.0D0, 1.0D0, &
                             'NO', C, MAXM, IWORK, IINFO )
                DO ITRANA = 1, 2
-                  IF( ITRANA == 1 ) &
-                      TRANA = 'N'
-                  IF( ITRANA == 2 ) &
-                      TRANA = 'C'
+                  IF( ITRANA == 1 ) TRANA = 'N'
+                  IF( ITRANA == 2 ) TRANA = 'C'
                   DO ITRANB = 1, 2
-                     IF( ITRANB == 1 ) &
-                        TRANB = 'N'
-                     IF( ITRANB == 2 ) &
-                        TRANB = 'C'
+                     IF( ITRANB == 1 ) TRANB = 'N'
+                     IF( ITRANB == 2 ) TRANB = 'C'
                      KNT = KNT + 1
 !
                      CALL ZLACPY( 'All', M, N, C, MAXM, X, MAXM)
@@ -243,10 +220,10 @@
                      IF( IINFO /= 0 ) &
                         NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = ZLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = CONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = (1.0D0,0.0D0)
+                     IF( XNRM > 1.0D0 .AND. TNRM > 1.0D0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = CONE / MAX( XNRM, TNRM )
+                           RMUL = (1.0D0,0.0D0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL ZGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -254,7 +231,7 @@
                                  CC, MAXM )
                      CALL ZGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, CONE, CC, MAXM )
+                                 MAXN, (1.0D0,0.0D0), CC, MAXM )
                      RES1 = ZLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                            ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
@@ -271,10 +248,10 @@
                      IF( INFO /= 0 ) &
                         NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = ZLANGE( 'M', M, N, X, MAXM, DUM )
-                     RMUL = CONE
-                     IF( XNRM > ONE .AND. TNRM > ONE ) THEN
+                     RMUL = (1.0D0,0.0D0)
+                     IF( XNRM > 1.0D0 .AND. TNRM > 1.0D0 ) THEN
                         IF( XNRM > BIGNUM / TNRM ) THEN
-                           RMUL = CONE / MAX( XNRM, TNRM )
+                           RMUL = (1.0D0,0.0D0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
                      CALL ZGEMM( TRANA, 'N', M, N, M, RMUL, &
@@ -282,13 +259,13 @@
                                  CC, MAXM )
                      CALL ZGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
-                                 MAXN, CONE, CC, MAXM )
+                                 MAXN, (1.0D0,0.0D0), CC, MAXM )
                      RES1 = ZLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
 !                       Verify that TRSYL3 only flushes if TRSYL flushes (but
 !                       there may be cases where TRSYL3 avoid flushing).
-                     IF( SCALE3 == ZERO .AND. SCALE > ZERO .OR. &
+                     IF( SCALE3 == 0.0D0 .AND. SCALE > 0.0D0 .OR. &
                          IINFO /= INFO ) THEN
                         NFAIL( 3 ) = NFAIL( 3 ) + 1
                      END IF
@@ -315,4 +292,4 @@
 !     End of ZSYL01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

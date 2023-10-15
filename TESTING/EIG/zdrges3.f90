@@ -400,11 +400,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
    INTEGER            MAXTYP
    PARAMETER          ( MAXTYP = 26 )
 !     ..
@@ -438,9 +433,6 @@
    EXTERNAL           ALASVM, XERBLA, ZGET51, ZGET54, ZGGES3, ZLACPY, &
                       ZLARFG, ZLASET, ZLATM4, ZUNM2R
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, DIMAG, MAX, MIN, SIGN
-!     ..
 !     .. Statement Functions ..
    DOUBLE PRECISION   ABS1
 !     ..
@@ -452,18 +444,12 @@
    DATA               KZ1 / 0, 1, 2, 1, 3, 3 /
    DATA               KZ2 / 0, 0, 1, 2, 1, 1 /
    DATA               KADD / 0, 0, 0, 0, 3, 2 /
-   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, &
-                      4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
-   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, &
-                      1, 1, -4, 2, -4, 8*8, 0 /
-   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, &
-                      4*5, 4*3, 1 /
-   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, &
-                      4*6, 4*4, 1 /
-   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, &
-                      2, 1 /
-   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, &
-                      2, 1 /
+   DATA               KATYPE / 0, 1, 0, 1, 2, 3, 4, 1, 4, 4, 1, 1, 4, 4, 4, 2, 4, 5, 8, 7, 9, 4*4, 0 /
+   DATA               KBTYPE / 0, 0, 1, 1, 2, -3, 1, 4, 1, 1, 4, 4, 1, 1, -4, 2, -4, 8*8, 0 /
+   DATA               KAZERO / 6*1, 2, 1, 2*2, 2*1, 2*2, 3, 1, 3, 4*5, 4*3, 1 /
+   DATA               KBZERO / 6*1, 1, 2, 2*1, 2*2, 2*1, 4, 1, 4, 4*6, 4*4, 1 /
+   DATA               KAMAGN / 8*1, 2, 3, 2, 3, 2, 3, 7*1, 2, 3, 3, 2, 1 /
+   DATA               KBMAGN / 8*1, 3, 2, 3, 2, 2, 3, 7*1, 3, 2, 3, 2, 1 /
    DATA               KTRIAN / 16*0, 10*1 /
    DATA               LASIGN / 6*.FALSE., .TRUE., .FALSE., 2*.TRUE., &
                       2*.FALSE., 3*.TRUE., .FALSE., .TRUE., &
@@ -478,13 +464,8 @@
 !
    INFO = 0
 !
-   BADNN = .FALSE.
-   NMAX = 1
-   DO J = 1, NSIZES
-      NMAX = MAX( NMAX, NN( J ) )
-      IF( NN( J ) < 0 ) &
-         BADNN = .TRUE.
-   ENDDO
+   BADNN = ANY(NN(1:NSIZES) < 0)
+   NMAX = MAXVAL(NN(1:NSIZES))
 !
    IF( NSIZES < 0 ) THEN
       INFO = -1
@@ -492,7 +473,7 @@
       INFO = -2
    ELSE IF( NTYPES < 0 ) THEN
       INFO = -3
-   ELSE IF( THRESH < ZERO ) THEN
+   ELSE IF( THRESH < 0.0D0 ) THEN
       INFO = -6
    ELSE IF( LDA <= 1 .OR. LDA < NMAX ) THEN
       INFO = -9
@@ -527,19 +508,18 @@
 !
 !     Quick return if possible
 !
-   IF( NSIZES == 0 .OR. NTYPES == 0 ) &
-      RETURN
+   IF( NSIZES == 0 .OR. NTYPES == 0 ) RETURN
 !
    ULP = DLAMCH( 'Precision' )
    SAFMIN = DLAMCH( 'Safe minimum' )
    SAFMIN = SAFMIN / ULP
-   SAFMAX = ONE / SAFMIN
-   ULPINV = ONE / ULP
+   SAFMAX = 1.0D0 / SAFMIN
+   ULPINV = 1.0D0 / ULP
 !
 !     The values RMAGN(2:3) depend on N, see below.
 !
-   RMAGN( 0 ) = ZERO
-   RMAGN( 1 ) = ONE
+   RMAGN( 0 ) = 0.0D0
+   RMAGN( 1 ) = 1.0D0
 !
 !     Loop over matrix sizes
 !
@@ -562,22 +542,17 @@
 !        Loop over matrix types
 !
       DO JTYPE = 1, MTYPES
-         IF( .NOT.DOTYPE( JTYPE ) ) &
-            GO TO 180
+         IF (DOTYPE( JTYPE ) ) THEN
          NMATS = NMATS + 1
          NTEST = 0
 !
 !           Save ISEED in case of an error.
 !
-         DO J = 1, 4
-            IOLDSD( J ) = ISEED( J )
-         ENDDO
+         IOLDSD(1:4) = ISEED(1:4)
 !
 !           Initialize RESULT
 !
-         DO J = 1, 13
-            RESULT( J ) = ZERO
-         ENDDO
+         RESULT(1:13) = 0.0D+0
 !
 !           Generate test matrices A and B
 !
@@ -600,8 +575,7 @@
 !           KZ1, KZ2, KADD: used to implement KAZERO and KBZERO.
 !           RMAGN: used to implement KAMAGN and KBMAGN.
 !
-         IF( MTYPES > MAXTYP ) &
-            GO TO 110
+         IF( MTYPES > MAXTYP ) GO TO 110
          IINFO = 0
          IF( KCLASS( JTYPE ) < 3 ) THEN
 !
@@ -610,7 +584,7 @@
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL ZLASET( 'Full', N, N, CZERO, CZERO, A, LDA )
+                  CALL ZLASET( 'Full', N, N, (0.0D0,0.0D0), (0.0D0,0.0D0), A, LDA )
             ELSE
                IN = N
             END IF
@@ -628,13 +602,13 @@
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
                IF( IN /= N ) &
-                  CALL ZLASET( 'Full', N, N, CZERO, CZERO, B, LDA )
+                  CALL ZLASET( 'Full', N, N, (0.0D0,0.0D0), (0.0D0,0.0D0), B, LDA )
             ELSE
                IN = N
             END IF
             CALL ZLATM4( KBTYPE( JTYPE ), IN, KZ1( KBZERO( JTYPE ) ), &
                          KZ2( KBZERO( JTYPE ) ), LBSIGN( JTYPE ), &
-                         RMAGN( KBMAGN( JTYPE ) ), ONE, &
+                         RMAGN( KBMAGN( JTYPE ) ), 1.0D0, &
                          RMAGN( KTRIAN( JTYPE )*KBMAGN( JTYPE ) ), 2, &
                          ISEED, B, LDA )
             IADD = KADD( KBZERO( JTYPE ) )
@@ -655,50 +629,40 @@
                   ENDDO
                   CALL ZLARFG( N+1-JC, Q( JC, JC ), Q( JC+1, JC ), 1, &
                                WORK( JC ) )
-                  WORK( 2*N+JC ) = SIGN( ONE, DBLE( Q( JC, JC ) ) )
-                  Q( JC, JC ) = CONE
+                  WORK( 2*N+JC ) = SIGN( 1.0D0, DBLE( Q( JC, JC ) ) )
+                  Q( JC, JC ) = (1.0D0,0.0D0)
                   CALL ZLARFG( N+1-JC, Z( JC, JC ), Z( JC+1, JC ), 1, &
                                WORK( N+JC ) )
-                  WORK( 3*N+JC ) = SIGN( ONE, DBLE( Z( JC, JC ) ) )
-                  Z( JC, JC ) = CONE
+                  WORK( 3*N+JC ) = SIGN( 1.0D0, DBLE( Z( JC, JC ) ) )
+                  Z( JC, JC ) = (1.0D0,0.0D0)
                ENDDO
                CTEMP = ZLARND( 3, ISEED )
-               Q( N, N ) = CONE
-               WORK( N ) = CZERO
+               Q( N, N ) = (1.0D0,0.0D0)
+               WORK( N ) = (0.0D0,0.0D0)
                WORK( 3*N ) = CTEMP / ABS( CTEMP )
                CTEMP = ZLARND( 3, ISEED )
-               Z( N, N ) = CONE
-               WORK( 2*N ) = CZERO
+               Z( N, N ) = (1.0D0,0.0D0)
+               WORK( 2*N ) = (0.0D0,0.0D0)
                WORK( 4*N ) = CTEMP / ABS( CTEMP )
 !
 !                 Apply the diagonal matrices
 !
                DO JC = 1, N
-                  DO JR = 1, N
-                     A( JR, JC ) = WORK( 2*N+JR )* &
-                                   DCONJG( WORK( 3*N+JC ) )* &
-                                   A( JR, JC )
-                     B( JR, JC ) = WORK( 2*N+JR )* &
-                                   DCONJG( WORK( 3*N+JC ) )* &
-                                   B( JR, JC )
-                  ENDDO
+                  A(1:N,JC) = WORK(2*N+1:2*N+N)*DCONJG( WORK(3*N+JC))*A(1:N,JC)
+                  B(1:N,JC) = WORK(2*N+1:2*N+N)*DCONJG( WORK(3*N+JC))*B(1:N,JC)
                ENDDO
                CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, &
                             LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), &
                             A, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL ZUNM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, B, &
                             LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
                CALL ZUNM2R( 'R', 'C', N, N, N-1, Z, LDQ, WORK( N+1 ), &
                             B, LDA, WORK( 2*N+1 ), IINFO )
-               IF( IINFO /= 0 ) &
-                  GO TO 100
+               IF( IINFO /= 0 ) GO TO 100
             END IF
          ELSE
 !
@@ -725,9 +689,7 @@
 !
   110       CONTINUE
 !
-         DO I = 1, 13
-            RESULT( I ) = -ONE
-            ENDDO
+         RESULT(1:13) = -1.0D+0
 !
 !           Test with and without sorting of eigenvalues
 !
@@ -789,7 +751,7 @@
 !              diagonals.
 !
             NTEST = 6 + RSUB
-            TEMP1 = ZERO
+            TEMP1 = 0.0D0
 !
             DO J = 1, N
                ILABAD = .FALSE.
@@ -800,13 +762,13 @@
                        J ) ) ) ) / ULP
 !
                IF( J < N ) THEN
-                  IF( S( J+1, J ) /= ZERO ) THEN
+                  IF( S( J+1, J ) /= 0.0D0 ) THEN
                      ILABAD = .TRUE.
                      RESULT( 5+RSUB ) = ULPINV
                   END IF
                END IF
                IF( J > 1 ) THEN
-                  IF( S( J, J-1 ) /= ZERO ) THEN
+                  IF( S( J, J-1 ) /= 0.0D0 ) THEN
                      ILABAD = .TRUE.
                      RESULT( 5+RSUB ) = ULPINV
                   END IF
@@ -823,7 +785,7 @@
 !                 Do test 12
 !
                NTEST = 12
-               RESULT( 12 ) = ZERO
+               RESULT( 12 ) = 0.0D0
                KNTEIG = 0
                DO I = 1, N
                   IF( ZLCTES( ALPHA( I ), BETA( I ) ) ) &
@@ -875,7 +837,7 @@
             END IF
             ENDDO
 !
-  180    CONTINUE
+         ENDIF
          ENDDO
       ENDDO
 !
@@ -943,4 +905,4 @@
 !     End of ZDRGES3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
