@@ -34,8 +34,10 @@
 TOPSRCDIR = ../..
 include $(TOPSRCDIR)/make.inc
 
-.SUFFIXES: .f90 .o
+.SUFFIXES: .f90 .F90 .o
 .f90.o:
+	$(FC) $(FFLAGS) -c -o $@ $<
+.F90.o:
 	$(FC) $(FFLAGS) -c -o $@ $<
 
 
@@ -322,13 +324,13 @@ cleanobj:
 cleanexe:
 	rm -f xlintst*
 
-schkaa.o: schkaa.f90
+schkaa.o: schkaa.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-dchkaa.o: dchkaa.f90
+dchkaa.o: dchkaa.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-cchkaa.o: cchkaa.f90
+cchkaa.o: cchkaa.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-zchkaa.o: zchkaa.f90
+zchkaa.o: zchkaa.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
 
 .NOTPARALLEL:

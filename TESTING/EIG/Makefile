@@ -185,19 +185,19 @@ cleanobj:
 cleanexe:
 	rm -f xeigtst* xdmdeigtst*
 
-schkee.o: schkee.f90
+schkee.o: schkee.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-dchkee.o: dchkee.f90
+dchkee.o: dchkee.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-cchkee.o: cchkee.f90
+cchkee.o: cchkee.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-zchkee.o: zchkee.f90
+zchkee.o: zchkee.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-schkdmd.o: schkdmd.f90
+schkdmd.o: schkdmd.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-cchkdmd.o: cchkdmd.f90
+cchkdmd.o: cchkdmd.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-dchkdmd.o: dchkdmd.f90
+dchkdmd.o: dchkdmd.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<
-zchkdmd.o: zchkdmd.f90
+zchkdmd.o: zchkdmd.F90
 	$(FC) $(FFLAGS_DRV) -c -o $@ $<

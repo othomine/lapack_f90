@@ -1,6 +1,10 @@
 TOPSRCDIR = ../..
 include $(TOPSRCDIR)/make.inc
 
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(FFLAGS) -c -o $@ $<
+
 .PHONY: all single double complex complex16
 all: single double complex complex16
 single:    xblat1s xblat2s xblat3s

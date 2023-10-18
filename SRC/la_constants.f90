@@ -129,3 +129,4 @@ module LA_CONSTANTS
        (maxexponent(0._dp) + digits(0._dp) - 1) * 0.5_dp))
 
 end module LA_CONSTANTS
+

@@ -59,9 +59,7 @@ include $(TOPSRCDIR)/make.inc
 
 ALLMOD = la_xisnan.mod la_constants.mod
 
-.SUFFIXES: .F .f90 .F90 .o .mod
-%.o: %.F $(ALLMOD)
-	$(FC) $(FFLAGS) -c -o $@ $<
+.SUFFIXES: .f90 .F90 .o .mod
 %.o: %.f90 $(ALLMOD)
 	$(FC) $(FFLAGS) -c -o $@ $<
 %.o: %.F90 $(ALLMOD)
@@ -630,18 +628,18 @@ cleanobj:
 cleanlib:
 	rm -f $(LAPACKLIB)
 
-slaruv.o: slaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dlaruv.o: dlaruv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-sla_wwaddw.o: sla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dla_wwaddw.o: dla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-cla_wwaddw.o: cla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-zla_wwaddw.o: zla_wwaddw.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+slaruv.o: slaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dlaruv.o: dlaruv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+sla_wwaddw.o: sla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dla_wwaddw.o: dla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+cla_wwaddw.o: cla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+zla_wwaddw.o: zla_wwaddw.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
 
 # Modules
 la_xisnan.mod: 
 	$(FC) $(FFLAGS) -c la_constants.f90 
-	$(FC) $(FFLAGS) -c la_xisnan.F90
-la_xisnan.o: la_xisnan.F90 la_constants.mod
+	$(FC) $(FFLAGS) -c la_xisnan.f90
+la_xisnan.o: la_xisnan.f90 la_constants.mod
 	$(FC) $(FFLAGS) -c -o $@ $<
 la_constants.o: la_constants.f90
 	$(FC) $(FFLAGS) -c -o $@ $<

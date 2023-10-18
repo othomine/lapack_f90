@@ -61,9 +61,9 @@ cleanexe:
 	rm -f testlsame testslamch testdlamch testsecond testdsecnd testieee testversion test_zcomplexabs test_zcomplexdiv test_zcomplexmult test_zminMax
 cleantest:
 	rm -f core
-$(TOPSRCDIR)/SRC/iparmq.o: $(TOPSRCDIR)/SRC/iparmq.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-$(TOPSRCDIR)/SRC/ieeeck.o: $(TOPSRCDIR)/SRC/ieeeck.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-$(TOPSRCDIR)/SRC/ilaenv.o: $(TOPSRCDIR)/SRC/ilaenv.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+$(TOPSRCDIR)/SRC/iparmq.o: $(TOPSRCDIR)/SRC/iparmq.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+$(TOPSRCDIR)/SRC/ieeeck.o: $(TOPSRCDIR)/SRC/ieeeck.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+$(TOPSRCDIR)/SRC/ilaenv.o: $(TOPSRCDIR)/SRC/ilaenv.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
 
 slamch.o: slamch.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
 dlamch.o: dlamch.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
