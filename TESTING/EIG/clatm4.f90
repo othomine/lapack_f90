@@ -162,6 +162,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -189,6 +190,9 @@
    INTEGER            I, ISDB, ISDE, JC, JD, JR, K, KBEG, KEND, KLEN
    REAL               ALPHA
    COMPLEX            CTEMP
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               SLARAN
@@ -201,7 +205,17 @@
 !     .. Executable Statements ..
 !
    IF( N <= 0 ) RETURN
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Insure a correct ISEED
 !
@@ -359,4 +373,7 @@
 !     End of CLATM4
 !
 END
+
+
+
 

@@ -332,6 +332,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -372,6 +373,9 @@
    DOUBLE PRECISION   ANORM, EPS, RCNDE1, RCNDV1, RCONDE, RCONDV, &
                       SMLNUM, TMP, TOL, TOLIN, ULP, ULPINV, V, VIMIN, &
                       VRMIN, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IPNT( 20 )
@@ -414,7 +418,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'DGET24', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -445,10 +459,30 @@
 !
 !        Compute Schur form and Schur vectors, and test them
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, H, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'V', SORT, DSLECT, 'N', N, H, LDA, SDIM, WR, WI, &
                    VS, LDVS, RCONDE, RCONDV, WORK, LWORK, IWORK, &
                    LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 1+RSUB ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -462,8 +496,28 @@
          RETURN
       END IF
       IF( ISORT == 0 ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, WR, 1, WRTMP, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, WI, 1, WITMP, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END IF
 !
 !        Do Test (1) or Test (7)
@@ -490,17 +544,47 @@
 !
 !        Copy A to VS1, used as workspace
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( ' ', N, N, A, LDA, VS1, LDVS )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
 !        Compute Q*H and store in HT.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEMM( 'No transpose', 'No transpose', N, N, N, 1.0D0, VS, &
                   LDVS, H, LDA, 0.0D0, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
 !        Compute A - Q*H*Q'
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEMM( 'No transpose', 'Transpose', N, N, N, -1.0D0, HT, &
                   LDA, VS, LDVS, 1.0D0, VS1, LDVS )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       ANORM = MAX( DLANGE( '1', N, N, A, LDA, WORK ), SMLNUM )
       WNORM = DLANGE( '1', N, N, VS1, LDVS, WORK )
@@ -553,10 +637,30 @@
 !
 !        Do Test (5) or Test (11)
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'N', SORT, DSLECT, 'N', N, HT, LDA, SDIM, WRT, &
                    WIT, VS, LDVS, RCONDE, RCONDV, WORK, LWORK, IWORK, &
                    LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 5+RSUB ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -614,10 +718,30 @@
       SORT = 'S'
       RESULT( 14 ) = 0.0D0
       RESULT( 15 ) = 0.0D0
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'V', SORT, DSLECT, 'B', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCONDE, RCONDV, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 14 ) = ULPINV
          RESULT( 15 ) = ULPINV
@@ -641,10 +765,30 @@
 !
 !        Compute both RCONDE and RCONDV without VS, and compare
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'N', SORT, DSLECT, 'B', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCNDE1, RCNDV1, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 14 ) = ULPINV
          RESULT( 15 ) = ULPINV
@@ -671,10 +815,30 @@
 !
 !        Compute RCONDE with VS, and compare
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'V', SORT, DSLECT, 'E', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCNDE1, RCNDV1, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 14 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -701,10 +865,30 @@
 !
 !        Compute RCONDE without VS, and compare
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'N', SORT, DSLECT, 'E', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCNDE1, RCNDV1, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 14 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -731,10 +915,30 @@
 !
 !        Compute RCONDV with VS, and compare
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'V', SORT, DSLECT, 'V', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCNDE1, RCNDV1, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 15 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -761,10 +965,30 @@
 !
 !        Compute RCONDV without VS, and compare
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'N', SORT, DSLECT, 'V', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCNDE1, RCNDV1, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 15 ) = ULPINV
          IF( JTYPE /= 22 ) THEN
@@ -834,10 +1058,30 @@
 !
 !        Compute condition numbers
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( 'F', N, N, A, LDA, HT, LDA )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEESX( 'N', 'S', DSLECT, 'B', N, HT, LDA, SDIM1, WRT, &
                    WIT, VS1, LDVS, RCONDE, RCONDV, WORK, LWORK, &
                    IWORK, LIWORK, BWORK, IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEESX : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
          RESULT( 16 ) = ULPINV
          RESULT( 17 ) = ULPINV
@@ -918,4 +1162,7 @@
 !     End of DGET24
 !
 END
+
+
+
 

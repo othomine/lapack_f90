@@ -167,6 +167,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -200,6 +201,9 @@
 !     .. Local Scalars ..
    INTEGER            IX, J
    REAL               EPS, ERR, SMLNUM, TNORM, XNORM, XSCAL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -250,13 +254,53 @@
 !
    RESID = ZERO
    DO J = 1, NRHS
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CCOPY( N, X( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IX = ICAMAX( N, WORK, 1 )
       XNORM = MAX( ONE, ABS( X( IX, J ) ) )
       XSCAL = ( ONE / XNORM ) / REAL( KD+1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CSSCAL( N, XSCAL, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CTBMV( UPLO, TRANS, DIAG, N, KD, AB, LDAB, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CTBMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CAXPY( N, CMPLX( -SCALE*XSCAL ), B( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IX = ICAMAX( N, WORK, 1 )
       ERR = TSCAL*ABS( WORK( IX ) )
       IX = ICAMAX( N, X( 1, J ), 1 )
@@ -283,4 +327,8 @@
 !     End of CTBT03
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

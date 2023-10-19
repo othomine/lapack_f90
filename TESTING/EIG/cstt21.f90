@@ -124,6 +124,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -149,6 +150,9 @@
 !     .. Local Scalars ..
    INTEGER            J
    REAL               ANORM, TEMP1, TEMP2, ULP, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               CLANGE, CLANHE, SLAMCH
@@ -171,7 +175,17 @@
 !
 !     Copy A & Compute its 1-Norm:
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ANORM = 0.0E+0
    TEMP1 = 0.0E+0
@@ -190,12 +204,32 @@
 !     Norm of A - U S U**H
 !
    DO J = 1, N
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CHER( 'L', N, -SD( J ), U( 1, J ), 1, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CHER : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    ENDDO
 !
    IF( N > 1 .AND. KBAND == 1 ) THEN
       DO J = 1, N - 1
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CHER2( 'L', N, -CMPLX( SE( J ) ), U( 1, J ), 1, U( 1, J+1 ), 1, WORK, N )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CHER2 : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
    END IF
 !
@@ -215,7 +249,17 @@
 !
 !     Compute  U U**H - I
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'N', 'C', N, N, N, (1.0E+0,0.0E+0), U, LDU, U, LDU, (0.0E+0,0.0E+0), WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO J = 1, N
       WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0E+0,0.0E+0)
@@ -228,4 +272,7 @@
 !     End of CSTT21
 !
 END
+
+
+
 

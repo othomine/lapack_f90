@@ -131,6 +131,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -156,6 +157,9 @@
 !     .. Local Scalars ..
    INTEGER            LDWORK
    REAL               ANORM, EPS, OVFL, SMLNUM, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               CLANGE, SLAMCH
@@ -183,18 +187,48 @@
 !     Copy A to WORK
 !
    LDWORK = MAX( 1, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLACPY( ' ', N, N, A, LDA, WORK, LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute Q*H
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'No transpose', N, N, N, CMPLX( 1.0E+0 ), &
                Q, LDQ, H, LDH, CMPLX( 0.0E+0 ), WORK( LDWORK*N+1 ), LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute A - Q*H*Q'
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', N, N, N, &
                CMPLX( -1.0E+0 ), WORK( LDWORK*N+1 ), LDWORK, Q, LDQ, &
                CMPLX( 1.0E+0 ), WORK, LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ANORM = MAX( CLANGE( '1', N, N, A, LDA, RWORK ), UNFL )
    WNORM = CLANGE( '1', N, N, WORK, LDWORK, RWORK )
@@ -213,4 +247,7 @@
 !     End of CHST01
 !
 END
+
+
+
 

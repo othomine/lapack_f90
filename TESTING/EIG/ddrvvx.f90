@@ -509,6 +509,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -554,6 +555,9 @@
                       NNWORK, NTEST, NTESTF, NTESTT
    DOUBLE PRECISION   ANORM, COND, CONDS, OVFL, RTULP, RTULPI, ULP, &
                       ULPINV, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          ADUMMA( 1 ), BAL( 4 )
@@ -621,7 +625,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'DDRVVX', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -689,7 +703,17 @@
            ANORM = UNFL*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          COND = ULPINV
 !
@@ -776,13 +800,53 @@
                          WORK( 2*N+1 ), 1, 1.0D0, 'N', IDUMMA, N, N, &
                          0.0D0, ANORM, 'NO', A, LDA, IWORK, IINFO )
             IF( N >= 4 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLASET( 'Full', 2, N, 0.0D0, 0.0D0, A, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLASET( 'Full', N-3, 1, 0.0D0, 0.0D0, A( 3, 1 ), &
                             LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLASET( 'Full', N-3, 2, 0.0D0, 0.0D0, A( 3, N-1 ), &
                             LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLASET( 'Full', 1, N, 0.0D0, 0.0D0, A( N, 1 ), &
                             LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
 !
          ELSE IF( ITYPE == 10 ) THEN
@@ -976,4 +1040,7 @@
 !     End of DDRVVX
 !
 END
+
+
+
 

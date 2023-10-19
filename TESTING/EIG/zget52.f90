@@ -153,6 +153,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -183,6 +184,9 @@
                       ENRMER, ERRNRM, SAFMAX, SAFMIN, SCALE, TEMP1, &
                       ULP
    COMPLEX*16         ACOEFF, ALPHAI, BCOEFF, BETAI, X
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLAMCH, ZLANGE
@@ -243,10 +247,30 @@
          ACOEFF = DCONJG( ACOEFF )
          BCOEFF = DCONJG( BCOEFF )
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEMV( TRANS, N, N, ACOEFF, A, LDA, E( 1, JVEC ), 1, &
                   (0.0D+0,0.0D+0), WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEMV( TRANS, N, N, -BCOEFF, B, LDA, E( 1, JVEC ), 1, &
                   (1.0D0,0.0D0), WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    ENDDO
 !
    ERRNRM = ZLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
@@ -275,4 +299,7 @@
 !     End of ZGET52
 !
 END
+
+
+
 

@@ -176,6 +176,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -223,6 +224,9 @@
                       NERRS, NFAIL, NIMAT, NRHS, NRUN, NT
    DOUBLE PRECISION   AINVNM, ANORM, ANORMI, ANORMO, CNDNUM, DUMMY, &
                       RCOND, RCONDC, RCONDI, RCONDO
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          TRANSS( NTRAN )
@@ -340,8 +344,18 @@
                      A( IOFF+I ) = ZERO
                   ENDDO
                ELSE
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLASET( 'Full', M, N-IZERO+1, DCMPLX( ZERO ), &
                                DCMPLX( ZERO ), A( IOFF+1 ), LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                END IF
             ELSE
                IZERO = 0
@@ -361,9 +375,29 @@
 !
 !                 Compute the LU factorization of the matrix.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', M, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                SRNAMT = 'ZGETRF'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGETRF( M, N, AFAC, LDA, IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGETRF : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from ZGETRF.
 !
@@ -376,7 +410,17 @@
 !+    TEST 1
 !                 Reconstruct matrix from factors and compute residual.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', M, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL ZGET01( M, N, A, LDA, AINV, LDA, IWORK, RWORK, &
                             RESULT( 1 ) )
                NT = 1
@@ -386,12 +430,32 @@
 !                 and compute the residual.
 !
                IF( M == N .AND. INFO == 0 ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   SRNAMT = 'ZGETRI'
                   NRHS = NSVAL( 1 )
                   LWORK = NMAX*MAX( 3, NRHS )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZGETRI( N, AINV, LDA, IWORK, WORK, LWORK, &
                                INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZGETRI : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZGETRI.
 !
@@ -473,10 +537,30 @@
                                   LDA, ISEED, INFO )
                      XTYPE = 'C'
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      SRNAMT = 'ZGETRS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGETRS( TRANS, N, NRHS, AFAC, LDA, IWORK, &
                                   X, LDA, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGETRS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Check error code from ZGETRS.
 !
@@ -485,8 +569,18 @@
                                      N, N, -1, -1, NRHS, IMAT, NFAIL, &
                                      NERRS, NOUT )
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, &
                                   LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL ZGET02( TRANS, N, N, NRHS, A, LDA, X, LDA, &
                                   WORK, LDA, RWORK, RESULT( 3 ) )
 !
@@ -501,10 +595,20 @@
 !                       solution.
 !
                      SRNAMT = 'ZGERFS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGERFS( TRANS, N, NRHS, A, LDA, AFAC, LDA, &
                                   IWORK, B, LDA, X, LDA, RWORK, &
                                   RWORK( NRHS+1 ), WORK, &
                                   RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGERFS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Check error code from ZGERFS.
 !
@@ -550,8 +654,18 @@
                      NORM = 'I'
                   END IF
                   SRNAMT = 'ZGECON'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZGECON( NORM, N, AFAC, LDA, ANORM, RCOND, &
                                WORK, RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZGECON : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                       Check error code from ZGECON.
 !
@@ -601,4 +715,8 @@
 !     End of ZCHKGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

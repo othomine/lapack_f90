@@ -132,6 +132,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -158,6 +159,9 @@
 !     .. Local Scalars ..
    INTEGER            I, J
    DOUBLE PRECISION   ANORM, EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DASUM, DLAMCH, DLANGE
@@ -187,10 +191,30 @@
 !           B is upper bidiagonal and M >= N.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK(M+1:M+N-1) = D(1:N-1)*PT(1:N-1,J) + E(1:N-1)*PT(2:N, J )
             WORK( M+N ) = D( N )*PT( N, J )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( 'No transpose', M, N, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -198,10 +222,30 @@
 !           B is upper bidiagonal and M < N.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK(M+1:2*M-1) = D(1:M-1)*PT(1:M-1,J) + E(1:M-1)*PT(2:M, J )
             WORK( M+M ) = D( M )*PT( M, J )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -209,10 +253,30 @@
 !           B is lower bidiagonal.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK( M+1 ) = D( 1 )*PT( 1, J )
             WORK(M+2:2*M) = E(1:M-1)*PT(1:M-1,J) + D(2:M)*PT(2:M,J)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       END IF
@@ -222,16 +286,56 @@
 !
       IF( M >= N ) THEN
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK(M+1:M+N) = D(1:N)*PT(1:N,J)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( 'No transpose', M, N, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK(M+1:M+N) = D(1:N)*PT(1:N,J)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( 'No transpose', M, M, -1.0D+0, Q, LDQ, WORK( M+1 ), 1, 1.0D+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, DASUM( M, WORK, 1 ) )
             ENDDO
       END IF
@@ -261,3 +365,6 @@
 !     End of DBDT01
 !
 END
+
+
+

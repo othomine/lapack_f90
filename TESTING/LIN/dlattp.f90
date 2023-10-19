@@ -116,6 +116,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_lin
 !
@@ -152,6 +153,9 @@
                       PLUS2, RA, RB, REXP, S, SFAC, SMLNUM, STAR1, &
                       STEMP, T, TEXP, TLEFT, TSCAL, ULP, UNFL, X, Y, &
                       Z
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -390,7 +394,17 @@
             JCNEXT = JC + J
             RA = A( JCNEXT+J-1 )
             RB = TWO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DROTG( RA, RB, C, S )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DROTG : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Multiply by [ c  s; -s  c] on the left.
 !
@@ -406,8 +420,19 @@
 !
 !              Multiply by [-c -s;  s -c] on the right.
 !
-            IF( J > 1 ) &
+            IF( J > 1 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DROT( J-1, A( JCNEXT ), 1, A( JC ), 1, -C, -S )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DROT : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Negate A(J,J+1).
 !
@@ -420,13 +445,34 @@
             JCNEXT = JC + N - J + 1
             RA = A( JC+1 )
             RB = TWO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DROTG( RA, RB, C, S )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DROTG : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Multiply by [ c -s;  s  c] on the right.
 !
-            IF( N > J+1 ) &
+            IF( N > J+1 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DROT( N-J-1, A( JCNEXT+1 ), 1, A( JC+2 ), 1, C, &
                           -S )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DROT : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by [-c  s; -s -c] on the left.
 !
@@ -460,14 +506,34 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC+J-1 ) = SIGN( TWO, A( JC+J-1 ) )
             JC = JC + J
             ENDDO
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, N-J+1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC ) = SIGN( TWO, A( JC ) )
             JC = JC + N - J + 1
             ENDDO
@@ -475,11 +541,31 @@
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = IDAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 12 ) THEN
 !
@@ -487,13 +573,43 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 12, the offdiagonal elements are small (CNORM(j) < 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       TSCAL = ONE / MAX( ONE, DBLE( N-1 ) )
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J-1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DSCAL( J-1, TSCAL, A( JC ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC+J-1 ) = SIGN( ONE, DLARND( 2, ISEED ) )
             JC = JC + J
             ENDDO
@@ -501,8 +617,28 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, N-J, A( JC+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DSCAL( N-J, TSCAL, A( JC+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC ) = SIGN( ONE, DLARND( 2, ISEED ) )
             JC = JC + N - J + 1
             ENDDO
@@ -515,11 +651,31 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 13, the offdiagonal elements are O(1) (CNORM(j) > 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J-1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC+J-1 ) = SIGN( ONE, DLARND( 2, ISEED ) )
             JC = JC + J
             ENDDO
@@ -527,7 +683,17 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, N-J, A( JC+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC ) = SIGN( ONE, DLARND( 2, ISEED ) )
             JC = JC + N - J + 1
             ENDDO
@@ -600,7 +766,17 @@
 !
       TEXP = ONE / MAX( ONE, DBLE( N-1 ) )
       TSCAL = SMLNUM**TEXP
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
@@ -635,7 +811,17 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                A( JC+J-1 ) = SIGN( TWO, A( JC+J-1 ) )
             ELSE
@@ -646,7 +832,17 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, N-J+1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                A( JC ) = SIGN( TWO, A( JC ) )
             ELSE
@@ -655,8 +851,28 @@
             JC = JC + N - J + 1
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 17 ) THEN
 !
@@ -710,15 +926,36 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J-1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             A( JC+J-1 ) = ZERO
             JC = JC + J
             ENDDO
       ELSE
          JC = 1
          DO J = 1, N
-            IF( J < N ) &
+            IF( J < N )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLARNV( 2, ISEED, N-J, A( JC+1 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             A( JC ) = ZERO
             JC = JC + N - J + 1
             ENDDO
@@ -726,11 +963,31 @@
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = IDAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 19 ) THEN
 !
@@ -743,7 +1000,17 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, J, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, J
                A( JC+I-1 ) = SIGN( TLEFT, A( JC+I-1 ) ) + &
                              TSCAL*A( JC+I-1 )
@@ -753,7 +1020,17 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 2, ISEED, N-J+1, A( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = J, N
                A( JC+I-J ) = SIGN( TLEFT, A( JC+I-J ) ) + &
                              TSCAL*A( JC+I-J )
@@ -761,8 +1038,28 @@
             JC = JC + N - J + 1
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    END IF
 !
 !     Flip the matrix across its counter-diagonal if the transpose will
@@ -805,4 +1102,8 @@
 !     End of DLATTP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

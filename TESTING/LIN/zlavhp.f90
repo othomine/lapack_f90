@@ -122,6 +122,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -152,6 +153,9 @@
    LOGICAL            NOUNIT
    INTEGER            J, K, KC, KCNEXT, KP
    COMPLEX*16         D11, D12, D21, D22, T1, T2
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -182,7 +186,17 @@
       INFO = -8
    END IF
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'ZLAVHP ', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -218,8 +232,19 @@
 !
 !              Multiply by the diagonal element if forming U * D.
 !
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSCAL( NRHS, A( KC+K-1 ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by P(K) * inv(U(K))  if K > 1.
 !
@@ -227,14 +252,35 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( K-1, NRHS, ONE, A( KC ), 1, B( K, 1 ), &
                            LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if P(K) != I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             KC = KC + K
             K = K + 1
@@ -265,16 +311,47 @@
 !
 !                 Apply the transformations.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( K-1, NRHS, ONE, A( KC ), 1, B( K, 1 ), &
                            LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( K-1, NRHS, ONE, A( KCNEXT ), 1, &
                            B( K+1, 1 ), LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if P(K) != I.
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             KC = KCNEXT + K + 1
             K = K + 2
@@ -305,8 +382,19 @@
 !
 !              Multiply by the diagonal element if forming L * D.
 !
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSCAL( NRHS, A( KC ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by  P(K) * inv(L(K))  if K < N.
 !
@@ -315,14 +403,35 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( N-K, NRHS, ONE, A( KC+1 ), 1, B( K, 1 ), &
                            LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if a permutation was applied at the
 !                 K-th step of the factorization.
 !
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             K = K - 1
 !
@@ -353,17 +462,48 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( N-K, NRHS, ONE, A( KC+1 ), 1, B( K, 1 ), &
                            LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGERU( N-K, NRHS, ONE, A( KCNEXT+2 ), 1, &
                            B( K-1, 1 ), LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGERU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if a permutation was applied at the
 !                 K-th step of the factorization.
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             KC = KCNEXT
             K = K - 2
@@ -401,20 +541,72 @@
 !                 Interchange if P(K) != I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation:
 !                    y := y - B' * conjg(x)
 !                 where x is a column of A and y is a row of B.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', K-1, NRHS, ONE, B, LDB, &
                            A( KC ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSCAL( NRHS, A( KC+K-1 ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             K = K - 1
 !
 !           2 x 2 pivot block.
@@ -426,21 +618,92 @@
 !                 Interchange if P(K) != I.
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K-1 ) &
+               IF( KP /= K-1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformations.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', K-2, NRHS, ONE, B, LDB, &
                            A( KC ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K-1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', K-2, NRHS, ONE, B, LDB, &
                            A( KCNEXT ), 1, ONE, B( K-1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K-1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
 !
 !              Multiply by the diagonal block if non-unit.
@@ -485,18 +748,70 @@
 !                 Interchange if P(K) != I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', N-K, NRHS, ONE, B( K+1, 1 ), &
                            LDB, A( KC+1 ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSCAL( NRHS, A( KC ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             KC = KC + N - K + 1
             K = K + 1
 !
@@ -509,23 +824,94 @@
 !              Interchange if P(K) != I.
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K+1 ) &
+               IF( KP /= K+1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', N-K-1, NRHS, ONE, &
                            B( K+2, 1 ), LDB, A( KCNEXT+1 ), 1, ONE, &
                            B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGEMV( 'Conjugate', N-K-1, NRHS, ONE, &
                            B( K+2, 1 ), LDB, A( KC+2 ), 1, ONE, &
                            B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACGV( NRHS, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
 !
 !              Multiply by the diagonal block if non-unit.
@@ -555,4 +941,8 @@
 !     End of ZLAVHP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

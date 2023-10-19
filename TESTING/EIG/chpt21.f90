@@ -219,6 +219,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -248,6 +249,9 @@
    INTEGER            IINFO, J, JP, JP1, JR, LAP
    REAL               ANORM, ULP, UNFL, WNORM
    COMPLEX            TEMP, VSAVE
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -303,17 +307,57 @@
 !
 !        ITYPE=1: error = A - U S U**H
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CCOPY( LAP, AP, 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CHPR( CUPLO, N, -D( J ), U( 1, J ), 1, WORK )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CHPR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
       IF( N > 1 .AND. KBAND == 1 ) THEN
          DO J = 2, N - 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPR2( CUPLO, N, -CMPLX( E( J ) ), U( 1, J ), 1, &
                         U( 1, J-1 ), 1, WORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPR2 : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ENDDO
       END IF
       WNORM = CLANHP( '1', CUPLO, N, WORK, RWORK )
@@ -322,7 +366,17 @@
 !
 !        ITYPE=2: error = V S V**H - A
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( LOWER ) THEN
          WORK( LAP ) = D( N )
@@ -339,14 +393,44 @@
             IF( TAU( J ) /= (0.0E+0,0.0E+0) ) THEN
                VSAVE = VP( JP+J+1 )
                VP( JP+J+1 ) = (1.0E+0,0.0E+0)
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CHPMV( 'L', N-J, (1.0E+0,0.0E+0), WORK( JP1+J+1 ), &
                            VP( JP+J+1 ), 1, (0.0E+0,0.0E+0), WORK( LAP+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CHPMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                TEMP = -0.5E+0*TAU( J )*CDOTC( N-J, WORK( LAP+1 ), 1, &
                       VP( JP+J+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CAXPY( N-J, TEMP, VP( JP+J+1 ), 1, WORK( LAP+1 ), &
                            1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CHPR2( 'L', N-J, -TAU( J ), VP( JP+J+1 ), 1, &
                            WORK( LAP+1 ), 1, WORK( JP1+J+1 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CHPR2 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                VP( JP+J+1 ) = VSAVE
             END IF
@@ -367,14 +451,44 @@
             IF( TAU( J ) /= (0.0E+0,0.0E+0) ) THEN
                VSAVE = VP( JP1+J )
                VP( JP1+J ) = (1.0E+0,0.0E+0)
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CHPMV( 'U', J, (1.0E+0,0.0E+0), WORK, VP( JP1+1 ), 1, (0.0E+0,0.0E+0), &
                            WORK( LAP+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CHPMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                TEMP = -0.5E+0*TAU( J )*CDOTC( J, WORK( LAP+1 ), 1, &
                       VP( JP1+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CAXPY( J, TEMP, VP( JP1+1 ), 1, WORK( LAP+1 ), &
                            1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CHPR2( 'U', J, -TAU( J ), VP( JP1+1 ), 1, &
                            WORK( LAP+1 ), 1, WORK )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CHPR2 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                VP( JP1+J ) = VSAVE
             END IF
             WORK( JP1+J+1 ) = D( J+1 )
@@ -391,8 +505,28 @@
 !        ITYPE=3: error = U V**H - I
 !
       IF( N < 2 ) RETURN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLACPY( ' ', N, N, U, LDU, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CUPMTR( 'R', CUPLO, 'C', N, N, VP, TAU, WORK, N, WORK( N**2+1 ), IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CUPMTR : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 ) THEN
          RESULT( 1 ) = 10.0E+0 / ULP
          RETURN
@@ -420,7 +554,17 @@
 !     Compute  U U**H - I
 !
    IF( ITYPE == 1 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEMM( 'N', 'C', N, N, N, (1.0E+0,0.0E+0), U, LDU, U, LDU, (0.0E+0,0.0E+0), WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
          WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0E+0,0.0E+0)
@@ -434,4 +578,7 @@
 !     End of CHPT21
 !
 END
+
+
+
 

@@ -76,6 +76,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -106,6 +107,9 @@
    DOUBLE PRECISION   BIGNUM, EPS, RES, RES1, SCALE, SMLNUM, TNRM, &
                       XNRM
    COMPLEX*16         RMUL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    DOUBLE PRECISION   DUM( 1 ), VM1( 3 ), VM2( 3 )
@@ -191,9 +195,19 @@
                            ENDDO
                            ENDDO
                         KNT = KNT + 1
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZTRSYL( TRANA, TRANB, ISGN, M, N, A, &
                                      LDT, B, LDT, C, LDT, SCALE, &
                                      INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZTRSYL : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( INFO /= 0 ) &
                            NINFO = NINFO + 1
                         XNRM = ZLANGE( 'M', M, N, C, LDT, DUM )
@@ -204,12 +218,32 @@
                               RMUL = (1.0D0,0.0D0) / RMUL
                            END IF
                         END IF
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZGEMM( TRANA, 'N', M, N, M, RMUL, A, &
                                     LDT, C, LDT, -SCALE*RMUL, CSAV, &
                                     LDT )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZGEMM( 'N', TRANB, M, N, N, &
                                     DBLE( ISGN )*RMUL, C, LDT, B, &
                                     LDT, (1.0D0,0.0D0), CSAV, LDT )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RES1 = ZLANGE( 'M', M, N, CSAV, LDT, DUM )
                         RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                               ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
@@ -229,4 +263,7 @@
 !     End of ZGET35
 !
 END
+
+
+
 

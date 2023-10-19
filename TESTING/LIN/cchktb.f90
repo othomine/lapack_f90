@@ -140,6 +140,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -184,6 +185,9 @@
                       NIMAT, NIMAT2, NK, NRHS, NRUN
    REAL               AINVNM, ANORM, RCOND, RCONDC, RCONDI, RCONDO, &
                       SCALE
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          TRANSS( NTRAN ), UPLOS( 2 )
@@ -297,18 +301,48 @@
 !                 Form the inverse of A so we can get a good estimate
 !                 of RCONDC = 1/(norm(A) * norm(inv(A))).
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLASET( 'Full', N, N, CMPLX( ZERO ), &
                             CMPLX( ONE ), AINV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( LSAME( UPLO, 'U' ) ) THEN
                   DO J = 1, N
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CTBSV( UPLO, 'No transpose', DIAG, J, KD, &
                                  AB, LDAB, AINV( ( J-1 )*LDA+1 ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CTBSV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   ENDDO
                ELSE
                   DO J = 1, N
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CTBSV( UPLO, 'No transpose', DIAG, N-J+1, &
                                  KD, AB( ( J-1 )*LDAB+1 ), LDAB, &
                                  AINV( ( J-1 )*LDA+J ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CTBSV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   ENDDO
                END IF
 !
@@ -361,11 +395,31 @@
                                   IDIAG, NRHS, AB, LDAB, XACT, LDA, &
                                   B, LDA, ISEED, INFO )
                      XTYPE = 'C'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'CTBTRS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CTBTRS( UPLO, TRANS, DIAG, N, KD, NRHS, AB, &
                                   LDAB, X, LDA, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CTBTRS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                    Check error code from CTBTRS.
 !
@@ -390,10 +444,20 @@
 !                    and compute error bounds.
 !
                      SRNAMT = 'CTBRFS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CTBRFS( UPLO, TRANS, DIAG, N, KD, NRHS, AB, &
                                   LDAB, B, LDA, X, LDA, RWORK, &
                                   RWORK( NRHS+1 ), WORK, &
                                   RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CTBRFS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                    Check error code from CTBRFS.
 !
@@ -438,8 +502,18 @@
                      RCONDC = RCONDI
                   END IF
                   SRNAMT = 'CTBCON'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CTBCON( NORM, UPLO, DIAG, N, KD, AB, LDAB, &
                                RCOND, WORK, RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CTBCON : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CTBCON.
 !
@@ -496,9 +570,29 @@
 !                    Solve the system op(A)*x = b
 !
                   SRNAMT = 'CLATBS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CCOPY( N, X, 1, B, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLATBS( UPLO, TRANS, DIAG, 'N', N, KD, AB, &
                                LDAB, B, SCALE, RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLATBS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CLATBS.
 !
@@ -515,9 +609,29 @@
 !+    TEST 8
 !                    Solve op(A)*x = b again with NORMIN = 'Y'.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CCOPY( N, X, 1, B, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLATBS( UPLO, TRANS, DIAG, 'Y', N, KD, AB, &
                                LDAB, B, SCALE, RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLATBS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CLATBS.
 !
@@ -574,4 +688,8 @@
 !     End of CCHKTB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

@@ -122,6 +122,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -159,6 +160,9 @@
                       SFAC, SMLNUM, T, TEXP, TLEFT, TSCAL, ULP, UNFL, &
                       X, Y, Z
    COMPLEX*16         CTEMP, PLUS1, PLUS2, RA, RB, S, STAR1
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -398,7 +402,17 @@
             JCNEXT = JC + J
             RA = AP( JCNEXT+J-1 )
             RB = TWO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZROTG( RA, RB, C, S )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZROTG : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Multiply by [ c  s; -conjg(s)  c] on the left.
 !
@@ -415,8 +429,19 @@
 !
 !              Multiply by [-c -s;  conjg(s) -c] on the right.
 !
-            IF( J > 1 ) &
+            IF( J > 1 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZROT( J-1, AP( JCNEXT ), 1, AP( JC ), 1, -C, -S )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZROT : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Negate A(J,J+1).
 !
@@ -429,14 +454,35 @@
             JCNEXT = JC + N - J + 1
             RA = AP( JC+1 )
             RB = TWO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZROTG( RA, RB, C, S )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZROTG : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             S = DCONJG( S )
 !
 !              Multiply by [ c -s;  conjg(s) c] on the right.
 !
-            IF( N > J+1 ) &
+            IF( N > J+1 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZROT( N-J-1, AP( JCNEXT+1 ), 1, AP( JC+2 ), 1, C, &
                           -S )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZROT : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by [-c  s; -conjg(s) -c] on the left.
 !
@@ -471,15 +517,36 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, J-1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC+J-1 ) = ZLARND( 5, ISEED )*TWO
             JC = JC + J
             ENDDO
       ELSE
          JC = 1
          DO J = 1, N
-            IF( J < N ) &
+            IF( J < N )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLARNV( 4, ISEED, N-J, AP( JC+1 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AP( JC ) = ZLARND( 5, ISEED )*TWO
             JC = JC + N - J + 1
             ENDDO
@@ -487,11 +554,31 @@
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = IZAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZDSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 12 ) THEN
 !
@@ -499,13 +586,43 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 12, the offdiagonal elements are small (CNORM(j) < 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       TSCAL = ONE / MAX( ONE, DBLE( N-1 ) )
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, J-1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZDSCAL( J-1, TSCAL, AP( JC ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC+J-1 ) = ZLARND( 5, ISEED )
             JC = JC + J
             ENDDO
@@ -513,8 +630,28 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 2, ISEED, N-J, AP( JC+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZDSCAL( N-J, TSCAL, AP( JC+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC ) = ZLARND( 5, ISEED )
             JC = JC + N - J + 1
             ENDDO
@@ -527,11 +664,31 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 13, the offdiagonal elements are O(1) (CNORM(j) > 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, J-1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC+J-1 ) = ZLARND( 5, ISEED )
             JC = JC + J
             ENDDO
@@ -539,7 +696,17 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, N-J, AP( JC+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC ) = ZLARND( 5, ISEED )
             JC = JC + N - J + 1
             ENDDO
@@ -612,7 +779,17 @@
 !
       TEXP = ONE / MAX( ONE, DBLE( N-1 ) )
       TSCAL = SMLNUM**TEXP
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 4, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
@@ -647,7 +824,17 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, J, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                AP( JC+J-1 ) = ZLARND( 5, ISEED )*TWO
             ELSE
@@ -658,7 +845,17 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, N-J+1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                AP( JC ) = ZLARND( 5, ISEED )*TWO
             ELSE
@@ -667,8 +864,28 @@
             JC = JC + N - J + 1
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZDSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 17 ) THEN
 !
@@ -722,15 +939,36 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 4, ISEED, J-1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AP( JC+J-1 ) = ZERO
             JC = JC + J
             ENDDO
       ELSE
          JC = 1
          DO J = 1, N
-            IF( J < N ) &
+            IF( J < N )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLARNV( 4, ISEED, N-J, AP( JC+1 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AP( JC ) = ZERO
             JC = JC + N - J + 1
             ENDDO
@@ -738,11 +976,31 @@
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = IZAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZDSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 19 ) THEN
 !
@@ -756,8 +1014,28 @@
       IF( UPPER ) THEN
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 5, ISEED, J, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 1, ISEED, J, RWORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, J
                AP( JC+I-1 ) = AP( JC+I-1 )*( TLEFT+RWORK( I )*TSCAL )
                ENDDO
@@ -766,8 +1044,28 @@
       ELSE
          JC = 1
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARNV( 5, ISEED, N-J+1, AP( JC ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLARNV( 1, ISEED, N-J+1, RWORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = J, N
                AP( JC+I-J ) = AP( JC+I-J )* &
                               ( TLEFT+RWORK( I-J+1 )*TSCAL )
@@ -775,8 +1073,28 @@
             JC = JC + N - J + 1
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZDSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZDSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    END IF
 !
 !     Flip the matrix across its counter-diagonal if the transpose will
@@ -819,4 +1137,8 @@
 !     End of ZLATTP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

@@ -95,6 +95,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -121,6 +122,9 @@
                       NDIM
    DOUBLE PRECISION   BIGNUM, DOMIN, DUMM, EPS, NORM, NORMTB, RESID, &
                       SCALE, SMLNUM, W, XNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    INTEGER            IDAMAX
@@ -224,19 +228,59 @@
                      K = IDAMAX( N, B, 1 )
                      NORMTB = NORM + ABS( B( K ) ) + ABS( W )
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( N, D, 1, X, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      KNT = KNT + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLAQTR( .FALSE., .TRUE., N, T, LDT, DUM, &
                                   DUMM, SCALE, X, WORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLAQTR : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO = NINFO + 1
 !
 !                       || T*x - scale*d || /
 !                         max(ulp*||T||*||x||,smlnum/ulp*||T||,smlnum)
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( N, D, 1, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'No transpose', N, N, 1.0D0, T, LDT, &
                                  X, 1, -SCALE, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      XNORM = DASUM( N, X, 1 )
                      RESID = DASUM( N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORM, &
@@ -247,19 +291,59 @@
                         LMAX = KNT
                      END IF
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( N, D, 1, X, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      KNT = KNT + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLAQTR( .TRUE., .TRUE., N, T, LDT, DUM, &
                                   DUMM, SCALE, X, WORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLAQTR : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO = NINFO + 1
 !
 !                       || T*x - scale*d || /
 !                         max(ulp*||T||*||x||,smlnum/ulp*||T||,smlnum)
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( N, D, 1, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'Transpose', N, N, 1.0D0, T, LDT, X, &
                                  1, -SCALE, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      XNORM = DASUM( N, X, 1 )
                      RESID = DASUM( N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORM, &
@@ -270,10 +354,30 @@
                         LMAX = KNT
                      END IF
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( 2*N, D, 1, X, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      KNT = KNT + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLAQTR( .FALSE., .FALSE., N, T, LDT, B, W, &
                                   SCALE, X, WORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLAQTR : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO = NINFO + 1
 !
@@ -282,22 +386,52 @@
 !                                  smlnum/ulp * (||T||+||B||), smlnum )
 !
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( 2*N, D, 1, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      Y( 1 ) = DDOT( N, B, 1, X( 1+N ), 1 ) + &
                               SCALE*Y( 1 )
                      DO I = 2, N
                         Y( I ) = W*X( I+N ) + SCALE*Y( I )
                      ENDDO
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'No transpose', N, N, 1.0D0, T, LDT, &
                                  X, 1, -1.0D0, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      Y( 1+N ) = DDOT( N, B, 1, X, 1 ) - &
                                 SCALE*Y( 1+N )
                      DO I = 2, N
                         Y( I+N ) = W*X( I ) - SCALE*Y( I+N )
                      ENDDO
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'No transpose', N, N, 1.0D0, T, LDT, &
                                  X( 1+N ), 1, 1.0D0, Y( 1+N ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      RESID = DASUM( 2*N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORMTB, &
@@ -308,10 +442,30 @@
                         LMAX = KNT
                      END IF
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( 2*N, D, 1, X, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      KNT = KNT + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLAQTR( .TRUE., .FALSE., N, T, LDT, B, W, &
                                   SCALE, X, WORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLAQTR : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO = NINFO + 1
 !
@@ -319,22 +473,52 @@
 !                          max(ulp*(||T||+||B||)*(||x1||+||x2||),
 !                                  smlnum/ulp * (||T||+||B||), smlnum )
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DCOPY( 2*N, D, 1, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      Y( 1 ) = B( 1 )*X( 1+N ) - SCALE*Y( 1 )
                      DO I = 2, N
                         Y( I ) = B( I )*X( 1+N ) + W*X( I+N ) - &
                                  SCALE*Y( I )
                      ENDDO
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'Transpose', N, N, 1.0D0, T, LDT, X, &
                                  1, 1.0D0, Y, 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      Y( 1+N ) = B( 1 )*X( 1 ) + SCALE*Y( 1+N )
                      DO I = 2, N
                         Y( I+N ) = B( I )*X( 1 ) + W*X( I ) + &
                                    SCALE*Y( I+N )
                      ENDDO
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMV( 'Transpose', N, N, 1.0D0, T, LDT, &
                                  X( 1+N ), 1, -1.0D0, Y( 1+N ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      RESID = DASUM( 2*N, Y, 1 )
                      DOMIN = MAX( SMLNUM, ( SMLNUM / EPS )*NORMTB, &
@@ -357,4 +541,7 @@
 !     End of DGET39
 !
 END
+
+
+
 

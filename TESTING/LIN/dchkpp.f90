@@ -153,6 +153,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_lin
 !
@@ -195,6 +196,9 @@
                       KL, KU, LDA, MODE, N, NERRS, NFAIL, NIMAT, NPP, &
                       NRHS, NRUN
    DOUBLE PRECISION   ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          PACKS( 2 ), UPLOS( 2 )
@@ -336,9 +340,29 @@
 !              Compute the L*L' or U'*U factorization of the matrix.
 !
             NPP = N*( N+1 ) / 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( NPP, A, 1, AFAC, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             SRNAMT = 'DPPTRF'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DPPTRF( UPLO, N, AFAC, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DPPTRF : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DPPTRF.
 !
@@ -356,15 +380,45 @@
 !+    TEST 1
 !              Reconstruct matrix from factors and compute residual.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( NPP, AFAC, 1, AINV, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             CALL DPPT01( UPLO, N, A, AINV, RWORK, RESULT( 1 ) )
 !
 !+    TEST 2
 !              Form the inverse and compute the residual.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( NPP, AFAC, 1, AINV, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             SRNAMT = 'DPPTRI'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DPPTRI( UPLO, N, AINV, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DPPTRI : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DPPTRI.
 !
@@ -399,10 +453,30 @@
                CALL DLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                             NRHS, A, LDA, XACT, LDA, B, LDA, ISEED, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                SRNAMT = 'DPPTRS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DPPTRS( UPLO, N, NRHS, AFAC, X, LDA, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DPPTRS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from DPPTRS.
 !
@@ -411,7 +485,17 @@
                                -1, -1, NRHS, IMAT, NFAIL, NERRS, &
                                NOUT )
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL DPPT02( UPLO, N, NRHS, A, X, LDA, WORK, LDA, &
                             RWORK, RESULT( 3 ) )
 !
@@ -425,9 +509,19 @@
 !              Use iterative refinement to improve the solution.
 !
                SRNAMT = 'DPPRFS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DPPRFS( UPLO, N, NRHS, A, AFAC, B, LDA, X, LDA, &
                             RWORK, RWORK( NRHS+1 ), WORK, IWORK, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DPPRFS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from DPPRFS.
 !
@@ -462,8 +556,18 @@
 !
             ANORM = DLANSP( '1', UPLO, N, A, RWORK )
             SRNAMT = 'DPPCON'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DPPCON( UPLO, N, AFAC, ANORM, RCOND, WORK, IWORK, &
                          INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DPPCON : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DPPCON.
 !
@@ -502,4 +606,8 @@
 !     End of DCHKPP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

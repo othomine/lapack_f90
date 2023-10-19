@@ -157,6 +157,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -205,6 +206,9 @@
    REAL               AINVNM, AMAX, ANORM, ANORMI, ANORMO, CNDNUM, &
                       COLCND, RCOND, RCONDC, RCONDI, RCONDO, ROLDC, &
                       ROLDI, ROLDO, ROWCND, RPVGRW, RPVGRW_SVXX
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          EQUEDS( 4 ), FACTS( 3 ), TRANSS( NTRAN )
@@ -328,8 +332,18 @@
                   A( IOFF+I ) = ZERO
                ENDDO
             ELSE
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLASET( 'Full', N, N-IZERO+1, CMPLX( ZERO ), &
                             CMPLX( ZERO ), A( IOFF+1 ), LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
          ELSE
             IZERO = 0
@@ -337,7 +351,17 @@
 !
 !           Save a copy of the matrix A in ASAV.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLACPY( 'Full', N, N, A, LDA, ASAV, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          DO IEQUED = 1, 4
             EQUED = EQUEDS( IEQUED )
@@ -366,14 +390,34 @@
 !                    the condition number from the previous iteration
 !                    with FACT = 'F').
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, N, ASAV, LDA, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( EQUIL .OR. IEQUED > 1 ) THEN
 !
 !                       Compute row and column scale factors to
 !                       equilibrate the matrix A.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CGEEQU( N, N, AFAC, LDA, S, S( N+1 ), &
                                   ROWCND, COLCND, AMAX, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CGEEQU : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO == 0 .AND. N > 0 ) THEN
                         IF( LSAME( EQUED, 'R' ) ) THEN
                            ROWCND = ZERO
@@ -388,8 +432,18 @@
 !
 !                          Equilibrate the matrix.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL CLAQGE( N, N, AFAC, LDA, S, S( N+1 ), &
                                      ROWCND, COLCND, AMAX, EQUED )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : CLAQGE : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                      END IF
                   END IF
 !
@@ -408,13 +462,43 @@
 !
 !                    Factor the matrix A.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGETRF( N, N, AFAC, LDA, IWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGETRF : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Form the inverse of A.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, N, AFAC, LDA, A, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   LWORK = NMAX*MAX( 3, NRHS )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGETRI( N, A, LDA, IWORK, WORK, LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGETRI : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute the 1-norm condition number of A.
 !
@@ -448,7 +532,17 @@
 !
 !                    Restore the matrix A.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, N, ASAV, LDA, A, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Form an exact solution and set the right hand side.
 !
@@ -457,7 +551,17 @@
                                KU, NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
                   XTYPE = 'C'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, BSAV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   IF( NOFACT .AND. ITRAN == 1 ) THEN
 !
@@ -466,12 +570,42 @@
 !                       Compute the LU factorization of the matrix and
 !                       solve the system.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'CGESV '
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CGESV( N, NRHS, AFAC, LDA, IWORK, X, LDA, &
                                  INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CGESV : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Check error code from CGESV .
 !
@@ -490,8 +624,18 @@
 !
 !                          Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, &
                                      LDA )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         CALL CGET02( 'No transpose', N, N, NRHS, A, &
                                      LDA, X, LDA, WORK, LDA, RWORK, &
                                      RESULT( 2 ) )
@@ -520,29 +664,70 @@
 !
 !                    --- Test CGESVX ---
 !
-                  IF( .NOT.PREFAC ) &
+                  IF( .NOT.PREFAC )  THEN
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLASET( 'Full', N, N, CMPLX( ZERO ), &
                                   CMPLX( ZERO ), AFAC, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+                  ENDIF
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLASET( 'Full', N, NRHS, CMPLX( ZERO ), &
                                CMPLX( ZERO ), X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IEQUED > 1 .AND. N > 0 ) THEN
 !
 !                       Equilibrate the matrix if FACT = 'F' and
 !                       EQUED = 'R', 'C', or 'B'.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLAQGE( N, N, A, LDA, S, S( N+1 ), ROWCND, &
                                   COLCND, AMAX, EQUED )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLAQGE : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   END IF
 !
 !                    Solve the system and compute the condition number
 !                    and error bounds using CGESVX.
 !
                   SRNAMT = 'CGESVX'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGESVX( FACT, TRANS, N, NRHS, A, LDA, AFAC, &
                                LDA, IWORK, EQUED, S, S( N+1 ), B, &
                                LDA, X, LDA, RCOND, RWORK, &
                                RWORK( NRHS+1 ), WORK, &
                                RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGESVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check the error code from CGESVX.
 !
@@ -594,8 +779,18 @@
 !
 !                       Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, BSAV, LDA, WORK, &
                                   LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL CGET02( TRANS, N, N, NRHS, ASAV, LDA, X, &
                                   LDA, WORK, LDA, RWORK( 2*NRHS+1 ), &
                                   RESULT( 2 ) )
@@ -700,21 +895,72 @@
 !                    Restore the matrices A and B.
 !
 
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, N, ASAV, LDA, A, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, BSAV, LDA, B, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 
-                  IF( .NOT.PREFAC ) &
+                  IF( .NOT.PREFAC )  THEN
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLASET( 'Full', N, N, CMPLX( ZERO ), &
                                   CMPLX( ZERO ), AFAC, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+                  ENDIF
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLASET( 'Full', N, NRHS, CMPLX( ZERO ), &
                                CMPLX( ZERO ), X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IEQUED > 1 .AND. N > 0 ) THEN
 !
 !                       Equilibrate the matrix if FACT = 'F' and
 !                       EQUED = 'R', 'C', or 'B'.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLAQGE( N, N, A, LDA, S, S( N+1 ), ROWCND, &
                                   COLCND, AMAX, EQUED )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLAQGE : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   END IF
 !
 !                    Solve the system and compute the condition number
@@ -722,11 +968,21 @@
 !
                   SRNAMT = 'CGESVXX'
                   N_ERR_BNDS = 3
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGESVXX( FACT, TRANS, N, NRHS, A, LDA, AFAC, &
                        LDA, IWORK, EQUED, S, S( N+1 ), B, LDA, X, &
                        LDA, RCOND, RPVGRW_SVXX, BERR, N_ERR_BNDS, &
                        ERRBNDS_N, ERRBNDS_C, 0, ZERO, WORK, &
                        RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGESVXX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check the error code from CGESVXX.
 !
@@ -771,8 +1027,18 @@
 !
 !                       Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, BSAV, LDA, WORK, &
                                   LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL CGET02( TRANS, N, N, NRHS, ASAV, LDA, X, &
                                   LDA, WORK, LDA, RWORK( 2*NRHS+1 ), &
                                   RESULT( 2 ) )
@@ -895,4 +1161,8 @@
 !     End of CDRVGEX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

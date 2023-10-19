@@ -148,6 +148,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -191,6 +192,9 @@
                       IZERO, J, K, KL, KU, LDA, LWORK, MODE, N, &
                       NB, NBMIN, NERRS, NFAIL, NIMAT, NRUN, NT
    DOUBLE PRECISION   AINVNM, ANORM, CNDNUM, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          FACTS( NFACT ), UPLOS( 2 )
@@ -410,20 +414,60 @@
 !                    Factor the matrix A.
 !
 
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSYTRF_RK( UPLO, N, AFAC, LDA, E, IWORK, AINV, &
                                   LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSYTRF_RK : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute inv(A) and take its norm.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   LWORK = (N+NB+1)*(NB+3)
 !
 !                    We need to compute the inverse to compute
 !                    RCONDC that is used later in TEST3.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSYTRI_3( UPLO, N, AINV, LDA, E, IWORK, &
                                  WORK, LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSYTRI_3 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   AINVNM = ZLANSY( '1', UPLO, N, AINV, LDA, RWORK )
 !
 !                    Compute the 1-norm condition number of A.
@@ -446,15 +490,45 @@
 !                 --- Test ZSYSV_RK  ---
 !
                IF( IFACT == 2 ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Factor the matrix and solve the system using
 !                    ZSYSV_RK.
 !
                   SRNAMT = 'ZSYSV_RK'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSYSV_RK( UPLO, N, NRHS, AFAC, LDA, E, IWORK, &
                                  X, LDA, WORK, LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSYSV_RK : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Adjust the expected value of INFO to account for
 !                    pivoting.
@@ -493,7 +567,17 @@
 !
 !+    TEST 2      Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL ZSYT02( UPLO, N, NRHS, A, LDA, X, LDA, WORK, &
                                LDA, RWORK, RESULT( 2 ) )
 !
@@ -540,4 +624,8 @@
 !     End of ZDRVSY_RK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

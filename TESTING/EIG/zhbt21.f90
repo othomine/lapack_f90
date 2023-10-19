@@ -143,6 +143,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -170,6 +171,9 @@
    CHARACTER          CUPLO
    INTEGER            IKA, J, JC, JR
    DOUBLE PRECISION   ANORM, ULP, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -235,13 +239,33 @@
    ENDDO
 !
    DO J = 1, N
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZHPR( CUPLO, N, -D( J ), U( 1, J ), 1, WORK )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZHPR : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    ENDDO
 !
    IF( N > 1 .AND. KS == 1 ) THEN
       DO J = 1, N - 1
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHPR2( CUPLO, N, -DCMPLX( E( J ) ), U( 1, J ), 1, &
                      U( 1, J+1 ), 1, WORK )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHPR2 : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
    END IF
    WNORM = ZLANHP( '1', CUPLO, N, WORK, RWORK )
@@ -260,8 +284,18 @@
 !
 !     Compute  U U**H - I
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGEMM( 'N', 'C', N, N, N, 10.0D0, U, LDU, U, LDU, (0.0D+0,0.0D+0), WORK, &
                N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO J = 1, N
       WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 10.0D0
@@ -275,4 +309,7 @@
 !     End of ZHBT21
 !
 END
+
+
+
 

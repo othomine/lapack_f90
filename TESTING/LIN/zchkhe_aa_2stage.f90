@@ -162,6 +162,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -209,6 +210,9 @@
                       IUPLO, IZERO, J, K, KL, KU, LDA, LWORK, MODE, &
                       N, NB, NERRS, NFAIL, NIMAT, NRHS, NRUN, NT
    DOUBLE PRECISION   ANORM, CNDNUM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 )
@@ -423,7 +427,17 @@
 !                 will be factorized in place. This is needed to
 !                 preserve the test matrix A for subsequent tests.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Compute the L*D*L**T or U*D*U**T factorization of the
 !                 matrix. IWORK stores details of the interchanges and
@@ -432,11 +446,21 @@
 !
                SRNAMT = 'ZHETRF_AA_2STAGE'
                LWORK = MIN(N*NB, 3*NMAX*NMAX)
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHETRF_AA_2STAGE( UPLO, N, AFAC, LDA, &
                                       AINV, (3*NB+1)*N, &
                                       IWORK, IWORK( 1+N ), &
                                       WORK, LWORK, &
                                       INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHETRF_AA_2STAGE : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Adjust the expected value of INFO to account for
 !                 pivoting.
@@ -511,13 +535,33 @@
                   CALL ZLARHS( MATPATH, XTYPE, UPLO, ' ', N, N, &
                                KL, KU, NRHS, A, LDA, XACT, LDA, &
                                B, LDA, ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'ZHETRS_AA_2STAGE'
                   LWORK = MAX( 1, 3*N-2 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHETRS_AA_2STAGE( UPLO, N, NRHS, AFAC, LDA, &
                                AINV, (3*NB+1)*N, IWORK, IWORK( 1+N ), &
                                X, LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHETRS_AA_2STAGE : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZHETRS and handle error.
 !
@@ -529,8 +573,18 @@
                      END IF
                   ELSE
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA &
                                   )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Compute the residual for the solution
 !
@@ -579,4 +633,8 @@
 !     End of ZCHKHE_AA_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

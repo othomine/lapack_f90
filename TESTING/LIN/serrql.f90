@@ -47,6 +47,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -70,6 +71,9 @@
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               A( NMAX, NMAX ), AF( NMAX, NMAX ), B( NMAX ), &
@@ -115,29 +119,99 @@
 !
    SRNAMT = 'SGEQLF'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQLF( -1, 0, A, 1, B, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQLF : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQLF', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQLF( 0, -1, A, 1, B, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQLF : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQLF', INFOT, NOUT, LERR, OK )
    INFOT = 4
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQLF( 2, 1, A, 1, B, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQLF : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQLF', INFOT, NOUT, LERR, OK )
    INFOT = 7
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQLF( 1, 2, A, 1, B, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQLF : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQLF', INFOT, NOUT, LERR, OK )
 !
 !     SGEQL2
 !
    SRNAMT = 'SGEQL2'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQL2( -1, 0, A, 1, B, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQL2 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQL2', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQL2( 0, -1, A, 1, B, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQL2 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQL2', INFOT, NOUT, LERR, OK )
    INFOT = 4
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEQL2( 2, 1, A, 1, B, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEQL2 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SGEQL2', INFOT, NOUT, LERR, OK )
 !
 !     SGEQLS
@@ -169,121 +243,471 @@
 !
    SRNAMT = 'SORGQL'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( -1, 0, 0, A, 1, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 0, -1, 0, A, 1, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 1, 2, 0, A, 1, X, W, 2, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 0, 0, -1, A, 1, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 1, 1, 2, A, 1, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 2, 1, 0, A, 1, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
    INFOT = 8
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORGQL( 2, 2, 0, A, 2, X, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORGQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORGQL', INFOT, NOUT, LERR, OK )
 !
 !     SORG2L
 !
    SRNAMT = 'SORG2L'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( -1, 0, 0, A, 1, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( 0, -1, 0, A, 1, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( 1, 2, 0, A, 1, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( 0, 0, -1, A, 1, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( 2, 1, 2, A, 2, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORG2L( 2, 1, 0, A, 1, X, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORG2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORG2L', INFOT, NOUT, LERR, OK )
 !
 !     SORMQL
 !
    SRNAMT = 'SORMQL'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( '/', 'N', 0, 0, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', '/', 0, 0, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', -1, 0, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 4
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 0, -1, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 0, 0, -1, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 0, 1, 1, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'R', 'N', 1, 0, 1, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 7
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 2, 1, 0, A, 1, X, AF, 2, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 7
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'R', 'N', 1, 2, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 10
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 2, 1, 0, A, 2, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 12
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'L', 'N', 1, 2, 0, A, 1, X, AF, 1, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
    INFOT = 12
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORMQL( 'R', 'N', 2, 1, 0, A, 1, X, AF, 2, W, 1, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORMQL : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORMQL', INFOT, NOUT, LERR, OK )
 !
 !     SORM2L
 !
    SRNAMT = 'SORM2L'
    INFOT = 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( '/', 'N', 0, 0, 0, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 2
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', '/', 0, 0, 0, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 3
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', -1, 0, 0, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 4
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', 0, -1, 0, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', 0, 0, -1, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', 0, 1, 1, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 5
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'R', 'N', 1, 0, 1, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 7
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', 2, 1, 0, A, 1, X, AF, 2, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 7
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'R', 'N', 1, 2, 0, A, 1, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
    INFOT = 10
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SORM2L( 'L', 'N', 2, 1, 0, A, 2, X, AF, 1, W, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SORM2L : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    CALL CHKXER( 'SORM2L', INFOT, NOUT, LERR, OK )
 !
 !     Print a summary line.
@@ -295,4 +719,8 @@
 !     End of SERRQL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

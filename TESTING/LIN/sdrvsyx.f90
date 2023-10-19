@@ -146,6 +146,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -190,6 +191,9 @@
                       N_ERR_BNDS
    REAL               AINVNM, ANORM, CNDNUM, RCOND, RCONDC, &
                       RPVGRW_SVXX
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          FACTS( NFACT ), UPLOS( 2 )
@@ -386,16 +390,56 @@
 !
 !                    Factor the matrix A.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSYTRF( UPLO, N, AFAC, LDA, IWORK, WORK, &
                                LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSYTRF : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute inv(A) and take its norm.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   LWORK = (N+NB+1)*(NB+3)
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSYTRI2( UPLO, N, AINV, LDA, IWORK, WORK, &
                                LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSYTRI2 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   AINVNM = SLANSY( '1', UPLO, N, AINV, LDA, RWORK )
 !
 !                    Compute the 1-norm condition number of A.
@@ -418,14 +462,44 @@
 !                 --- Test SSYSV  ---
 !
                IF( IFACT == 2 ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Factor the matrix and solve the system using SSYSV.
 !
                   SRNAMT = 'SSYSV '
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSYSV( UPLO, N, NRHS, AFAC, LDA, IWORK, X, &
                               LDA, WORK, LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSYSV : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Adjust the expected value of INFO to account for
 !                    pivoting.
@@ -463,7 +537,17 @@
 !
 !                    Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL SPOT02( UPLO, N, NRHS, A, LDA, X, LDA, WORK, &
                                LDA, RWORK, RESULT( 2 ) )
 !
@@ -491,18 +575,49 @@
 !
 !                 --- Test SSYSVX ---
 !
-               IF( IFACT == 2 ) &
+               IF( IFACT == 2 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLASET( UPLO, N, N, ZERO, ZERO, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLASET( 'Full', N, NRHS, ZERO, ZERO, X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Solve the system and compute the condition number and
 !                 error bounds using SSYSVX.
 !
                SRNAMT = 'SSYSVX'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYSVX( FACT, UPLO, N, NRHS, A, LDA, AFAC, LDA, &
                             IWORK, B, LDA, X, LDA, RCOND, RWORK, &
                             RWORK( NRHS+1 ), WORK, LWORK, &
                             IWORK( N+1 ), INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYSVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Adjust the expected value of INFO to account for
 !                 pivoting.
@@ -546,7 +661,17 @@
 !
 !                    Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL SPOT02( UPLO, N, NRHS, A, LDA, X, LDA, WORK, &
                                LDA, RWORK( 2*NRHS+1 ), RESULT( 2 ) )
 !
@@ -587,9 +712,30 @@
 !
 !                 Restore the matrices A and B.
 !
-               IF( IFACT == 2 ) &
+               IF( IFACT == 2 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLASET( UPLO, N, N, ZERO, ZERO, AFAC, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLASET( 'Full', N, NRHS, ZERO, ZERO, X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Solve the system and compute the condition number
 !                 and error bounds using SSYSVXX.
@@ -597,11 +743,21 @@
                SRNAMT = 'SSYSVXX'
                N_ERR_BNDS = 3
                EQUED = 'N'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYSVXX( FACT, UPLO, N, NRHS, A, LDA, AFAC, &
                     LDA, IWORK, EQUED, WORK( N+1 ), B, LDA, X, &
                     LDA, RCOND, RPVGRW_SVXX, BERR, N_ERR_BNDS, &
                     ERRBNDS_N, ERRBNDS_C, 0, ZERO, WORK, &
                     IWORK( N+1 ), INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYSVXX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Adjust the expected value of INFO to account for
 !                 pivoting.
@@ -645,7 +801,17 @@
 !
 !                 Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL SPOT02( UPLO, N, NRHS, A, LDA, X, LDA, WORK, &
                        LDA, RWORK( 2*NRHS+1 ), RESULT( 2 ) )
 !
@@ -710,4 +876,8 @@
 !     End of SDRVSYX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

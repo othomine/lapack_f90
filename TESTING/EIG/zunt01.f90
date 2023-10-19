@@ -117,6 +117,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -145,6 +146,9 @@
    INTEGER            I, J, K, LDWORK, MNMIN
    DOUBLE PRECISION   EPS
    COMPLEX*16         TMP, ZDUM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -188,10 +192,30 @@
 !
 !        Compute I - U*U' or I - U'*U.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLASET( 'Upper', MNMIN, MNMIN, DCMPLX( 0.0D0 ), &
                    DCMPLX( 1.0D0 ), WORK, LDWORK )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZHERK( 'Upper', TRANSU, MNMIN, K, -1.0D0, U, LDU, 1.0D0, WORK, &
                   LDWORK )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZHERK : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
 !        Compute norm( I - U*U' ) / ( K * EPS ) .
 !
@@ -235,4 +259,7 @@
 !     End of ZUNT01
 !
 END
+
+
+
 

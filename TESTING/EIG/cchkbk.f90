@@ -47,6 +47,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -71,6 +72,9 @@
    INTEGER            I, IHI, ILO, INFO, J, KNT, N, NINFO
    REAL               EPS, RMAX, SAFMIN, VMAX, X
    COMPLEX            CDUM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            LMAX( 2 )
@@ -115,7 +119,17 @@
    ENDDO
 !
    KNT = KNT + 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEBAK( 'B', 'R', N, ILO, IHI, SCALE, N, E, LDE, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEBAK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    IF( INFO /= 0 ) THEN
       NINFO = NINFO + 1
@@ -157,4 +171,7 @@
 !     End of CCHKBK
 !
 END
+
+
+
 

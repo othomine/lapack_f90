@@ -125,6 +125,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -153,6 +154,9 @@
 !     .. Local Scalars ..
    INTEGER            J, N1, N2
    DOUBLE PRECISION   ANORM, BNORM, EPS, XNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -194,8 +198,18 @@
 !
 !     Compute B - op(A)*X and store in B.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGEMM( TRANS, 'No transpose', N1, NRHS, N2, -(1.0D0,0.0D0), A, LDA, X, &
                LDX, (1.0D0,0.0D0), B, LDB )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute the maximum over the number of right hand sides of
 !        norm(B - op(A)*X) / ( norm(op(A)) * norm(X) * EPS ) .
@@ -216,4 +230,7 @@
 !     End of ZGET02
 !
 END
+
+
+
 

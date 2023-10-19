@@ -592,6 +592,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -641,6 +642,9 @@
    DOUBLE PRECISION   ABSTOL, ANINV, ANORM, COND, OVFL, RTOVFL, &
                       RTUNFL, TEMP1, TEMP2, TEMP3, TEMP4, ULP, &
                       ULPINV, UNFL, VL, VU
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDUMMA( 1 ), IOLDSD( 4 ), ISEED2( 4 ), &
@@ -699,7 +703,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'ZCHKST', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -787,7 +801,17 @@
            ANORM = RTUNFL*N*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          IF( JTYPE <= 15 ) THEN
             COND = ULPINV
@@ -883,11 +907,31 @@
 !           Call ZHETRD and ZUNGTR to compute S and U from
 !           upper triangle.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLACPY( 'U', N, N, A, LDA, V, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 1
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHETRD( 'U', N, V, LDU, SD, SE, TAU, WORK, LWORK, &
                       IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHETRD : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZHETRD(U)', IINFO, N, JTYPE, &
@@ -901,10 +945,30 @@
             END IF
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLACPY( 'U', N, N, V, LDU, U, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 2
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUNGTR( 'U', N, U, LDU, TAU, WORK, LWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUNGTR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZUNGTR(U)', IINFO, N, JTYPE, &
                IOLDSD
@@ -927,11 +991,31 @@
 !           Call ZHETRD and ZUNGTR to compute S and U from
 !           lower triangle, do tests.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLACPY( 'L', N, N, A, LDA, V, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 3
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHETRD( 'L', N, V, LDU, SD, SE, TAU, WORK, LWORK, &
                       IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHETRD : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZHETRD(L)', IINFO, N, JTYPE, &
@@ -945,10 +1029,30 @@
             END IF
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLACPY( 'L', N, N, V, LDU, U, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 4
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUNGTR( 'L', N, U, LDU, TAU, WORK, LWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUNGTR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZUNGTR(L)', IINFO, N, JTYPE, &
                IOLDSD
@@ -978,10 +1082,30 @@
 !
 !           Call ZHPTRD and ZUPGTR to compute S and U from AP
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZCOPY( NAP, AP, 1, VP, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 5
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHPTRD( 'U', N, VP, SD, SE, TAU, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHPTRD : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZHPTRD(U)', IINFO, N, JTYPE, &
@@ -996,7 +1120,17 @@
          END IF
 !
          NTEST = 6
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUPGTR( 'U', N, VP, TAU, U, LDU, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUPGTR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZUPGTR(U)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1028,10 +1162,30 @@
 !
 !           Call ZHPTRD and ZUPGTR to compute S and U from AP
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZCOPY( NAP, AP, 1, VP, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 7
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHPTRD( 'L', N, VP, SD, SE, TAU, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHPTRD : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZHPTRD(L)', IINFO, N, JTYPE, &
@@ -1046,7 +1200,17 @@
          END IF
 !
          NTEST = 8
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUPGTR( 'L', N, VP, TAU, U, LDU, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUPGTR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZUPGTR(L)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1068,12 +1232,42 @@
 !
 !           Compute D1 and Z
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D1, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 9
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEQR( 'V', N, D1, RWORK, Z, LDU, RWORK( N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEQR(V)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1088,11 +1282,31 @@
 !
 !           Compute D2
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D2, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
 !
          NTEST = 11
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEQR( 'N', N, D2, RWORK, WORK, LDU, RWORK( N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEQR(N)', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
@@ -1106,11 +1320,31 @@
 !
 !           Compute D3 (using PWK method)
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D3, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
 !
          NTEST = 12
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSTERF( N, D3, RWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSTERF : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'DSTERF', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
@@ -1159,14 +1393,55 @@
 !
 !              Compute D4 and Z4
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N, SD, 1, D4, 1 )
-            IF( N > 0 ) &
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+            IF( N > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = 14
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZPTEQR( 'V', N, D4, RWORK, Z, LDU, RWORK( N+1 ), &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZPTEQR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'ZPTEQR(V)', IINFO, N, &
                   JTYPE, IOLDSD
@@ -1186,13 +1461,44 @@
 !
 !              Compute D5
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+            IF( N > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
             NTEST = 16
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZPTEQR( 'N', N, D5, RWORK, Z, LDU, RWORK( N+1 ), &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZPTEQR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'ZPTEQR(N)', IINFO, N, &
                   JTYPE, IOLDSD
@@ -1227,9 +1533,19 @@
          IF( JTYPE == 21 ) THEN
             NTEST = 17
             ABSTOL = UNFL + UNFL
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DSTEBZ( 'A', 'E', N, VL, VU, IL, IU, ABSTOL, SD, SE, &
                          M, NSPLIT, WR, IWORK( 1 ), IWORK( N+1 ), &
                          RWORK, IWORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DSTEBZ : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(A,rel)', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
@@ -1260,9 +1576,19 @@
 !
          NTEST = 18
          ABSTOL = UNFL + UNFL
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSTEBZ( 'A', 'E', N, VL, VU, IL, IU, ABSTOL, SD, SE, M, &
                       NSPLIT, WA1, IWORK( 1 ), IWORK( N+1 ), RWORK, &
                       IWORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSTEBZ : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(A)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1299,9 +1625,19 @@
             END IF
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSTEBZ( 'I', 'E', N, VL, VU, IL, IU, ABSTOL, SD, SE, &
                       M2, NSPLIT, WA2, IWORK( 1 ), IWORK( N+1 ), &
                       RWORK, IWORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSTEBZ : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(I)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1337,9 +1673,19 @@
             VU = 1.0D+0
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSTEBZ( 'V', 'E', N, VL, VU, IL, IU, ABSTOL, SD, SE, &
                       M3, NSPLIT, WA3, IWORK( 1 ), IWORK( N+1 ), &
                       RWORK, IWORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSTEBZ : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(V)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1374,9 +1720,19 @@
 !           it returns these eigenvalues in the correct order.)
 !
          NTEST = 21
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSTEBZ( 'A', 'B', N, VL, VU, IL, IU, ABSTOL, SD, SE, M, &
                       NSPLIT, WA1, IWORK( 1 ), IWORK( N+1 ), RWORK, &
                       IWORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSTEBZ : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'DSTEBZ(A,B)', IINFO, N, &
                JTYPE, IOLDSD
@@ -1390,9 +1746,19 @@
             END IF
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEIN( N, SD, SE, M, WA1, IWORK( 1 ), IWORK( N+1 ), Z, &
                       LDU, RWORK, IWORK( 2*N+1 ), IWORK( 3*N+1 ), &
                       IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEIN : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEIN', IINFO, N, JTYPE, &
                IOLDSD
@@ -1417,14 +1783,55 @@
 !
          INDE = 1
          INDRWK = INDE + N
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+         IF( N > 0 )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N-1, SE, 1, RWORK( INDE ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 22
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEDC( 'I', N, D1, RWORK( INDE ), Z, LDU, WORK, LWEDC, &
                       RWORK( INDRWK ), LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEDC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEDC(I)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1446,14 +1853,55 @@
 !
 !           Compute D1 and Z
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D1, 1 )
-         IF( N > 0 ) &
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+         IF( N > 0 )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N-1, SE, 1, RWORK( INDE ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 24
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEDC( 'V', N, D1, RWORK( INDE ), Z, LDU, WORK, LWEDC, &
                       RWORK( INDRWK ), LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEDC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEDC(V)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1475,14 +1923,55 @@
 !
 !           Compute D2
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( N, SD, 1, D2, 1 )
-         IF( N > 0 ) &
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+         IF( N > 0 )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N-1, SE, 1, RWORK( INDE ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 26
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSTEDC( 'N', N, D2, RWORK( INDE ), Z, LDU, WORK, LWEDC, &
                       RWORK( INDRWK ), LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSTEDC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'ZSTEDC(N)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1519,10 +2008,20 @@
             IF( JTYPE == 21 .AND. CREL ) THEN
                NTEST = 27
                ABSTOL = UNFL + UNFL
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSTEMR( 'V', 'A', N, SD, SE, VL, VU, IL, IU, &
                             M, WR, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                             RWORK, LRWORK, IWORK( 2*N+1 ), LWORK-2*N, &
                             IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(V,A,rel)', &
                      IINFO, N, JTYPE, IOLDSD
@@ -1559,10 +2058,20 @@
                IF( CRANGE ) THEN
                   NTEST = 28
                   ABSTOL = UNFL + UNFL
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZSTEMR( 'V', 'I', N, SD, SE, VL, VU, IL, IU, &
                                M, WR, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                                RWORK, LRWORK, IWORK( 2*N+1 ), &
                                LWORK-2*N, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(V,I,rel)', &
@@ -1600,10 +2109,41 @@
 !
 !           Compute D1 and Z
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N, SD, 1, D5, 1 )
-            IF( N > 0 ) &
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+            IF( N > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             IF( CRANGE ) THEN
                NTEST = 29
@@ -1614,10 +2154,20 @@
                   IU = IL
                   IL = ITEMP
                END IF
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSTEMR( 'V', 'I', N, D5, RWORK, VL, VU, IL, IU, &
                             M, D1, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                             RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                             LIWORK-2*N, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(V,I)', IINFO, &
                      N, JTYPE, IOLDSD
@@ -1637,15 +2187,46 @@
 !
 !           Compute D2
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+               IF( N > 0 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
                NTEST = 31
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSTEMR( 'N', 'I', N, D5, RWORK, VL, VU, IL, IU, &
                             M, D2, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                             RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                             LIWORK-2*N, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(N,I)', IINFO, &
                      N, JTYPE, IOLDSD
@@ -1671,10 +2252,41 @@
 !
 !           Compute D1 and Z
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N, SD, 1, D5, 1 )
-               IF( N > 0 ) &
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+               IF( N > 0 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL DCOPY( N-1, SE, 1, RWORK, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), Z, LDU )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                NTEST = 32
 !
@@ -1700,10 +2312,20 @@
                   VU = 1.0D+0
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSTEMR( 'V', 'V', N, D5, RWORK, VL, VU, IL, IU, &
                             M, D1, Z, LDU, M, IWORK( 1 ), TRYRAC, &
                             RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                             LIWORK-2*N, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(V,V)', IINFO, &
                      N, JTYPE, IOLDSD
@@ -1725,14 +2347,34 @@
 !
 !           Compute D2
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( N, SD, 1, D5, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
 !
                NTEST = 34
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZSTEMR( 'N', 'V', N, D5, RWORK, VL, VU, IL, IU, &
                             M, D2, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                             RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                             LIWORK-2*N, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(N,V)', IINFO, &
                      N, JTYPE, IOLDSD
@@ -1760,15 +2402,35 @@
 !
 !           Compute D1 and Z
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N, SD, 1, D5, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
 !
             NTEST = 35
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZSTEMR( 'V', 'A', N, D5, RWORK, VL, VU, IL, IU, &
                          M, D1, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                          RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                          LIWORK-2*N, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(V,A)', IINFO, N, &
                   JTYPE, IOLDSD
@@ -1790,14 +2452,34 @@
 !
 !           Compute D2
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( N, SD, 1, D5, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( N > 0 ) CALL DCOPY( N-1, SE, 1, RWORK, 1 )
 !
             NTEST = 37
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZSTEMR( 'N', 'A', N, D5, RWORK, VL, VU, IL, IU, &
                          M, D2, Z, LDU, N, IWORK( 1 ), TRYRAC, &
                          RWORK( N+1 ), LRWORK-N, IWORK( 2*N+1 ), &
                          LIWORK-2*N, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZSTEMR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'ZSTEMR(N,A)', IINFO, N, &
                   JTYPE, IOLDSD
@@ -1903,3 +2585,6 @@
 !     End of ZCHKST
 !
 END
+
+
+

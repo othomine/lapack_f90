@@ -339,6 +339,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -376,6 +377,9 @@
    DOUBLE PRECISION   ABNRM, BIGNUM, DIFTRU, PLTRU, SMLNUM, TEMP1, &
                       TEMP2, THRSH2, ULP, ULPINV, WEIGHT
    COMPLEX*16         X
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    DOUBLE PRECISION   DIFEST( 2 ), PL( 2 ), RESULT( 10 )
@@ -458,7 +462,17 @@
    IF( LWORK < MINWRK ) INFO = -18
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'ZDRGSX', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -499,10 +513,30 @@
                FS = .TRUE.
                K = 0
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLASET( 'Full', MPLUSN, MPLUSN, (0.0D0,0.0D0), (0.0D0,0.0D0), AI, &
                             LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLASET( 'Full', MPLUSN, MPLUSN, (0.0D0,0.0D0), (0.0D0,0.0D0), BI, &
                             LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                CALL ZLATM5( PRTYPE, M, N, AI, LDA, AI( M+1, M+1 ), &
                             LDA, AI( 1, M+1 ), LDA, BI, LDA, &
@@ -524,13 +558,43 @@
                   SENSE = 'B'
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', MPLUSN, MPLUSN, AI, LDA, A, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', MPLUSN, MPLUSN, BI, LDA, B, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZGGESX( 'V', 'V', 'S', ZLCTSX, SENSE, MPLUSN, AI, &
                             LDA, BI, LDA, MM, ALPHA, BETA, Q, LDA, Z, &
                             LDA, PL, DIFEST, WORK, LWORK, RWORK, &
                             IWORK, LIWORK, BWORK, LINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZGGESX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                IF( LINFO /= 0 .AND. LINFO /= MPLUSN+2 ) THEN
                   RESULT( 1 ) = ULPINV
@@ -542,10 +606,30 @@
 !
 !                 Compute the norm(A, B)
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', MPLUSN, MPLUSN, AI, LDA, WORK, &
                             MPLUSN )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', MPLUSN, MPLUSN, BI, LDA, &
                             WORK( MPLUSN*MPLUSN+1 ), MPLUSN )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                ABNRM = ZLANGE( 'Fro', MPLUSN, 2*MPLUSN, WORK, MPLUSN, &
                        RWORK )
 !
@@ -614,9 +698,19 @@
                                AI( MM+1, MM+1 ), BI, &
                                BI( MM+1, MM+1 ), C, LDC )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZGESVD( 'N', 'N', MN2, MN2, C, LDC, S, WORK, &
                                1, WORK( 2 ), 1, WORK( 3 ), LWORK-2, &
                                RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZGESVD : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   DIFTRU = S( MN2 )
 !
                   IF( DIFEST( 2 ) == 0.0D0 ) THEN
@@ -709,15 +803,45 @@
    K = 0
    M = MPLUSN - N
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLACPY( 'Full', MPLUSN, MPLUSN, AI, LDA, A, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLACPY( 'Full', MPLUSN, MPLUSN, BI, LDA, B, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute the Schur factorization while swapping the
 !     m-by-m (1,1)-blocks with n-by-n (2,2)-blocks.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGGESX( 'V', 'V', 'S', ZLCTSX, 'B', MPLUSN, AI, LDA, BI, LDA, &
                 MM, ALPHA, BETA, Q, LDA, Z, LDA, PL, DIFEST, WORK, &
                 LWORK, RWORK, IWORK, LIWORK, BWORK, LINFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGGESX : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    IF( LINFO /= 0 .AND. LINFO /= MPLUSN+2 ) THEN
       RESULT( 1 ) = ULPINV
@@ -728,9 +852,29 @@
 !     Compute the norm(A, B)
 !        (should this be norm of (A,B) or (AI,BI)?)
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLACPY( 'Full', MPLUSN, MPLUSN, AI, LDA, WORK, MPLUSN )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLACPY( 'Full', MPLUSN, MPLUSN, BI, LDA, &
                 WORK( MPLUSN*MPLUSN+1 ), MPLUSN )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    ABNRM = ZLANGE( 'Fro', MPLUSN, 2*MPLUSN, WORK, MPLUSN, RWORK )
 !
 !     Do tests (1) to (4)
@@ -922,4 +1066,7 @@
 !     End of ZDRGSX
 !
 END
+
+
+
 

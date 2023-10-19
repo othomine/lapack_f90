@@ -51,6 +51,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup aux_eig
 !
@@ -80,6 +81,9 @@
 !     .. Scalar Arguments ..
    CHARACTER*(*)      SRNAME
    INTEGER            INFO
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !
 !  =====================================================================
@@ -124,4 +128,7 @@
 !     End of XERBLA
 !
 END
+
+
+
 

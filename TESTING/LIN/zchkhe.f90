@@ -161,6 +161,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -206,6 +207,9 @@
                       IUPLO, IZERO, J, K, KL, KU, LDA, LWORK, MODE, &
                       N, NB, NERRS, NFAIL, NIMAT, NRHS, NRUN, NT
    DOUBLE PRECISION   ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 )
@@ -404,7 +408,17 @@
 !                 will be factorized in place. This is needed to
 !                 preserve the test matrix A for subsequent tests.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Compute the L*D*L**T or U*D*U**T factorization of the
 !                 matrix. IWORK stores details of the interchanges and
@@ -413,8 +427,18 @@
 !
                LWORK = MAX( 2, NB )*LDA
                SRNAMT = 'ZHETRF'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHETRF( UPLO, N, AFAC, LDA, IWORK, AINV, LWORK, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHETRF : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Adjust the expected value of INFO to account for
 !                 pivoting.
@@ -458,11 +482,31 @@
 !                 Form the inverse and compute the residual.
 !
                IF( INB == 1 .AND. .NOT.TRFCON ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   SRNAMT = 'ZHETRI2'
                   LWORK = (N+NB+1)*(NB+3)
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHETRI2( UPLO, N, AINV, LDA, IWORK, WORK, &
                                LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHETRI2 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZHETRI and handle error.
 !
@@ -521,11 +565,31 @@
                   CALL ZLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                                NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'ZHETRS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHETRS( UPLO, N, NRHS, AFAC, LDA, IWORK, X, &
                                LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHETRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZHETRS and handle error.
 !
@@ -534,7 +598,17 @@
                                   N, -1, -1, NRHS, IMAT, NFAIL, &
                                   NERRS, NOUT )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute the residual for the solution
 !
@@ -551,11 +625,31 @@
                   CALL ZLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                                NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'ZHETRS2'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHETRS2( UPLO, N, NRHS, AFAC, LDA, IWORK, X, &
                                LDA, WORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHETRS2 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZHETRS2 and handle error.
 !
@@ -564,7 +658,17 @@
                                   N, -1, -1, NRHS, IMAT, NFAIL, &
                                   NERRS, NOUT )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute the residual for the solution
 !
@@ -581,10 +685,20 @@
 !                 Use iterative refinement to improve the solution.
 !
                   SRNAMT = 'ZHERFS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHERFS( UPLO, N, NRHS, A, LDA, AFAC, LDA, &
                                IWORK, B, LDA, X, LDA, RWORK, &
                                RWORK( NRHS+1 ), WORK, &
                                RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHERFS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from ZHERFS.
 !
@@ -623,8 +737,18 @@
   140             CONTINUE
                ANORM = ZLANHE( '1', UPLO, N, A, LDA, RWORK )
                SRNAMT = 'ZHECON'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHECON( UPLO, N, AFAC, LDA, IWORK, ANORM, RCOND, &
                             WORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHECON : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from ZHECON and handle error.
 !
@@ -668,4 +792,8 @@
 !     End of ZCHKHE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

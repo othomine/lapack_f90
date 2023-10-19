@@ -158,6 +158,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -202,6 +203,9 @@
                       LDA, LDAB, MODE, N, NB, NERRS, NFAIL, NIMAT, &
                       NKD, NRHS, NRUN
    REAL               AINVNM, ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 ), KDVAL( NBW )
@@ -334,20 +338,60 @@
                   IW = 2*LDA + 1
                   IF( IUPLO == 1 ) THEN
                      IOFF = ( IZERO-1 )*LDAB + KD + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CCOPY( IZERO-I1, WORK( IW ), 1, &
                                  A( IOFF-IZERO+I1 ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IW = IW + IZERO - I1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CCOPY( I2-IZERO+1, WORK( IW ), 1, &
                                  A( IOFF ), MAX( LDAB-1, 1 ) )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   ELSE
                      IOFF = ( I1-1 )*LDAB + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CCOPY( IZERO-I1, WORK( IW ), 1, &
                                  A( IOFF+IZERO-I1 ), &
                                  MAX( LDAB-1, 1 ) )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IOFF = ( IZERO-1 )*LDAB + 1
                      IW = IW + IZERO - I1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CCOPY( I2-IZERO+1, WORK( IW ), 1, &
                                  A( IOFF ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   END IF
                END IF
 !
@@ -376,19 +420,59 @@
 !
                   IF( IUPLO == 1 ) THEN
                      IOFF = ( IZERO-1 )*LDAB + KD + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CSWAP( IZERO-I1, A( IOFF-IZERO+I1 ), 1, &
                                  WORK( IW ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IW = IW + IZERO - I1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CSWAP( I2-IZERO+1, A( IOFF ), &
                                  MAX( LDAB-1, 1 ), WORK( IW ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   ELSE
                      IOFF = ( I1-1 )*LDAB + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CSWAP( IZERO-I1, A( IOFF+IZERO-I1 ), &
                                  MAX( LDAB-1, 1 ), WORK( IW ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IOFF = ( IZERO-1 )*LDAB + 1
                      IW = IW + IZERO - I1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CSWAP( I2-IZERO+1, A( IOFF ), 1, &
                                  WORK( IW ), 1 )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                   END IF
                END IF
 !
@@ -409,9 +493,29 @@
 !                    Compute the L*L' or U'*U factorization of the band
 !                    matrix.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', KD+1, N, A, LDAB, AFAC, LDAB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   SRNAMT = 'CPBTRF'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CPBTRF( UPLO, N, KD, AFAC, LDAB, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CPBTRF : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CPBTRF.
 !
@@ -431,8 +535,18 @@
 !                    Reconstruct matrix from factors and compute
 !                    residual.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', KD+1, N, AFAC, LDAB, AINV, &
                                LDAB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL CPBT01( UPLO, N, KD, A, LDAB, AINV, LDAB, &
                                RWORK, RESULT( 1 ) )
 !
@@ -455,11 +569,31 @@
 !                    Form the inverse of A so we can get a good estimate
 !                    of RCONDC = 1/(norm(A) * norm(inv(A))).
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLASET( 'Full', N, N, CMPLX( ZERO ), &
                                CMPLX( ONE ), AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   SRNAMT = 'CPBTRS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CPBTRS( UPLO, N, KD, N, AFAC, LDAB, AINV, LDA, &
                                INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CPBTRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute RCONDC = 1/(norm(A) * norm(inv(A))).
 !
@@ -481,11 +615,31 @@
                      CALL CLARHS( PATH, XTYPE, UPLO, ' ', N, N, KD, &
                                   KD, NRHS, A, LDAB, XACT, LDA, B, &
                                   LDA, ISEED, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'CPBTRS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CPBTRS( UPLO, N, KD, NRHS, AFAC, LDAB, X, &
                                   LDA, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CPBTRS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                    Check error code from CPBTRS.
 !
@@ -494,8 +648,18 @@
                                      N, N, KD, KD, NRHS, IMAT, NFAIL, &
                                      NERRS, NOUT )
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, &
                                   LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL CPBT02( UPLO, N, KD, NRHS, A, LDAB, X, LDA, &
                                   WORK, LDA, RWORK, RESULT( 2 ) )
 !
@@ -509,10 +673,20 @@
 !                    Use iterative refinement to improve the solution.
 !
                      SRNAMT = 'CPBRFS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CPBRFS( UPLO, N, KD, NRHS, A, LDAB, AFAC, &
                                   LDAB, B, LDA, X, LDA, RWORK, &
                                   RWORK( NRHS+1 ), WORK, &
                                   RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CPBRFS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                    Check error code from CPBRFS.
 !
@@ -546,8 +720,18 @@
 !                    Get an estimate of RCOND = 1/CNDNUM.
 !
                   SRNAMT = 'CPBCON'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CPBCON( UPLO, N, KD, AFAC, LDAB, ANORM, RCOND, &
                                WORK, RWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CPBCON : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CPBCON.
 !
@@ -591,4 +775,8 @@
 !     End of CCHKPB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

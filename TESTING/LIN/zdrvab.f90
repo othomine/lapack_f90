@@ -142,6 +142,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -185,6 +186,9 @@
                       IZERO, KL, KU, LDA, M, MODE, N, &
                       NERRS, NFAIL, NIMAT, NRHS, NRUN
    DOUBLE PRECISION   ANORM, CNDNUM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 )
@@ -288,8 +292,18 @@
                   A( IOFF+I ) = ZERO
                ENDDO
             ELSE
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLASET( 'Full', M, N-IZERO+1, DCMPLX(ZERO), &
                             DCMPLX(ZERO), A( IOFF+1 ), LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
          ELSE
             IZERO = 0
@@ -309,13 +323,43 @@
 !
             KASE = KASE + 1
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLACPY( 'Full', M, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZCGESV( N, NRHS, A, LDA, IWORK, B, LDA, X, LDA, &
                          WORK, SWORK, RWORK, ITER, INFO)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZCGESV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             IF (ITER < 0) THEN
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                 CALL ZLACPY( 'Full', M, N, AFAC, LDA, A, LDA )
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                open(file='results.out', unit=10, position = 'append')
+                write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                close(10)
+#endif
             ENDIF
 !
 !              Check error code from ZCGESV. This should be the same as
@@ -343,7 +387,17 @@
 !
 !              Check the quality of the solution
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL ZGET08( TRANS, N, N, NRHS, A, LDA, X, LDA, WORK, &
                          LDA, RWORK, RESULT( 1 ) )
@@ -431,4 +485,8 @@
 !     End of ZDRVAB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

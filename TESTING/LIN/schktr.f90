@@ -157,6 +157,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -200,6 +201,9 @@
                       IUPLO, K, LDA, N, NB, NERRS, NFAIL, NRHS, NRUN
    REAL               AINVNM, ANORM, BIGNUM, DUMMY, RCOND, RCONDC, &
                       RCONDI, RCONDO, RES, SCALE, SLAMCH
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          TRANSS( NTRAN ), UPLOS( 2 )
@@ -299,9 +303,29 @@
 !+    TEST 1
 !                 Form the inverse of A.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, A, LDA, AINV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                SRNAMT = 'STRTRI'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL STRTRI( UPLO, DIAG, N, AINV, LDA, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : STRTRI : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from STRTRI.
 !
@@ -369,11 +393,31 @@
                                   IDIAG, NRHS, A, LDA, XACT, LDA, B, &
                                   LDA, ISEED, INFO )
                      XTYPE = 'C'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'STRTRS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL STRTRS( UPLO, TRANS, DIAG, N, NRHS, A, LDA, &
                                   X, LDA, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : STRTRS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Check error code from STRTRS.
 !
@@ -402,10 +446,20 @@
 !                       and compute error bounds.
 !
                      SRNAMT = 'STRRFS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL STRRFS( UPLO, TRANS, DIAG, N, NRHS, A, LDA, &
                                   B, LDA, X, LDA, RWORK, &
                                   RWORK( NRHS+1 ), WORK, IWORK, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : STRRFS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       Check error code from STRRFS.
 !
@@ -449,8 +503,18 @@
                      RCONDC = RCONDI
                   END IF
                   SRNAMT = 'STRCON'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL STRCON( NORM, UPLO, DIAG, N, A, LDA, RCOND, &
                                WORK, IWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : STRCON : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                       Check error code from STRCON.
 !
@@ -509,9 +573,29 @@
 !                 Solve the system op(A)*x = b.
 !
                SRNAMT = 'SLATRS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SCOPY( N, X, 1, B, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLATRS( UPLO, TRANS, DIAG, 'N', N, A, LDA, B, &
                             SCALE, RWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLATRS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SLATRS.
 !
@@ -527,9 +611,29 @@
 !+    TEST 9
 !                 Solve op(A)*X = b again with NORMIN = 'Y'.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SCOPY( N, X, 1, B( N+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLATRS( UPLO, TRANS, DIAG, 'Y', N, A, LDA, &
                             B( N+1 ), SCALE, RWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLATRS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SLATRS.
 !
@@ -546,12 +650,52 @@
 !                 Solve op(A)*X = B
 !
                SRNAMT = 'SLATRS3'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SCOPY( N, X, 1, B, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SCOPY( N, X, 1, B( N+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( N, BIGNUM, B( N+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLATRS3( UPLO, TRANS, DIAG, 'N', N, 2, A, LDA, &
                              B, MAX(1, N), SCALE3, RWORK, WORK, NMAX, &
                              INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLATRS3 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SLATRS3.
 !
@@ -563,7 +707,17 @@
                CALL STRT03( UPLO, TRANS, DIAG, N, 1, A, LDA, &
                             SCALE3( 1 ), RWORK, ONE, B( 1 ), LDA, &
                             X, LDA, WORK, RESULT( 10 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( N, BIGNUM, X, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL STRT03( UPLO, TRANS, DIAG, N, 1, A, LDA, &
                             SCALE3( 2 ), RWORK, ONE, B( N+1 ), LDA, &
                             X, LDA, WORK, RES )
@@ -619,4 +773,8 @@
 !     End of SCHKTR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

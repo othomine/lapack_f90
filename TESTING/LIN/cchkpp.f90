@@ -149,6 +149,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -192,6 +193,9 @@
                       KL, KU, LDA, MODE, N, NERRS, NFAIL, NIMAT, NPP, &
                       NRHS, NRUN
    REAL               ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          PACKS( 2 ), UPLOS( 2 )
@@ -341,9 +345,29 @@
 !              Compute the L*L' or U'*U factorization of the matrix.
 !
             NPP = N*( N+1 ) / 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( NPP, A, 1, AFAC, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             SRNAMT = 'CPPTRF'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CPPTRF( UPLO, N, AFAC, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CPPTRF : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CPPTRF.
 !
@@ -361,15 +385,45 @@
 !+    TEST 1
 !              Reconstruct matrix from factors and compute residual.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( NPP, AFAC, 1, AINV, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             CALL CPPT01( UPLO, N, A, AINV, RWORK, RESULT( 1 ) )
 !
 !+    TEST 2
 !              Form the inverse and compute the residual.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( NPP, AFAC, 1, AINV, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             SRNAMT = 'CPPTRI'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CPPTRI( UPLO, N, AINV, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CPPTRI : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CPPTRI.
 !
@@ -404,10 +458,30 @@
                CALL CLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                             NRHS, A, LDA, XACT, LDA, B, LDA, ISEED, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                SRNAMT = 'CPPTRS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CPPTRS( UPLO, N, NRHS, AFAC, X, LDA, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CPPTRS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from CPPTRS.
 !
@@ -416,7 +490,17 @@
                                -1, -1, NRHS, IMAT, NFAIL, NERRS, &
                                NOUT )
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL CPPT02( UPLO, N, NRHS, A, X, LDA, WORK, LDA, &
                             RWORK, RESULT( 3 ) )
 !
@@ -430,9 +514,19 @@
 !              Use iterative refinement to improve the solution.
 !
                SRNAMT = 'CPPRFS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CPPRFS( UPLO, N, NRHS, A, AFAC, B, LDA, X, LDA, &
                             RWORK, RWORK( NRHS+1 ), WORK, &
                             RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CPPRFS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from CPPRFS.
 !
@@ -467,8 +561,18 @@
 !
             ANORM = CLANHP( '1', UPLO, N, A, RWORK )
             SRNAMT = 'CPPCON'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CPPCON( UPLO, N, AFAC, ANORM, RCOND, WORK, RWORK, &
                          INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CPPCON : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CPPCON.
 !
@@ -508,4 +612,8 @@
 !     End of CCHKPP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

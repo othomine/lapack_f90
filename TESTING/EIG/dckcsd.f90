@@ -174,6 +174,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -215,6 +216,9 @@
    CHARACTER*3        PATH
    INTEGER            I, IINFO, IM, IMAT, J, LDU1, LDU2, LDV1T, &
                       LDV2T, LDX, LWORK, M, NFAIL, NRUN, NT, P, Q, R
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    LOGICAL            DOTYPE( NTYPES )
@@ -289,12 +293,32 @@
             THETA(1:R) = PIOVER2 * THETA(1:R) / THETA(R+1)
             CALL DLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
          ELSE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLASET( 'F', M, M, 0.0D0, 1.0D0, X, LDX )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, M
                J = INT( DLARAN( ISEED ) * M ) + 1
                IF( J  /=  I ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL DROT( M, X(1+(I-1)*LDX), 1, X(1+(J-1)*LDX), 1, &
                     0.0D0, 1.0D0 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : DROT : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                END IF
             END DO
          END IF
@@ -341,6 +365,9 @@
 !
    SUBROUTINE DLACSG( M, P, Q, THETA, ISEED, X, LDX, WORK )
    IMPLICIT NONE
+#ifdef _TIMER
+      INTEGER(8) nb_periods_sec, S1_time, S2_time
+#endif
 !
    INTEGER            LDX, M, P, Q
    INTEGER            ISEED( 4 )
@@ -351,7 +378,17 @@
 !
    R = MIN( P, M-P, Q, M-Q )
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL DLASET( 'Full', M, M, 0.0D0, 0.0D0, X, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(P,Q)-R
       X(I,I) = 1.0D0
@@ -389,4 +426,7 @@
                 X(1,Q+1), LDX, ISEED, WORK, INFO )
 !
    END
+
+
+
 

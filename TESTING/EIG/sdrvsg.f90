@@ -345,6 +345,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -385,6 +386,9 @@
                       NTESTT
    REAL               ABSTOL, ANINV, ANORM, COND, OVFL, RTOVFL, &
                       RTUNFL, ULP, ULPINV, UNFL, VL, VU
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDUMMA( 1 ), IOLDSD( 4 ), ISEED2( 4 ), &
@@ -435,7 +439,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SDRVSG', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -521,7 +535,17 @@
 !
             KA = 0
             KB = 0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
          ELSE IF( ITYPE == 2 ) THEN
 !
@@ -529,7 +553,17 @@
 !
             KA = 0
             KB = 0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
             ENDDO
@@ -657,11 +691,41 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( ' ', N, N, A, LDA, Z, LDZ )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYGV( IBTYPE, 'V', UPLO, N, Z, LDZ, BB, LDB, D, &
                            WORK, NWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSYGV(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -683,11 +747,41 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( ' ', N, N, A, LDA, Z, LDZ )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYGVD( IBTYPE, 'V', UPLO, N, Z, LDZ, BB, LDB, D, &
                             WORK, NWORK, IWORK, LIWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYGVD : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSYGVD(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -709,13 +803,43 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYGVX( IBTYPE, 'V', 'A', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, IWORK( N+1 ), IWORK, &
                             IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSYGVX(V,A' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -735,8 +859,28 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 since we do not know the exact eigenvalues of this
 !                 eigenpair, we just set VL and VU as constants.
@@ -745,10 +889,20 @@
 !
                VL = 0.0E+0
                VU = ANORM
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYGVX( IBTYPE, 'V', 'V', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, IWORK( N+1 ), IWORK, &
                             IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSYGVX(V,V,' // &
                      UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -768,13 +922,43 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSYGVX( IBTYPE, 'V', 'I', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, IWORK( N+1 ), IWORK, &
                             IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSYGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSYGVX(V,I,' // &
                      UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -820,8 +1004,18 @@
                      ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSPGV( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
                            WORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSPGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSPGV(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -865,8 +1059,18 @@
                      ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSPGVD( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
                             WORK, NWORK, IWORK, LIWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSPGVD : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSPGVD(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -910,9 +1114,19 @@
                   ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSPGVX( IBTYPE, 'V', 'A', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSPGVX(V,A' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -956,9 +1170,19 @@
 !
                VL = 0.0E+0
                VU = ANORM
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSPGVX( IBTYPE, 'V', 'V', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSPGVX(V,V' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -1000,9 +1224,19 @@
                   ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSPGVX( IBTYPE, 'V', 'I', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'SSPGVX(V,I' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -1050,8 +1284,18 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSBGV( 'V', UPLO, N, KA, KB, AB, LDA, BB, LDB, &
                               D, Z, LDZ, WORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSBGV : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'SSBGV(V,' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1095,9 +1339,19 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSBGVD( 'V', UPLO, N, KA, KB, AB, LDA, BB, &
                                LDB, D, Z, LDZ, WORK, NWORK, IWORK, &
                                LIWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSBGVD : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'SSBGVD(V,' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1141,10 +1395,20 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSBGVX( 'V', 'A', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'SSBGVX(V,A' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1189,10 +1453,20 @@
 !
                   VL = 0.0E+0
                   VU = ANORM
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSBGVX( 'V', 'V', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'SSBGVX(V,V' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1234,10 +1508,20 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSBGVX( 'V', 'I', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'SSBGVX(V,I' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1281,3 +1565,6 @@
  9999 FORMAT( ' SDRVSG: ', A, ' returned INFO=', I6, '.', / 9X, 'N=', &
          I6, ', JTYPE=', I6, ', ISEED=(', 3( I5, ',' ), I5, ')' )
 END
+
+
+

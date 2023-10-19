@@ -162,6 +162,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -204,6 +205,9 @@
                       IZERO, K, KL, KU, LDA, MODE, N, NB, NERRS, &
                       NFAIL, NIMAT, NRHS, NRUN
    REAL               ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 )
@@ -351,9 +355,29 @@
 !
 !                 Compute the L*L' or U'*U factorization of the matrix.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                SRNAMT = 'SPOTRF'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SPOTRF( UPLO, N, AFAC, LDA, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SPOTRF : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SPOTRF.
 !
@@ -372,16 +396,46 @@
 !+    TEST 1
 !                 Reconstruct matrix from factors and compute residual.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL SPOT01( UPLO, N, A, LDA, AINV, LDA, RWORK, &
                             RESULT( 1 ) )
 !
 !+    TEST 2
 !                 Form the inverse and compute the residual.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                SRNAMT = 'SPOTRI'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SPOTRI( UPLO, N, AINV, LDA, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SPOTRI : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SPOTRI.
 !
@@ -422,11 +476,31 @@
                   CALL SLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                                NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'SPOTRS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SPOTRS( UPLO, N, NRHS, AFAC, LDA, X, LDA, &
                                INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SPOTRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                 Check error code from SPOTRS.
 !
@@ -435,7 +509,17 @@
                                   N, -1, -1, NRHS, IMAT, NFAIL, &
                                   NERRS, NOUT )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL SPOT02( UPLO, N, NRHS, A, LDA, X, LDA, WORK, &
                                LDA, RWORK, RESULT( 3 ) )
 !
@@ -449,9 +533,19 @@
 !                 Use iterative refinement to improve the solution.
 !
                   SRNAMT = 'SPORFS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SPORFS( UPLO, N, NRHS, A, LDA, AFAC, LDA, B, &
                                LDA, X, LDA, RWORK, RWORK( NRHS+1 ), &
                                WORK, IWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SPORFS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                 Check error code from SPORFS.
 !
@@ -486,8 +580,18 @@
 !
                ANORM = SLANSY( '1', UPLO, N, A, LDA, RWORK )
                SRNAMT = 'SPOCON'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SPOCON( UPLO, N, AFAC, LDA, ANORM, RCOND, WORK, &
                             IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SPOCON : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from SPOCON.
 !
@@ -530,4 +634,8 @@
 !     End of SCHKPO
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

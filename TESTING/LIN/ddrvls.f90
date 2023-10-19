@@ -182,6 +182,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_lin
 !
@@ -228,6 +229,9 @@
                       LWORK_DGELS, LWORK_DGELST, LWORK_DGETSLS, &
                       LWORK_DGELSS, LWORK_DGELSY, LWORK_DGELSD
    DOUBLE PRECISION   EPS, NORMA, NORMB, RCOND
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 ), IWQ( 1 )
@@ -355,30 +359,90 @@
                            END IF
 !
 !                             Compute workspace needed for DGELS
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGELS( TRANS, M, N, NRHS, A, LDA, &
                                        B, LDB, WQ, -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGELS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_DGELS = INT ( WQ ( 1 ) )
 !                             Compute workspace needed for DGELST
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGELST( TRANS, M, N, NRHS, A, LDA, &
                                        B, LDB, WQ, -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGELST : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_DGELST = INT ( WQ ( 1 ) )
 !                             Compute workspace needed for DGETSLS
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGETSLS( TRANS, M, N, NRHS, A, LDA, &
                                          B, LDB, WQ, -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGETSLS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_DGETSLS = INT( WQ ( 1 ) )
                         ENDDO
                      END IF
 !                       Compute workspace needed for DGELSY
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSY( M, N, NRHS, A, LDA, B, LDB, IWQ, &
                                   RCOND, CRANK, WQ, -1, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_DGELSY = INT( WQ ( 1 ) )
 !                       Compute workspace needed for DGELSS
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSS( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WQ, -1 , INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_DGELSS = INT( WQ ( 1 ) )
 !                       Compute workspace needed for DGELSD
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSD( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WQ, -1, IWQ, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSD : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_DGELSD = INT( WQ ( 1 ) )
 !                       Compute LIWORK workspace needed for DGELSY and DGELSD
                      LIWORK = MAX( LIWORK, N, IWQ( 1 ) )
@@ -450,29 +514,99 @@
 !                             Set up a consistent rhs
 !
                            IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLARNV( 2, ISEED, NCOLS*NRHS, &
                                            WORK )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DSCAL( NCOLS*NRHS, &
                                           ONE / DBLE( NCOLS ), WORK, &
                                           1 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGEMM( TRANS, 'No transpose', NROWS, &
                                        NRHS, NCOLS, ONE, COPYA, LDA, &
                                        WORK, LDWORK, ZERO, B, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DLACPY( 'Full', NROWS, NRHS, B, LDB, &
                                         COPYB, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Solve LS or overdetermined system
 !
                            IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', M, N, COPYA, LDA, &
                                            A, LDA )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
                            SRNAMT = 'DGELS '
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGELS( TRANS, M, N, NRHS, A, LDA, B, &
                                        LDB, WORK, LWORK, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGELS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               CALL ALAERH( PATH, 'DGELS ', INFO, 0, &
                                            TRANS, M, N, NRHS, -1, NB, &
@@ -484,9 +618,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                           IF( NROWS > 0 .AND. NRHS > 0 ) &
+                           IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+                           ENDIF
                            CALL DQRT16( TRANS, M, N, NRHS, COPYA, &
                                         LDA, B, LDB, C, LDB, WORK, &
                                         RESULT( 1 ) )
@@ -567,29 +712,99 @@
 !                             Set up a consistent rhs
 !
                            IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLARNV( 2, ISEED, NCOLS*NRHS, &
                                            WORK )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DSCAL( NCOLS*NRHS, &
                                           ONE / DBLE( NCOLS ), WORK, &
                                           1 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGEMM( TRANS, 'No transpose', NROWS, &
                                        NRHS, NCOLS, ONE, COPYA, LDA, &
                                        WORK, LDWORK, ZERO, B, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DLACPY( 'Full', NROWS, NRHS, B, LDB, &
                                         COPYB, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Solve LS or overdetermined system
 !
                            IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', M, N, COPYA, LDA, &
                                            A, LDA )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
                            SRNAMT = 'DGELST'
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DGELST( TRANS, M, N, NRHS, A, LDA, B, &
                                         LDB, WORK, LWORK, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DGELST : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               CALL ALAERH( PATH, 'DGELST', INFO, 0, &
                                            TRANS, M, N, NRHS, -1, NB, &
@@ -601,9 +816,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                           IF( NROWS > 0 .AND. NRHS > 0 ) &
+                           IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+                           ENDIF
                            CALL DQRT16( TRANS, M, N, NRHS, COPYA, &
                                         LDA, B, LDB, C, LDB, WORK, &
                                         RESULT( 3 ) )
@@ -691,31 +917,101 @@
 !                                Set up a consistent rhs
 !
                               IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DLARNV( 2, ISEED, NCOLS*NRHS, &
                                               WORK )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DSCAL( NCOLS*NRHS, &
                                              ONE / DBLE( NCOLS ), &
                                              WORK, 1 )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DSCAL : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                               END IF
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DGEMM( TRANS, 'No transpose', &
                                           NROWS, NRHS, NCOLS, ONE, &
                                           COPYA, LDA, WORK, LDWORK, &
                                           ZERO, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLACPY( 'Full', NROWS, NRHS, &
                                            B, LDB, COPYB, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
 !
 !                                Solve LS or overdetermined system
 !
                               IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DLACPY( 'Full', M, N, &
                                               COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DLACPY( 'Full', NROWS, NRHS, &
                                               COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                               END IF
                               SRNAMT = 'DGETSLS'
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DGETSLS( TRANS, M, N, NRHS, &
                                        A, LDA, B, LDB, WORK, LWORK, &
                                        INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DGETSLS : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               IF( INFO /= 0 ) &
                                  CALL ALAERH( PATH, 'DGETSLS', INFO, &
                                               0, TRANS, M, N, NRHS, &
@@ -727,9 +1023,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                              IF( NROWS > 0 .AND. NRHS > 0 ) &
+                              IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DLACPY( 'Full', NROWS, NRHS, &
                                               COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+                              ENDIF
                               CALL DQRT16( TRANS, M, N, NRHS, &
                                            COPYA, LDA, B, LDB, &
                                            C, LDB, WORK, &
@@ -811,13 +1118,43 @@
                         IWORK( J ) = 0
                      ENDDO
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'DGELSY'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSY( M, N, NRHS, A, LDA, B, LDB, IWORK, &
                                   RCOND, CRANK, WORK, LWLSY, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'DGELSY', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -832,8 +1169,18 @@
 !                       Test 8:  Compute error in solution
 !                                workspace:  M*NRHS + M
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL DQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 8 ) )
@@ -863,12 +1210,42 @@
 !                       to min( norm( A * X - B ) )
 !                       using the SVD.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      SRNAMT = 'DGELSS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSS( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WORK, LWORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'DGELSS', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -880,7 +1257,17 @@
 !                       Test 11:  Compute relative error in svd
 !
                      IF( RANK > 0 ) THEN
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DAXPY( MNMIN, -ONE, COPYS, 1, S, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RESULT( 11 ) = DASUM( MNMIN, S, 1 ) / &
                                       DASUM( MNMIN, COPYS, 1 ) / &
                                       ( EPS*DBLE( MNMIN ) )
@@ -890,8 +1277,18 @@
 !
 !                       Test 12:  Compute error in solution
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL DQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 12 ) )
@@ -924,14 +1321,44 @@
                         IWORK( J ) = 0
                      ENDDO
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'DGELSD'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGELSD( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WORK, LWORK, IWORK, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGELSD : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'DGELSD', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -940,7 +1367,17 @@
 !                       Test 15:  Compute relative error in svd
 !
                      IF( RANK > 0 ) THEN
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DAXPY( MNMIN, -ONE, COPYS, 1, S, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RESULT( 15 ) = DASUM( MNMIN, S, 1 ) / &
                                        DASUM( MNMIN, COPYS, 1 ) / &
                                        ( EPS*DBLE( MNMIN ) )
@@ -950,8 +1387,18 @@
 !
 !                       Test 16:  Compute error in solution
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL DQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 16 ) )
@@ -1019,4 +1466,8 @@
 !     End of DDRVLS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

@@ -154,6 +154,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -197,6 +198,9 @@
                       IZERO, J, K, KL, KU, LDA, MODE, N, NERRS, &
                       NFAIL, NIMAT, NPP, NRHS, NRUN, NT
    REAL               ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 )
@@ -381,9 +385,29 @@
 !              Compute the L*D*L' or U*D*U' factorization of the matrix.
 !
             NPP = N*( N+1 ) / 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( NPP, A, 1, AFAC, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             SRNAMT = 'CSPTRF'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CSPTRF( UPLO, N, AFAC, IWORK, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CSPTRF : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Adjust the expected value of INFO to account for
 !              pivoting.
@@ -424,9 +448,29 @@
 !              Form the inverse and compute the residual.
 !
             IF( .NOT.TRFCON ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CCOPY( NPP, AFAC, 1, AINV, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                SRNAMT = 'CSPTRI'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSPTRI( UPLO, N, AINV, IWORK, WORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSPTRI : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from CSPTRI.
 !
@@ -470,11 +514,31 @@
                CALL CLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                             NRHS, A, LDA, XACT, LDA, B, LDA, ISEED, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                SRNAMT = 'CSPTRS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSPTRS( UPLO, N, NRHS, AFAC, IWORK, X, LDA, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSPTRS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from CSPTRS.
 !
@@ -483,7 +547,17 @@
                                -1, -1, NRHS, IMAT, NFAIL, NERRS, &
                                NOUT )
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL CSPT02( UPLO, N, NRHS, A, X, LDA, WORK, LDA, &
                             RWORK, RESULT( 3 ) )
 !
@@ -497,9 +571,19 @@
 !              Use iterative refinement to improve the solution.
 !
                SRNAMT = 'CSPRFS'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSPRFS( UPLO, N, NRHS, A, AFAC, IWORK, B, LDA, X, &
                             LDA, RWORK, RWORK( NRHS+1 ), WORK, &
                             RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSPRFS : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !              Check error code from CSPRFS.
 !
@@ -535,8 +619,18 @@
   140          CONTINUE
             ANORM = CLANSP( '1', UPLO, N, A, RWORK )
             SRNAMT = 'CSPCON'
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CSPCON( UPLO, N, AFAC, IWORK, ANORM, RCOND, WORK, &
                          INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CSPCON : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CSPCON.
 !
@@ -575,4 +669,8 @@
 !     End of CCHKSP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

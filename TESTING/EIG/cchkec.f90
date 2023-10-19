@@ -67,6 +67,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -91,6 +92,9 @@
    INTEGER            KTREXC, KTRSEN, KTRSNA, KTRSYL, KTRSYL3, &
                       LTREXC, LTRSYL, NTESTS, NTREXC, NTRSYL
    REAL               EPS, RTREXC, SFMIN
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            FTRSYL( 3 ), ITRSYL( 2 ), LTRSEN( 3 ), &
@@ -192,4 +196,7 @@
 !     End of CCHKEC
 !
 END
+
+
+
 

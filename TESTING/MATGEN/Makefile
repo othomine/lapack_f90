@@ -33,6 +33,10 @@
 TOPSRCDIR = ../..
 include $(TOPSRCDIR)/make.inc
 
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(FFLAGS) -c -o $@ $<
+
 SCATGEN = slatm1.o slatm7.o slaran.o slarnd.o
 
 SMATGEN = slatms.o slatme.o slatmr.o slatmt.o \
@@ -99,5 +103,5 @@ cleanobj:
 cleanlib:
 	rm -f $(TMGLIB)
 
-slaran.o: slaran.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
-dlaran.o: dlaran.f ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+slaran.o: slaran.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<
+dlaran.o: dlaran.f90 ; $(FC) $(FFLAGS_NOOPT) -c -o $@ $<

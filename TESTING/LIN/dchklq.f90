@@ -186,6 +186,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_lin
 !
@@ -229,6 +230,9 @@
                       LWORK, M, MINMN, MODE, N, NB, NERRS, NFAIL, NK, &
                       NRUN, NT, NX
    DOUBLE PRECISION   ANORM, CNDNUM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 ), KVAL( 4 )
@@ -388,17 +392,47 @@
                                      NRHS, A, LDA, XACT, LDA, B, LDA, &
                                      ISEED, INFO )
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DLACPY( 'Full', M, NRHS, B, LDA, X, &
                                      LDA )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Reset AF to the original matrix. DGELS
 !                          factors the matrix before solving the system.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DLACPY( 'Full', M, N, A, LDA, AF, LDA )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
                         SRNAMT = 'DGELS'
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DGELS( 'No transpose', M, N, NRHS, AF, &
                                     LDA, X, LDA, WORK, LWORK, INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DGELS : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Check error code from DGELS.
 !
@@ -452,4 +486,8 @@
 !     End of DCHKLQ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

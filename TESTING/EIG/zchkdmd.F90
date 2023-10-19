@@ -42,6 +42,9 @@
       PROGRAM DMD_TEST
       use iso_fortran_env, only: real64
       IMPLICIT NONE
+#ifdef _TIMER
+      INTEGER(8) nb_periods_sec, S1_time, S2_time
+#endif
       integer, parameter :: WP = real64
 
 !............................................................
@@ -224,42 +227,132 @@
       ALLOCATE( ZWORK(LZWORK) )
       ALLOCATE( WORK(2*M) )
       ZAC(1:M,1:M) = ZA(1:M,1:M)
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEEV( 'N','N', M, ZAC, LDA, ZEIGSA, ZDUM2X2, 2, &
                   ZDUM2X2, 2, ZWORK, LZWORK, WORK, INFO ) ! LAPACK CALL
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEEV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       DEALLOCATE(WORK)
       DEALLOCATE(ZWORK)
 
       TMP = ABS(ZEIGSA(IZAMAX(M, ZEIGSA, 1))) ! The spectral radius of ZA
       ! Scale the matrix ZA to have unit spectral radius.
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLASCL( 'G',0, 0, TMP, 1.0_WP, M, M, &
                    ZA, LDA, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLASCL( 'G',0, 0, TMP, 1.0_WP, M, 1, &
                    ZEIGSA, M, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       ANORM = ZLANGE( 'F', M, M, ZA, LDA, WDUMMY )
 
       IF ( K_TRAJ == 2 ) THEN
           ! generate data as two trajectories
           ! with two inital conditions
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N/2
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, LDA, ZF(1,i), 1,  &
                   (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           ZX0(1:M,1:N/2) = ZF(1:M,1:N/2)
           ZY0(1:M,1:N/2) = ZF(1:M,2:N/2+1)
 
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N-N/2
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, LDA, ZF(1,i), 1,  &
                   (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           ZX0(1:M,N/2+1:N) = ZF(1:M,1:N-N/2)
           ZY0(1:M,N/2+1:N) = ZF(1:M,2:N-N/2+1)
       ELSE
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZLARNV(2, ISEED, M, ZF(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL ZGEMV( 'N', M, M, (1.0_WP,0.0_WP), ZA, M, ZF(1,i), 1,  &
                   (0.0_WP,0.0_WP), ZF(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           ZF0(1:M,1:N+1) = ZF(1:M,1:N+1)
           ZX0(1:M,1:N) = ZF0(1:M,1:N)
@@ -330,11 +423,21 @@
       ZX(1:M,1:N) = ZX0(1:M,1:N)
       ZY(1:M,1:N) = ZY0(1:M,1:N)
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD,   &
                    M,  N, ZX, LDX, ZY, LDY, NRNK, TOL,    &
                    K, ZEIGS, ZZ, LDZ,  RES, ZAU, LDAU,    &
                    ZW,  LDW, ZS, LDS,  ZDUMMY, -1,        &
                    WDUMMY, -1, IDUMMY, -1, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF ( (INFO .EQ. 2) .OR. ( INFO .EQ. 3 ) &
                           .OR. ( INFO < 0 ) ) THEN
            WRITE(*,*) 'Call to ZGEDMD workspace query failed. &
@@ -354,11 +457,21 @@
       ALLOCATE( WORK(LWORK))
       ALLOCATE(IWORK(LIWORK))
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD,  &
                    M,  N, ZX, LDX, ZY, LDY, NRNK, TOL,   &
                    K, ZEIGS, ZZ, LDZ,  RES, ZAU, LDAU,   &
                    ZW,  LDW,  ZS, LDS, ZWORK,  LZWORK,   &
                    WORK, LWORK, IWORK, LIWORK, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       IF ( INFO /= 0 ) THEN
            WRITE(*,*) 'Call to ZGEDMD failed. &
@@ -379,11 +492,31 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the rayleigh quotient
           ! returned in W
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), ZX, LDX, ZW, LDW, &
                       (0.0_WP,0.0_WP), ZZ1, LDZ )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL ZAXPY( M, -(1.0_WP,0.0_WP), ZZ(1,i), 1, ZZ1(1,i), 1)
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              TMP = MAX(TMP, DZNRM2( M, ZZ1(1,i), 1 ) )
           END DO
           TMP_ZXW = MAX(TMP_ZXW, TMP )
@@ -409,11 +542,31 @@
            ! See the paper for an error analysis.
            ! Note that the left singular vectors of the input matrix X
            ! are returned in the array X.
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
            CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZX, LDX, &
                       (0.0_WP,0.0_WP), ZZ1, LDZ )
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+           open(file='results.out', unit=10, position = 'append')
+           write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+           close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZAXPY( M, -(1.0_WP,0.0_WP), ZAU(1,i), 1, ZZ1(1,i), 1)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             TMP = MAX( TMP, DZNRM2( M, ZZ1(1,i),1 ) * &
                      SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -437,11 +590,31 @@
        ! and test them separately using a Matlab script.
 
 
+#ifdef _TIMER
+       call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
        CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZAU, LDAU, (0.0_WP,0.0_WP), ZY1, LDY )
+#ifdef _TIMER
+       call system_clock(count_rate=nb_periods_sec,count=S2_time)
+       open(file='results.out', unit=10, position = 'append')
+       write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+             real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+       close(10)
+#endif
 
                DO i=1, K
                   ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                 CALL ZAXPY( M, -ZEIGS(i), ZAU(1,i), 1, ZY1(1,i), 1 )
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                open(file='results.out', unit=10, position = 'append')
+                write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                close(10)
+#endif
                 RESEX(i) = DZNRM2( M, ZY1(1,i), 1) / DZNRM2(M,ZAU(1,i),1)
                END DO
       END IF
@@ -451,14 +624,34 @@
           ! Compare the residuals returned by ZGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), ZA, LDA, ZZ, LDZ, (0.0_WP,0.0_WP), ZY1, LDY )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in ZGEDMD,)
 
           DO i=1, K
                 ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                 CALL ZAXPY( M, -ZEIGS(i), ZZ(1,i), 1, ZY1(1,i), 1 )
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                open(file='results.out', unit=10, position = 'append')
+                write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                close(10)
+#endif
                 RES1(i) = DZNRM2( M, ZY1(1,i), 1)
           END DO
           TMP = 0.0_WP
@@ -497,11 +690,21 @@
 
       ZF(1:M,1:N+1) = ZF0(1:M,1:N+1)
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, JOBREF, &
                     WHTSVD, M, N+1, ZF, LDF,  ZX, LDX,  ZY, LDY,  &
                     NRNK,  TOL, K, ZEIGS, ZZ, LDZ, RES,  ZAU,  &
                     LDAU, ZW, LDW, ZS, LDS, ZDUMMY, -1,   &
                     WDUMMY,  -1, IDUMMY, -1, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEDMDQ : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       LZWORK = INT(ZDUMMY(LWMINOPT))
       ALLOCATE( ZWORK(LZWORK) )
@@ -510,11 +713,21 @@
       LWORK = INT(WDUMMY(1))
       ALLOCATE(WORK(LWORK))
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, JOBREF, &
                     WHTSVD, M, N+1, ZF, LDF,  ZX, LDX,  ZY, LDY,  &
                     NRNK,  TOL, KQ, ZEIGS, ZZ, LDZ, RES,  ZAU,  &
                     LDAU, ZW, LDW, ZS, LDS, ZWORK, LZWORK,   &
                     WORK,  LWORK, IWORK, LIWORK, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEDMDQ : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       IF ( INFO /= 0 ) THEN
              WRITE(*,*) 'Call to ZGEDMDQ failed. &
@@ -554,8 +767,18 @@
          ! as requested. The residual ||F-Q*R||_F / ||F||_F
          ! is compared to M*N*EPS.
          ZF1(1:M,1:N+1) = ZF0(1:M,1:N+1)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -(1.0_WP,0.0_WP), ZF, &
                      LDF, ZY, LDY, (1.0_WP,0.0_WP), ZF1, LDF )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          TMP_FQR = ZLANGE( 'F', M, N+1, ZF1, LDF, WORK ) / &
                ZLANGE( 'F', M, N+1, ZF0,  LDF, WORK )
          IF ( TMP_FQR > TOL2 ) THEN
@@ -571,14 +794,34 @@
           ! Compare the residuals returned by ZGEDMDQ with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL ZGEMM( 'N', 'N', M, KQ, M, (1.0_WP,0.0_WP), ZA, LDA, ZZ, LDZ, (0.0_WP,0.0_WP), ZY1, LDY )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in ZGEDMDQ)
 
           DO i=1, KQ
                 ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                 CALL ZAXPY( M, -ZEIGS(i), ZZ(1,i), 1, ZY1(1,i), 1 )
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                open(file='results.out', unit=10, position = 'append')
+                write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                close(10)
+#endif
                 ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
                 RES1(i) = DZNRM2( M, ZY1(1,i), 1)
           END DO
@@ -735,4 +978,6 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
+
+
 

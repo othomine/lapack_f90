@@ -85,6 +85,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -108,6 +109,9 @@
 !     .. Local Scalars ..
    INTEGER            J
    DOUBLE PRECISION   ANORM, EPS, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DASUM, DLAMCH, DLANGE
@@ -130,8 +134,28 @@
 !
    WNORM = 0.0D+0
    DO J = 1, N
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DAXPY( M, -1.0D+0, B( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       WNORM = MAX( WNORM, DASUM( N, WORK, 1 ) )
    ENDDO
 !
@@ -152,4 +176,7 @@
 !     End of DGET10
 !
 END
+
+
+
 

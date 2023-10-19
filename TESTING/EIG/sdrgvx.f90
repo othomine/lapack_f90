@@ -290,6 +290,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -326,6 +327,9 @@
                       MAXWRK, MINWRK, N, NERRS, NMAX, NPTKNT, NTESTT
    REAL               ABNORM, ANORM, BNORM, RATIO1, RATIO2, THRSH2, &
                       ULP, ULPINV
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               WEIGHT( 5 )
@@ -379,7 +383,17 @@
    IF( LWORK < MINWRK ) INFO = -24
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SDRGVX', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -418,14 +432,44 @@
 !                    Compute eigenvalue/eigenvector condition numbers
 !                    using computed eigenvectors.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'F', N, N, A, LDA, AI, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'F', N, N, B, LDA, BI, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SGGEVX( 'N', 'V', 'V', 'B', N, AI, LDA, BI, &
                                LDA, ALPHAR, ALPHAI, BETA, VL, LDA, &
                                VR, LDA, ILO, IHI, LSCALE, RSCALE, &
                                ANORM, BNORM, S, DIF, WORK, LWORK, &
                                IWORK, BWORK, LINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SGGEVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( LINFO /= 0 ) THEN
                      RESULT( 1 ) = ULPINV
                      WRITE( NOUT, FMT = 9999 )'SGGEVX', LINFO, N, &
@@ -435,9 +479,29 @@
 !
 !                    Compute the norm(A, B)
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, N, AI, LDA, WORK, N )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLACPY( 'Full', N, N, BI, LDA, WORK( N*N+1 ), &
                                N )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   ABNORM = SLANGE( 'Fro', N, 2*N, WORK, N, WORK )
 !
 !                    Tests (1) and (2)
@@ -566,13 +630,43 @@
 !     Compute eigenvalue/eigenvector condition numbers
 !     using computed eigenvectors.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'F', N, N, A, LDA, AI, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'F', N, N, B, LDA, BI, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGGEVX( 'N', 'V', 'V', 'B', N, AI, LDA, BI, LDA, ALPHAR, &
                 ALPHAI, BETA, VL, LDA, VR, LDA, ILO, IHI, LSCALE, &
                 RSCALE, ANORM, BNORM, S, DIF, WORK, LWORK, IWORK, &
                 BWORK, LINFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGGEVX : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    IF( LINFO /= 0 ) THEN
       RESULT( 1 ) = ULPINV
@@ -582,8 +676,28 @@
 !
 !     Compute the norm(A, B)
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'Full', N, N, AI, LDA, WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'Full', N, N, BI, LDA, WORK( N*N+1 ), N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    ABNORM = SLANGE( 'Fro', N, 2*N, WORK, N, WORK )
 !
 !     Tests (1) and (2)
@@ -742,4 +856,7 @@
 !     End of SDRGVX
 !
 END
+
+
+
 

@@ -161,6 +161,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -206,6 +207,9 @@
                       IUPLO, IZERO, J, K, KL, KU, LDA, LWORK, MODE, &
                       N, NB, NERRS, NFAIL, NIMAT, NRHS, NRUN, NT
    REAL               ANORM, CNDNUM, RCOND, RCONDC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 )
@@ -418,7 +422,17 @@
 !                 will be factorized in place. This is needed to
 !                 preserve the test matrix A for subsequent tests.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( UPLO, N, N, A, LDA, AFAC, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Compute the L*D*L**T or U*D*U**T factorization of the
 !                 matrix. IWORK stores details of the interchanges and
@@ -427,8 +441,18 @@
 !
                LWORK = MAX( 2, NB )*LDA
                SRNAMT = 'CSYTRF'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSYTRF( UPLO, N, AFAC, LDA, IWORK, AINV, LWORK, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSYTRF : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Adjust the expected value of INFO to account for
 !                 pivoting.
@@ -475,11 +499,31 @@
 !                 Do it only for the first block size.
 !
                IF( INB == 1 .AND. .NOT.TRFCON ) THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( UPLO, N, N, AFAC, LDA, AINV, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   SRNAMT = 'CSYTRI2'
                   LWORK = (N+NB+1)*(NB+3)
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CSYTRI2( UPLO, N, AINV, LDA, IWORK, WORK, &
                                LWORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CSYTRI2 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CSYTRI2 and handle error.
 !
@@ -538,11 +582,31 @@
                   CALL CLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                                NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'CSYTRS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CSYTRS( UPLO, N, NRHS, AFAC, LDA, IWORK, X, &
                                LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CSYTRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CSYTRS and handle error.
 !
@@ -551,7 +615,17 @@
                                   N, -1, -1, NRHS, IMAT, NFAIL, &
                                   NERRS, NOUT )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute the residual for the solution
 !
@@ -568,11 +642,31 @@
                   CALL CLARHS( PATH, XTYPE, UPLO, ' ', N, N, KL, KU, &
                                NRHS, A, LDA, XACT, LDA, B, LDA, &
                                ISEED, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'CSYTRS2'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CSYTRS2( UPLO, N, NRHS, AFAC, LDA, IWORK, X, &
                                LDA, WORK, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CSYTRS2 : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CSYTRS2 and handle error.
 !
@@ -581,7 +675,17 @@
                                   N, -1, -1, NRHS, IMAT, NFAIL, &
                                   NERRS, NOUT )
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Compute the residual for the solution
 !
@@ -598,10 +702,20 @@
 !                 Use iterative refinement to improve the solution.
 !
                   SRNAMT = 'CSYRFS'
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CSYRFS( UPLO, N, NRHS, A, LDA, AFAC, LDA, &
                                IWORK, B, LDA, X, LDA, RWORK, &
                                RWORK( NRHS+1 ), WORK, &
                                RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CSYRFS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CSYRFS and handle error.
 !
@@ -640,8 +754,18 @@
   140             CONTINUE
                ANORM = CLANSY( '1', UPLO, N, A, LDA, RWORK )
                SRNAMT = 'CSYCON'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSYCON( UPLO, N, AFAC, LDA, IWORK, ANORM, RCOND, &
                             WORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSYCON : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check error code from CSYCON and handle error.
 !
@@ -687,4 +811,8 @@
 !     End of CCHKSY
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

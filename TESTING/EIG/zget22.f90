@@ -135,6 +135,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -163,6 +164,9 @@
    DOUBLE PRECISION   ANORM, ENORM, ENRMAX, ENRMIN, ERRNRM, TEMP1, &
                       ULP, UNFL
    COMPLEX*16         WTEMP
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -248,7 +252,17 @@
 !
 !     Error =  AE - EW
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    JOFF = 0
    DO JCOL = 1, N
@@ -274,8 +288,18 @@
       JOFF = JOFF + N
       ENDDO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGEMM( TRANSA, TRANSE, N, N, N, (1.0D0,0.0D0), A, LDA, E, LDE, -(1.0D0,0.0D0), &
                WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ERRNRM = ZLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
 !
@@ -301,4 +325,7 @@
 !     End of ZGET22
 !
 END
+
+
+
 

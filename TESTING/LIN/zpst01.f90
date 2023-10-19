@@ -127,6 +127,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -162,6 +163,9 @@
    COMPLEX*16         TC
    DOUBLE PRECISION   ANORM, EPS, TR
    INTEGER            I, J, K
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    COMPLEX*16         ZDOTC
@@ -224,8 +228,18 @@
 !
 !           Compute the rest of column K.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZTRMV( 'Upper', 'Conjugate', 'Non-unit', K-1, AFAC, &
                      LDAFAC, AFAC( 1, K ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZTRMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          ENDDO
 !
@@ -245,14 +259,35 @@
 !           Add a multiple of column K of the factor L to each of
 !           columns K+1 through N.
 !
-         IF( K+1 <= N ) &
+         IF( K+1 <= N )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZHER( 'Lower', N-K, ONE, AFAC( K+1, K ), 1, &
                        AFAC( K+1, K+1 ), LDAFAC )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZHER : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
 !
 !           Scale column K by the diagonal element.
 !
          TC = AFAC( K, K )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSCAL( N-K+1, TC, AFAC( K, K ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSCAL : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          ENDDO
 !
    END IF
@@ -320,4 +355,8 @@
 !     End of ZPST01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

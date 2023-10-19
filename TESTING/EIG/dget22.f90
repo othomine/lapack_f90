@@ -159,6 +159,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -187,6 +188,9 @@
                       JVEC
    DOUBLE PRECISION   ANORM, ENORM, ENRMAX, ENRMIN, ERRNRM, TEMP1, &
                       ULP, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    DOUBLE PRECISION   WMAT( 2, 2 )
@@ -308,7 +312,17 @@
 !
 !     Error =  AE - EW
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL DLASET( 'Full', N, N, 0.0D0, 0.0D0, WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    IPAIR = 0
    IEROW = 1
@@ -329,23 +343,53 @@
          WMAT( 2, 1 ) = -WI( JCOL )
          WMAT( 1, 2 ) = WI( JCOL )
          WMAT( 2, 2 ) = WR( JCOL )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DGEMM( TRANSE, TRANSW, N, 2, 2, 1.0D0, E( IEROW, IECOL ), &
                      LDE, WMAT, 2, 0.0D0, WORK( N*( JCOL-1 )+1 ), N )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IPAIR = 2
       ELSE IF( IPAIR == 2 ) THEN
          IPAIR = 0
 !
       ELSE
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DAXPY( N, WR( JCOL ), E( IEROW, IECOL ), INCE, &
                      WORK( N*( JCOL-1 )+1 ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IPAIR = 0
       END IF
 !
    ENDDO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL DGEMM( TRANSA, TRANSE, N, N, N, 1.0D0, A, LDA, E, LDE, -1.0D0, &
                WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ERRNRM = DLANGE( 'One', N, N, WORK, N, WORK( N*N+1 ) ) / ENORM
 !
@@ -371,4 +415,7 @@
 !     End of DGET22
 !
 END
+
+
+
 

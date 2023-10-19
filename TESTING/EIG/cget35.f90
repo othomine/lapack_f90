@@ -76,6 +76,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -104,6 +105,9 @@
    REAL               BIGNUM, EPS, RES, RES1, SCALE, SMLNUM, TNRM, &
                       XNRM
    COMPLEX            RMUL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               DUM( 1 ), VM1( 3 ), VM2( 3 )
@@ -177,8 +181,18 @@
                         C(1:M,1:N) = CTMP(1:M,1:N)*VM1( IMLC )
                         CSAV(1:M,1:N) = C(1:M,1:N)
                         KNT = KNT + 1
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL CTRSYL( TRANA, TRANB, ISGN, M, N, A, &
                                      LDT, B, LDT, C, LDT, SCALE, INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : CTRSYL : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( INFO /= 0 ) NINFO = NINFO + 1
                         XNRM = CLANGE( 'M', M, N, C, LDT, DUM )
                         RMUL = 1.0E0
@@ -188,11 +202,31 @@
                               RMUL = 1.0E0 / RMUL
                            END IF
                         END IF
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL CGEMM( TRANA, 'N', M, N, M, RMUL, A, &
                                     LDT, C, LDT, -SCALE*RMUL, CSAV, LDT )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL CGEMM( 'N', TRANB, M, N, N, &
                                     REAL( ISGN )*RMUL, C, LDT, B, &
                                     LDT, (1.0E0,0.0E0), CSAV, LDT )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RES1 = CLANGE( 'M', M, N, CSAV, LDT, DUM )
                         RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                               ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
@@ -212,4 +246,7 @@
 !     End of CGET35
 !
 END
+
+
+
 

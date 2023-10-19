@@ -200,6 +200,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -229,6 +230,9 @@
 !     .. Local Scalars ..
    INTEGER            I, INFO, J, K, L
    REAL               ANORM, BNORM, RESID, TEMP, ULP, ULPINV, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               SLAMCH, SLANGE, SLANSY
@@ -245,17 +249,47 @@
 !
 !     Copy the matrix A to the array AF.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'Full', M, N, A, LDA, AF, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLACPY( 'Full', P, N, B, LDB, BF, LDB )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ANORM = MAX( SLANGE( '1', M, N, A, LDA, RWORK ), UNFL )
    BNORM = MAX( SLANGE( '1', P, N, B, LDB, RWORK ), UNFL )
 !
 !     Factorize the matrices A and B in the arrays AF and BF.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGGSVD3( 'U', 'V', 'Q', M, N, P, K, L, AF, LDA, BF, LDB, &
                  ALPHA, BETA, U, LDU, V, LDV, Q, LDQ, WORK, LWORK, &
                  IWORK, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGGSVD3 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Copy R
 !
@@ -273,11 +307,31 @@
 !
 !     Compute A:= U'*A*Q - D1*R
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'No transpose', 'No transpose', M, N, N, 1.0E+0, A, LDA, &
                Q, LDQ, 0.0E+0, WORK, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'Transpose', 'No transpose', M, N, M, 1.0E+0, U, LDU, &
                WORK, LDA, 0.0E+0, A, LDA )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, K
       DO J = I, K + L
@@ -302,11 +356,31 @@
 !
 !     Compute B := V'*B*Q - D2*R
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'No transpose', 'No transpose', P, N, N, 1.0E+0, B, LDB, &
                Q, LDQ, 0.0E+0, WORK, LDB )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'Transpose', 'No transpose', P, N, P, 1.0E+0, V, LDV, &
                WORK, LDB, 0.0E+0, B, LDB )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, L
       B(I,N-L+I:N) = B(I,N-L+I:N) - BETA(K+I)*R(K+I,K+I:K+L)
@@ -324,9 +398,29 @@
 !
 !     Compute I - U'*U
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLASET( 'Full', M, M, 0.0E+0, 1.0E+0, WORK, LDQ )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SSYRK( 'Upper', 'Transpose', M, M, -1.0E+0, U, LDU, 1.0E+0, WORK, &
                LDU )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SSYRK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - U'*U ) / ( M * ULP ) .
 !
@@ -335,9 +429,29 @@
 !
 !     Compute I - V'*V
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLASET( 'Full', P, P, 0.0E+0, 1.0E+0, WORK, LDV )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SSYRK( 'Upper', 'Transpose', P, P, -1.0E+0, V, LDV, 1.0E+0, WORK, &
                LDV )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SSYRK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - V'*V ) / ( P * ULP ) .
 !
@@ -346,9 +460,29 @@
 !
 !     Compute I - Q'*Q
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLASET( 'Full', N, N, 0.0E+0, 1.0E+0, WORK, LDQ )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SSYRK( 'Upper', 'Transpose', N, N, -1.0E+0, Q, LDQ, 1.0E+0, WORK, &
                LDQ )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SSYRK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - Q'*Q ) / ( N * ULP ) .
 !
@@ -357,7 +491,17 @@
 !
 !     Check sorting
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SCOPY( N, ALPHA, 1, WORK, 1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    DO I = K + 1, MIN( K+L, M )
       J = IWORK( I )
       IF( I /= J ) THEN
@@ -377,4 +521,7 @@
 !     End of SGSVTS3
 !
 END
+
+
+
 

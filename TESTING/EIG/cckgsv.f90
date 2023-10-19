@@ -188,6 +188,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -228,6 +229,9 @@
                       LDB, LDQ, LDR, LDU, LDV, LWORK, M, MODEA, &
                       MODEB, N, NFAIL, NRUN, NT, P, K, L
    REAL               ANORM, BNORM, CNDNMA, CNDNMB
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    LOGICAL            DOTYPE( NTYPES )
@@ -269,9 +273,19 @@
    B(4+3*M) = CMPLX(9.E16, 0.E0)
    B(5+4*M) = CMPLX(9.E15, 0.E0)
    B(6+5*M) = CMPLX(9.E14, 0.E0)
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGGSVD3('N','N','N', M, P, N, K, L, A, M, B, M, &
                  ALPHA, BETA, U, 1, V, 1, Q, 1, &
                  WORK, M*N, RWORK, IWORK, INFO)
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGGSVD3 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Print information there is a NAN in BETA
    DO I = 1, L
@@ -372,4 +386,7 @@
 !     End of CCKGSV
 !
 END
+
+
+
 

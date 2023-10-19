@@ -132,6 +132,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -157,6 +158,9 @@
 !     .. Local Scalars ..
    INTEGER            I, J
    REAL               ANORM, EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               SASUM, SLAMCH, SLANGE
@@ -186,13 +190,33 @@
 !           B is upper bidiagonal and M >= N.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, N - 1
                WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
             ENDDO
             WORK( M+N ) = D( N )*PT( N, J )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGEMV( 'No transpose', M, N, -1.0E+0, Q, LDQ, &
                         WORK( M+1 ), 1, 1.0E+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, SASUM( M, WORK, 1 ) )
          ENDDO
       ELSE IF( KD < 0 ) THEN
@@ -200,13 +224,33 @@
 !           B is upper bidiagonal and M < N.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, M - 1
                WORK( M+I ) = D( I )*PT( I, J ) + E( I )*PT( I+1, J )
             ENDDO
             WORK( M+M ) = D( M )*PT( M, J )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGEMV( 'No transpose', M, M, -1.0E+0, Q, LDQ, &
                         WORK( M+1 ), 1, 1.0E+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, SASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
@@ -214,14 +258,34 @@
 !           B is lower bidiagonal.
 !
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK( M+1 ) = D( 1 )*PT( 1, J )
             DO I = 2, M
                WORK( M+I ) = E( I-1 )*PT( I-1, J ) + &
                              D( I )*PT( I, J )
             ENDDO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGEMV( 'No transpose', M, M, -1.0E+0, Q, LDQ, &
                         WORK( M+1 ), 1, 1.0E+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, SASUM( M, WORK, 1 ) )
          ENDDO
       END IF
@@ -231,22 +295,62 @@
 !
       IF( M >= N ) THEN
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, N
                WORK( M+I ) = D( I )*PT( I, J )
             ENDDO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGEMV( 'No transpose', M, N, -1.0E+0, Q, LDQ, &
                         WORK( M+1 ), 1, 1.0E+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, SASUM( M, WORK, 1 ) )
          ENDDO
       ELSE
          DO J = 1, N
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, M
                WORK( M+I ) = D( I )*PT( I, J )
             ENDDO
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGEMV( 'No transpose', M, M, -1.0E+0, Q, LDQ, &
                         WORK( M+1 ), 1, 1.0E+0, WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             RESID = MAX( RESID, SASUM( M, WORK, 1 ) )
             ENDDO
       END IF
@@ -279,4 +383,7 @@
 !     End of SBDT01
 !
 END
+
+
+
 

@@ -68,6 +68,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -89,6 +90,9 @@
    INTEGER            I1, I2, I3, I4, IM1, IM2, IM3, IM4, J1, J2, J3
    REAL               BIGNUM, CS, EPS, RES, SMLNUM, SN, SUM, TNRM, &
                       WI1, WI2, WR1, WR2
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               Q( 2, 2 ), T( 2, 2 ), T1( 2, 2 ), T2( 2, 2 ), &
@@ -150,9 +154,19 @@
                            Q( 2, 1 ) = 0.0E+0
                            Q( 2, 2 ) = 1.0E+0
 !
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SLANV2( T( 1, 1 ), T( 1, 2 ), &
                                         T( 2, 1 ), T( 2, 2 ), WR1, &
                                         WI1, WR2, WI2, CS, SN )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SLANV2 : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            DO J1 = 1, 2
                               RES = Q( J1, 1 )*CS + Q( J1, 2 )*SN
                               Q( J1, 2 ) = -Q( J1, 1 )*SN + &
@@ -211,4 +225,7 @@
 !     End of SGET33
 !
 END
+
+
+
 

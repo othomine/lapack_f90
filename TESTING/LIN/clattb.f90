@@ -132,6 +132,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -168,6 +169,9 @@
                       SFAC, SMLNUM, TEXP, TLEFT, TNORM, TSCAL, ULP, &
                       UNFL
    COMPLEX            PLUS1, PLUS2, STAR1
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -284,14 +288,34 @@
          IF( UPPER ) THEN
             AB( 1, 2 ) = TNORM*CLARND( 5, ISEED )
             LENJ = ( N-3 ) / 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 2, ISEED, LENJ, WORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO J = 1, LENJ
                AB( 1, 2*( J+1 ) ) = TNORM*WORK( J )
             ENDDO
          ELSE
             AB( 2, 1 ) = TNORM*CLARND( 5, ISEED )
             LENJ = ( N-3 ) / 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 2, ISEED, LENJ, WORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO J = 1, LENJ
                AB( 2, 2*J+1 ) = TNORM*WORK( J )
                ENDDO
@@ -341,11 +365,51 @@
 !           Copy the tridiagonal T to AB.
 !
          IF( UPPER ) THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( N-1, WORK, 1, AB( KD, 2 ), LDAB )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( N-2, WORK( N+1 ), 1, AB( KD-1, 3 ), LDAB )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ELSE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( N-1, WORK, 1, AB( 2, 1 ), LDAB )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( N-2, WORK( N+1 ), 1, AB( 3, 1 ), LDAB )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          END IF
       END IF
 !
@@ -362,25 +426,66 @@
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J-1, KD )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 4, ISEED, LENJ, AB( KD+1-LENJ, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AB( KD+1, J ) = CLARND( 5, ISEED )*TWO
             ENDDO
       ELSE
          DO J = 1, N
             LENJ = MIN( N-J, KD )
-            IF( LENJ > 0 ) &
+            IF( LENJ > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( 2, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AB( 1, J ) = CLARND( 5, ISEED )*TWO
             ENDDO
       END IF
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = ICAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CSSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 11 ) THEN
 !
@@ -388,14 +493,44 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 11, the offdiagonal elements are small (CNORM(j) < 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       TSCAL = ONE / REAL( KD+1 )
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J-1, KD )
             IF( LENJ > 0 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( KD+2-LENJ, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSSCAL( LENJ, TSCAL, AB( KD+2-LENJ, J ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
             AB( KD+1, J ) = CLARND( 5, ISEED )
             ENDDO
@@ -404,8 +539,28 @@
          DO J = 1, N
             LENJ = MIN( N-J, KD )
             IF( LENJ > 0 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( 2, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CSSCAL( LENJ, TSCAL, AB( 2, J ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
             AB( 1, J ) = CLARND( 5, ISEED )
             ENDDO
@@ -418,20 +573,52 @@
 !        cause immediate overflow when dividing by T(j,j).
 !        In type 12, the offdiagonal elements are O(1) (CNORM(j) > 1).
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J-1, KD )
-            IF( LENJ > 0 ) &
+            IF( LENJ > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( KD+2-LENJ, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AB( KD+1, J ) = CLARND( 5, ISEED )
             ENDDO
          AB( KD+1, N ) = SMLNUM*AB( KD+1, N )
       ELSE
          DO J = 1, N
             LENJ = MIN( N-J, KD )
-            IF( LENJ > 0 ) &
+            IF( LENJ > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( 2, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AB( 1, J ) = CLARND( 5, ISEED )
             ENDDO
          AB( 1, 1 ) = SMLNUM*AB( 1, 1 )
@@ -499,7 +686,17 @@
 !
       TEXP = ONE / REAL( KD+1 )
       TSCAL = SMLNUM**TEXP
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 4, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( UPPER ) THEN
          DO J = 1, N
             DO I = MAX( 1, KD+2-J ), KD
@@ -530,7 +727,17 @@
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 4, ISEED, LENJ, AB( KD+2-LENJ, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                AB( KD+1, J ) = CLARND( 5, ISEED )*TWO
             ELSE
@@ -540,7 +747,17 @@
       ELSE
          DO J = 1, N
             LENJ = MIN( N-J+1, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 4, ISEED, LENJ, AB( 1, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( J /= IY ) THEN
                AB( 1, J ) = CLARND( 5, ISEED )*TWO
             ELSE
@@ -548,8 +765,28 @@
             END IF
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CSSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 16 ) THEN
 !
@@ -615,25 +852,66 @@
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J-1, KD )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 4, ISEED, LENJ, AB( KD+1-LENJ, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             AB( KD+1, J ) = REAL( J )
             ENDDO
       ELSE
          DO J = 1, N
             LENJ = MIN( N-J, KD )
-            IF( LENJ > 0 ) &
+            IF( LENJ > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 4, ISEED, LENJ, AB( 2, J ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             AB( 1, J ) = REAL( J )
             ENDDO
       END IF
 !
 !        Set the right hand side so that the largest value is BIGNUM.
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IY = ICAMAX( N, B, 1 )
       BNORM = ABS( B( IY ) )
       BSCAL = BIGNUM / MAX( ONE, BNORM )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CSSCAL( N, BSCAL, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( IMAT == 18 ) THEN
 !
@@ -647,8 +925,28 @@
       IF( UPPER ) THEN
          DO J = 1, N
             LENJ = MIN( J, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 5, ISEED, LENJ, AB( KD+2-LENJ, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLARNV( 1, ISEED, LENJ, RWORK( KD+2-LENJ ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = KD + 2 - LENJ, KD + 1
                AB( I, J ) = AB( I, J )*( TLEFT+RWORK( I )*TSCAL )
                ENDDO
@@ -656,15 +954,55 @@
       ELSE
          DO J = 1, N
             LENJ = MIN( N-J+1, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLARNV( 5, ISEED, LENJ, AB( 1, J ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLARNV( 1, ISEED, LENJ, RWORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO I = 1, LENJ
                AB( I, J ) = AB( I, J )*( TLEFT+RWORK( I )*TSCAL )
                ENDDO
             ENDDO
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLARNV( 2, ISEED, N, B )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CSSCAL( N, TWO, B, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    END IF
 !
 !     Flip the matrix if the transpose will be used.
@@ -673,14 +1011,34 @@
       IF( UPPER ) THEN
          DO J = 1, N / 2
             LENJ = MIN( N-2*J+1, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CSWAP( LENJ, AB( KD+1, J ), LDAB-1, &
                         AB( KD+2-LENJ, N-J+1 ), -1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             ENDDO
       ELSE
          DO J = 1, N / 2
             LENJ = MIN( N-2*J+1, KD+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CSWAP( LENJ, AB( 1, J ), 1, AB( LENJ, N-J+2-LENJ ), &
                         -LDAB+1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CSWAP : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             ENDDO
       END IF
    END IF
@@ -690,4 +1048,8 @@
 !     End of CLATTB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

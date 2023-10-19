@@ -127,6 +127,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -162,6 +163,9 @@
    COMPLEX            TC
    REAL               ANORM, EPS, TR
    INTEGER            I, J, K
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    COMPLEX            CDOTC
@@ -224,8 +228,18 @@
 !
 !           Compute the rest of column K.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CTRMV( 'Upper', 'Conjugate', 'Non-unit', K-1, AFAC, &
                      LDAFAC, AFAC( 1, K ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CTRMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          ENDDO
 !
@@ -245,14 +259,35 @@
 !           Add a multiple of column K of the factor L to each of
 !           columns K+1 through N.
 !
-         IF( K+1 <= N ) &
+         IF( K+1 <= N )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHER( 'Lower', N-K, ONE, AFAC( K+1, K ), 1, &
                        AFAC( K+1, K+1 ), LDAFAC )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHER : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
 !
 !           Scale column K by the diagonal element.
 !
          TC = AFAC( K, K )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CSCAL( N-K+1, TC, AFAC( K, K ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CSCAL : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          ENDDO
 !
    END IF
@@ -320,4 +355,8 @@
 !     End of CPST01
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

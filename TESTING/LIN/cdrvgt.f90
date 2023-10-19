@@ -130,6 +130,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -173,6 +174,9 @@
                       NFAIL, NIMAT, NRUN, NT
    REAL               AINVNM, ANORM, ANORMI, ANORMO, COND, RCOND, &
                       RCONDC, RCONDI, RCONDO
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          TRANSS( 3 )
@@ -266,10 +270,40 @@
             IZERO = 0
 !
             IF( N > 1 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CCOPY( N-1, AF( 4 ), 3, A, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CCOPY( N-1, AF( 3 ), 3, A( N+M+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CCOPY( N, AF( 2 ), 3, A( M+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ELSE
 !
 !              Types 7-12:  generate tridiagonal matrices with
@@ -279,9 +313,30 @@
 !
 !                 Generate a matrix with elements from [-1,1].
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLARNV( 2, ISEED, N+2*M, A )
-               IF( ANORM /= ONE ) &
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+               IF( ANORM /= ONE )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CSSCAL( N+2*M, ANORM, A, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CSSCAL : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             ELSE IF( IZERO > 0 ) THEN
 !
 !                 Reuse the last matrix by copying back the zeroed out
@@ -348,7 +403,17 @@
                RCONDI = ZERO
 !
             ELSE IF( IFACT == 1 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CCOPY( N+2*M, A, 1, AF, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Compute the 1-norm and infinity-norm of A.
 !
@@ -357,8 +422,18 @@
 !
 !                 Factor the matrix A.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CGTTRF( N, AF, AF( M+1 ), AF( N+M+1 ), &
                             AF( N+2*M+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CGTTRF : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Use CGTTRS to solve for one column at a time of
 !                 inv(A), computing the maximum column sum as we go.
@@ -369,9 +444,19 @@
                      X( J ) = ZERO
                   ENDDO
                   X( I ) = ONE
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGTTRS( 'No transpose', N, 1, AF, AF( M+1 ), &
                                AF( N+M+1 ), AF( N+2*M+1 ), IWORK, X, &
                                LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGTTRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   AINVNM = MAX( AINVNM, SCASUM( N, X, 1 ) )
                ENDDO
 !
@@ -392,9 +477,19 @@
                      X( J ) = ZERO
                   ENDDO
                   X( I ) = ONE
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGTTRS( 'Conjugate transpose', N, 1, AF, &
                                AF( M+1 ), AF( N+M+1 ), AF( N+2*M+1 ), &
                                IWORK, X, LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGTTRS : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   AINVNM = MAX( AINVNM, SCASUM( N, X, 1 ) )
                ENDDO
 !
@@ -419,14 +514,34 @@
 !
                IX = 1
                DO J = 1, NRHS
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLARNV( 2, ISEED, N, XACT( IX ) )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IX = IX + LDA
                ENDDO
 !
 !                 Set the right hand side.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLAGTM( TRANS, N, NRHS, ONE, A, A( M+1 ), &
                             A( N+M+1 ), XACT, LDA, ZERO, B, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLAGTM : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                IF( IFACT == 2 .AND. ITRAN == 1 ) THEN
 !
@@ -435,12 +550,42 @@
 !                    Solve the system using Gaussian elimination with
 !                    partial pivoting.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CCOPY( N+2*M, A, 1, AF, 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CCOPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, X, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
                   SRNAMT = 'CGTSV '
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CGTSV( N, NRHS, AF, AF( M+1 ), AF( N+M+1 ), X, &
                               LDA, INFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CGTSV : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
 !
 !                    Check error code from CGTSV .
 !
@@ -453,8 +598,18 @@
 !
 !                       Check residual of computed solution.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, &
                                   LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL CGTT02( TRANS, N, NRHS, A, A( M+1 ), &
                                   A( N+M+1 ), X, LDA, WORK, LDA, &
                                   RESULT( 2 ) )
@@ -491,18 +646,38 @@
                      AF( I ) = ZERO
                   ENDDO
                END IF
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLASET( 'Full', N, NRHS, CMPLX( ZERO ), &
                             CMPLX( ZERO ), X, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Solve the system and compute the condition number and
 !                 error bounds using CGTSVX.
 !
                SRNAMT = 'CGTSVX'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CGTSVX( FACT, TRANS, N, NRHS, A, A( M+1 ), &
                             A( N+M+1 ), AF, AF( M+1 ), AF( N+M+1 ), &
                             AF( N+2*M+1 ), IWORK, B, LDA, X, LDA, &
                             RCOND, RWORK, RWORK( NRHS+1 ), WORK, &
                             RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CGTSVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Check the error code from CGTSVX.
 !
@@ -529,7 +704,17 @@
 !
 !                    Check residual of computed solution.
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL CLACPY( 'Full', N, NRHS, B, LDA, WORK, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   CALL CGTT02( TRANS, N, NRHS, A, A( M+1 ), &
                                A( N+M+1 ), X, LDA, WORK, LDA, &
                                RESULT( 2 ) )
@@ -592,4 +777,8 @@
 !     End of CDRVGT
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

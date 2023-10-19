@@ -91,6 +91,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -115,6 +116,9 @@
 !     .. Local Scalars ..
    INTEGER            J
    DOUBLE PRECISION   ANORM, EPS, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLAMCH, DZASUM, ZLANGE
@@ -137,8 +141,28 @@
 !
    WNORM = 0.0D0
    DO J = 1, N
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZCOPY( M, A( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZAXPY( M, DCMPLX( -1.0D0 ), B( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZAXPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       WNORM = MAX( WNORM, DZASUM( N, WORK, 1 ) )
    ENDDO
 !
@@ -159,4 +183,7 @@
 !     End of ZGET10
 !
 END
+
+
+
 

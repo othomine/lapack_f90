@@ -359,6 +359,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -401,6 +402,9 @@
                       NTESTT
    DOUBLE PRECISION   ABSTOL, ANINV, ANORM, COND, OVFL, RTOVFL, &
                       RTUNFL, ULP, ULPINV, UNFL, VL, VU
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDUMMA( 1 ), IOLDSD( 4 ), ISEED2( 4 ), &
@@ -453,7 +457,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'ZDRVSG', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -539,7 +553,17 @@
 !
             KA = 0
             KB = 0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
          ELSE IF( ITYPE == 2 ) THEN
 !
@@ -547,7 +571,17 @@
 !
             KA = 0
             KB = 0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLASET( 'Full', LDA, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO JCOL = 1, N
                A( JCOL, JCOL ) = ANORM
             ENDDO
@@ -672,11 +706,41 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( ' ', N, N, A, LDA, Z, LDZ )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHEGV( IBTYPE, 'V', UPLO, N, Z, LDZ, BB, LDB, D, &
                            WORK, NWORK, RWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHEGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHEGV(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -698,12 +762,42 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( ' ', N, N, A, LDA, Z, LDZ )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHEGVD( IBTYPE, 'V', UPLO, N, Z, LDZ, BB, LDB, D, &
                             WORK, NWORK, RWORK, LRWORK, IWORK, &
                             LIWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHEGVD : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHEGVD(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -725,13 +819,43 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHEGVX( IBTYPE, 'V', 'A', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, RWORK, IWORK( N+1 ), &
                             IWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHEGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHEGVX(V,A' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -751,8 +875,28 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 since we do not know the exact eigenvalues of this
 !                 eigenpair, we just set VL and VU as constants.
@@ -761,10 +905,20 @@
 !
                VL = 0.0D0
                VU = ANORM
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHEGVX( IBTYPE, 'V', 'V', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, RWORK, IWORK( N+1 ), &
                             IWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHEGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHEGVX(V,V,' // &
                      UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -784,13 +938,43 @@
 !
                NTEST = NTEST + 1
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( ' ', N, N, A, LDA, AB, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( UPLO, N, N, B, LDB, BB, LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHEGVX( IBTYPE, 'V', 'I', UPLO, N, AB, LDA, BB, &
                             LDB, VL, VU, IL, IU, ABSTOL, M, D, Z, &
                             LDZ, WORK, NWORK, RWORK, IWORK( N+1 ), &
                             IWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHEGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHEGVX(V,I,' // &
                      UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -836,8 +1020,18 @@
                      ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHPGV( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
                            WORK, RWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHPGV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHPGV(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -881,9 +1075,19 @@
                      ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHPGVD( IBTYPE, 'V', UPLO, N, AP, BP, D, Z, LDZ, &
                             WORK, NWORK, RWORK, LRWORK, IWORK, &
                             LIWORK, IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHPGVD : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHPGVD(V,' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -927,9 +1131,19 @@
                   ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHPGVX( IBTYPE, 'V', 'A', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             RWORK, IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHPGVX(V,A' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -973,9 +1187,19 @@
 !
                VL = 0.0D0
                VU = ANORM
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHPGVX( IBTYPE, 'V', 'V', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             RWORK, IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHPGVX(V,V' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -1017,9 +1241,19 @@
                   ENDDO
                END IF
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZHPGVX( IBTYPE, 'V', 'I', UPLO, N, AP, BP, VL, &
                             VU, IL, IU, ABSTOL, M, D, Z, LDZ, WORK, &
                             RWORK, IWORK( N+1 ), IWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZHPGVX : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) THEN
                   WRITE( NOUNIT, FMT = 9999 )'ZHPGVX(V,I' // UPLO // &
                      ')', IINFO, N, JTYPE, IOLDSD
@@ -1067,8 +1301,18 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHBGV( 'V', UPLO, N, KA, KB, AB, LDA, BB, LDB, &
                               D, Z, LDZ, WORK, RWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHBGV : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZHBGV(V,' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1112,9 +1356,19 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHBGVD( 'V', UPLO, N, KA, KB, AB, LDA, BB, &
                                LDB, D, Z, LDZ, WORK, NWORK, RWORK, &
                                LRWORK, IWORK, LIWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHBGVD : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZHBGVD(V,' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1158,10 +1412,20 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHBGVX( 'V', 'A', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, RWORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZHBGVX(V,A' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1205,10 +1469,20 @@
 !
                   VL = 0.0D0
                   VU = ANORM
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHBGVX( 'V', 'V', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, RWORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZHBGVX(V,V' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1250,10 +1524,20 @@
                      ENDDO
                   END IF
 !
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL ZHBGVX( 'V', 'I', UPLO, N, KA, KB, AB, LDA, &
                                BB, LDB, BP, MAX( 1, N ), VL, VU, IL, &
                                IU, ABSTOL, M, D, Z, LDZ, WORK, RWORK, &
                                IWORK( N+1 ), IWORK, IINFO )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : ZHBGVX : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   IF( IINFO /= 0 ) THEN
                      WRITE( NOUNIT, FMT = 9999 )'ZHBGVX(V,I' // &
                         UPLO // ')', IINFO, N, JTYPE, IOLDSD
@@ -1298,3 +1582,6 @@
 !     End of ZDRVSG
 !
 END
+
+
+

@@ -158,6 +158,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -317,4 +318,6 @@
 !     End of CCKGLM
 !
 END
+
+
 

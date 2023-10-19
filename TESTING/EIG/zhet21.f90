@@ -205,6 +205,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -234,6 +235,9 @@
    INTEGER            IINFO, J, JCOL, JR, JROW
    DOUBLE PRECISION   ANORM, ULP, UNFL, WNORM
    COMPLEX*16         VSAVE
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -284,17 +288,57 @@
 !
 !        ITYPE=1: error = A - U S U**H
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLACPY( CUPLO, N, N, A, LDA, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHER( CUPLO, N, -D( J ), U( 1, J ), 1, WORK, N )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHER : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
       IF( N > 1 .AND. KBAND == 1 ) THEN
          DO J = 1, N - 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZHER2( CUPLO, N, -DCMPLX( E( J ) ), U( 1, J ), 1, &
                         U( 1, J+1 ), 1, WORK, N )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZHER2 : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ENDDO
       END IF
       WNORM = ZLANHE( '1', CUPLO, N, WORK, N, RWORK )
@@ -303,7 +347,17 @@
 !
 !        ITYPE=2: error = V S V**H - A
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( LOWER ) THEN
          WORK( N**2 ) = D( N )
@@ -317,8 +371,18 @@
 !
             VSAVE = V( J+1, J )
             V( J+1, J ) = 1.0D0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARFY( 'L', N-J, V( J+1, J ), 1, TAU( J ), &
                          WORK( ( N+1 )*J+1 ), N, WORK( N**2+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARFY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             V( J+1, J ) = VSAVE
             WORK( ( N+1 )*( J-1 )+1 ) = D( J )
          ENDDO
@@ -334,8 +398,18 @@
 !
             VSAVE = V( J, J+1 )
             V( J, J+1 ) = 1.0D0
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL ZLARFY( 'U', J, V( 1, J+1 ), 1, TAU( J ), WORK, N, &
                          WORK( N**2+1 ) )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : ZLARFY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             V( J, J+1 ) = VSAVE
             WORK( ( N+1 )*J+1 ) = D( J+1 )
          ENDDO
@@ -362,13 +436,43 @@
 !
       IF( N < 2 ) &
          RETURN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLACPY( ' ', N, N, U, LDU, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( LOWER ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUNM2R( 'R', 'C', N, N-1, N-1, V( 2, 1 ), LDV, TAU, &
                       WORK( N+1 ), N, WORK( N**2+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUNM2R : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ELSE
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZUNM2L( 'R', 'C', N, N-1, N-1, V( 1, 2 ), LDV, TAU, &
                       WORK, N, WORK( N**2+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZUNM2L : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END IF
       IF( IINFO /= 0 ) THEN
          RESULT( 1 ) = 10.0D0 / ULP
@@ -397,8 +501,18 @@
 !     Compute  U U**H - I
 !
    IF( ITYPE == 1 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEMM( 'N', 'C', N, N, N, (1.0D0,0.0D0), U, LDU, U, LDU, (0.0D+0,0.0D+0), &
                   WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
          WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - (1.0D0,0.0D0)
@@ -413,4 +527,7 @@
 !     End of ZHET21
 !
 END
+
+
+
 

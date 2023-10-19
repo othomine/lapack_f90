@@ -409,6 +409,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -452,6 +453,9 @@
                       NMATS, NMAX, NSELC, NSELR, NTEST, NTESTT
    REAL               ANINV, ANORM, COND, CONDS, OVFL, RTOVFL, RTULP, &
                       RTULPI, RTUNFL, TEMP1, TEMP2, ULP, ULPINV, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          ADUMMA( 1 )
@@ -505,7 +509,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SCHKHS', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -587,7 +601,17 @@
            ANORM = RTUNFL*N*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLASET( 'Full', LDA, N, 0.0E+0, 0.0E+0, A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          COND = ULPINV
 !
@@ -701,15 +725,35 @@
 !
 !           Call SGEHRD to compute H and U, do tests.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, A, LDA, H, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          NTEST = 1
 !
          ILO = 1
          IHI = N
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SGEHRD( N, ILO, IHI, H, LDA, WORK, WORK( N+1 ), &
                       NWORK-N, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SGEHRD : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( IINFO /= 0 ) THEN
             RESULT( 1 ) = ULPINV
@@ -725,9 +769,29 @@
             U(J+2:N,J) = H(J+2:N,J)
             H(J+2:N,J) = 0.0D+0
             ENDDO
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SCOPY( N-1, WORK, 1, TAU, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SORGHR( N, ILO, IHI, U, LDU, WORK, WORK( N+1 ), &
                       NWORK-N, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SORGHR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          NTEST = 2
 !
          CALL SHST01( N, ILO, IHI, A, LDA, H, LDA, U, LDU, WORK, &
@@ -737,12 +801,32 @@
 !
 !           Eigenvalues only (WR3,WI3)
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, H, LDA, T2, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          NTEST = 3
          RESULT( 3 ) = ULPINV
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SHSEQR( 'E', 'N', N, ILO, IHI, T2, LDA, WR3, WI3, UZ, &
                       LDU, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SHSEQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SHSEQR(E)', IINFO, N, JTYPE, &
                IOLDSD
@@ -754,10 +838,30 @@
 !
 !           Eigenvalues (WR2,WI2) and Full Schur Form (T2)
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, H, LDA, T2, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SHSEQR( 'S', 'N', N, ILO, IHI, T2, LDA, WR2, WI2, UZ, &
                       LDU, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SHSEQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 .AND. IINFO <= N+2 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SHSEQR(S)', IINFO, N, JTYPE, &
                IOLDSD
@@ -768,11 +872,41 @@
 !           Eigenvalues (WR1,WI1), Schur Form (T1), and Schur vectors
 !           (UZ)
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, H, LDA, T1, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, U, LDU, UZ, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SHSEQR( 'S', 'V', N, ILO, IHI, T1, LDA, WR1, WI1, UZ, &
                       LDU, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SHSEQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 .AND. IINFO <= N+2 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SHSEQR(V)', IINFO, N, JTYPE, &
                IOLDSD
@@ -782,8 +916,18 @@
 !
 !           Compute Z = U' UZ
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SGEMM( 'T', 'N', N, N, N, 1.0E+0, U, LDU, UZ, LDU, 0.0E+0, &
                      Z, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          NTEST = 8
 !
 !           Do Tests 3: | H - Z T Z' | / ( |H| n ulp )
@@ -844,8 +988,18 @@
          IF( J > 0 ) &
             GO TO 140
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC( 'Right', 'All', SELECT, N, T1, LDA, DUMMA, LDU, &
                       EVECTR, LDU, N, IN, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC(R,A)', IINFO, N, &
                JTYPE, IOLDSD
@@ -866,8 +1020,18 @@
 !           Compute selected right eigenvectors and confirm that
 !           they agree with previous right eigenvectors
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC( 'Right', 'Some', SELECT, N, T1, LDA, DUMMA, &
                       LDU, EVECTL, LDU, N, IN, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC(R,S)', IINFO, N, &
                JTYPE, IOLDSD
@@ -899,8 +1063,18 @@
 !
          NTEST = 10
          RESULT( 10 ) = ULPINV
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC( 'Left', 'All', SELECT, N, T1, LDA, EVECTL, LDU, &
                       DUMMA, LDU, N, IN, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC(L,A)', IINFO, N, JTYPE, IOLDSD
             INFO = ABS( IINFO )
@@ -920,8 +1094,18 @@
 !           Compute selected left eigenvectors and confirm that
 !           they agree with previous left eigenvectors
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC( 'Left', 'Some', SELECT, N, T1, LDA, EVECTR, &
                       LDU, DUMMA, LDU, N, IN, WORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC(L,S)', IINFO, N, &
                JTYPE, IOLDSD
@@ -957,9 +1141,19 @@
          RESULT( 11 ) = ULPINV
          SELECT(1:N) = .TRUE.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SHSEIN( 'Right', 'Qr', 'Ninitv', SELECT, N, H, LDA, &
                       WR3, WI3, DUMMA, LDU, EVECTX, LDU, N1, IN, &
                       WORK, IWORK, IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SHSEIN : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SHSEIN(R)', IINFO, N, JTYPE, &
                IOLDSD
@@ -987,9 +1181,19 @@
          RESULT( 12 ) = ULPINV
          SELECT(1:N) = .TRUE.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SHSEIN( 'Left', 'Qr', 'Ninitv', SELECT, N, H, LDA, WR3, &
                       WI3, EVECTY, LDU, DUMMA, LDU, N1, IN, WORK, &
                       IWORK, IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SHSEIN : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SHSEIN(L)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1016,8 +1220,18 @@
          NTEST = 13
          RESULT( 13 ) = ULPINV
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SORMHR( 'Left', 'No transpose', N, N, ILO, IHI, UU, &
                       LDU, TAU, EVECTX, LDU, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SORMHR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SORMHR(R)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1040,8 +1254,18 @@
          NTEST = 14
          RESULT( 14 ) = ULPINV
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SORMHR( 'Left', 'No transpose', N, N, ILO, IHI, UU, &
                       LDU, TAU, EVECTY, LDU, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SORMHR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'SORMHR(L)', IINFO, N, JTYPE, &
                IOLDSD
@@ -1066,10 +1290,30 @@
          NTEST = 15
          RESULT( 15 ) = ULPINV
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, UZ, LDU, EVECTR, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC3( 'Right', 'Back', SELECT, N, T1, LDA, DUMMA, &
                        LDU, EVECTR, LDU, N, IN, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC3 : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC3(R,B)', IINFO, N, &
                JTYPE, IOLDSD
@@ -1094,10 +1338,30 @@
          NTEST = 16
          RESULT( 16 ) = ULPINV
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLACPY( ' ', N, N, UZ, LDU, EVECTL, LDU )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STREVC3( 'Left', 'Back', SELECT, N, T1, LDA, EVECTL, &
                        LDU, DUMMA, LDU, N, IN, WORK, NWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STREVC3 : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( IINFO /= 0 ) THEN
             WRITE( NOUNIT, FMT = 9999 )'STREVC3(L,B)', IINFO, N, &
                JTYPE, IOLDSD
@@ -1149,3 +1413,6 @@
 !     End of SCHKHS
 !
 END
+
+
+

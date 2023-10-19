@@ -148,6 +148,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -190,6 +191,9 @@
                       ISTEP, K, LDA, LW, LWORK, M, MNMIN, MODE, N, &
                       NB, NERRS, NFAIL, NRUN, NX
    REAL               EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 )
@@ -271,7 +275,17 @@
                IWORK( I ) = 0
             ENDDO
             IF( IMODE == 1 ) THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLASET( 'Full', M, N, CZERO, CZERO, COPYA, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                DO I = 1, MNMIN
                   S( I ) = ZERO
                ENDDO
@@ -312,7 +326,17 @@
 !                 Save A and its singular values and a copy of
 !                 vector IWORK.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CLACPY( 'All', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                CALL ICOPY( N, IWORK( 1 ), 1, IWORK( N+1 ), 1 )
 !
 !                 Workspace needed.
@@ -320,8 +344,18 @@
                LW = NB*( N+1 )
 !
                SRNAMT = 'CGEQP3'
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CGEQP3( M, N, A, LDA, IWORK( N+1 ), TAU, WORK, &
                             LW, RWORK, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CGEQP3 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Compute norm(svd(a) - svd(r))
 !
@@ -368,4 +402,8 @@
 !     End of CCHKQ3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

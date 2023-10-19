@@ -110,6 +110,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -148,6 +149,9 @@
                       NFAIL, NRUN, ISIDE, IDIAG, IALPHA, ITRANS
    COMPLEX*16         ALPHA
    DOUBLE PRECISION   EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 ), FORMS( 2 ), TRANSS( 2 ), &
@@ -274,9 +278,19 @@
 !                                -> QR factorization.
 !
                               SRNAMT = 'ZGEQRF'
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL ZGEQRF( NA, NA, A, LDA, TAU, &
                                            Z_WORK_ZGEQRF, LDA, &
                                            INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : ZGEQRF : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
 !
 !                                Forcing main diagonal of test matrix to
 !                                be unit makes it ill-conditioned for
@@ -297,9 +311,19 @@
 !                                -> QL factorization.
 !
                               SRNAMT = 'ZGELQF'
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL ZGELQF( NA, NA, A, LDA, TAU, &
                                            Z_WORK_ZGEQRF, LDA, &
                                            INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : ZGELQF : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
 !
 !                                Forcing main diagonal of test matrix to
 !                                be unit makes it ill-conditioned for
@@ -329,8 +353,18 @@
 !                             Store a copy of A in RFP format (in ARF).
 !
                            SRNAMT = 'ZTRTTF'
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZTRTTF( CFORM, UPLO, NA, A, LDA, ARF, &
                                         INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZTRTTF : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Generate B1 our M--by--N right-hand side
 !                             and store a copy in B2.
@@ -346,16 +380,36 @@
 !                             with ZTRSM
 !
                            SRNAMT = 'ZTRSM'
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZTRSM( SIDE, UPLO, TRANS, DIAG, M, N, &
                                   ALPHA, A, LDA, B1, LDA )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZTRSM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Solve op( A ) X = B or X op( A ) = B
 !                             with ZTFSM
 !
                            SRNAMT = 'ZTFSM'
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZTFSM( CFORM, SIDE, UPLO, TRANS, &
                                        DIAG, M, N, ALPHA, ARF, B2, &
                                        LDA )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZTFSM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Check that the result agrees.
 !
@@ -414,4 +468,8 @@
 !     End of ZDRVRF3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

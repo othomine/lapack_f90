@@ -404,6 +404,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -446,6 +447,9 @@
                       MTYPES, N, NFAIL, NMAX, NTEST
    REAL               AMNINV, ANORM, COND, OVFL, RTOVFL, RTUNFL, &
                       TEMP1, TEMP2, ULP, ULPINV, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IOLDSD( 4 ), IWORK( 1 ), KMAGN( MAXTYP ), &
@@ -520,7 +524,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'CCHKBD', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -594,7 +608,17 @@
            ANORM = RTUNFL*MAX( M, N )*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          COND = ULPINV
 !
@@ -717,9 +741,29 @@
 !              Compute transformations to reduce A to bidiagonal form:
 !              B := Q' * A * P.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', M, N, A, LDA, Q, LDQ )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CGEBRD( M, N, Q, LDQ, BD, BE, WORK, WORK( MNMIN+1 ), &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CGEBRD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CGEBRD.
 !
@@ -730,7 +774,17 @@
                RETURN
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', M, N, Q, LDQ, PT, LDPT )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( M >= N ) THEN
                UPLO = 'U'
             ELSE
@@ -742,8 +796,18 @@
             MQ = M
             IF( NRHS <= 0 ) &
                MQ = MNMIN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CUNGBR( 'Q', M, MQ, N, Q, LDQ, WORK, &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CUNGBR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CUNGBR.
 !
@@ -756,8 +820,18 @@
 !
 !              Generate P'
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CUNGBR( 'P', MNMIN, N, M, PT, LDPT, WORK( MNMIN+1 ), &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CUNGBR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from CUNGBR.
 !
@@ -770,9 +844,19 @@
 !
 !              Apply Q' to an M by NRHS matrix X:  Y := Q' * X.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CGEMM( 'Conjugate transpose', 'No transpose', M, &
                         NRHS, M, (1.0E+0,0.0E+0), Q, LDQ, X, LDX, (0.0E+0,0.0E+0), Y, &
                         LDX )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Test 1:  Check the decomposition A := Q * B * PT
 !                   2:  Check the orthogonality of Q
@@ -789,15 +873,65 @@
 !           Use CBDSQR to form the SVD of the bidiagonal matrix B:
 !           B := U * S1 * VT, and compute Z = U' * Y.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SCOPY( MNMIN, BD, 1, S1, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, RWORK, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLACPY( ' ', M, NRHS, Y, LDX, Z, LDX )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLASET( 'Full', MNMIN, MNMIN, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLASET( 'Full', MNMIN, MNMIN, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VT, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CBDSQR( UPLO, MNMIN, MNMIN, MNMIN, NRHS, S1, RWORK, VT, &
                       LDPT, U, LDPT, Z, LDX, RWORK( MNMIN+1 ), &
                       IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CBDSQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from CBDSQR.
 !
@@ -816,11 +950,31 @@
 !           Use CBDSQR to compute only the singular values of the
 !           bidiagonal matrix B;  U, VT, and Z should not be modified.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SCOPY( MNMIN, BD, 1, S2, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, RWORK, 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CBDSQR( UPLO, MNMIN, 0, 0, 0, S2, RWORK, VT, LDPT, U, &
                       LDPT, Z, LDX, RWORK( MNMIN+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CBDSQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from CBDSQR.
 !
@@ -896,12 +1050,32 @@
 !           from the bidiagonal form A := Q B PT.
 !
          IF( .NOT.BIDIAG ) THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SCOPY( MNMIN, BD, 1, S2, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( MNMIN > 0 ) CALL SCOPY( MNMIN-1, BE, 1, RWORK, 1 )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CBDSQR( UPLO, MNMIN, N, M, NRHS, S2, RWORK, PT, &
                          LDPT, Q, LDQ, Y, LDX, RWORK( MNMIN+1 ), &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CBDSQR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Test 11:  Check the decomposition A := Q*U * S2 * VT*PT
 !                   12:  Check the computation Z := U' * Q' * X
@@ -954,4 +1128,7 @@
          I5, ')' )
 !
 END
+
+
+
 

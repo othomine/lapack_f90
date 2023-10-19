@@ -114,6 +114,9 @@
    DOUBLE PRECISION   ANRM, BNRM, BIGNUM, EPS, RES, RES1, &
                       SCALE, SCALE3, SMLNUM, TNRM, XNRM
    COMPLEX*16         RMUL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    COMPLEX*16         DUML( MAXM ), DUMR( MAXN ), &
@@ -212,11 +215,41 @@
                      IF( ITRANB == 2 ) TRANB = 'C'
                      KNT = KNT + 1
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'All', M, N, C, MAXM, X, MAXM)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'All', M, N, C, MAXM, CC, MAXM)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZTRSYL( TRANA, TRANB, ISGN, M, N, &
                                   A, MAXM, B, MAXN, X, MAXM, &
                                   SCALE, IINFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZTRSYL : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( IINFO /= 0 ) &
                         NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = ZLANGE( 'M', M, N, X, MAXM, DUM )
@@ -226,12 +259,32 @@
                            RMUL = (1.0D0,0.0D0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGEMM( TRANA, 'N', M, N, M, RMUL, &
                                  A, MAXM, X, MAXM, -SCALE*RMUL, &
                                  CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
                                  MAXN, (1.0D0,0.0D0), CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      RES1 = ZLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                            ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
@@ -240,11 +293,41 @@
                      IF( RES > RMAX( 1 ) ) &
                         RMAX( 1 ) = RES
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'All', M, N, C, MAXM, X, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZLACPY( 'All', M, N, C, MAXM, CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZTRSYL3( TRANA, TRANB, ISGN, M, N, &
                                    A, MAXM, B, MAXN, X, MAXM, &
                                    SCALE3, SWORK, LDSWORK, INFO)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZTRSYL3 : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = ZLANGE( 'M', M, N, X, MAXM, DUM )
@@ -254,12 +337,32 @@
                            RMUL = (1.0D0,0.0D0) / MAX( XNRM, TNRM )
                         END IF
                      END IF
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGEMM( TRANA, 'N', M, N, M, RMUL, &
                                  A, MAXM, X, MAXM, -SCALE3*RMUL, &
                                  CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL ZGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
                                  MAXN, (1.0D0,0.0D0), CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      RES1 = ZLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( ABS( RMUL )*TNRM )*EPS )*XNRM )
@@ -292,4 +395,6 @@
 !     End of ZSYL01
 !
 END
+
+
 

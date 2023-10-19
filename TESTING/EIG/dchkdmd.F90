@@ -61,6 +61,9 @@
       PROGRAM DMD_TEST
       use iso_fortran_env, only: real64
       IMPLICIT NONE
+#ifdef _TIMER
+      INTEGER(8) nb_periods_sec, S1_time, S2_time
+#endif
       integer, parameter :: WP = real64
 !............................................................
       REAL(KIND=WP), ALLOCATABLE, DIMENSION(:,:) ::          &
@@ -247,8 +250,18 @@
       LWORK = 4*M+1
       ALLOCATE(WORK(LWORK))
       AC  = A
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEEV( 'N','V', M, AC, M, REIGA, IEIGA, VA, M, &
                   VA, M, WORK, LWORK, INFO ) ! LAPACK CALL
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEEV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       DEALLOCATE(WORK)
       TMP = 0.0_WP
       DO i = 1, M
@@ -258,35 +271,115 @@
       END DO
 
       ! Scale A to have the desirable spectral radius.
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLASCL( 'G', 0, 0, TMP, 1.0_WP, M, M, A, M, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLASCL( 'G', 0, 0, TMP, 1.0_WP, M, 2, EIGA, M, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       ! Compute the norm of A
       ANORM = DLANGE( 'F', N, N, A, M, WDUMMY )
 
       IF ( K_TRAJ == 2 ) THEN
           ! generate data with two inital conditions
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV(2, ISEED, M, F1(1,1) )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       F1(1:M,1) = 1.0E-10*F1(1:M,1)
       DO i = 1, N/2
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F1(1,i), 1, 0.0_WP, &
               F1(1,i+1), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END DO
       X0(1:M,1:N/2) = F1(1:M,1:N/2)
       Y0(1:M,1:N/2) = F1(1:M,2:N/2+1)
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV(2, ISEED, M, F1(1,1) )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       DO i = 1, N-N/2
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F1(1,i), 1, 0.0_WP, &
               F1(1,i+1), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END DO
       X0(1:M,N/2+1:N) = F1(1:M,1:N-N/2)
       Y0(1:M,N/2+1:N) = F1(1:M,2:N-N/2+1)
       ELSE
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLARNV(2, ISEED, M, F(1,1) )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       DO i = 1, N
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DGEMV( 'N', M, M, 1.0_WP, A, M, F(1,i), 1, 0.0_WP, &
               F(1,i+1), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END DO
       X0(1:M,1:N) = F(1:M,1:N)
       Y0(1:M,1:N) = F(1:M,2:N+1)
@@ -357,10 +450,20 @@
       Y(1:M,1:N) = Y0(1:M,1:N)
 
       ! DGEDMD: Workspace query and workspace allocation
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD, M, &
            N, X, LDX, Y, LDY, NRNK, TOL, K, REIG, IEIG, Z, &
            LDZ, RES, AU, LDAU, W, LDW, S, LDS, WDUMMY, -1, &
            IDUMMY, -1, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       LIWORK = IDUMMY(1)
       ALLOCATE( IWORK(LIWORK) )
@@ -368,10 +471,20 @@
       ALLOCATE( WORK(LWORK) )
 
       ! DGEDMD test: CALL DGEDMD
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD, M, &
            N, X, LDX, Y, LDY, NRNK, TOL, K, REIG, IEIG, Z, &
            LDZ, RES, AU, LDAU, W, LDW, S, LDS, WORK, LWORK,&
            IWORK, LIWORK, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       SINGVX(1:N) = WORK(1:N)
 
@@ -382,11 +495,31 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the rayleigh quotient
           ! returned in W
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL DGEMM( 'N', 'N', M, K, K, 1.0_WP, X, LDX, W, LDW, &
                       0.0_WP, Z1, LDZ )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL DAXPY( M, -1.0_WP, Z(1,i), 1, Z1(1,i), 1)
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              TMP = MAX(TMP, DNRM2( M, Z1(1,i), 1 ) )
           END DO
           TMP_ZXW = MAX(TMP_ZXW, TMP )
@@ -411,11 +544,31 @@
           ! See the paper for an error analysis.
           ! Note that the left singular vectors of the input matrix X
           ! are returned in the array X.
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, X, LDX, &
                      0.0_WP, Z1, LDZ )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
               CALL DAXPY( M, -1.0_WP, AU(1,i), 1, Z1(1,i), 1)
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+              open(file='results.out', unit=10, position = 'append')
+              write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+              close(10)
+#endif
               TMP = MAX( TMP, DNRM2( M, Z1(1,i),1 ) * &
                        SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -438,12 +591,32 @@
       ! as the Ritz vectors. Here we just save the vectors
       ! and test them separately using a Matlab script.
 
+#ifdef _TIMER
+       call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
        CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, AU, LDAU, 0.0_WP, Y1, M )
+#ifdef _TIMER
+       call system_clock(count_rate=nb_periods_sec,count=S2_time)
+       open(file='results.out', unit=10, position = 'append')
+       write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+             real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+       close(10)
+#endif
        i=1
        DO WHILE ( i <= K )
            IF ( IEIG(i) == 0.0_WP ) THEN
            ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
            CALL DAXPY( M, -REIG(i), AU(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+           open(file='results.out', unit=10, position = 'append')
+           write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+           close(10)
+#endif
            RESEX(i) = DNRM2( M, Y1(1,i), 1) / DNRM2(M,AU(1,i),1)
            i = i + 1
            ELSE
@@ -458,8 +631,18 @@
            AB(2,1) = -IEIG(i)
            AB(1,2) =  IEIG(i)
            AB(2,2) =  REIG(i)
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
            CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, AU(1,i), &
                        M, AB, 2, 1.0_WP, Y1(1,i), M )
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+           open(file='results.out', unit=10, position = 'append')
+           write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+           close(10)
+#endif
            RESEX(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                         WORK )/ DLANGE( 'F', M, 2, AU(1,i), M, &
                         WORK )
@@ -475,7 +658,17 @@
           ! Compare the residuals returned by DGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL DGEMM( 'N', 'N', M, K, M, 1.0_WP, A, LDA, Z, LDZ, 0.0_WP, Y1, M )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in DGEDMD,)
@@ -483,7 +676,17 @@
           DO WHILE ( i <= K )
               IF ( IEIG(i) == 0.0_WP ) THEN
                   ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL DAXPY( M, -REIG(i), Z(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   RES1(i) = DNRM2( M, Y1(1,i), 1)
                   i = i + 1
               ELSE
@@ -498,8 +701,18 @@
                   AB(2,1) = -IEIG(i)
                   AB(1,2) =  IEIG(i)
                   AB(2,2) =  REIG(i)
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, Z(1,i), &
                               M, AB, 2, 1.0_WP, Y1(1,i), M )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   RES1(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                                      WORK )
                   RES1(i+1) = RES1(i)
@@ -549,21 +762,41 @@
           F1 = F
 
           ! DGEDMDQ test: Workspace query and workspace allocation
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL DGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, &
                JOBREF, WHTSVD, M, N+1, F1, LDF, X, LDX, Y, &
                LDY, NRNK, TOL, KQ, REIGQ, IEIGQ, Z, LDZ,   &
                RES, AU, LDAU, W, LDW, S, LDS, WDUMMY,      &
                -1, IDUMMY, -1, INFO )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : DGEDMDQ : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           LIWORK = IDUMMY(1)
           ALLOCATE( IWORK(LIWORK) )
           LWORK = INT(WDUMMY(LWMINOPT))
           ALLOCATE(WORK(LWORK))
           ! DGEDMDQ test: CALL DGEDMDQ
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL DGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, &
                JOBREF, WHTSVD, M, N+1, F1, LDF, X, LDX, Y, &
                LDY, NRNK, TOL, KQ, REIGQ, IEIGQ, Z, LDZ,   &
                RES, AU, LDAU, W, LDW, S, LDS,              &
                WORK, LWORK, IWORK, LIWORK, INFO )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : DGEDMDQ : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
 
           SINGVQX(1:KQ) = WORK(MIN(M,N+1)+1: MIN(M,N+1)+KQ)
 
@@ -593,8 +826,18 @@
               ! as requested. The residual ||F-Q*R||_F / ||F||_F
               ! is compared to M*N*EPS.
               F2 = F
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
               CALL DGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -1.0_WP, F1, &
                           LDF, Y, LDY, 1.0_WP, F2, LDF )
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+              open(file='results.out', unit=10, position = 'append')
+              write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+              close(10)
+#endif
               TMP_FQR = DLANGE( 'F', M, N+1, F2, LDF, WORK ) / &
                     DLANGE( 'F', M, N+1, F,  LDF, WORK )
               IF ( TMP_FQR > TOL2 ) THEN
@@ -608,7 +851,17 @@
               ! Compare the residuals returned by DGEDMDQ with the
               ! explicitly computed residuals using the matrix A.
               ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
               CALL DGEMM( 'N', 'N', M, KQ, M, 1.0_WP, A, M, Z, M, 0.0_WP, Y1, M )
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+              open(file='results.out', unit=10, position = 'append')
+              write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+              close(10)
+#endif
               ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
               ! of the invariant subspaces that correspond to complex conjugate
               ! pairs of eigencalues. (See the description of Z in DGEDMDQ)
@@ -616,7 +869,17 @@
               DO WHILE ( i <= KQ )
                   IF ( IEIGQ(i) == 0.0_WP ) THEN
                       ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                       CALL DAXPY( M, -REIGQ(i), Z(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+                      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                      open(file='results.out', unit=10, position = 'append')
+                      write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                      close(10)
+#endif
                       ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
                       RES1(i) = DNRM2( M, Y1(1,i), 1)
                       i = i + 1
@@ -632,8 +895,18 @@
                      AB(2,1) = -IEIGQ(i)
                      AB(1,2) =  IEIGQ(i)
                      AB(2,2) =  REIGQ(i)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMM( 'N', 'N', M, 2, 2, -1.0_WP, Z(1,i), &
                                  M, AB, 2, 1.0_WP, Y1(1,i), M )             ! BLAS CALL
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      ! Y(1:M,i:i+1) = Y(1:M,i:i+1) - Z(1:M,i:i+1) * AB   ! INTRINSIC
                      RES1(i)   = DLANGE( 'F', M, 2, Y1(1,i), M, &
                                         WORK )                           ! LAPACK CALL
@@ -807,4 +1080,6 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
+
+
 

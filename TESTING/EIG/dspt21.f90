@@ -212,6 +212,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -239,6 +240,9 @@
    CHARACTER          CUPLO
    INTEGER            IINFO, J, JP, JP1, JR, LAP
    DOUBLE PRECISION   ANORM, TEMP, ULP, UNFL, VSAVE, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -293,17 +297,57 @@
 !
 !        ITYPE=1: error = A - U S U**T
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLASET( 'Full', N, N, 0.0D+0, 0.0D+0, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DCOPY( LAP, AP, 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DSPR( CUPLO, N, -D( J ), U( 1, J ), 1, WORK )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DSPR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
       IF( N > 1 .AND. KBAND == 1 ) THEN
          DO J = 1, N - 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DSPR2( CUPLO, N, -E( J ), U( 1, J ), 1, U( 1, J+1 ), &
                         1, WORK )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DSPR2 : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ENDDO
       END IF
       WNORM = DLANSP( '1', CUPLO, N, WORK, WORK( N**2+1 ) )
@@ -312,7 +356,17 @@
 !
 !        ITYPE=2: error = V S V**T - A
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLASET( 'Full', N, N, 0.0D+0, 0.0D+0, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( LOWER ) THEN
          WORK( LAP ) = D( N )
@@ -329,14 +383,44 @@
             IF( TAU( J ) /= 0.0D+0 ) THEN
                VSAVE = VP( JP+J+1 )
                VP( JP+J+1 ) = 1.0D0
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DSPMV( 'L', N-J, 1.0D0, WORK( JP1+J+1 ), &
                            VP( JP+J+1 ), 1, 0.0D+0, WORK( LAP+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DSPMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                TEMP = -0.5D0*TAU( J )*DDOT( N-J, WORK( LAP+1 ), 1, &
                       VP( JP+J+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DAXPY( N-J, TEMP, VP( JP+J+1 ), 1, WORK( LAP+1 ), &
                            1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DSPR2( 'L', N-J, -TAU( J ), VP( JP+J+1 ), 1, &
                            WORK( LAP+1 ), 1, WORK( JP1+J+1 ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DSPR2 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                VP( JP+J+1 ) = VSAVE
             END IF
             WORK( JP+J ) = D( J )
@@ -356,14 +440,44 @@
             IF( TAU( J ) /= 0.0D+0 ) THEN
                VSAVE = VP( JP1+J )
                VP( JP1+J ) = 1.0D0
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DSPMV( 'U', J, 1.0D0, WORK, VP( JP1+1 ), 1, 0.0D+0, &
                            WORK( LAP+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DSPMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                TEMP = -0.5D0*TAU( J )*DDOT( J, WORK( LAP+1 ), 1, &
                       VP( JP1+1 ), 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DAXPY( J, TEMP, VP( JP1+1 ), 1, WORK( LAP+1 ), &
                            1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DAXPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DSPR2( 'U', J, -TAU( J ), VP( JP1+1 ), 1, &
                            WORK( LAP+1 ), 1, WORK )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DSPR2 : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                VP( JP1+J ) = VSAVE
             END IF
             WORK( JP1+J+1 ) = D( J+1 )
@@ -381,9 +495,29 @@
 !
       IF( N < 2 ) &
          RETURN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DLACPY( ' ', N, N, U, LDU, WORK, N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DOPMTR( 'R', CUPLO, 'T', N, N, VP, TAU, WORK, N, &
                    WORK( N**2+1 ), IINFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DOPMTR : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( IINFO /= 0 ) THEN
          RESULT( 1 ) = 10.0D0 / ULP
          RETURN
@@ -411,8 +545,18 @@
 !     Compute  U U**T - I
 !
    IF( ITYPE == 1 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL DGEMM( 'N', 'C', N, N, N, 1.0D0, U, LDU, U, LDU, 0.0D+0, WORK, &
                   N )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       DO J = 1, N
          WORK( ( N+1 )*( J-1 )+1 ) = WORK( ( N+1 )*( J-1 )+1 ) - 1.0D0
@@ -427,4 +571,7 @@
 !     End of DSPT21
 !
 END
+
+
+
 

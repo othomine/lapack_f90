@@ -74,6 +74,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -102,6 +103,9 @@
    INTEGER            I, IA, IA11, IA12, IA21, IA22, IAM, IB, IC, &
                       IC11, IC12, IC21, IC22, ICM, INFO, J
    DOUBLE PRECISION   BIGNUM, EPS, RES, SMLNUM, TNRM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    DOUBLE PRECISION   Q( 4, 4 ), RESULT( 2 ), T( 4, 4 ), T1( 4, 4 ), &
@@ -135,7 +139,17 @@
    VAL( 9 ) = -SQRT( BIGNUM )
    VM( 1 ) = 1.0D0
    VM( 2 ) = 1.0D0 + 2.0D0*EPS
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL DCOPY( 16, VAL( 4 ), 0, T( 1, 1 ), 1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    NINFO( 1 ) = 0
    NINFO( 2 ) = 0
@@ -155,11 +169,51 @@
                T( 2, 1 ) = 0.0D0
                TNRM = MAX( ABS( T( 1, 1 ) ), ABS( T( 2, 2 ) ), &
                       ABS( T( 1, 2 ) ) )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( 16, T, 1, T1, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( 16, VAL( 1 ), 0, Q, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( 4, VAL( 3 ), 0, Q, 5 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DLAEXC( .TRUE., 2, T, 4, Q, 4, 1, 1, 1, WORK, &
                             INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DLAEXC : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( INFO /= 0 ) &
                   NINFO( INFO ) = NINFO( INFO ) + 1
                CALL DHST01( 2, 1, 2, T1, 4, T, 4, Q, 4, WORK, LWORK, &
@@ -203,11 +257,51 @@
                                ABS( T( 1, 2 ) ), ABS( T( 1, 3 ) ), &
                                ABS( T( 2, 2 ) ), ABS( T( 2, 3 ) ), &
                                ABS( T( 3, 2 ) ), ABS( T( 3, 3 ) ) )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 16, T, 1, T1, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 16, VAL( 1 ), 0, Q, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 4, VAL( 3 ), 0, Q, 5 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DLAEXC( .TRUE., 3, T, 4, Q, 4, 1, 1, 2, &
                                      WORK, INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DLAEXC : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( INFO /= 0 ) &
                            NINFO( INFO ) = NINFO( INFO ) + 1
                         CALL DHST01( 3, 1, 3, T1, 4, T, 4, Q, 4, &
@@ -259,11 +353,51 @@
                                ABS( T( 1, 2 ) ), ABS( T( 1, 3 ) ), &
                                ABS( T( 2, 2 ) ), ABS( T( 2, 3 ) ), &
                                ABS( T( 3, 2 ) ), ABS( T( 3, 3 ) ) )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 16, T, 1, T1, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 16, VAL( 1 ), 0, Q, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DCOPY( 4, VAL( 3 ), 0, Q, 5 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL DLAEXC( .TRUE., 3, T, 4, Q, 4, 1, 2, 1, &
                                      WORK, INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : DLAEXC : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( INFO /= 0 ) &
                            NINFO( INFO ) = NINFO( INFO ) + 1
                         CALL DHST01( 3, 1, 3, T1, 4, T, 4, Q, 4, &
@@ -335,11 +469,51 @@
                                               ABS( T( I, J ) ) )
                                        ENDDO
                                     ENDDO
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DCOPY( 16, T, 1, T1, 1 )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DCOPY( 16, VAL( 1 ), 0, Q, 1 )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DCOPY( 4, VAL( 3 ), 0, Q, 5 )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL DLAEXC( .TRUE., 4, T, 4, Q, 4, &
                                               1, 2, 2, WORK, INFO )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : DLAEXC : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                                  IF( INFO /= 0 ) &
                                     NINFO( INFO ) = NINFO( INFO ) + 1
                                  CALL DHST01( 4, 1, 4, T1, 4, T, 4, &
@@ -389,4 +563,7 @@
 !     End of DGET34
 !
 END
+
+
+
 

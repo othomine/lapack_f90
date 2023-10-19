@@ -122,6 +122,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -148,6 +149,9 @@
 !     .. Local Scalars ..
    INTEGER            I, J, K
    DOUBLE PRECISION   BNORM, EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -203,8 +207,18 @@
       BNORM = MAX(BNORM,MAXVAL(ABS(D(1:N-1))+ABS(E(1:N-1))))
    END IF
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL DGEMM( 'T', 'N', NS, NS, N, -1.0D+0, U, LDU, WORK( 1 ), &
                N, 0.0D+0, WORK( 1+N*NS ), NS )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     norm(S - U' * B * V)
 !
@@ -234,3 +248,6 @@
 !     End of DBDT04
 !
 END
+
+
+

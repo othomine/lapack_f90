@@ -70,6 +70,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -93,6 +94,9 @@
                       INFO, ISGN, ITRANA, ITRANB, J, M, N
    DOUBLE PRECISION   BIGNUM, CNRM, EPS, RES, RES1, RMUL, SCALE, &
                       SMLNUM, TNRM, XNRM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDIM( 8 ), IVAL( 6, 6, 8 )
@@ -200,9 +204,19 @@
                                  ENDDO
                               ENDDO
                               KNT = KNT + 1
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DTRSYL( TRANA, TRANB, ISGN, M, N, &
                                            A, 6, B, 6, C, 6, SCALE, &
                                            INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DTRSYL : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               IF( INFO /= 0 ) &
                                  NINFO = NINFO + 1
                               XNRM = DLANGE( 'M', M, N, C, 6, DUM )
@@ -213,12 +227,32 @@
                                     RMUL = 1.0D0 / MAX( XNRM, TNRM )
                                  END IF
                               END IF
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
                                           A, 6, C, 6, -SCALE*RMUL, &
                                           CC, 6 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DGEMM( 'N', TRANB, M, N, N, &
                                           DBLE( ISGN )*RMUL, C, 6, B, &
                                           6, 1.0D0, CC, 6 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               RES1 = DLANGE( 'M', M, N, CC, 6, DUM )
                               RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                     ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -241,4 +275,7 @@
 !     End of DGET35
 !
 END
+
+
+
 

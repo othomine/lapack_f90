@@ -482,6 +482,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -527,6 +528,9 @@
    DOUBLE PRECISION   ABSTOL, AMNINV, ANORM, COND, OVFL, RTOVFL, &
                       RTUNFL, TEMP1, TEMP2, ULP, ULPINV, UNFL, &
                       VL, VU
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDUM( 1 ), IOLDSD( 4 ), ISEED2( 4 ), &
@@ -601,7 +605,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'DCHKBD', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -676,7 +690,17 @@
            ANORM = RTUNFL*MAX( M, N )*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', LDA, N, 0.0D0, 0.0D0, A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          COND = ULPINV
 !
@@ -804,9 +828,29 @@
 !              Compute transformations to reduce A to bidiagonal form:
 !              B := Q' * A * P.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLACPY( ' ', M, N, A, LDA, Q, LDQ )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEBRD( M, N, Q, LDQ, BD, BE, WORK, WORK( MNMIN+1 ), &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEBRD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DGEBRD.
 !
@@ -816,7 +860,17 @@
                RETURN
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DLACPY( ' ', M, N, Q, LDQ, PT, LDPT )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( M >= N ) THEN
                UPLO = 'U'
             ELSE
@@ -827,8 +881,18 @@
 !
             MQ = M
             IF( NRHS <= 0 ) MQ = MNMIN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DORGBR( 'Q', M, MQ, N, Q, LDQ, WORK, &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DORGBR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DORGBR.
 !
@@ -840,8 +904,18 @@
 !
 !              Generate P'
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DORGBR( 'P', MNMIN, N, M, PT, LDPT, WORK( MNMIN+1 ), &
                          WORK( 2*MNMIN+1 ), LWORK-2*MNMIN, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DORGBR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Check error code from DORGBR.
 !
@@ -853,8 +927,18 @@
 !
 !              Apply Q' to an M by NRHS matrix X:  Y := Q' * X.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMM( 'Transpose', 'No transpose', M, NRHS, M, 1.0D0, &
                         Q, LDQ, X, LDX, 0.0D0, Y, LDX )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Test 1:  Check the decomposition A := Q * B * PT
 !                   2:  Check the orthogonality of Q
@@ -868,14 +952,64 @@
 !           Use DBDSQR to form the SVD of the bidiagonal matrix B:
 !           B := U * S1 * VT, and compute Z = U' * Y.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, S1, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLACPY( ' ', M, NRHS, Y, LDX, Z, LDX )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', MNMIN, MNMIN, 0.0D0, 1.0D0, U, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', MNMIN, MNMIN, 0.0D0, 1.0D0, VT, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSQR( UPLO, MNMIN, MNMIN, MNMIN, NRHS, S1, WORK, VT, &
                       LDPT, U, LDPT, Z, LDX, WORK( MNMIN+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSQR.
 !
@@ -893,11 +1027,31 @@
 !           Use DBDSQR to compute only the singular values of the
 !           bidiagonal matrix B;  U, VT, and Z should not be modified.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, S2, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK, 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSQR( UPLO, MNMIN, 0, 0, 0, S2, WORK, VT, LDPT, U, &
                       LDPT, Z, LDX, WORK( MNMIN+1 ), IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSQR : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSQR.
 !
@@ -966,12 +1120,43 @@
 !           from the bidiagonal form A := Q B PT.
 !
          IF( .NOT.BIDIAG ) THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, BD, 1, S2, 1 )
-            IF( MNMIN > 0 ) &
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+            IF( MNMIN > 0 )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL DCOPY( MNMIN-1, BE, 1, WORK, 1 )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DBDSQR( UPLO, MNMIN, N, M, NRHS, S2, WORK, PT, LDPT, &
                          Q, LDQ, Y, LDX, WORK( MNMIN+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DBDSQR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Test 11:  Check the decomposition A := Q*U * S2 * VT*PT
 !                   12:  Check the computation Z := U' * Q' * X
@@ -987,13 +1172,53 @@
 !           Use DBDSDC to form the SVD of the bidiagonal matrix B:
 !           B := U * S1 * VT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, S1, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', MNMIN, MNMIN, 0.0D0, 1.0D0, U, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DLASET( 'Full', MNMIN, MNMIN, 0.0D0, 1.0D0, VT, LDPT )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSDC( UPLO, 'I', MNMIN, S1, WORK, U, LDPT, VT, LDPT, &
                       DUM, IDUM, WORK( MNMIN+1 ), IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSDC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSDC.
 !
@@ -1011,11 +1236,31 @@
 !           Use DBDSDC to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, S2, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK, 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSDC( UPLO, 'N', MNMIN, S2, WORK, DUM, 1, DUM, 1, &
                       DUM, IDUM, WORK( MNMIN+1 ), IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSDC : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSDC.
 !
@@ -1083,13 +1328,33 @@
          IWWORK = IWBZ + 2*MNMIN*(MNMIN+1)
          MNMIN2 = MAX( 1,MNMIN*2 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'V', 'A', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), 0.0D0, 0.0D0, 0, 0, NS1, S1, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1107,9 +1372,29 @@
 !
          J = IWBZ
          DO I = 1, NS1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, U( 1,I ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
          ENDDO
 !
@@ -1124,13 +1409,33 @@
             GO TO 270
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'N', 'A', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), 0.0D0, 0.0D0, 0, 0, NS2, S2, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1148,7 +1453,17 @@
 !
 !           Save S1 for tests 30-34.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, S1, 1, WORK( IWBS ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Test 20:  Check the decomposition B := U * S1 * VT
 !                21:  Check the orthogonality of U
@@ -1202,14 +1517,45 @@
             END IF
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
-         IF( MNMIN > 0 ) &
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+         IF( MNMIN > 0 )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'V', 'I', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), 0.0D0, 0.0D0, IL, IU, NS1, S1, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1227,22 +1573,62 @@
 !
          J = IWBZ
          DO I = 1, NS1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, U( 1,I ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
          ENDDO
 !
 !           Use DBDSVDX to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'N', 'I', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), 0.0D0, 0.0D0, IL, IU, NS2, S2, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1296,7 +1682,17 @@
 !           of the IL-th and IU-th singular values and ask for all
 !           singular values in this range.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, WORK( IWBS ), 1, S1, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( MNMIN > 0 ) THEN
             IF( IL /= 1 ) THEN
@@ -1321,14 +1717,45 @@
             VU = 1.0D0
          END IF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
-         IF( MNMIN > 0 ) &
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
+         IF( MNMIN > 0 )  THEN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+         ENDIF
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'V', 'V', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), VL, VU, 0, 0, NS1, S1, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1345,22 +1772,62 @@
 !
          J = IWBZ
          DO I = 1, NS1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, U( 1,I ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DCOPY( MNMIN, WORK( J ), 1, VT( I,1 ), LDPT )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             J = J + MNMIN
          ENDDO
 !
 !           Use DBDSVDX to compute only the singular values of the
 !           bidiagonal matrix B;  U and VT should not be modified.
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DCOPY( MNMIN, BD, 1, WORK( IWBD ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DCOPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IF( MNMIN > 0 ) CALL DCOPY( MNMIN-1, BE, 1, WORK( IWBE ), 1 )
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL DBDSVDX( UPLO, 'N', 'V', MNMIN, WORK( IWBD ), &
                        WORK( IWBE ), VL, VU, 0, 0, NS2, S2, &
                        WORK( IWBZ ), MNMIN2, WORK( IWWORK ), &
                        IWORK, IINFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : DBDSVDX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
 !           Check error code from DBDSVDX.
 !
@@ -1446,4 +1913,7 @@
          I5, ')' )
 !
 END
+
+
+
 

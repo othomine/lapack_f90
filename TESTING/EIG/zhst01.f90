@@ -131,6 +131,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -156,6 +157,9 @@
 !     .. Local Scalars ..
    INTEGER            LDWORK
    DOUBLE PRECISION   ANORM, EPS, OVFL, SMLNUM, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLAMCH, ZLANGE
@@ -183,19 +187,49 @@
 !     Copy A to WORK
 !
    LDWORK = MAX( 1, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZLACPY( ' ', N, N, A, LDA, WORK, LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute Q*H
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGEMM( 'No transpose', 'No transpose', N, N, N, &
                DCMPLX( 1.0D0 ), Q, LDQ, H, LDH, DCMPLX( 0.0D0 ), &
                WORK( LDWORK*N+1 ), LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute A - Q*H*Q'
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL ZGEMM( 'No transpose', 'Conjugate transpose', N, N, N, &
                DCMPLX( -1.0D0 ), WORK( LDWORK*N+1 ), LDWORK, Q, LDQ, &
                DCMPLX( 1.0D0 ), WORK, LDWORK )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : ZGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ANORM = MAX( ZLANGE( '1', N, N, A, LDA, RWORK ), UNFL )
    WNORM = ZLANGE( '1', N, N, WORK, LDWORK, RWORK )
@@ -214,4 +248,7 @@
 !     End of ZHST01
 !
 END
+
+
+
 

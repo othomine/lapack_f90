@@ -148,6 +148,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -178,6 +179,9 @@
    LOGICAL            NOUNIT
    INTEGER            J, K, KP
    REAL               D11, D12, D21, D22, T1, T2
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -210,7 +214,17 @@
       INFO = -9
    END IF
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SLAVSY_ROOK ', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -244,8 +258,19 @@
 !
 !              Multiply by the diagonal element if forming U * D.
 !
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( NRHS, A( K, K ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by  P(K) * inv(U(K))  if K > 1.
 !
@@ -253,14 +278,35 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( K-1, NRHS, ONE, A( 1, K ), 1, B( K, 1 ), &
                           LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if P(K) .ne. I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             K = K + 1
          ELSE
@@ -288,10 +334,30 @@
 !
 !                 Apply the transformations.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( K-1, NRHS, ONE, A( 1, K ), 1, B( K, 1 ), &
                           LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( K-1, NRHS, ONE, A( 1, K+1 ), 1, &
                           B( K+1, 1 ), LDB, B( 1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if a permutation was applied at the
 !                 K-th step of the factorization.
@@ -299,15 +365,37 @@
 !                 Swap the first of pair with IMAXth
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 NOW swap the first of pair with Pth
 !
                KP = ABS( IPIV( K+1 ) )
-               IF( KP /= K+1 ) &
+               IF( KP /= K+1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             K = K + 2
          END IF
@@ -335,8 +423,19 @@
 !
 !              Multiply by the diagonal element if forming L * D.
 !
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( NRHS, A( K, K ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
 !
 !              Multiply by  P(K) * inv(L(K))  if K < N.
 !
@@ -345,14 +444,35 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( N-K, NRHS, ONE, A( K+1, K ), 1, B( K, 1 ), &
                           LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if a permutation was applied at the
 !                 K-th step of the factorization.
 !
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             K = K - 1
 !
@@ -381,10 +501,30 @@
 !
 !                 Apply the transformation.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( N-K, NRHS, ONE, A( K+1, K ), 1, B( K, 1 ), &
                           LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGER( N-K, NRHS, ONE, A( K+1, K-1 ), 1, &
                           B( K-1, 1 ), LDB, B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGER : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
 !                 Interchange if a permutation was applied at the
 !                 K-th step of the factorization.
@@ -392,15 +532,37 @@
 !                 Swap the second of pair with IMAXth
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 NOW swap the first of pair with Pth
 !
                KP = ABS( IPIV( K-1 ) )
-               IF( KP /= K-1 ) &
+               IF( KP /= K-1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             END IF
             K = K - 2
          END IF
@@ -435,16 +597,48 @@
 !                 Interchange if P(K) .ne. I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', K-1, NRHS, ONE, B, LDB, &
                            A( 1, K ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( NRHS, A( K, K ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             K = K - 1
 !
 !           2 x 2 pivot block.
@@ -455,22 +649,64 @@
 !                 Swap the second of pair with Pth
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Now swap the first of pair with IMAX(r)th
 !
                KP = ABS( IPIV( K-1 ) )
-               IF( KP /= K-1 ) &
+               IF( KP /= K-1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformations
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', K-2, NRHS, ONE, B, LDB, &
                            A( 1, K ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', K-2, NRHS, ONE, B, LDB, &
                            A( 1, K-1 ), 1, ONE, B( K-1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
 !
 !              Multiply by the diagonal block if non-unit.
@@ -513,16 +749,48 @@
 !                 Interchange if P(K) .ne. I.
 !
                KP = IPIV( K )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', N-K, NRHS, ONE, B( K+1, 1 ), &
                            LDB, A( K+1, K ), 1, ONE, B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
-            IF( NOUNIT ) &
+            IF( NOUNIT )  THEN
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SSCAL( NRHS, A( K, K ), B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+            ENDIF
             K = K + 1
 !
 !           2 x 2 pivot block.
@@ -533,24 +801,66 @@
 !                 Swap the first of pair with Pth
 !
                KP = ABS( IPIV( K ) )
-               IF( KP /= K ) &
+               IF( KP /= K )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Now swap the second of pair with IMAX(r)th
 !
                KP = ABS( IPIV( K+1 ) )
-               IF( KP /= K+1 ) &
+               IF( KP /= K+1 )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), &
                               LDB )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SSWAP : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
 !
 !                 Apply the transformation
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', N-K-1, NRHS, ONE, &
                            B( K+2, 1 ), LDB, A( K+2, K+1 ), 1, ONE, &
                            B( K+1, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SGEMV( 'Transpose', N-K-1, NRHS, ONE, &
                            B( K+2, 1 ), LDB, A( K+2, K ), 1, ONE, &
                            B( K, 1 ), LDB )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SGEMV : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
             END IF
 !
 !              Multiply by the diagonal block if non-unit.
@@ -579,4 +889,8 @@
 !     End of SLAVSY_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

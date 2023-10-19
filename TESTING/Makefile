@@ -625,7 +625,7 @@ EIG/xdmdeigtstz: $(FRCEIG) $(FRC)
 .PHONY: clean cleantest
 clean: cleantest
 cleantest:
-	rm -f *.out core
+	rm -f *.out core results.out
 
 FRCLIN:
 	@FRCLIN=$(FRCLIN)

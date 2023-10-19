@@ -43,6 +43,9 @@
 
       use iso_fortran_env
       IMPLICIT NONE
+#ifdef _TIMER
+      INTEGER(8) nb_periods_sec, S1_time, S2_time
+#endif
       integer, parameter :: WP = real32
 !............................................................
       REAL(KIND=WP), ALLOCATABLE, DIMENSION(:)   :: RES, &
@@ -220,42 +223,132 @@
       ALLOCATE( CWORK(LCWORK) )
       ALLOCATE( WORK(2*M) )
       AC(1:M,1:M) = A(1:M,1:M)
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEEV( 'N','N', M, AC, LDA, CEIGSA, CDUM2X2, 2, &
                   CDUM2X2, 2, CWORK, LCWORK, WORK, INFO ) ! LAPACK CALL
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEEV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       DEALLOCATE(WORK)
       DEALLOCATE(CWORK)
 
       TMP = ABS(CEIGSA(ICAMAX(M, CEIGSA, 1))) ! The spectral radius of A
       ! Scale the matrix A to have unit spectral radius.
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLASCL( 'G',0, 0, TMP, 1.0_WP, M, M, &
                    A, LDA, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CLASCL( 'G',0, 0, TMP, 1.0_WP, M, 1, &
                    CEIGSA, M, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CLASCL : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       ANORM = CLANGE( 'F', M, M, A, LDA, WDUMMY )
 
       IF ( K_traj == 2 ) THEN
           ! generate data as two trajectories
           ! with two inital conditions
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CLARNV(2, ISEED, M, F(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N/2
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, LDA, F(1,i), 1,  &
                   (0.0_WP,0.0_WP), F(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           X0(1:M,1:N/2) = F(1:M,1:N/2)
           Y0(1:M,1:N/2) = F(1:M,2:N/2+1)
 
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CLARNV(2, ISEED, M, F(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N-N/2
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, LDA, F(1,i), 1,  &
                   (0.0_WP,0.0_WP), F(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           X0(1:M,N/2+1:N) = F(1:M,1:N-N/2)
           Y0(1:M,N/2+1:N) = F(1:M,2:N-N/2+1)
       ELSE
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CLARNV(2, ISEED, M, F(1,1) )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CLARNV : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           DO i = 1, N
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CGEMV( 'N', M, M, (1.0_WP,0.0_WP), A, M, F(1,i), 1,  &
                   (0.0_WP,0.0_WP), F(1,i+1), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
           END DO
           F0(1:M,1:N+1) = F(1:M,1:N+1)
           X0(1:M,1:N) = F0(1:M,1:N)
@@ -324,11 +417,21 @@
       X(1:M,1:N) = X0(1:M,1:N)
       Y(1:M,1:N) = Y0(1:M,1:N)
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD,  &
                 M,  N, X, LDX, Y, LDY, NRNK, TOL,  &
                 K, CEIGS, Z, LDZ,  RES,  &
                 AU, LDAU, W,  LDW,   S, LDS,        &
                 CDUMMY, -1, WDUMMY, -1, IDUMMY, -1, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
       IF ( (INFO .EQ. 2) .OR. ( INFO .EQ. 3 ) &
                        .OR. ( INFO < 0 ) ) THEN
@@ -350,11 +453,21 @@
       LWORK = INT(WDUMMY(1))
       ALLOCATE(WORK(LWORK))
 
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEDMD( SCALE, JOBZ, RESIDS, JOBREF, WHTSVD,  &
                    M,  N, X, LDX, Y, LDY, NRNK, TOL,  &
                    K, CEIGS, Z, LDZ,  RES,  &
                    AU, LDAU, W,  LDW,   S, LDS,        &
                    CWORK, LCWORK, WORK, LWORK, IWORK, LIWORK, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEDMD : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF ( INFO /= 0 ) THEN
            WRITE(*,*) 'Call to CGEDMD failed. &
            &Check the calling sequence and the code.'
@@ -373,11 +486,31 @@
           ! the product of the SVD'POD basis returned in X
           ! and the eigenvectors of the Rayleigh quotient
           ! returned in W
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), X, LDX, W, LDW, &
                       (0.0_WP,0.0_WP), Z1, LDZ )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CAXPY( M, -(1.0_WP,0.0_WP), Z(1,i), 1, Z1(1,i), 1)
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              TMP = MAX(TMP, SCNRM2( M, Z1(1,i), 1 ) )
           END DO
           TMP_XW = MAX(TMP_XW, TMP )
@@ -402,11 +535,31 @@
            ! See the paper for an error analysis.
            ! Note that the left singular vectors of the input matrix X
            ! are returned in the array X.
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
            CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, X, LDX, &
                       (0.0_WP,0.0_WP), Z1, LDZ )
+#ifdef _TIMER
+           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+           open(file='results.out', unit=10, position = 'append')
+           write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+           close(10)
+#endif
           TMP = 0.0_WP
           DO i = 1, K
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CAXPY( M, -(1.0_WP,0.0_WP), AU(1,i), 1, Z1(1,i), 1)
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              TMP = MAX( TMP, SCNRM2( M, Z1(1,i),1 ) * &
                      SINGVX(K)/(ANORM*SINGVX(1)) )
           END DO
@@ -428,10 +581,30 @@
           ! returned vectors are in the real form, in the same way
           ! as the Ritz vectors. Here we just save the vectors
           ! and test them separately using a Matlab script.
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, AU, LDAU, (0.0_WP,0.0_WP), Y1, LDY )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
 
           DO i=1, K
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CAXPY( M, -CEIGS(i), AU(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              RESEX(i) = SCNRM2( M, Y1(1,i), 1) / SCNRM2(M,AU(1,i),1)
           END DO
       END IF
@@ -441,14 +614,34 @@
           ! Compare the residuals returned by CGEDMD with the
           ! explicitly computed residuals using the matrix A.
           ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CGEMM( 'N', 'N', M, K, M, (1.0_WP,0.0_WP), A, LDA, Z, LDZ, (0.0_WP,0.0_WP), Y1, LDY )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
           ! of the invariant subspaces that correspond to complex conjugate
           ! pairs of eigencalues. (See the description of Z in CGEDMD,)
 
           DO i=1, K
                 ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                 CALL CAXPY( M, -CEIGS(i), Z(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+                call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                open(file='results.out', unit=10, position = 'append')
+                write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                close(10)
+#endif
                 RES1(i) = SCNRM2( M, Y1(1,i), 1)
           END DO
           TMP = 0.0_WP
@@ -484,11 +677,21 @@
       IF ( K_traj == 1 ) THEN
 
           F(1:M,1:N+1) = F0(1:M,1:N+1)
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, JOBREF, &
                     WHTSVD, M, N+1, F, LDF,  X, LDX,  Y, LDY,  &
                     NRNK,  TOL, K, CEIGS, Z, LDZ, RES,  AU,  &
                     LDAU, W, LDW, S, LDS, CDUMMY, -1,   &
                     WDUMMY,  -1, IDUMMY, -1, INFO )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CGEDMDQ : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
 
           LCWORK = INT(CDUMMY(LWMINOPT))
           ALLOCATE(CWORK(LCWORK))
@@ -497,11 +700,21 @@
           LWORK = INT(WDUMMY(1))
           ALLOCATE(WORK(LWORK))
 
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
           CALL CGEDMDQ( SCALE, JOBZ, RESIDS, WANTQ, WANTR, JOBREF, &
                         WHTSVD, M, N+1, F, LDF,  X, LDX,  Y, LDY,  &
                         NRNK,  TOL, KQ, CEIGS, Z, LDZ, RES,  AU,  &
                         LDAU, W, LDW, S, LDS, CWORK, LCWORK,   &
                         WORK,  LWORK, IWORK, LIWORK, INFO )
+#ifdef _TIMER
+          call system_clock(count_rate=nb_periods_sec,count=S2_time)
+          open(file='results.out', unit=10, position = 'append')
+          write(10,'(A,F16.10,A)') 'Total time : CGEDMDQ : ',&
+                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+          close(10)
+#endif
           IF ( INFO /= 0 ) THEN
                  WRITE(*,*) 'Call to CGEDMDQ failed. &
                  &Check the calling sequence and the code.'
@@ -533,8 +746,18 @@
              ! as requested. The residual ||F-Q*R||_F / ||F||_F
              ! is compared to M*N*EPS.
              F1(1:M,1:N+1) = F0(1:M,1:N+1)
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
              CALL CGEMM( 'N', 'N', M, N+1, MIN(M,N+1), -(1.0_WP,0.0_WP), F, &
                          LDF, Y, LDY, (1.0_WP,0.0_WP), F1, LDF )
+#ifdef _TIMER
+             call system_clock(count_rate=nb_periods_sec,count=S2_time)
+             open(file='results.out', unit=10, position = 'append')
+             write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+             close(10)
+#endif
              TMP_FQR = CLANGE( 'F', M, N+1, F1, LDF, WORK ) / &
                    CLANGE( 'F', M, N+1, F0,  LDF, WORK )
              IF ( TMP_FQR <= TOL2 ) THEN
@@ -550,13 +773,33 @@
               ! Compare the residuals returned by ZGEDMDQ with the
               ! explicitly computed residuals using the matrix A.
               ! Compute explicitly Y1 = A*Z
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
               CALL CGEMM( 'N', 'N', M, KQ, M, (1.0_WP,0.0_WP), A, LDA, Z, LDZ, (0.0_WP,0.0_WP), Y1, LDY )
+#ifdef _TIMER
+              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+              open(file='results.out', unit=10, position = 'append')
+              write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+              close(10)
+#endif
               ! ... and then A*Z(:,i) - LAMBDA(i)*Z(:,i), using the real forms
               ! of the invariant subspaces that correspond to complex conjugate
               ! pairs of eigencalues. (See the description of Z in ZGEDMDQ)
               DO i = 1, KQ
                     ! have a real eigenvalue with real eigenvector
+#ifdef _TIMER
+                    call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                     CALL CAXPY( M, -CEIGS(i), Z(1,i), 1, Y1(1,i), 1 )
+#ifdef _TIMER
+                    call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                    open(file='results.out', unit=10, position = 'append')
+                    write(10,'(A,F16.10,A)') 'Total time : CAXPY : ',&
+                          real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                    close(10)
+#endif
                     ! Y(1:M,i) = Y(1:M,i) - REIG(i)*Z(1:M,i)
                     RES1(i) = SCNRM2( M, Y1(1,i), 1)
               END DO
@@ -703,4 +946,6 @@
       WRITE(*,*) 'Test completed.'
       STOP
       END
+
+
 

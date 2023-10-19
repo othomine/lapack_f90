@@ -74,6 +74,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -97,6 +98,9 @@
                       ITR, ITRANL, ITRANR, ITRSCL, N1, N2
    REAL               BIGNUM, DEN, EPS, RES, SCALE, SGN, SMLNUM, TMP, &
                       TNRM, XNORM, XNRM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ITVAL( 2, 2, 8 )
@@ -152,9 +156,19 @@
                      TR( 1, 1 ) = VAL( ITR )
                      B( 1, 1 ) = VAL( IB )
                      KNT = KNT + 1
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLASY2( LTRANL, LTRANR, ISGN, N1, N2, TL, &
                                   2, TR, 2, B, 2, SCALE, X, 2, XNORM, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLASY2 : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO = NINFO + 1
                      RES = ABS( ( TL( 1, 1 )+SGN*TR( 1, 1 ) )* &
@@ -200,9 +214,19 @@
                                         VAL( ITLSCL )
                            TR( 1, 1 ) = VAL( ITR )
                            KNT = KNT + 1
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SLASY2( LTRANL, LTRANR, ISGN, N1, N2, &
                                         TL, 2, TR, 2, B, 2, SCALE, X, &
                                         2, XNORM, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SLASY2 : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               NINFO = NINFO + 1
                            IF( LTRANL ) THEN
@@ -259,9 +283,19 @@
                                         VAL( ITRSCL )
                            TL( 1, 1 ) = VAL( ITL )
                            KNT = KNT + 1
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SLASY2( LTRANL, LTRANR, ISGN, N1, N2, &
                                         TL, 2, TR, 2, B, 2, SCALE, X, &
                                         2, XNORM, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SLASY2 : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               NINFO = NINFO + 1
                            IF( LTRANR ) THEN
@@ -332,10 +366,20 @@
                                  TL( 2, 2 ) = ITVAL( 2, 2, ITL )* &
                                               VAL( ITLSCL )
                                  KNT = KNT + 1
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SLASY2( LTRANL, LTRANR, ISGN, &
                                               N1, N2, TL, 2, TR, 2, &
                                               B, 2, SCALE, X, 2, &
                                               XNORM, INFO )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SLASY2 : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                                  IF( INFO /= 0 ) &
                                     NINFO = NINFO + 1
                                  IF( LTRANR ) THEN
@@ -416,4 +460,7 @@
 !     End of SGET32
 !
 END
+
+
+
 

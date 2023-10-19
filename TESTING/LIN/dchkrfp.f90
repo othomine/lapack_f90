@@ -51,6 +51,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_lin
 !
@@ -81,8 +82,7 @@
    INTEGER            I, NN, NNS, NNT
    DOUBLE PRECISION   EPS, THRESH
 
-   INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
-   REAL               STOT
+   INTEGER(8) nb_periods_sec, S1T_time, S2T_time
 !     ..
 !     .. Local Arrays ..
    INTEGER            NVAL( MAXIN ), NSVAL( MAXIN ), NTVAL( NTYPES )
@@ -115,7 +115,7 @@
 !     ..
 !     .. Executable Statements ..
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1T)
+    call system_clock(count_rate=nb_periods_sec,count=S1T_time)
    FATAL = .FALSE.
 !
 !     Read a dummy line.
@@ -234,70 +234,40 @@
 !     Test the routines: dpftrf, dpftri, dpftrs (as in DDRVPO).
 !     This also tests the routines: dtfsm, dtftri, dtfttr, dtrttf.
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1)
    CALL DDRVRFP( NOUT, NN, NVAL, NNS, NSVAL, NNT, NTVAL, THRESH, &
                  WORKA, WORKASAV, WORKAFAC, WORKAINV, WORKB, &
                  WORKBSAV, WORKXACT, WORKX, WORKARF, WORKARFINV, &
                  D_WORK_DLATMS, D_WORK_DPOT01, D_TEMP_DPOT02, &
                  D_TEMP_DPOT03, D_WORK_DLANSY, D_WORK_DPOT02, &
                  D_WORK_DPOT03 )
-   call system_clock(count_rate=nb_periods_sec,count=S2)
-   open(file='results.out', unit=10, position = 'append')
-   write(10,'(A,F16.10,A)') 'Total time : DDRVRFP : ', &
-         real(S2-S1)/real(nb_periods_sec), ' s'
-   close(10)
 !
 !     Test the routine: dlansf
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1)
    CALL DDRVRF1( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF, &
                  D_WORK_DLANSY )
-   call system_clock(count_rate=nb_periods_sec,count=S2)
-   open(file='results.out', unit=10, position = 'append')
-   write(10,'(A,F16.10,A)') 'Total time : DDRVRF1 : ', &
-         real(S2-S1)/real(nb_periods_sec), ' s'
-   close(10)
 !
 !     Test the conversion routines:
 !       dtfttp, dtpttf, dtfttr, dtrttf, dtrttp and dtpttr.
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1)
    CALL DDRVRF2( NOUT, NN, NVAL, WORKA, NMAX, WORKARF, &
                  WORKAP, WORKASAV )
-   call system_clock(count_rate=nb_periods_sec,count=S2)
-   open(file='results.out', unit=10, position = 'append')
-   write(10,'(A,F16.10,A)') 'Total time : DDRVRF2 : ', &
-         real(S2-S1)/real(nb_periods_sec), ' s'
-   close(10)
 !
 !     Test the routine: dtfsm
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1)
    CALL DDRVRF3( NOUT, NN, NVAL, THRESH, WORKA, NMAX, WORKARF, &
                  WORKAINV, WORKAFAC, D_WORK_DLANSY, &
                  D_WORK_DPOT03, D_WORK_DPOT01 )
-   call system_clock(count_rate=nb_periods_sec,count=S2)
-   open(file='results.out', unit=10, position = 'append')
-   write(10,'(A,F16.10,A)') 'Total time : DDRVRF3 : ', &
-         real(S2-S1)/real(nb_periods_sec), ' s'
-   close(10)
 !
 !
 !     Test the routine: dsfrk
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1)
    CALL DDRVRF4( NOUT, NN, NVAL, THRESH, WORKA, WORKAFAC, NMAX, &
                  WORKARF, WORKAINV, NMAX, D_WORK_DLANSY)
-   call system_clock(count_rate=nb_periods_sec,count=S2)
-   open(file='results.out', unit=10, position = 'append')
-   write(10,'(A,F16.10,A)') 'Total time : DDRVRF4 : ', &
-         real(S2-S1)/real(nb_periods_sec), ' s'
-   close(10)
 !
    CLOSE ( NIN )
-   call system_clock(count_rate=nb_periods_sec,count=S2T)
+    call system_clock(count_rate=nb_periods_sec,count=S2T_time)
    WRITE( NOUT, FMT = 9998 )
-   WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
+   WRITE( NOUT, FMT = 9997 ) real(S2T_time - S1T_time)/real(nb_periods_sec)
 !
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
@@ -317,4 +287,8 @@
 !     End of DCHKRFP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

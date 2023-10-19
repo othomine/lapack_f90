@@ -182,6 +182,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -228,6 +229,9 @@
                       LWORK_SGELS, LWORK_SGELST, LWORK_SGETSLS, &
                       LWORK_SGELSS, LWORK_SGELSY, LWORK_SGELSD
    REAL               EPS, NORMA, NORMB, RCOND
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISEED( 4 ), ISEEDY( 4 ), IWQ( 1 )
@@ -355,30 +359,90 @@
                            END IF
 !
 !                             Compute workspace needed for SGELS
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGELS( TRANS, M, N, NRHS, A, LDA, &
                                        B, LDB, WQ( 1 ), -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGELS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_SGELS = INT ( WQ( 1 ) )
 !                             Compute workspace needed for SGELST
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGELST( TRANS, M, N, NRHS, A, LDA, &
                                        B, LDB, WQ, -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGELST : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_SGELST = INT ( WQ ( 1 ) )
 !                             Compute workspace needed for SGETSLS
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGETSLS( TRANS, M, N, NRHS, A, LDA, &
                                          B, LDB, WQ( 1 ), -1, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGETSLS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            LWORK_SGETSLS = INT( WQ( 1 ) )
                         ENDDO
                      END IF
 !                       Compute workspace needed for SGELSY
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSY( M, N, NRHS, A, LDA, B, LDB, IWQ, &
                                   RCOND, CRANK, WQ, -1, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_SGELSY = INT( WQ( 1 ) )
 !                       Compute workspace needed for SGELSS
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSS( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WQ, -1 , INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_SGELSS = INT( WQ( 1 ) )
 !                       Compute workspace needed for SGELSD
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSD( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WQ, -1, IWQ, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSD : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      LWORK_SGELSD = INT( WQ( 1 ) )
 !                       Compute LIWORK workspace needed for SGELSY and SGELSD
                      LIWORK = MAX( LIWORK, N, IWQ( 1 ) )
@@ -450,29 +514,99 @@
 !                             Set up a consistent rhs
 !
                            IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLARNV( 2, ISEED, NCOLS*NRHS, &
                                            WORK )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SSCAL( NCOLS*NRHS, &
                                           ONE / REAL( NCOLS ), WORK, &
                                           1 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGEMM( TRANS, 'No transpose', NROWS, &
                                        NRHS, NCOLS, ONE, COPYA, LDA, &
                                        WORK, LDWORK, ZERO, B, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SLACPY( 'Full', NROWS, NRHS, B, LDB, &
                                         COPYB, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Solve LS or overdetermined system
 !
                            IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', M, N, COPYA, LDA, &
                                            A, LDA )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
                            SRNAMT = 'SGELS '
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGELS( TRANS, M, N, NRHS, A, LDA, B, &
                                        LDB, WORK, LWORK, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGELS : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               CALL ALAERH( PATH, 'SGELS ', INFO, 0, &
                                            TRANS, M, N, NRHS, -1, NB, &
@@ -484,9 +618,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                           IF( NROWS > 0 .AND. NRHS > 0 ) &
+                           IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+                           ENDIF
                            CALL SQRT16( TRANS, M, N, NRHS, COPYA, &
                                         LDA, B, LDB, C, LDB, WORK, &
                                         RESULT( 1 ) )
@@ -567,29 +712,99 @@
 !                             Set up a consistent rhs
 !
                            IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLARNV( 2, ISEED, NCOLS*NRHS, &
                                            WORK )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SSCAL( NCOLS*NRHS, &
                                           ONE / REAL( NCOLS ), WORK, &
                                           1 )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGEMM( TRANS, 'No transpose', NROWS, &
                                        NRHS, NCOLS, ONE, COPYA, LDA, &
                                        WORK, LDWORK, ZERO, B, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SLACPY( 'Full', NROWS, NRHS, B, LDB, &
                                         COPYB, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Solve LS or overdetermined system
 !
                            IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', M, N, COPYA, LDA, &
                                            A, LDA )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
                            SRNAMT = 'SGELST'
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL SGELST( TRANS, M, N, NRHS, A, LDA, B, &
                                         LDB, WORK, LWORK, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : SGELST : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO /= 0 ) &
                               CALL ALAERH( PATH, 'SGELST', INFO, 0, &
                                            TRANS, M, N, NRHS, -1, NB, &
@@ -601,9 +816,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                           IF( NROWS > 0 .AND. NRHS > 0 ) &
+                           IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', NROWS, NRHS, &
                                            COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+                           ENDIF
                            CALL SQRT16( TRANS, M, N, NRHS, COPYA, &
                                         LDA, B, LDB, C, LDB, WORK, &
                                         RESULT( 3 ) )
@@ -691,31 +917,101 @@
 !                                Set up a consistent rhs
 !
                               IF( NCOLS > 0 ) THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SLARNV( 2, ISEED, NCOLS*NRHS, &
                                               WORK )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SSCAL( NCOLS*NRHS, &
                                              ONE / REAL( NCOLS ), &
                                              WORK, 1 )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SSCAL : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                               END IF
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SGEMM( TRANS, 'No transpose', &
                                           NROWS, NRHS, NCOLS, ONE, &
                                           COPYA, LDA, WORK, LDWORK, &
                                           ZERO, B, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SLACPY( 'Full', NROWS, NRHS, &
                                            B, LDB, COPYB, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
 !
 !                                Solve LS or overdetermined system
 !
                               IF( M > 0 .AND. N > 0 ) THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SLACPY( 'Full', M, N, &
                                               COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SLACPY( 'Full', NROWS, NRHS, &
                                               COPYB, LDB, B, LDB )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
                               END IF
                               SRNAMT = 'SGETSLS'
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL SGETSLS( TRANS, M, N, NRHS, &
                                        A, LDA, B, LDB, WORK, LWORK, &
                                        INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : SGETSLS : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               IF( INFO /= 0 ) &
                                  CALL ALAERH( PATH, 'SGETSLS', INFO, &
                                               0, TRANS, M, N, NRHS, &
@@ -727,9 +1023,20 @@
 !                             RESID = norm(B - A*X) /
 !                             / ( max(m,n) * norm(A) * norm(X) * EPS )
 !
-                              IF( NROWS > 0 .AND. NRHS > 0 ) &
+                              IF( NROWS > 0 .AND. NRHS > 0 )  THEN
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                                  CALL SLACPY( 'Full', NROWS, NRHS, &
                                               COPYB, LDB, C, LDB )
+#ifdef _TIMER
+                                 call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                                 open(file='results.out', unit=10, position = 'append')
+                                 write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                                       real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                                 close(10)
+#endif
+                              ENDIF
                               CALL SQRT16( TRANS, M, N, NRHS, &
                                            COPYA, LDA, B, LDB, &
                                            C, LDB, WORK, &
@@ -811,13 +1118,43 @@
                         IWORK( J ) = 0
                      ENDDO
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'SGELSY'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSY( M, N, NRHS, A, LDA, B, LDB, IWORK, &
                                   RCOND, CRANK, WORK, LWLSY, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'SGELSY', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -832,8 +1169,18 @@
 !                       Test 8:  Compute error in solution
 !                                workspace:  M*NRHS + M
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL SQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 8 ) )
@@ -863,12 +1210,42 @@
 !                       to min( norm( A * X - B ) )
 !                       using the SVD.
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      SRNAMT = 'SGELSS'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSS( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WORK, LWORK, INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSS : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'SGELSS', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -880,7 +1257,17 @@
 !                       Test 11:  Compute relative error in svd
 !
                      IF( RANK > 0 ) THEN
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL SAXPY( MNMIN, -ONE, COPYS, 1, S, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : SAXPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RESULT( 11 ) = SASUM( MNMIN, S, 1 ) / &
                                       SASUM( MNMIN, COPYS, 1 ) / &
                                       ( EPS*REAL( MNMIN ) )
@@ -890,8 +1277,18 @@
 !
 !                       Test 12:  Compute error in solution
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL SQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 12 ) )
@@ -924,14 +1321,44 @@
                         IWORK( J ) = 0
                      ENDDO
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, N, COPYA, LDA, A, LDA )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, B, &
                                   LDB )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
                      SRNAMT = 'SGELSD'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SGELSD( M, N, NRHS, A, LDA, B, LDB, S, &
                                   RCOND, CRANK, WORK, LWORK, IWORK, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SGELSD : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         CALL ALAERH( PATH, 'SGELSD', INFO, 0, ' ', M, &
                                      N, NRHS, -1, NB, ITYPE, NFAIL, &
@@ -940,7 +1367,17 @@
 !                       Test 15:  Compute relative error in svd
 !
                      IF( RANK > 0 ) THEN
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL SAXPY( MNMIN, -ONE, COPYS, 1, S, 1 )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : SAXPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         RESULT( 15 ) = SASUM( MNMIN, S, 1 ) / &
                                        SASUM( MNMIN, COPYS, 1 ) / &
                                        ( EPS*REAL( MNMIN ) )
@@ -950,8 +1387,18 @@
 !
 !                       Test 16:  Compute error in solution
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SLACPY( 'Full', M, NRHS, COPYB, LDB, WORK, &
                                   LDWORK )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      CALL SQRT16( 'No transpose', M, N, NRHS, COPYA, &
                                   LDA, B, LDB, WORK, LDWORK, &
                                   WORK( M*NRHS+1 ), RESULT( 16 ) )
@@ -1013,4 +1460,8 @@
 !     End of SDRVLS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

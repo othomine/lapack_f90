@@ -327,6 +327,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -372,6 +373,9 @@
    REAL               ABSTOL, ANINV, ANORM, COND, OVFL, RTOVFL, &
                       RTUNFL, TEMP1, TEMP2, TEMP3, ULP, ULPINV, UNFL, &
                       VL, VU
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IDUMMA( 1 ), IOLDSD( 4 ), ISEED2( 4 ), &
@@ -422,7 +426,17 @@
    END IF
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'CDRVST2STG', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -507,7 +521,17 @@
            ANORM = RTUNFL*N*ULPINV
          END SELECT
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IINFO = 0
          COND = ULPINV
 !
@@ -567,7 +591,17 @@
 !
 !              Store as dense matrix for most routines.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             DO IDIAG = -IHBW, IHBW
                IROW = IHBW - IDIAG + 1
                J1 = MAX( 1, IDIAG+1 )
@@ -616,11 +650,31 @@
 !
 !              Call CHEEVD and CHEEVX.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, A, LDA, V, LDU )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVD( 'V', UPLO, N, A, LDU, D1, WORK, LWEDC, &
                          RWORK, LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVD(V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -640,11 +694,31 @@
             CALL CHET21( 1, UPLO, N, 0, V, LDU, D1, D2, A, LDU, Z, &
                          LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVD_2STAGE( 'N', UPLO, N, A, LDU, D3, WORK, &
                          LWORK, RWORK, LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVD_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVD_2STAGE(N,' // UPLO // &
@@ -665,7 +739,17 @@
             RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   130          CONTINUE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 1
 !
@@ -691,9 +775,19 @@
                VU = 1.0E+0
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX( 'V', 'A', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M, WA1, Z, LDU, WORK, LWORK, RWORK, &
                          IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVX(V,A,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -710,16 +804,36 @@
 !
 !              Do tests 4 and 5.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET21( 1, UPLO, N, 0, A, LDU, WA1, D2, Z, LDU, V, &
                          LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX_2STAGE( 'N', 'A', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M2, WA2, Z, LDU, &
                                 WORK, LWORK, RWORK, IWORK, &
                                 IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVX_2STAGE(N,A,' // UPLO // &
@@ -740,13 +854,33 @@
             RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
   150          CONTINUE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 1
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX( 'V', 'I', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, WORK, LWORK, RWORK, &
                          IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVX(V,I,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -761,17 +895,37 @@
 !
 !              Do tests 7 and 8.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET22( 1, UPLO, N, M2, 0, A, LDU, WA2, D2, Z, LDU, &
                          V, LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX_2STAGE( 'N', 'I', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M3, WA3, Z, LDU, &
                                 WORK, LWORK, RWORK, IWORK, &
                                 IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVX_2STAGE(N,I,' // UPLO // &
@@ -797,13 +951,33 @@
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / MAX( UNFL, TEMP3*ULP )
 !
   160          CONTINUE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 1
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX( 'V', 'V', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, WORK, LWORK, RWORK, &
                          IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVX(V,V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -818,17 +992,37 @@
 !
 !              Do tests 10 and 11.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET22( 1, UPLO, N, M2, 0, A, LDU, WA2, D2, Z, LDU, &
                          V, LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVX_2STAGE( 'N', 'V', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M3, WA3, Z, LDU, &
                                 WORK, LWORK, RWORK, IWORK, &
                                 IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVX_2STAGE(N,V,' // UPLO // &
@@ -862,7 +1056,17 @@
 !
 !              Call CHPEVD and CHPEVX.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Load array WORK with the upper or lower triangular
 !              part of the matrix in packed form.
@@ -887,9 +1091,19 @@
 !
             NTEST = NTEST + 1
             INDWRK = N*( N+1 ) / 2 + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVD( 'V', UPLO, N, WORK, D1, Z, LDU, &
                          WORK( INDWRK ), LWEDC, RWORK, LRWEDC, IWORK, &
                          LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVD(V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -929,9 +1143,19 @@
 !
             NTEST = NTEST + 2
             INDWRK = N*( N+1 ) / 2 + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVD( 'N', UPLO, N, WORK, D3, Z, LDU, &
                          WORK( INDWRK ), LWEDC, RWORK, LRWEDC, IWORK, &
                          LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVD(N,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -996,9 +1220,19 @@
                VU = 1.0E+0
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'V', 'A', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M, WA1, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(V,A,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1038,9 +1272,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'N', 'A', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(N,A,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1079,9 +1323,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'V', 'I', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(V,I,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1121,9 +1375,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'N', 'I', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M3, WA3, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(N,I,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1167,9 +1431,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'V', 'V', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(V,V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1209,9 +1483,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEVX( 'N', 'V', UPLO, N, WORK, VL, VU, IL, IU, &
                          ABSTOL, M3, WA3, Z, LDU, V, RWORK, IWORK, &
                          IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEVX(N,V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1271,8 +1555,18 @@
             END IF
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVD( 'V', UPLO, N, KD, V, LDU, D1, Z, LDU, WORK, &
                          LWEDC, RWORK, LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVD : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 )'CHBEVD(V,' // UPLO // &
                   ')', IINFO, N, KD, JTYPE, IOLDSD
@@ -1305,9 +1599,19 @@
             END IF
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVD_2STAGE( 'N', UPLO, N, KD, V, LDU, D3, &
                                 Z, LDU, WORK, LWORK, RWORK, &
                                 LRWEDC, IWORK, LIWEDC, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVD_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 ) &
                   'CHBEVD_2STAGE(N,' // UPLO // &
@@ -1346,9 +1650,19 @@
             END IF
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX( 'V', 'A', UPLO, N, KD, V, LDU, U, LDU, VL, &
                          VU, IL, IU, ABSTOL, M, WA1, Z, LDU, WORK, &
                          RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHBEVX(V,A,' // UPLO // &
                   ')', IINFO, N, KD, JTYPE, IOLDSD
@@ -1384,10 +1698,20 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX_2STAGE( 'N', 'A', UPLO, N, KD, V, LDU, &
                                 U, LDU, VL, VU, IL, IU, ABSTOL, &
                                 M2, WA2, Z, LDU, WORK, LWORK, &
                                 RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 ) &
                   'CHBEVX_2STAGE(N,A,' // UPLO // &
@@ -1426,9 +1750,19 @@
                ENDDO
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX( 'V', 'I', UPLO, N, KD, V, LDU, U, LDU, VL, &
                          VU, IL, IU, ABSTOL, M2, WA2, Z, LDU, WORK, &
                          RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 )'CHBEVX(V,I,' // UPLO // &
                   ')', IINFO, N, KD, JTYPE, IOLDSD
@@ -1463,10 +1797,20 @@
                   ENDDO
                ENDDO
             END IF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX_2STAGE( 'N', 'I', UPLO, N, KD, V, LDU, &
                                 U, LDU, VL, VU, IL, IU, ABSTOL, &
                                 M3, WA3, Z, LDU, WORK, LWORK, &
                                 RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 ) &
                   'CHBEVX_2STAGE(N,I,' // UPLO // &
@@ -1509,9 +1853,19 @@
                   ENDDO
                ENDDO
             END IF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX( 'V', 'V', UPLO, N, KD, V, LDU, U, LDU, VL, &
                          VU, IL, IU, ABSTOL, M2, WA2, Z, LDU, WORK, &
                          RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 )'CHBEVX(V,V,' // UPLO // &
                   ')', IINFO, N, KD, JTYPE, IOLDSD
@@ -1546,10 +1900,20 @@
                   ENDDO
                ENDDO
             END IF
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEVX_2STAGE( 'N', 'V', UPLO, N, KD, V, LDU, &
                                 U, LDU, VL, VU, IL, IU, ABSTOL, &
                                 M3, WA3, Z, LDU, WORK, LWORK, &
                                 RWORK, IWORK, IWORK( 5*N+1 ), IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEVX_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 ) &
                   'CHBEVX_2STAGE(N,V,' // UPLO // &
@@ -1583,11 +1947,31 @@
 !
 !              Call CHEEV
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, A, LDA, V, LDU )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEV( 'V', UPLO, N, A, LDU, D1, WORK, LWORK, RWORK, &
                         IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEV(V,' // UPLO // ')', &
                   IINFO, N, JTYPE, IOLDSD
@@ -1607,11 +1991,31 @@
             CALL CHET21( 1, UPLO, N, 0, V, LDU, D1, D2, A, LDU, Z, &
                          LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEV_2STAGE( 'N', UPLO, N, A, LDU, D3, &
                                WORK, LWORK, RWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEV_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEV_2STAGE(N,' // UPLO // ')', &
@@ -1633,7 +2037,17 @@
 !
   950          CONTINUE
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !              Call CHPEV
 !
@@ -1660,7 +2074,17 @@
 !
             NTEST = NTEST + 1
             INDWRK = N*( N+1 ) / 2 + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEV( 'V', UPLO, N, WORK, D1, Z, LDU, WORK( INDWRK ), RWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEV(V,' // UPLO // ')', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
@@ -1699,7 +2123,17 @@
 !
             NTEST = NTEST + 2
             INDWRK = N*( N+1 ) / 2 + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHPEV( 'N', UPLO, N, WORK, D3, Z, LDU, WORK( INDWRK ), RWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHPEV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHPEV(N,' // UPLO // ')', IINFO, N, JTYPE, IOLDSD
                INFO = ABS( IINFO )
@@ -1747,8 +2181,18 @@
             END IF
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEV( 'V', UPLO, N, KD, V, LDU, D1, Z, LDU, WORK, &
                         RWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 )'CHBEV(V,' // UPLO // ')', &
                   IINFO, N, KD, JTYPE, IOLDSD
@@ -1783,8 +2227,18 @@
             END IF
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHBEV_2STAGE( 'N', UPLO, N, KD, V, LDU, D3, Z, LDU, &
                                WORK, LWORK, RWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHBEV_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9998 ) 'CHBEV_2STAGE(N,' // UPLO // ')', &
                   IINFO, N, KD, JTYPE, IOLDSD
@@ -1805,12 +2259,32 @@
             TEMP2 = MAXVAL(ABS(D1(1:N)-D3(1:N)))
             RESULT( NTEST ) = TEMP2 / MAX( UNFL, ULP*MAX( TEMP1, TEMP2 ) )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, A, LDA, V, LDU )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR( 'V', 'A', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M, WA1, Z, LDU, IWORK, WORK, LWORK, &
                          RWORK, LRWORK, IWORK( 2*N+1 ), LIWORK-2*N, &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVR(V,A,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1825,16 +2299,36 @@
 !
 !              Do tests 45 and 46 (or ... )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET21( 1, UPLO, N, 0, A, LDU, WA1, D2, Z, LDU, V, &
                          LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR_2STAGE( 'N', 'A', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M2, WA2, Z, LDU, &
                                 IWORK, WORK, LWORK, RWORK, LRWORK, &
                                 IWORK( 2*N+1 ), LIWORK-2*N, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVR_2STAGE(N,A,' // UPLO // &
@@ -1857,11 +2351,31 @@
  1170          CONTINUE
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR( 'V', 'I', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, IWORK, WORK, LWORK, &
                          RWORK, LRWORK, IWORK( 2*N+1 ), LIWORK-2*N, &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVR(V,I,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1878,17 +2392,47 @@
 !
 !              Do tests 48 and 49 (or +??)
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET22( 1, UPLO, N, M2, 0, A, LDU, WA2, D2, Z, LDU, &
                          V, LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR_2STAGE( 'N', 'I', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M3, WA3, Z, LDU, &
                                 IWORK, WORK, LWORK, RWORK, LRWORK, &
                                 IWORK( 2*N+1 ), LIWORK-2*N, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) 'CHEEVR_2STAGE(N,I,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1909,11 +2453,31 @@
  1180          CONTINUE
 !
             NTEST = NTEST + 1
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR( 'V', 'V', UPLO, N, A, LDU, VL, VU, IL, IU, &
                          ABSTOL, M2, WA2, Z, LDU, IWORK, WORK, LWORK, &
                          RWORK, LRWORK, IWORK( 2*N+1 ), LIWORK-2*N, &
                          IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 )'CHEEVR(V,V,' // UPLO // &
                   ')', IINFO, N, JTYPE, IOLDSD
@@ -1930,17 +2494,47 @@
 !
 !              Do tests 51 and 52 (or +??)
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
             CALL CHET22( 1, UPLO, N, M2, 0, A, LDU, WA2, D2, Z, LDU, &
                          V, LDU, TAU, WORK, RWORK, RESULT( NTEST ) )
 !
             NTEST = NTEST + 2
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CHEEVR_2STAGE( 'N', 'V', UPLO, N, A, LDU, VL, VU, &
                                 IL, IU, ABSTOL, M3, WA3, Z, LDU, &
                                 IWORK, WORK, LWORK, RWORK, LRWORK, &
                                 IWORK( 2*N+1 ), LIWORK-2*N, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CHEEVR_2STAGE : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 ) THEN
                WRITE( NOUNIT, FMT = 9999 ) &
                   'CHEEVR_2STAGE(N,V,' // UPLO // &
@@ -1970,7 +2564,17 @@
             END IF
             RESULT( NTEST ) = ( TEMP1+TEMP2 ) / MAX( UNFL, TEMP3*ULP )
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CLACPY( ' ', N, N, V, LDU, A, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
 !
 !
@@ -2007,4 +2611,7 @@
 !     End of CDRVST2STG
 !
 END
+
+
+
 

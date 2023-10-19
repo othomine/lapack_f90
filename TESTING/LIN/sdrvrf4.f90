@@ -109,6 +109,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_lin
 !
@@ -143,6 +144,9 @@
    INTEGER            I, IFORM, IIK, IIN, INFO, IUPLO, J, K, N, &
                       NFAIL, NRUN, IALPHA, ITRANS
    REAL               ALPHA, BETA, EPS, NORMA, NORMC
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          UPLOS( 2 ), FORMS( 2 ), TRANSS( 2 )
@@ -274,26 +278,66 @@
                                          S_WORK_SLANGE )
 !
                      SRNAMT = 'STRTTF'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL STRTTF( CFORM, UPLO, N, C1, LDC, CRF, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : STRTTF : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       call ssyrk the BLAS routine -> gives C1
 !
                      SRNAMT = 'SSYRK '
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SSYRK( UPLO, TRANS, N, K, ALPHA, A, LDA, &
                                  BETA, C1, LDC )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SSYRK : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       call ssfrk the RFP routine -> gives CRF
 !
                      SRNAMT = 'SSFRK '
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL SSFRK( CFORM, UPLO, TRANS, N, K, ALPHA, A, &
                                  LDA, BETA, CRF )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : SSFRK : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       convert CRF in full format -> gives C2
 !
                      SRNAMT = 'STFTTR'
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL STFTTR( CFORM, UPLO, N, CRF, C2, LDC, &
                                   INFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : STFTTR : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
 !
 !                       compare C1 and C2
 !
@@ -355,4 +399,8 @@
 !     End of SDRVRF4
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

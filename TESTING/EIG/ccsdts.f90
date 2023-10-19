@@ -219,6 +219,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -250,6 +251,9 @@
 !     .. Local Scalars ..
    INTEGER            I, INFO, R
    REAL               EPS2, RESID, ULP, ULPINV
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               SLAMCH, CLANGE, CLANHE
@@ -266,9 +270,29 @@
 !
 !     The first half of the routine checks the 2-by-2 CSD
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', M, M, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', M, M, -1.0E0, &
                X, LDX, 1.0E0, WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF (M > 0) THEN
       EPS2 = MAX( ULP, CLANGE( '1', M, M, WORK, LDX, RWORK ) / REAL( M ) )
    ELSE
@@ -278,24 +302,74 @@
 !
 !     Copy the matrix X to the array XF.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLACPY( 'Full', M, M, X, LDX, XF, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute the CSD
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CUNCSD( 'Y', 'Y', 'Y', 'Y', 'N', 'D', M, P, Q, XF(1,1), LDX, &
                 XF(1,Q+1), LDX, XF(P+1,1), LDX, XF(P+1,Q+1), LDX, &
                 THETA, U1, LDU1, U2, LDU2, V1T, LDV1T, V2T, LDV2T, &
                 WORK, LWORK, RWORK, 17*(R+2), IWORK, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CUNCSD : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute XF := diag(U1,U2)'*X*diag(V1,V2) - [D11 D12; D21 D22]
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLACPY( 'Full', M, M, X, LDX, XF, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, (1.0E0,0.0E0), &
                XF, LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, (1.0E0,0.0E0), &
                U1, LDU1, WORK, LDX, (0.0E0,0.0E0), XF, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(P,Q)-R
       XF(I,I) = XF(I,I) - (1.0E0,0.0E0)
@@ -304,11 +378,31 @@
       XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) = XF(MIN(P,Q)-R+I,MIN(P,Q)-R+I) - CMPLX( COS(THETA(I)), 0.0E0 )
    END DO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', P, M-Q, M-Q, &
                (1.0E0,0.0E0), XF(1,Q+1), LDX, V2T, LDV2T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', P, M-Q, P, &
                (1.0E0,0.0E0), U1, LDU1, WORK, LDX, (0.0E0,0.0E0), XF(1,Q+1), LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(P,M-Q)-R
       XF(P-I+1,M-I+1) = XF(P-I+1,M-I+1) + (1.0E0,0.0E0)
@@ -319,11 +413,31 @@
          CMPLX( SIN(THETA(R-I+1)), 0.0E0 )
    END DO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, (1.0E0,0.0E0), &
                XF(P+1,1), LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, Q, M-P, &
                (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), XF(P+1,1), LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(M-P,Q)-R
       XF(M-I+1,Q-I+1) = XF(M-I+1,Q-I+1) - (1.0E0,0.0E0)
@@ -334,11 +448,31 @@
                 CMPLX( SIN(THETA(R-I+1)), 0.0E0 )
    END DO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, M-Q, M-Q, &
                (1.0E0,0.0E0), XF(P+1,Q+1), LDX, V2T, LDV2T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, M-Q, M-P, &
                (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), XF(P+1,Q+1), LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(M-P,M-Q)-R
       XF(P+I,Q+I) = XF(P+I,Q+I) - (1.0E0,0.0E0)
@@ -371,9 +505,29 @@
 !
 !     Compute I - U1'*U1
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', P, P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E0, &
                U1, LDU1, 1.0E0, WORK, LDU1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - U'*U ) / ( MAX(1,P) * ULP ) .
 !
@@ -382,9 +536,29 @@
 !
 !     Compute I - U2'*U2
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', M-P, M-P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU2 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -1.0E0, &
                U2, LDU2, 1.0E0, WORK, LDU2 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - U2'*U2 ) / ( MAX(1,M-P) * ULP ) .
 !
@@ -393,9 +567,29 @@
 !
 !     Compute I - V1T*V1T'
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV1T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'No transpose', Q, Q, -1.0E0, &
                V1T, LDV1T, 1.0E0, WORK, LDV1T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - V1T*V1T' ) / ( MAX(1,Q) * ULP ) .
 !
@@ -404,9 +598,29 @@
 !
 !     Compute I - V2T*V2T'
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', M-Q, M-Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV2T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'No transpose', M-Q, M-Q, -1.0E0, &
                V2T, LDV2T, 1.0E0, WORK, LDV2T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - V2T*V2T' ) / ( MAX(1,M-Q) * ULP ) .
 !
@@ -429,9 +643,29 @@
 !
 !     The second half of the routine checks the 2-by-1 CSD
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', Q, M, -1.0E0, &
                X, LDX, 1.0E0, WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF (M > 0) THEN
       EPS2 = MAX( ULP, &
                   CLANGE( '1', Q, Q, WORK, LDX, RWORK ) / REAL( M ) )
@@ -442,21 +676,61 @@
 !
 !     Copy the matrix X to the array XF.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLACPY( 'Full', M, Q, X, LDX, XF, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLACPY : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute the CSD
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CUNCSD2BY1( 'Y', 'Y', 'Y', M, P, Q, XF(1,1), LDX, XF(P+1,1), &
                     LDX, THETA, U1, LDU1, U2, LDU2, V1T, LDV1T, WORK, &
                     LWORK, RWORK, 17*(R+2), IWORK, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CUNCSD2BY1 : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute [X11;X21] := diag(U1,U2)'*[X11;X21]*V1 - [D11;D21]
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', P, Q, Q, (1.0E0,0.0E0), &
                X, LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', P, Q, P, (1.0E0,0.0E0), &
                U1, LDU1, WORK, LDX, (0.0E0,0.0E0), X, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    FORALL (I = 1:MIN(P,Q)-R) X(I,I) = X(I,I) - (1.0E0,0.0E0)
    DO I = 1, R
@@ -465,11 +739,31 @@
                  0.0E0 )
    END DO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'No transpose', 'Conjugate transpose', M-P, Q, Q, (1.0E0,0.0E0), &
                X(P+1,1), LDX, V1T, LDV1T, (0.0E0,0.0E0), WORK, LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'Conjugate transpose', 'No transpose', M-P, Q, M-P, &
                (1.0E0,0.0E0), U2, LDU2, WORK, LDX, (0.0E0,0.0E0), X(P+1,1), LDX )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    DO I = 1, MIN(M-P,Q)-R
       X(M-I+1,Q-I+1) = X(M-I+1,Q-I+1) - (1.0E0,0.0E0)
@@ -492,9 +786,29 @@
 !
 !     Compute I - U1'*U1
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', P, P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', P, P, -1.0E0, &
                U1, LDU1, 1.0E0, WORK, LDU1 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - U1'*U1 ) / ( MAX(1,P) * ULP ) .
 !
@@ -503,9 +817,29 @@
 !
 !     Compute I - U2'*U2
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', M-P, M-P, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDU2 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'Conjugate transpose', M-P, M-P, -1.0E0, &
                U2, LDU2, 1.0E0, WORK, LDU2 )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - U2'*U2 ) / ( MAX(1,M-P) * ULP ) .
 !
@@ -514,9 +848,29 @@
 !
 !     Compute I - V1T*V1T'
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CLASET( 'Full', Q, Q, (0.0E0,0.0E0), (1.0E0,0.0E0), WORK, LDV1T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHERK( 'Upper', 'No transpose', Q, Q, -1.0E0, &
                V1T, LDV1T, 1.0E0, WORK, LDV1T )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHERK : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     Compute norm( I - V1T*V1T' ) / ( MAX(1,Q) * ULP ) .
 !
@@ -542,4 +896,7 @@
 !     End of CCSDTS
 !
 END
+
+
+
 

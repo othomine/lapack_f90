@@ -196,6 +196,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -224,6 +225,9 @@
    CHARACTER          C1, DIAG
    CHARACTER*2        C2
    INTEGER            J, MB, NX
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, LSAMEN
@@ -280,7 +284,17 @@
       INFO = -15
    END IF
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SLARHS', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -295,7 +309,17 @@
    END IF
    IF( .NOT.LSAME( XTYPE, 'C' ) ) THEN
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SLARNV( 2, ISEED, N, X( 1, J ) )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SLARNV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
    END IF
 !
@@ -308,23 +332,53 @@
 !
 !        General matrix
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL SGEMM( TRANS, 'N', MB, NRHS, NX, 1.0E+0, A, LDA, X, LDX, &
                   0.0E+0, B, LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( LSAMEN( 2, C2, 'PO' ) .OR. LSAMEN( 2, C2, 'SY' ) ) THEN
 !
 !        Symmetric matrix, 2-D storage
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL SSYMM( 'Left', UPLO, N, NRHS, 1.0E+0, A, LDA, X, LDX, 0.0E+0, &
                   B, LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : SSYMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( LSAMEN( 2, C2, 'GB' ) ) THEN
 !
 !        General matrix, band storage
 !
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SGBMV( TRANS, MB, NX, KL, KU, 1.0E+0, A, LDA, X( 1, J ), &
                      1, 0.0E+0, B( 1, J ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SGBMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'PB' ) ) THEN
@@ -332,8 +386,18 @@
 !        Symmetric matrix, band storage
 !
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SSBMV( UPLO, N, KL, 1.0E+0, A, LDA, X( 1, J ), 1, 0.0E+0, &
                      B( 1, J ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SSBMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'PP' ) .OR. LSAMEN( 2, C2, 'SP' ) ) THEN
@@ -341,8 +405,18 @@
 !        Symmetric matrix, packed storage
 !
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SSPMV( UPLO, N, 1.0E+0, A, X( 1, J ), 1, 0.0E+0, B( 1, J ), &
                      1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SSPMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'TR' ) ) THEN
@@ -351,41 +425,101 @@
 !           KU = 1 => non-unit triangular
 !           KU = 2 => unit triangular
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL SLACPY( 'Full', N, NRHS, X, LDX, B, LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( KU == 2 ) THEN
          DIAG = 'U'
       ELSE
          DIAG = 'N'
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL STRMM( 'Left', UPLO, TRANS, DIAG, N, NRHS, 1.0E+0, A, LDA, B, &
                   LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : STRMM : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
    ELSE IF( LSAMEN( 2, C2, 'TP' ) ) THEN
 !
 !        Triangular matrix, packed storage
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL SLACPY( 'Full', N, NRHS, X, LDX, B, LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( KU == 2 ) THEN
          DIAG = 'U'
       ELSE
          DIAG = 'N'
       END IF
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STPMV( UPLO, TRANS, DIAG, N, A, B( 1, J ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STPMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
    ELSE IF( LSAMEN( 2, C2, 'TB' ) ) THEN
 !
 !        Triangular matrix, banded storage
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL SLACPY( 'Full', N, NRHS, X, LDX, B, LDB )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       IF( KU == 2 ) THEN
          DIAG = 'U'
       ELSE
          DIAG = 'N'
       END IF
       DO J = 1, NRHS
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL STBMV( UPLO, TRANS, DIAG, N, KL, A, LDA, B( 1, J ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : STBMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ENDDO
 !
    ELSE
@@ -393,7 +527,17 @@
 !        If PATH is none of the above, return with an error code.
 !
       INFO = -1
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SLARHS', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    END IF
 !
    RETURN
@@ -401,4 +545,7 @@
 !     End of SLARHS
 !
 END
+
+
+
 

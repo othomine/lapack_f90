@@ -392,6 +392,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -432,6 +433,9 @@
                       N, N1, NB, NERRS, NMATS, NMAX, NTEST, NTESTT, &
                       RSUB, SDIM
    REAL               SAFMAX, SAFMIN, TEMP1, TEMP2, ULP, ULPINV
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    INTEGER            IASIGN( MAXTYP ), IBSIGN( MAXTYP ), &
@@ -510,7 +514,17 @@
    IF( LWORK < MINWRK ) INFO = -20
 !
    IF( INFO /= 0 ) THEN
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL XERBLA( 'SDRGES', -INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : XERBLA : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RETURN
    END IF
 !
@@ -593,8 +607,19 @@
 !
             IF( ABS( KATYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
-               IF( IN /= N ) &
+               IF( IN /= N )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, A, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             ELSE
                IN = N
             END IF
@@ -611,8 +636,19 @@
 !
             IF( ABS( KBTYPE( JTYPE ) ) == 3 ) THEN
                IN = 2*( ( N-1 ) / 2 ) + 1
-               IF( IN /= N ) &
+               IF( IN /= N )  THEN
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, B, LDA )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
+               ENDIF
             ELSE
                IN = N
             END IF
@@ -637,12 +673,32 @@
                      Q( JR, JC ) = SLARND( 3, ISEED )
                      Z( JR, JC ) = SLARND( 3, ISEED )
                   ENDDO
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLARFG( N+1-JC, Q( JC, JC ), Q( JC+1, JC ), 1, &
                                WORK( JC ) )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLARFG : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   WORK( 2*N+JC ) = SIGN( 1.0E+0, Q( JC, JC ) )
                   Q( JC, JC ) = 1.0E+0
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                   CALL SLARFG( N+1-JC, Z( JC, JC ), Z( JC+1, JC ), 1, &
                                WORK( N+JC ) )
+#ifdef _TIMER
+                  call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                  open(file='results.out', unit=10, position = 'append')
+                  write(10,'(A,F16.10,A)') 'Total time : SLARFG : ',&
+                        real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                  close(10)
+#endif
                   WORK( 3*N+JC ) = SIGN( 1.0E+0, Z( JC, JC ) )
                   Z( JC, JC ) = 1.0E+0
                ENDDO
@@ -659,17 +715,57 @@
                   A(1:N,JC) = WORK(2*N+1:2*N+N)*WORK(3*N+JC)*A(1:N,JC)
                   B(1:N,JC) = WORK(2*N+1:2*N+N)*WORK(3*N+JC)*B(1:N,JC)
                ENDDO
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SORM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, A, &
                             LDA, WORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SORM2R : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) GO TO 100
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SORM2R( 'R', 'T', N, N, N-1, Z, LDQ, WORK( N+1 ), &
                             A, LDA, WORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SORM2R : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) GO TO 100
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SORM2R( 'L', 'N', N, N, N-1, Q, LDQ, WORK, B, &
                             LDA, WORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SORM2R : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) GO TO 100
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL SORM2R( 'R', 'T', N, N, N-1, Z, LDQ, WORK( N+1 ), &
                             B, LDA, WORK( 2*N+1 ), IINFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : SORM2R : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
                IF( IINFO /= 0 ) GO TO 100
             END IF
          ELSE
@@ -712,13 +808,43 @@
 !
 !              Call SGGES to compute H, T, Q, Z, alpha, and beta.
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLACPY( 'Full', N, N, A, LDA, S, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SLACPY( 'Full', N, N, B, LDA, T, LDA )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SLACPY : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             NTEST = 1 + RSUB + ISORT
             RESULT( 1+RSUB+ISORT ) = ULPINV
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL SGGES( 'V', 'V', SORT, SLCTES, N, S, LDA, T, LDA, &
                         SDIM, ALPHAR, ALPHAI, BETA, Q, LDQ, Z, LDQ, &
                         WORK, LWORK, BWORK, IINFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : SGGES : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( IINFO /= 0 .AND. IINFO /= N+2 ) THEN
                RESULT( 1+RSUB+ISORT ) = ULPINV
                WRITE( NOUNIT, FMT = 9999 )'SGGES', IINFO, N, JTYPE, &
@@ -957,4 +1083,7 @@
 !     End of SDRGES
 !
 END
+
+
+
 

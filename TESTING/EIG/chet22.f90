@@ -152,6 +152,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -178,6 +179,9 @@
 !     .. Local Scalars ..
    INTEGER            J, JJ, JJ1, JJ2, NN, NNP1
    REAL               ANORM, ULP, UNFL, WNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               CLANHE, SLAMCH
@@ -204,10 +208,30 @@
 !
 !     ITYPE=1: error = U**H A U - S
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CHEMM( 'L', UPLO, N, M, (1.0E0,0.0E0), A, LDA, U, LDU, (0.0E0,0.0E0), WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CHEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    NN = N*N
    NNP1 = NN + 1
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEMM( 'C', 'N', M, M, N, (1.0E0,0.0E0), U, LDU, WORK, N, (0.0E0,0.0E0), WORK( NNP1 ), N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    DO J = 1, M
       JJ = NN + ( J-1 )*N + J
       WORK( JJ ) = WORK( JJ ) - D( J )
@@ -244,4 +268,7 @@
 !     End of CHET22
 !
 END
+
+
+
 

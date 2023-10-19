@@ -190,6 +190,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -220,6 +221,9 @@
    DOUBLE PRECISION   ABMAX, ACOEF, ALFMAX, ANORM, BCOEFI, BCOEFR, &
                       BETMAX, BNORM, ENORM, ENRMER, ERRNRM, SAFMAX, &
                       SAFMIN, SALFI, SALFR, SBETA, SCALE, TEMP1, ULP
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLAMCH, DLANGE
@@ -282,10 +286,30 @@
                     ABS( SBETA )*ANORM, SAFMIN )
             ACOEF = SCALE*SBETA
             BCOEFR = SCALE*SALFR
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC ), 1, &
                         0.0D0, WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC ), &
                         1, 1.0D0, WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          ELSE
 !
 !              Complex conjugate pair
@@ -312,19 +336,79 @@
                BCOEFI = -BCOEFI
             END IF
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC ), 1, &
                         0.0D0, WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC ), &
                         1, 1.0D0, WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, BCOEFI, B, LDA, E( 1, JVEC+1 ), &
                         1, 1.0D0, WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
 !
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, ACOEF, A, LDA, E( 1, JVEC+1 ), &
                         1, 0.0D0, WORK( N*JVEC+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, -BCOEFI, B, LDA, E( 1, JVEC ), &
                         1, 1.0D0, WORK( N*JVEC+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL DGEMV( TRANS, N, N, -BCOEFR, B, LDA, E( 1, JVEC+1 ), &
                         1, 1.0D0, WORK( N*JVEC+1 ), 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : DGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
          END IF
       END IF
    ENDDO
@@ -369,4 +453,7 @@
 !     End of DGET52
 !
 END
+
+
+
 

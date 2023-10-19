@@ -65,6 +65,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -103,8 +104,7 @@
                       VERS_MAJOR, VERS_MINOR, VERS_PATCH
    DOUBLE PRECISION   EPS, THRESH
    REAL               SEPS
-   INTEGER(8)         nb_periods_sec, S1, S2, S1T, S2T
-   REAL               STOT
+   INTEGER(8) nb_periods_sec, S1T_time, S2T_time
 !     ..
 !     .. Local Arrays ..
    LOGICAL            DOTYPE( MATMAX )
@@ -138,7 +138,7 @@
 !     ..
 !     .. Executable Statements ..
 !
-   call system_clock(count_rate=nb_periods_sec,count=S1T)
+    call system_clock(count_rate=nb_periods_sec,count=S1T_time)
    LDA = NMAX
    FATAL = .FALSE.
 !
@@ -300,16 +300,10 @@
         CALL ZERRAB( NOUT )
 !
       IF( TSTDRV ) THEN
-         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL ZDRVAB( DOTYPE, NM, MVAL, NNS, &
                       NSVAL, THRESH, LDA, A( 1, 1 ), &
                       A( 1, 2 ), B( 1, 1 ), B( 1, 2 ), &
                       WORK, RWORK, SWORK, IWORK, NOUT )
-         call system_clock(count_rate=nb_periods_sec,count=S2)
-         open(file='results.out', unit=10, position = 'append')
-         write(10,'(A,F16.10,A)') 'Total time : ZDRVAB : ', &
-               real(S2-S1)/real(nb_periods_sec), ' s'
-         close(10)
       ELSE
          WRITE( NOUT, FMT = 9989 )'ZCGESV'
       END IF
@@ -326,16 +320,10 @@
 !
 !
       IF( TSTDRV ) THEN
-         call system_clock(count_rate=nb_periods_sec,count=S1)
          CALL ZDRVAC( DOTYPE, NM, MVAL, NNS, NSVAL, &
                       THRESH, LDA, A( 1, 1 ), A( 1, 2 ), &
                       B( 1, 1 ), B( 1, 2 ), &
                       WORK, RWORK, SWORK, NOUT )
-         call system_clock(count_rate=nb_periods_sec,count=S2)
-         open(file='results.out', unit=10, position = 'append')
-         write(10,'(A,F16.10,A)') 'Total time : ZDRVAC : ', &
-               real(S2-S1)/real(nb_periods_sec), ' s'
-         close(10)
       ELSE
          WRITE( NOUT, FMT = 9989 )'ZCPOSV'
       END IF
@@ -352,9 +340,9 @@
 !
   140 CONTINUE
    CLOSE ( NIN )
-   call system_clock(count_rate=nb_periods_sec,count=S2T)
+    call system_clock(count_rate=nb_periods_sec,count=S2T_time)
    WRITE( NOUT, FMT = 9998 )
-   WRITE( NOUT, FMT = 9997 ) real(S2T - S1T)/real(nb_periods_sec)
+   WRITE( NOUT, FMT = 9997 ) real(S2T_time - S1T_time)/real(nb_periods_sec)
 !
  9999 FORMAT( / ' Execution not attempted due to input errors' )
  9998 FORMAT( / ' End of tests' )
@@ -376,4 +364,8 @@
 !     End of ZCHKAB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

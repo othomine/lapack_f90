@@ -118,6 +118,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -143,6 +144,9 @@
 !     .. Local Scalars ..
    INTEGER            I, J
    REAL               ANORM, EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -165,10 +169,30 @@
 !
 !     Compute U' * A * V.
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'N', 'T', M, NS, N, 1.0E+0, A, LDA, VT, &
                LDVT, 0.0E+0, WORK( 1+NS*NS ), M )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( 'T', 'N', NS, NS, M, -1.0E+0, U, LDU, WORK( 1+NS*NS ), &
                M, 0.0E+0, WORK, NS )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
 !     norm(S - U' * B * V)
 !
@@ -201,4 +225,7 @@
 !     End of SBDT05
 !
 END
+
+
+
 

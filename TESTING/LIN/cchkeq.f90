@@ -46,6 +46,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_lin
 !
@@ -81,6 +82,9 @@
    CHARACTER*3        PATH
    INTEGER            I, INFO, J, KL, KU, M, N
    REAL               CCOND, EPS, NORM, RATIO, RCMAX, RCMIN, RCOND
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               C( NSZ ), POW( NPOW ), R( NSZ ), RESLTS( 5 ), &
@@ -126,7 +130,17 @@
             ENDDO
          ENDDO
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CGEEQU( M, N, A, NSZ, R, C, RCOND, CCOND, NORM, INFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CGEEQU : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( INFO /= 0 ) THEN
             RESLTS( 1 ) = ONE
@@ -160,7 +174,17 @@
    DO J = 1, NSZ
       A( MAX( NSZ-1, 1 ), J ) = CZERO
    ENDDO
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEEQU( NSZ, NSZ, A, NSZ, R, C, RCOND, CCOND, NORM, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEEQU : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF( INFO /= MAX( NSZ-1, 1 ) ) &
       RESLTS( 1 ) = ONE
 !
@@ -170,7 +194,17 @@
    DO I = 1, NSZ
       A( I, MAX( NSZ-1, 1 ) ) = CZERO
       ENDDO
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CGEEQU( NSZ, NSZ, A, NSZ, R, C, RCOND, CCOND, NORM, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CGEEQU : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF( INFO /= NSZ+MAX( NSZ-1, 1 ) ) &
       RESLTS( 1 ) = ONE
    RESLTS( 1 ) = RESLTS( 1 ) / EPS
@@ -197,8 +231,18 @@
                      ENDDO
                   ENDDO
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL CGBEQU( M, N, KL, KU, AB, NSZB, R, C, RCOND, &
                             CCOND, NORM, INFO )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : CGBEQU : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                IF( INFO /= 0 ) THEN
                   IF( .NOT.( ( N+KL < M .AND. INFO == N+KL+1 ) .OR. &
@@ -279,7 +323,17 @@
             ENDDO
          ENDDO
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CPOEQU( N, A, NSZ, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CPOEQU : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( INFO /= 0 ) THEN
          RESLTS( 3 ) = ONE
@@ -299,7 +353,17 @@
       END IF
       ENDDO
    A( MAX( NSZ-1, 1 ), MAX( NSZ-1, 1 ) ) = -CONE
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CPOEQU( NSZ, A, NSZ, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CPOEQU : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF( INFO /= MAX( NSZ-1, 1 ) ) &
       RESLTS( 3 ) = ONE
    RESLTS( 3 ) = RESLTS( 3 ) / EPS
@@ -317,7 +381,17 @@
          AP( ( I*( I+1 ) ) / 2 ) = POW( 2*I+1 )
          ENDDO
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CPPEQU( 'U', N, AP, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CPPEQU : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( INFO /= 0 ) THEN
          RESLTS( 4 ) = ONE
@@ -347,7 +421,17 @@
          J = J + ( N-I+1 )
          ENDDO
 !
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CPPEQU( 'L', N, AP, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CPPEQU : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 !
       IF( INFO /= 0 ) THEN
          RESLTS( 4 ) = ONE
@@ -369,7 +453,17 @@
       ENDDO
    I = ( NSZ*( NSZ+1 ) ) / 2 - 2
    AP( I ) = -CONE
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL CPPEQU( 'L', NSZ, AP, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : CPPEQU : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
    IF( INFO /= MAX( NSZ-1, 1 ) ) &
       RESLTS( 4 ) = ONE
    RESLTS( 4 ) = RESLTS( 4 ) / EPS
@@ -390,7 +484,17 @@
             AB( KL+1, J ) = POW( 2*J+1 )
             ENDDO
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CPBEQU( 'U', N, KL, AB, NSZB, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CPBEQU : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( INFO /= 0 ) THEN
             RESLTS( 5 ) = ONE
@@ -410,7 +514,17 @@
          END IF
          IF( N /= 0 ) THEN
             AB( KL+1, MAX( N-1, 1 ) ) = -CONE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CPBEQU( 'U', N, KL, AB, NSZB, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CPBEQU : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( INFO /= MAX( N-1, 1 ) ) &
                RESLTS( 5 ) = ONE
          END IF
@@ -426,7 +540,17 @@
             AB( 1, J ) = POW( 2*J+1 )
             ENDDO
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CPBEQU( 'L', N, KL, AB, NSZB, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CPBEQU : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
 !
          IF( INFO /= 0 ) THEN
             RESLTS( 5 ) = ONE
@@ -446,7 +570,17 @@
          END IF
          IF( N /= 0 ) THEN
             AB( 1, MAX( N-1, 1 ) ) = -CONE
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CPBEQU( 'L', N, KL, AB, NSZB, R, RCOND, NORM, INFO )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CPBEQU : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             IF( INFO /= MAX( N-1, 1 ) ) &
                RESLTS( 5 ) = ONE
          END IF
@@ -489,4 +623,8 @@
 !     End of CCHKEQ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

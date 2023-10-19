@@ -57,6 +57,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -78,6 +79,9 @@
    LOGICAL            CORZ, SORD
    CHARACTER*2        C2
    INTEGER            J
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, LSAMEN
@@ -537,4 +541,7 @@
 !     End of DLAHD2
 !
 END
+
+
+
 

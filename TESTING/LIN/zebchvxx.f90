@@ -88,6 +88,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -117,6 +118,9 @@
                       CONDTHRESH, ERRTHRESH
    COMPLEX*16         ZDUM
 
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     .. Local Arrays ..
    DOUBLE PRECISION   TSTRAT(NTESTS), RINV(NMAX), PARAMS(NPARAMS), &
                       S(NMAX),R(NMAX),C(NMAX),RWORK(3*NMAX), &
@@ -186,7 +190,17 @@
            LDA, WORK, INFO, PATH)
 
 !        Copy A into ACOPY.
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLACPY('ALL', N, N, A, NMAX, ACOPY, NMAX)
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
 !        Store A in band format for GB tests
       DO J = 1, N
@@ -206,35 +220,95 @@
             ABCOPY( I, J ) = (0.0D+0,0.0D+0)
          END DO
       END DO
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZLACPY('ALL', KL+KU+1, N, AB, LDAB, ABCOPY, LDAB)
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
 
 !        Call Z**SVXX with default PARAMS and N_ERR_BND = 3.
       IF ( LSAMEN( 2, C2, 'SY' ) ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZSYSVXX(FACT, UPLO, N, NRHS, ACOPY, LDA, AF, LDA, &
               IPIV, EQUED, S, B, LDA, X, LDA, ORCOND, &
               RPVGRW, BERR, NERRBND, ERRBND_N, ERRBND_C, NPARAMS, &
               PARAMS, WORK, RWORK, INFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZSYSVXX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ELSE IF ( LSAMEN( 2, C2, 'PO' ) ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZPOSVXX(FACT, UPLO, N, NRHS, ACOPY, LDA, AF, LDA, &
               EQUED, S, B, LDA, X, LDA, ORCOND, &
               RPVGRW, BERR, NERRBND, ERRBND_N, ERRBND_C, NPARAMS, &
               PARAMS, WORK, RWORK, INFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZPOSVXX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ELSE IF ( LSAMEN( 2, C2, 'HE' ) ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZHESVXX(FACT, UPLO, N, NRHS, ACOPY, LDA, AF, LDA, &
               IPIV, EQUED, S, B, LDA, X, LDA, ORCOND, &
               RPVGRW, BERR, NERRBND, ERRBND_N, ERRBND_C, NPARAMS, &
               PARAMS, WORK, RWORK, INFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZHESVXX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ELSE IF ( LSAMEN( 2, C2, 'GB' ) ) THEN
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZGBSVXX(FACT, TRANS, N, KL, KU, NRHS, ABCOPY, &
               LDAB, AFB, LDAFB, IPIV, EQUED, R, C, B, &
               LDA, X, LDA, ORCOND, RPVGRW, BERR, NERRBND, &
               ERRBND_N, ERRBND_C, NPARAMS, PARAMS, WORK, RWORK, &
               INFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZGBSVXX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       ELSE
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL ZGESVXX(FACT, TRANS, N, NRHS, ACOPY, LDA, AF, LDA, &
               IPIV, EQUED, R, C, B, LDA, X, LDA, ORCOND, &
               RPVGRW, BERR, NERRBND, ERRBND_N, ERRBND_C, NPARAMS, &
               PARAMS, WORK, RWORK, INFO)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : ZGESVXX : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
       END IF
 
       N_AUX_TESTS = N_AUX_TESTS + 1
@@ -506,4 +580,8 @@
 !     End of ZEBCHVXX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

@@ -111,6 +111,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_eig
 !
@@ -137,6 +138,9 @@
 !     .. Local Scalars ..
    INTEGER            J
    DOUBLE PRECISION   BNORM, EPS, REALMN
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    DOUBLE PRECISION   DLAMCH, DZASUM, ZLANGE
@@ -157,9 +161,29 @@
 !     Compute norm(B - U * C)
 !
    DO J = 1, N
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZCOPY( M, B( 1, J ), 1, WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZCOPY : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL ZGEMV( 'No transpose', M, M, -DCMPLX( 1.0D+0 ), U, LDU, &
                   C( 1, J ), 1, DCMPLX( 1.0D+0 ), WORK, 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : ZGEMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
       RESID = MAX( RESID, DZASUM( M, WORK, 1 ) )
    ENDDO
 !
@@ -187,4 +211,7 @@
 !     End of ZBDT02
 !
 END
+
+
+
 

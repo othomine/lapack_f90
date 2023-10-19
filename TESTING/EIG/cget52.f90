@@ -152,6 +152,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -182,6 +183,9 @@
                       ENRMER, ERRNRM, SAFMAX, SAFMIN, SCALE, TEMP1, &
                       ULP
    COMPLEX            ACOEFF, ALPHAI, BCOEFF, BETAI, X
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    REAL               CLANGE, SLAMCH
@@ -240,10 +244,30 @@
          ACOEFF = CONJG( ACOEFF )
          BCOEFF = CONJG( BCOEFF )
       END IF
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEMV( TRANS, N, N, ACOEFF, A, LDA, E( 1, JVEC ), 1, &
                   (0.0E+0,0.0E+0), WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
       CALL CGEMV( TRANS, N, N, -BCOEFF, B, LDA, E( 1, JVEC ), 1, &
                   (1.0E+0,0.0E+0), WORK( N*( JVEC-1 )+1 ), 1 )
+#ifdef _TIMER
+      call system_clock(count_rate=nb_periods_sec,count=S2_time)
+      open(file='results.out', unit=10, position = 'append')
+      write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+      close(10)
+#endif
    ENDDO
 !
    ERRNRM = CLANGE( 'One', N, N, WORK, N, RWORK ) / ENORM
@@ -272,4 +296,7 @@
 !     End of CGET52
 !
 END
+
+
+
 

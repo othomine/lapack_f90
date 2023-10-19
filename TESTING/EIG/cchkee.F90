@@ -1026,6 +1026,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -1075,7 +1076,7 @@
                       VERS_MAJOR, VERS_MINOR, VERS_PATCH
    INTEGER*4          N_THREADS, ONE_THREAD
    REAL               EPS, THRESH, THRSHN
-      INTEGER(8) nb_periods_sec, S1_time, S2_time, S1T_time, S2T_time
+   INTEGER(8) nb_periods_sec, S1T_time, S2T_time
 !     ..
 !     .. Local Arrays ..
    LOGICAL            DOTYPE( MAXT ), LOGWRK( NMAX )
@@ -2364,7 +2365,7 @@
   380 CONTINUE
    WRITE( NOUT, FMT = 9994 )
     call system_clock(count_rate=nb_periods_sec,count=S2T_time)
-   WRITE( NOUT, FMT = 9993 ) real(S2T - S1T)/real(nb_periods_sec)
+   WRITE( NOUT, FMT = 9993 ) real(S2T_time - S1T_time)/real(nb_periods_sec)
 !
    DEALLOCATE (S, STAT = AllocateStatus)
    DEALLOCATE (A, STAT = AllocateStatus)
@@ -2440,5 +2441,8 @@
 !     End of CCHKEE
 !
    END
+
+
+
 
 

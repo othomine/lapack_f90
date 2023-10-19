@@ -113,6 +113,9 @@
                       KUA, KLB, KUB, LIWORK, M, N
    DOUBLE PRECISION   ANRM, BNRM, BIGNUM, EPS, RES, RES1, RMUL, &
                       SCALE, SCALE3, SMLNUM, TNRM, XNRM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    DOUBLE PRECISION   DUML( MAXM ), DUMR( MAXN ), &
@@ -223,11 +226,41 @@
                      END IF
                      KNT = KNT + 1
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'All', M, N, C, MAXM, X, MAXM)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'All', M, N, C, MAXM, CC, MAXM)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DTRSYL( TRANA, TRANB, ISGN, M, N, &
                                   A, MAXM, B, MAXN, X, MAXM, &
                                   SCALE, IINFO )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DTRSYL : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( IINFO /= 0 ) &
                         NINFO( 1 ) = NINFO( 1 ) + 1
                      XNRM = DLANGE( 'M', M, N, X, MAXM, DUM )
@@ -237,12 +270,32 @@
                            RMUL = 1.0D0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
                                  A, MAXM, X, MAXM, -SCALE*RMUL, &
                                  CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMM( 'N', TRANB, M, N, N, &
                                   DBLE( ISGN )*RMUL, X, MAXM, B, &
                                   MAXN, 1.0D0, CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      RES1 = DLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                  ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -251,12 +304,42 @@
                      IF( RES > RMAX( 1 ) ) &
                         RMAX( 1 ) = RES
 !
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'All', M, N, C, MAXM, X, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DLACPY( 'All', M, N, C, MAXM, CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DLACPY : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DTRSYL3( TRANA, TRANB, ISGN, M, N, &
                                    A, MAXM, B, MAXN, X, MAXM, &
                                    SCALE3, IWORK, LIWORK, &
                                    SWORK, LDSWORK, INFO)
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DTRSYL3 : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      IF( INFO /= 0 ) &
                         NINFO( 2 ) = NINFO( 2 ) + 1
                      XNRM = DLANGE( 'M', M, N, X, MAXM, DUM )
@@ -266,12 +349,32 @@
                            RMUL = 1.0D0 / MAX( XNRM, TNRM )
                         END IF
                      END IF
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMM( TRANA, 'N', M, N, M, RMUL, &
                                  A, MAXM, X, MAXM, -SCALE3*RMUL, &
                                  CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                      CALL DGEMM( 'N', TRANB, M, N, N, &
                                  DBLE( ISGN )*RMUL, X, MAXM, B, &
                                  MAXN, 1.0D0, CC, MAXM )
+#ifdef _TIMER
+                     call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                     open(file='results.out', unit=10, position = 'append')
+                     write(10,'(A,F16.10,A)') 'Total time : DGEMM : ',&
+                           real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                     close(10)
+#endif
                      RES1 = DLANGE( 'M', M, N, CC, MAXM, DUM )
                      RES = RES1 / MAX( SMLNUM, SMLNUM*XNRM, &
                                 ( ( RMUL*TNRM )*EPS )*XNRM )
@@ -304,4 +407,6 @@
 !     End of DSYL01
 !
 END
+
+
 

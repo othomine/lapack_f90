@@ -126,6 +126,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex_eig
 !
@@ -152,6 +153,9 @@
 !     .. Local Scalars ..
    INTEGER            I, J
    REAL               BNORM, EPS
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -182,8 +186,18 @@
 !
          DO J = 1, N
             WORK(N+1:2*N) = S(1:N)*VT(1:N,J)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CGEMV( 'No transpose', N, N, -CMPLX( 1.0E+0 ), U, LDU, &
                         WORK( N+1 ), 1, CMPLX( 0.0E+0 ), WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK( J ) = WORK( J ) + D( J )
             IF( J > 1 ) THEN
                WORK( J-1 ) = WORK( J-1 ) + E( J-1 )
@@ -199,8 +213,18 @@
 !
          DO J = 1, N
             WORK(N+1:2*N) = S(1:N)*VT(1:N,J)
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
             CALL CGEMV( 'No transpose', N, N, -CMPLX( 1.0E+0 ), U, LDU, &
                         WORK( N+1 ), 1, CMPLX( 0.0E+0 ), WORK, 1 )
+#ifdef _TIMER
+            call system_clock(count_rate=nb_periods_sec,count=S2_time)
+            open(file='results.out', unit=10, position = 'append')
+            write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+                  real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+            close(10)
+#endif
             WORK( J ) = WORK( J ) + D( J )
             IF( J < N ) THEN
                WORK( J+1 ) = WORK( J+1 ) + E( J )
@@ -217,8 +241,18 @@
 !
       DO J = 1, N
          WORK(N+1:2*N) = S(1:N)*VT(1:N,J)
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL CGEMV( 'No transpose', N, N, -CMPLX( 1.0E+0 ), U, LDU, &
                      WORK( N+1 ), 1, CMPLX( 0.0E+0 ), WORK, 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : CGEMV : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          WORK( J ) = WORK( J ) + D( J )
          RESID = MAX( RESID, SCASUM( N, WORK, 1 ) )
       ENDDO
@@ -249,3 +283,6 @@
 !     End of CBDT03
 !
 END
+
+
+

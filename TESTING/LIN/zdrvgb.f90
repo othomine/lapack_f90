@@ -162,6 +162,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup complex16_lin
 !
@@ -210,6 +211,9 @@
    DOUBLE PRECISION   AINVNM, AMAX, ANORM, ANORMI, ANORMO, ANRMPV, &
                       CNDNUM, COLCND, RCOND, RCONDC, RCONDI, RCONDO, &
                       ROLDC, ROLDI, ROLDO, ROWCND, RPVGRW
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    CHARACTER          EQUEDS( 4 ), FACTS( 3 ), TRANSS( NTRAN )
@@ -404,7 +408,17 @@
 !
 !                 Save a copy of the matrix A in ASAV.
 !
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                CALL ZLACPY( 'Full', KL+KU+1, N, A, LDA, ASAV, LDA )
+#ifdef _TIMER
+               call system_clock(count_rate=nb_periods_sec,count=S2_time)
+               open(file='results.out', unit=10, position = 'append')
+               write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                     real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+               close(10)
+#endif
 !
                DO IEQUED = 1, 4
                   EQUED = EQUEDS( IEQUED )
@@ -433,16 +447,36 @@
 !                          'N' reuses the condition number from the
 !                          previous iteration with FACT = 'F').
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZLACPY( 'Full', KL+KU+1, N, ASAV, LDA, &
                                      AFB( KL+1 ), LDAFB )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( EQUIL .OR. IEQUED > 1 ) THEN
 !
 !                             Compute row and column scale factors to
 !                             equilibrate the matrix A.
 !
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZGBEQU( N, N, KL, KU, AFB( KL+1 ), &
                                         LDAFB, S, S( N+1 ), ROWCND, &
                                         COLCND, AMAX, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZGBEQU : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO == 0 .AND. N > 0 ) THEN
                               IF( LSAME( EQUED, 'R' ) ) THEN
                                  ROWCND = ZERO
@@ -457,10 +491,20 @@
 !
 !                                Equilibrate the matrix.
 !
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL ZLAQGB( N, N, KL, KU, AFB( KL+1 ), &
                                            LDAFB, S, S( N+1 ), &
                                            ROWCND, COLCND, AMAX, &
                                            EQUED )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : ZLAQGB : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                            END IF
                         END IF
 !
@@ -481,17 +525,47 @@
 !
 !                          Factor the matrix A.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZGBTRF( N, N, KL, KU, AFB, LDAFB, IWORK, &
                                      INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZGBTRF : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Form the inverse of A.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZLASET( 'Full', N, N, DCMPLX( ZERO ), &
                                      DCMPLX( ONE ), WORK, LDB )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         SRNAMT = 'ZGBTRS'
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZGBTRS( 'No transpose', N, KL, KU, N, &
                                      AFB, LDAFB, IWORK, WORK, LDB, &
                                      INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZGBTRS : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Compute the 1-norm condition number of A.
 !
@@ -528,8 +602,18 @@
 !
 !                          Restore the matrix A.
 !
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZLACPY( 'Full', KL+KU+1, N, ASAV, LDA, &
                                      A, LDA )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Form an exact solution and set the right hand
 !                          side.
@@ -539,8 +623,18 @@
                                      N, KL, KU, NRHS, A, LDA, XACT, &
                                      LDB, B, LDB, ISEED, INFO )
                         XTYPE = 'C'
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZLACPY( 'Full', N, NRHS, B, LDB, BSAV, &
                                      LDB )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
                         IF( NOFACT .AND. ITRAN == 1 ) THEN
 !
@@ -549,14 +643,44 @@
 !                             Compute the LU factorization of the matrix
 !                             and solve the system.
 !
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZLACPY( 'Full', KL+KU+1, N, A, LDA, &
                                         AFB( KL+1 ), LDAFB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZLACPY( 'Full', N, NRHS, B, LDB, X, &
                                         LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
                            SRNAMT = 'ZGBSV '
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZGBSV( N, KL, KU, NRHS, AFB, LDAFB, &
                                        IWORK, X, LDB, INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZGBSV : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
 !
 !                             Check error code from ZGBSV .
 !
@@ -578,8 +702,18 @@
 !                                Compute residual of the computed
 !                                solution.
 !
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL ZLACPY( 'Full', N, NRHS, B, LDB, &
                                            WORK, LDB )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               CALL ZGBT02( 'No transpose', N, N, KL, &
                                            KU, NRHS, A, LDA, X, LDB, &
                                            WORK, LDB, RWORK, &
@@ -610,31 +744,72 @@
 !
 !                          --- Test ZGBSVX ---
 !
-                        IF( .NOT.PREFAC ) &
+                        IF( .NOT.PREFAC )  THEN
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZLASET( 'Full', 2*KL+KU+1, N, &
                                         DCMPLX( ZERO ), &
                                         DCMPLX( ZERO ), AFB, LDAFB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
+                        ENDIF
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZLASET( 'Full', N, NRHS, DCMPLX( ZERO ), &
                                      DCMPLX( ZERO ), X, LDB )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZLASET : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
                         IF( IEQUED > 1 .AND. N > 0 ) THEN
 !
 !                             Equilibrate the matrix if FACT = 'F' and
 !                             EQUED = 'R', 'C', or 'B'.
 !
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZLAQGB( N, N, KL, KU, A, LDA, S, &
                                         S( N+1 ), ROWCND, COLCND, &
                                         AMAX, EQUED )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZLAQGB : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                         END IF
 !
 !                          Solve the system and compute the condition
 !                          number and error bounds using ZGBSVX.
 !
                         SRNAMT = 'ZGBSVX'
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                         CALL ZGBSVX( FACT, TRANS, N, KL, KU, NRHS, A, &
                                      LDA, AFB, LDAFB, IWORK, EQUED, &
                                      S, S( LDB+1 ), B, LDB, X, LDB, &
                                      RCOND, RWORK, RWORK( NRHS+1 ), &
                                      WORK, RWORK( 2*NRHS+1 ), INFO )
+#ifdef _TIMER
+                        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                        open(file='results.out', unit=10, position = 'append')
+                        write(10,'(A,F16.10,A)') 'Total time : ZGBSVX : ',&
+                              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                        close(10)
+#endif
 !
 !                          Check the error code from ZGBSVX.
 !
@@ -696,8 +871,18 @@
 !
 !                             Compute residual of the computed solution.
 !
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL ZLACPY( 'Full', N, NRHS, BSAV, LDB, &
                                         WORK, LDB )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : ZLACPY : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            CALL ZGBT02( TRANS, N, N, KL, KU, NRHS, &
                                         ASAV, LDA, X, LDB, WORK, LDB, &
                                         RWORK( 2*NRHS+1 ), &
@@ -840,4 +1025,8 @@
 !     End of ZDRVGB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                            
+
+
+
+

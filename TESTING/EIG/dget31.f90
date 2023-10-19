@@ -83,6 +83,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup double_eig
 !
@@ -108,6 +109,9 @@
                       IWI, IWR, NA, NW
    DOUBLE PRECISION   BIGNUM, CA, D1, D2, DEN, EPS, RES, SCALE, SMIN, &
                       SMLNUM, TMP, UNFL, WI, WR, XNORM
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    LOGICAL            LTRANS( 0: 1 )
@@ -191,10 +195,20 @@
                               WR = VWR( IWR )
                            END IF
                            WI = 0.0D0
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                         SMIN, CA, A, 2, D1, D2, B, 2, &
                                         WR, WI, X, 2, SCALE, XNORM, &
                                         INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DLALN2 : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO < 0 ) &
                               NINFO( 1 ) = NINFO( 1 ) + 1
                            IF( INFO > 0 ) &
@@ -249,10 +263,20 @@
                               ELSE
                                  WI = VWI( IWI )
                               END IF
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                            SMIN, CA, A, 2, D1, D2, B, &
                                            2, WR, WI, X, 2, SCALE, &
                                            XNORM, INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLALN2 : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               IF( INFO < 0 ) NINFO( 1 ) = NINFO( 1 ) + 1
                               IF( INFO > 0 ) NINFO( 2 ) = NINFO( 2 ) + 1
                               RES = ABS( ( CA*A( 1, 1 )-WR*D1 )* &
@@ -313,10 +337,20 @@
                               WR = VWR( IWR )
                            END IF
                            WI = 0.0D0
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                            CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                         SMIN, CA, A, 2, D1, D2, B, 2, &
                                         WR, WI, X, 2, SCALE, XNORM, &
                                         INFO )
+#ifdef _TIMER
+                           call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                           open(file='results.out', unit=10, position = 'append')
+                           write(10,'(A,F16.10,A)') 'Total time : DLALN2 : ',&
+                                 real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                           close(10)
+#endif
                            IF( INFO < 0 ) &
                               NINFO( 1 ) = NINFO( 1 ) + 1
                            IF( INFO > 0 ) &
@@ -400,10 +434,20 @@
                               ELSE
                                  WI = VWI( IWI )
                               END IF
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
                               CALL DLALN2( LTRANS( ITRANS ), NA, NW, &
                                            SMIN, CA, A, 2, D1, D2, B, &
                                            2, WR, WI, X, 2, SCALE, &
                                            XNORM, INFO )
+#ifdef _TIMER
+                              call system_clock(count_rate=nb_periods_sec,count=S2_time)
+                              open(file='results.out', unit=10, position = 'append')
+                              write(10,'(A,F16.10,A)') 'Total time : DLALN2 : ',&
+                                    real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+                              close(10)
+#endif
                               IF( INFO < 0 ) &
                                  NINFO( 1 ) = NINFO( 1 ) + 1
                               IF( INFO > 0 ) &
@@ -495,4 +539,7 @@
 !     End of DGET31
 !
 END
+
+
+
 

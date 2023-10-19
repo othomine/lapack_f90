@@ -159,6 +159,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup single_eig
 !
@@ -187,6 +188,9 @@
                       JVEC
    REAL               ANORM, ENORM, ENRMAX, ENRMIN, ERRNRM, TEMP1, &
                       ULP, UNFL
+#ifdef _TIMER
+      INTEGER(8)         nb_periods_sec, S1_time, S2_time
+#endif
 !     ..
 !     .. Local Arrays ..
    REAL               WMAT( 2, 2 )
@@ -300,7 +304,17 @@
 !
 !     Error =  AE - EW
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SLASET : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    IPAIR = 0
    IEROW = 1
@@ -321,23 +335,53 @@
          WMAT( 2, 1 ) = -WI( JCOL )
          WMAT( 1, 2 ) = WI( JCOL )
          WMAT( 2, 2 ) = WR( JCOL )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SGEMM( TRANSE, TRANSW, N, 2, 2, 1.0E+0, E( IEROW, IECOL ), &
                      LDE, WMAT, 2, 0.0E+0, WORK( N*( JCOL-1 )+1 ), N )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IPAIR = 2
       ELSE IF( IPAIR == 2 ) THEN
          IPAIR = 0
 !
       ELSE
 !
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
          CALL SAXPY( N, WR( JCOL ), E( IEROW, IECOL ), INCE, &
                      WORK( N*( JCOL-1 )+1 ), 1 )
+#ifdef _TIMER
+         call system_clock(count_rate=nb_periods_sec,count=S2_time)
+         open(file='results.out', unit=10, position = 'append')
+         write(10,'(A,F16.10,A)') 'Total time : SAXPY : ',&
+               real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+         close(10)
+#endif
          IPAIR = 0
       END IF
 !
    ENDDO
 !
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S1_time)
+#endif
    CALL SGEMM( TRANSA, TRANSE, N, N, N, 1.0E+0, A, LDA, E, LDE, -1.0E+0, &
                WORK, N )
+#ifdef _TIMER
+   call system_clock(count_rate=nb_periods_sec,count=S2_time)
+   open(file='results.out', unit=10, position = 'append')
+   write(10,'(A,F16.10,A)') 'Total time : SGEMM : ',&
+         real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+   close(10)
+#endif
 !
    ERRNRM = SLANGE( 'One', N, N, WORK, N, WORK( N*N+1 ) ) / ENORM
 !
@@ -363,4 +407,7 @@
 !     End of SGET22
 !
 END
+
+
+
 
