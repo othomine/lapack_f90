@@ -173,6 +173,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gels
 !
@@ -193,12 +194,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TPSD
@@ -211,15 +206,12 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ILAENV
-   REAL               CLANGE, SLAMCH
-   EXTERNAL           LSAME, ILAENV, CLANGE, SLAMCH
+   REAL               SLAMCH
+   EXTERNAL           LSAME, ILAENV, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGELQF, CGEQRF, CLASCL, CLASET, CTRTRS, CUNMLQ, &
+   EXTERNAL           CGELQF, CGEQRF, CLASCL, CTRTRS, CUNMLQ, &
                       CUNMQR, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -249,27 +241,21 @@
 !
    IF( INFO == 0 .OR. INFO == -10 ) THEN
 !
-      TPSD = .TRUE.
-      IF( LSAME( TRANS, 'N' ) ) &
-         TPSD = .FALSE.
+      TPSD = (.NOT.LSAME( TRANS, 'N' ) )
 !
       IF( M >= N ) THEN
          NB = ILAENV( 1, 'CGEQRF', ' ', M, N, -1, -1 )
          IF( TPSD ) THEN
-            NB = MAX( NB, ILAENV( 1, 'CUNMQR', 'LN', M, NRHS, N, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'CUNMQR', 'LN', M, NRHS, N, -1 ) )
          ELSE
-            NB = MAX( NB, ILAENV( 1, 'CUNMQR', 'LC', M, NRHS, N, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'CUNMQR', 'LC', M, NRHS, N, -1 ) )
          END IF
       ELSE
          NB = ILAENV( 1, 'CGELQF', ' ', M, N, -1, -1 )
          IF( TPSD ) THEN
-            NB = MAX( NB, ILAENV( 1, 'CUNMLQ', 'LC', N, NRHS, M, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'CUNMLQ', 'LC', N, NRHS, M, -1 ) )
          ELSE
-            NB = MAX( NB, ILAENV( 1, 'CUNMLQ', 'LN', N, NRHS, M, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'CUNMLQ', 'LN', N, NRHS, M, -1 ) )
          END IF
       END IF
 !
@@ -288,20 +274,20 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-      CALL CLASET( 'Full', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       RETURN
    END IF
 !
 !     Get machine parameters
 !
    SMLNUM = SLAMCH( 'S' ) / SLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, RWORK )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -313,20 +299,19 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'F', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       GO TO 50
    END IF
 !
    BROW = M
-   IF( TPSD ) &
-      BROW = N
-   BNRM = CLANGE( 'M', BROW, NRHS, B, LDB, RWORK )
+   IF( TPSD ) BROW = N
+   BNRM = MAXVAL(ABS(B(1:BROW,1:NRHS)))
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -383,17 +368,10 @@
          CALL CTRTRS( 'Upper', 'Conjugate transpose','Non-unit', &
                       N, NRHS, A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
-!           B(N+1:M,1:NRHS) = ZERO
-!
-         DO J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = CZERO
-            ENDDO
-         ENDDO
+!        
+         B(N+1:M,1:NRHS) = (0.0E+0,0.0E+0)
 !
 !           B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS)
 !
@@ -411,8 +389,7 @@
 !
 !        Compute LQ factorization of A
 !
-      CALL CGELQF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, &
-                   INFO )
+      CALL CGELQF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, INFO )
 !
 !        workspace at least M, optimally M*NB.
 !
@@ -425,17 +402,9 @@
          CALL CTRTRS( 'Lower', 'No transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
-!           B(M+1:N,1:NRHS) = 0
-!
-         DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = CZERO
-            ENDDO
-         ENDDO
+          B(M+1:N,1:NRHS) = 0
 !
 !           B(1:N,1:NRHS) := Q(1:N,:)**H * B(1:M,1:NRHS)
 !
@@ -464,9 +433,7 @@
          CALL CTRTRS( 'Lower', 'Conjugate transpose', 'Non-unit', &
                       M, NRHS, A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -499,4 +466,3 @@
 !     End of CGELS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

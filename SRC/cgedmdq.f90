@@ -609,7 +609,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     N-1 snapshots.
       CALL CLASET( 'L', MINMN, N-1, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), X, LDX )
       CALL CLACPY( 'U', MINMN, N-1, F,      LDF, X, LDX )
-      CALL CLACPY( 'A', MINMN, N-1, F(1,2), LDF, Y, LDY )
+      Y(1:MINMN,1:N-1) = F(1:MINMN,2:N)
       IF ( M >= 3 ) THEN
           CALL CLASET( 'L', MINMN-2, N-2, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), &
                        Y(3,1), LDY )
@@ -633,8 +633,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     formed or returned in factored form.
       IF ( WNTVEC ) THEN
         ! Compute the eigenvectors explicitly.
-        IF ( M > MINMN ) CALL CLASET( 'A', M-MINMN, K, (0.0_WP,0.0_WP), &
-                                     (0.0_WP,0.0_WP), Z(MINMN+1,1), LDZ )
+        IF ( M > MINMN ) Z(MINMN+1:M,1:K) = (0.0_WP,0.0_WP)
         CALL CUNMQR( 'L','N', M, K, MINMN, F, LDF, ZWORK, Z,  &
              LDZ, ZWORK(MINMN+1), LZWORK-MINMN, INFO1 )
       ELSE IF ( WNTVCF ) THEN
@@ -646,8 +645,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
         !   quotient) is in the array V, as returned by CGEDMD.
         Z(1:N,1:K) = X(1:N,1:K)
 !         CALL CLACPY( 'A', N, K, X, LDX, Z, LDZ )
-        IF ( M > N ) CALL CLASET( 'A', M-N, K, (0.0_WP,0.0_WP), (0.0_WP,0.0_WP), &
-                                 Z(N+1,1), LDZ )
+        IF ( M > N ) Z(N+1:M,1:K) = (0.0_WP,0.0_WP)
         CALL CUNMQR( 'L','N', M, K, MINMN, F, LDF, ZWORK, Z, &
                     LDZ, ZWORK(MINMN+1), LZWORK-MINMN, INFO1 )
       END IF
@@ -661,7 +659,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     followed by a streaming DMD that is implemented in a
 !     QR compressed form.
       IF ( WNTTRF ) THEN ! Return the upper triangular R in Y
-         CALL CLASET( 'A', MINMN, N, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), Y, LDY )
+         Y(1:MINMN,1:N) = (0.0_WP,0.0_WP)
          CALL CLACPY( 'U', MINMN, N, F, LDF,        Y, LDY )
       END IF
 !

@@ -327,8 +327,8 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ISAMAX, ILAENV
-   REAL   SLAMCH, SCNRM2, CLANGE
-   EXTERNAL           LSAME, ISAMAX, ILAENV, SLAMCH, SCNRM2, CLANGE
+   REAL   SLAMCH, SCNRM2
+   EXTERNAL           LSAME, ISAMAX, ILAENV, SLAMCH, SCNRM2
 !     ..
 !     .. Executable Statements ..
 !
@@ -457,7 +457,7 @@
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ICOND = 0
-   ANRM = CLANGE( 'M', N, N, A, LDA, DUM )
+   ANRM = MAXVAL(ABS(A(1:N,1:N)))
    SCALEA = .FALSE.
    IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
@@ -471,7 +471,7 @@
 !     Balance the matrix and compute ABNRM
 !
    CALL CGEBAL( BALANC, N, A, LDA, ILO, IHI, SCALE, IERR )
-   ABNRM = CLANGE( '1', N, N, A, LDA, DUM )
+   ABNRM = MAXVAL(ABS(A(1:N,1:N)),A(1:N,1:N)==A(1:N,1:N))
    IF( SCALEA ) THEN
       DUM( 1 ) = ABNRM
       CALL SLASCL( 'G', 0, 0, CSCALE, ANRM, 1, 1, DUM, 1, IERR )

@@ -205,6 +205,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesvd
 !
@@ -227,13 +228,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WNTUA, WNTUAS, WNTUN, WNTUO, WNTUS, &
@@ -259,11 +253,8 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ILAENV
-   REAL               CLANGE, SLAMCH
-   EXTERNAL           LSAME, ILAENV, CLANGE, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SQRT
+   REAL               SLAMCH
+   EXTERNAL           LSAME, ILAENV, SLAMCH
 !     ..
 !     .. Executable Statements ..
 !
@@ -608,9 +599,7 @@
               LWORK_CUNGBR_P = INT( CDUM(1) )
               MAXWRK = MAX( MAXWRK, 2*M+LWORK_CUNGBR_P )
             END IF
-            IF( .NOT.WNTUN ) THEN
-               MAXWRK = MAX( MAXWRK, 2*M+LWORK_CUNGBR_Q )
-            END IF
+            IF( .NOT.WNTUN ) MAXWRK = MAX( MAXWRK, 2*M+LWORK_CUNGBR_Q )
             MINWRK = 2*M + N
          END IF
       END IF
@@ -639,13 +628,13 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SQRT( SLAMCH( 'S' ) ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, DUM )
+   ANRM = MAXVAL(ABS(A(1:N,1:N)))
    ISCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       ISCL = 1
       CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, M, N, A, LDA, IERR )
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -679,7 +668,7 @@
 !              Zero out below R
 !
             IF( N  >  1 ) THEN
-               CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, A( 2, 1 ), &
+               CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 2, 1 ), &
                             LDA )
             END IF
             IE = 1
@@ -717,8 +706,7 @@
 !
 !              If right singular vectors desired in VT, copy them there
 !
-            IF( WNTVAS ) &
-               CALL CLACPY( 'F', N, N, A, LDA, VT, LDVT )
+            IF( WNTVAS ) VT(1:N,1:N) = A(1:N,1:N)
 !
          ELSE IF( WNTUO .AND. WNTVN ) THEN
 !
@@ -763,7 +751,7 @@
 !                 Copy R to WORK(IR) and zero out below it
 !
                CALL CLACPY( 'U', N, N, A, LDA, WORK( IR ), LDWRKR )
-               CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+               CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                             WORK( IR+1 ), LDWRKR )
 !
 !                 Generate Q in A
@@ -811,8 +799,8 @@
 !
                DO I = 1, M, LDWRKU
                   CHUNK = MIN( M-I+1, LDWRKU )
-                  CALL CGEMM( 'N', 'N', CHUNK, N, N, CONE, A( I, 1 ), &
-                              LDA, WORK( IR ), LDWRKR, CZERO, &
+                  CALL CGEMM( 'N', 'N', CHUNK, N, N, (1.0E+0,0.0E+0), A( I, 1 ), &
+                              LDA, WORK( IR ), LDWRKR, (0.0E+0,0.0E+0), &
                               WORK( IU ), LDWRKU )
                   CALL CLACPY( 'F', CHUNK, N, WORK( IU ), LDWRKU, &
                                A( I, 1 ), LDA )
@@ -897,7 +885,7 @@
 !
                CALL CLACPY( 'U', N, N, A, LDA, VT, LDVT )
                IF( N > 1 ) &
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                VT( 2, 1 ), LDVT )
 !
 !                 Generate Q in A
@@ -954,8 +942,8 @@
 !
                DO I = 1, M, LDWRKU
                   CHUNK = MIN( M-I+1, LDWRKU )
-                  CALL CGEMM( 'N', 'N', CHUNK, N, N, CONE, A( I, 1 ), &
-                              LDA, WORK( IR ), LDWRKR, CZERO, &
+                  CALL CGEMM( 'N', 'N', CHUNK, N, N, (1.0E+0,0.0E+0), A( I, 1 ), &
+                              LDA, WORK( IR ), LDWRKR, (0.0E+0,0.0E+0), &
                               WORK( IU ), LDWRKU )
                   CALL CLACPY( 'F', CHUNK, N, WORK( IU ), LDWRKU, &
                                A( I, 1 ), LDA )
@@ -979,7 +967,7 @@
 !
                CALL CLACPY( 'U', N, N, A, LDA, VT, LDVT )
                IF( N > 1 ) &
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                VT( 2, 1 ), LDVT )
 !
 !                 Generate Q in A
@@ -1067,7 +1055,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IR+1 ), LDWRKR )
 !
 !                    Generate Q in A
@@ -1113,8 +1101,8 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, A, LDA, &
-                              WORK( IR ), LDWRKR, CZERO, U, LDU )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), A, LDA, &
+                              WORK( IR ), LDWRKR, (0.0E+0,0.0E+0), U, LDU )
 !
                ELSE
 !
@@ -1145,7 +1133,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   A( 2, 1 ), LDA )
                   END IF
 !
@@ -1224,7 +1212,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+1 ), LDWRKU )
 !
 !                    Generate Q in A
@@ -1285,8 +1273,8 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, A, LDA, &
-                              WORK( IU ), LDWRKU, CZERO, U, LDU )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), A, LDA, &
+                              WORK( IU ), LDWRKU, (0.0E+0,0.0E+0), U, LDU )
 !
 !                    Copy right singular vectors of R to A
 !                    (CWorkspace: need N*N)
@@ -1324,7 +1312,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   A( 2, 1 ), LDA )
                   END IF
 !
@@ -1401,7 +1389,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+1 ), LDWRKU )
 !
 !                    Generate Q in A
@@ -1458,8 +1446,8 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, A, LDA, &
-                              WORK( IU ), LDWRKU, CZERO, U, LDU )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), A, LDA, &
+                              WORK( IU ), LDWRKU, (0.0E+0,0.0E+0), U, LDU )
 !
                ELSE
 !
@@ -1487,7 +1475,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, VT, LDVT )
                   IF( N > 1 ) &
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   VT( 2, 1 ), LDVT )
                   IE = 1
                   ITAUQ = ITAU
@@ -1572,7 +1560,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IR+1 ), LDWRKR )
 !
 !                    Generate Q in U
@@ -1618,12 +1606,12 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, U, LDU, &
-                              WORK( IR ), LDWRKR, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), U, LDU, &
+                              WORK( IR ), LDWRKR, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
-                  CALL CLACPY( 'F', M, N, A, LDA, U, LDU )
+                  U(1:M,1:N) = A(1:M,1:N)
 !
                ELSE
 !
@@ -1654,7 +1642,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   A( 2, 1 ), LDA )
                   END IF
 !
@@ -1742,7 +1730,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+1 ), LDWRKU )
                   IE = 1
                   ITAUQ = ITAU
@@ -1796,8 +1784,8 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, U, LDU, &
-                              WORK( IU ), LDWRKU, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), U, LDU, &
+                              WORK( IU ), LDWRKU, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
@@ -1837,7 +1825,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   A( 2, 1 ), LDA )
                   END IF
 !
@@ -1923,7 +1911,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                  CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+1 ), LDWRKU )
                   IE = 1
                   ITAUQ = ITAU
@@ -1973,12 +1961,12 @@
 !                    (CWorkspace: need N*N)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, N, CONE, U, LDU, &
-                              WORK( IU ), LDWRKU, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), U, LDU, &
+                              WORK( IU ), LDWRKU, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
-                  CALL CLACPY( 'F', M, N, A, LDA, U, LDU )
+                  U(1:M,1:N) = A(1:M,1:N)
 !
                ELSE
 !
@@ -2006,7 +1994,7 @@
 !
                   CALL CLACPY( 'U', N, N, A, LDA, VT, LDVT )
                   IF( N > 1 ) &
-                     CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+                     CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                   VT( 2, 1 ), LDVT )
                   IE = 1
                   ITAUQ = ITAU
@@ -2081,10 +2069,8 @@
 !              (RWorkspace: 0)
 !
             CALL CLACPY( 'L', M, N, A, LDA, U, LDU )
-            IF( WNTUS ) &
-               NCU = N
-            IF( WNTUA ) &
-               NCU = M
+            IF( WNTUS ) NCU = N
+            IF( WNTUA ) NCU = M
             CALL CUNGBR( 'Q', M, NCU, N, U, LDU, WORK( ITAUQ ), &
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
@@ -2120,14 +2106,10 @@
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
          IRWORK = IE + N
-         IF( WNTUAS .OR. WNTUO ) &
-            NRU = M
-         IF( WNTUN ) &
-            NRU = 0
-         IF( WNTVAS .OR. WNTVO ) &
-            NCVT = N
-         IF( WNTVN ) &
-            NCVT = 0
+         IF( WNTUAS .OR. WNTUO ) NRU = M
+         IF( WNTUN ) NRU = 0
+         IF( WNTVAS .OR. WNTVO ) NCVT = N
+         IF( WNTVN ) NCVT = 0
          IF( ( .NOT.WNTUO ) .AND. ( .NOT.WNTVO ) ) THEN
 !
 !              Perform bidiagonal QR iteration, if desired, computing
@@ -2190,7 +2172,7 @@
 !
 !              Zero out above L
 !
-            CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, A( 1, 2 ), &
+            CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 1, 2 ), &
                          LDA )
             IE = 1
             ITAUQ = 1
@@ -2215,8 +2197,7 @@
             END IF
             IRWORK = IE + M
             NRU = 0
-            IF( WNTUO .OR. WNTUAS ) &
-               NRU = M
+            IF( WNTUO .OR. WNTUAS ) NRU = M
 !
 !              Perform bidiagonal QR iteration, computing left singular
 !              vectors of A in A if desired
@@ -2277,7 +2258,7 @@
 !                 Copy L to WORK(IR) and zero out above it
 !
                CALL CLACPY( 'L', M, M, A, LDA, WORK( IR ), LDWRKR )
-               CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+               CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                             WORK( IR+LDWRKR ), LDWRKR )
 !
 !                 Generate Q in A
@@ -2325,8 +2306,8 @@
 !
                DO I = 1, N, CHUNK
                   BLK = MIN( N-I+1, CHUNK )
-                  CALL CGEMM( 'N', 'N', M, BLK, M, CONE, WORK( IR ), &
-                              LDWRKR, A( 1, I ), LDA, CZERO, &
+                  CALL CGEMM( 'N', 'N', M, BLK, M, (1.0E+0,0.0E+0), WORK( IR ), &
+                              LDWRKR, A( 1, I ), LDA, (0.0E+0,0.0E+0), &
                               WORK( IU ), LDWRKU )
                   CALL CLACPY( 'F', M, BLK, WORK( IU ), LDWRKU, &
                                A( 1, I ), LDA )
@@ -2413,7 +2394,7 @@
 !                 Copy L to U, zeroing about above it
 !
                CALL CLACPY( 'L', M, M, A, LDA, U, LDU )
-               CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, U( 1, 2 ), &
+               CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U( 1, 2 ), &
                             LDU )
 !
 !                 Generate Q in A
@@ -2470,8 +2451,8 @@
 !
                DO I = 1, N, CHUNK
                   BLK = MIN( N-I+1, CHUNK )
-                  CALL CGEMM( 'N', 'N', M, BLK, M, CONE, WORK( IR ), &
-                              LDWRKR, A( 1, I ), LDA, CZERO, &
+                  CALL CGEMM( 'N', 'N', M, BLK, M, (1.0E+0,0.0E+0), WORK( IR ), &
+                              LDWRKR, A( 1, I ), LDA, (0.0E+0,0.0E+0), &
                               WORK( IU ), LDWRKU )
                   CALL CLACPY( 'F', M, BLK, WORK( IU ), LDWRKU, &
                                A( 1, I ), LDA )
@@ -2494,7 +2475,7 @@
 !                 Copy L to U, zeroing out above it
 !
                CALL CLACPY( 'L', M, M, A, LDA, U, LDU )
-               CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, U( 1, 2 ), &
+               CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U( 1, 2 ), &
                             LDU )
 !
 !                 Generate Q in A
@@ -2581,7 +2562,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IR+LDWRKR ), LDWRKR )
 !
 !                    Generate Q in A
@@ -2628,8 +2609,8 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IR ), &
-                              LDWRKR, A, LDA, CZERO, VT, LDVT )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IR ), &
+                              LDWRKR, A, LDA, (0.0E+0,0.0E+0), VT, LDVT )
 !
                ELSE
 !
@@ -2662,7 +2643,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
@@ -2740,7 +2721,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+LDWRKU ), LDWRKU )
 !
 !                    Generate Q in A
@@ -2801,8 +2782,8 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IU ), &
-                              LDWRKU, A, LDA, CZERO, VT, LDVT )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IU ), &
+                              LDWRKU, A, LDA, (0.0E+0,0.0E+0), VT, LDVT )
 !
 !                    Copy left singular vectors of L to A
 !                    (CWorkspace: need M*M)
@@ -2839,7 +2820,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
@@ -2915,7 +2896,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+LDWRKU ), LDWRKU )
 !
 !                    Generate Q in A
@@ -2972,8 +2953,8 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IU ), &
-                              LDWRKU, A, LDA, CZERO, VT, LDVT )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IU ), &
+                              LDWRKU, A, LDA, (0.0E+0,0.0E+0), VT, LDVT )
 !
                ELSE
 !
@@ -3000,7 +2981,7 @@
 !                    Copy L to U, zeroing out above it
 !
                   CALL CLACPY( 'L', M, M, A, LDA, U, LDU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                U( 1, 2 ), LDU )
                   IE = 1
                   ITAUQ = ITAU
@@ -3085,7 +3066,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IR+LDWRKR ), LDWRKR )
 !
 !                    Generate Q in VT
@@ -3132,12 +3113,12 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IR ), &
-                              LDWRKR, VT, LDVT, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IR ), &
+                              LDWRKR, VT, LDVT, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
-                  CALL CLACPY( 'F', M, N, A, LDA, VT, LDVT )
+                  VT(1:M,1:N) = A(1:M,1:N)
 !
                ELSE
 !
@@ -3167,7 +3148,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
@@ -3254,7 +3235,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+LDWRKU ), LDWRKU )
                   IE = 1
                   ITAUQ = ITAU
@@ -3308,8 +3289,8 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IU ), &
-                              LDWRKU, VT, LDVT, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IU ), &
+                              LDWRKU, VT, LDVT, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
@@ -3348,7 +3329,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
@@ -3433,7 +3414,7 @@
 !
                   CALL CLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                WORK( IU+LDWRKU ), LDWRKU )
                   IE = 1
                   ITAUQ = ITAU
@@ -3482,12 +3463,12 @@
 !                    (CWorkspace: need M*M)
 !                    (RWorkspace: 0)
 !
-                  CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IU ), &
-                              LDWRKU, VT, LDVT, CZERO, A, LDA )
+                  CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IU ), &
+                              LDWRKU, VT, LDVT, (0.0E+0,0.0E+0), A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
-                  CALL CLACPY( 'F', M, N, A, LDA, VT, LDVT )
+                  VT(1:M,1:N) = A(1:M,1:N)
 !
                ELSE
 !
@@ -3514,7 +3495,7 @@
 !                    Copy L to U, zeroing out above it
 !
                   CALL CLACPY( 'L', M, M, A, LDA, U, LDU )
-                  CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+                  CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                                U( 1, 2 ), LDU )
                   IE = 1
                   ITAUQ = ITAU
@@ -3600,10 +3581,8 @@
 !              (RWorkspace: 0)
 !
             CALL CLACPY( 'U', M, N, A, LDA, VT, LDVT )
-            IF( WNTVA ) &
-               NRVT = N
-            IF( WNTVS ) &
-               NRVT = M
+            IF( WNTVA ) NRVT = N
+            IF( WNTVS ) NRVT = M
             CALL CUNGBR( 'P', NRVT, N, M, VT, LDVT, WORK( ITAUP ), &
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
@@ -3628,14 +3607,10 @@
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
          IRWORK = IE + M
-         IF( WNTUAS .OR. WNTUO ) &
-            NRU = M
-         IF( WNTUN ) &
-            NRU = 0
-         IF( WNTVAS .OR. WNTVO ) &
-            NCVT = N
-         IF( WNTVN ) &
-            NCVT = 0
+         IF( WNTUAS .OR. WNTUO ) NRU = M
+         IF( WNTUN ) NRU = 0
+         IF( WNTVAS .OR. WNTVO ) NCVT = N
+         IF( WNTVN ) NCVT = 0
          IF( ( .NOT.WNTUO ) .AND. ( .NOT.WNTVO ) ) THEN
 !
 !              Perform bidiagonal QR iteration, if desired, computing
@@ -3701,4 +3676,3 @@
 !     End of CGESVD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

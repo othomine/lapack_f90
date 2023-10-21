@@ -175,6 +175,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gelst
 !
@@ -205,12 +206,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TPSD
@@ -230,9 +225,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGELQT, CGEQRT, CGEMLQT, CGEMQRT, &
                       CLASCL, CLASET, CTRTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -262,9 +254,7 @@
 !
    IF( INFO == 0 .OR. INFO == -10 ) THEN
 !
-      TPSD = .TRUE.
-      IF( LSAME( TRANS, 'N' ) ) &
-         TPSD = .FALSE.
+      TPSD = (.NOT.LSAME( TRANS, 'N' ) )
 !
       NB = ILAENV( 1, 'CGELST', ' ', M, N, -1, -1 )
 !
@@ -284,7 +274,7 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-      CALL CLASET( 'Full', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       WORK( 1 ) = REAL( LWOPT )
       RETURN
    END IF
@@ -303,20 +293,18 @@
 !
    NBMIN = MAX( 2, ILAENV( 2, 'CGELST', ' ', M, N, -1, -1 ) )
 !
-   IF( NB < NBMIN ) THEN
-      NB = 1
-   END IF
+   IF( NB < NBMIN ) NB = 1
 !
 !     Get machine parameters
 !
    SMLNUM = SLAMCH( 'S' ) / SLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, RWORK )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -328,33 +316,30 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'Full', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       WORK( 1 ) = REAL( LWOPT )
       RETURN
    END IF
 !
    BROW = M
-   IF( TPSD ) &
-      BROW = N
-   BNRM = CLANGE( 'M', BROW, NRHS, B, LDB, RWORK )
+   IF( TPSD ) BROW = N
+   BNRM = MAXVAL(ABS(B(1:BROW,1:NRHS)))
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
-      CALL CLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 1
    ELSE IF( BNRM > BIGNUM ) THEN
 !
 !        Scale matrix norm down to BIGNUM
 !
-      CALL CLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 2
    END IF
 !
@@ -365,8 +350,7 @@
 !        using the compact WY representation of Q,
 !        workspace at least N, optimally N*NB.
 !
-      CALL CGEQRT( M, N, NB, A, LDA, WORK( 1 ), NB, &
-                   WORK( MN*NB+1 ), INFO )
+      CALL CGEQRT( M, N, NB, A, LDA, WORK( 1 ), NB, WORK( MN*NB+1 ), INFO )
 !
       IF( .NOT.TPSD ) THEN
 !
@@ -406,17 +390,13 @@
          CALL CTRTRS( 'Upper', 'Conjugate transpose', 'Non-unit', &
                       N, NRHS, A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           Block 2: Zero out all rows below the N-th row in B:
-!           B(N+1:M,1:NRHS) = ZERO
+!           B(N+1:M,1:NRHS) = 0.0E+0
 !
          DO  J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = ZERO
-            END DO
+            B( N+1:M, J ) = 0.0E+0
          END DO
 !
 !           Compute B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS),
@@ -454,17 +434,13 @@
          CALL CTRTRS( 'Lower', 'No transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           Block 2: Zero out all rows below the M-th row in B:
-!           B(M+1:N,1:NRHS) = ZERO
+!           B(M+1:N,1:NRHS) = 0.0E+0
 !
          DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = ZERO
-            END DO
+            B(M+1:N, J ) = 0.0E+0
          END DO
 !
 !           Compute B(1:N,1:NRHS) := Q(1:N,:)**T * B(1:M,1:NRHS),
@@ -496,9 +472,7 @@
          CALL CTRTRS( 'Lower', 'Conjugate transpose', 'Non-unit', &
                       M, NRHS, A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -509,18 +483,14 @@
 !     Undo scaling
 !
    IF( IASCL == 1 ) THEN
-      CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, SCLLEN, NRHS, B, LDB, INFO )
    ELSE IF( IASCL == 2 ) THEN
-      CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, SCLLEN, NRHS, B, LDB, INFO )
    END IF
    IF( IBSCL == 1 ) THEN
-      CALL CLASCL( 'G', 0, 0, SMLNUM, BNRM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, SMLNUM, BNRM, SCLLEN, NRHS, B, LDB, INFO )
    ELSE IF( IBSCL == 2 ) THEN
-      CALL CLASCL( 'G', 0, 0, BIGNUM, BNRM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL CLASCL( 'G', 0, 0, BIGNUM, BNRM, SCLLEN, NRHS, B, LDB, INFO )
    END IF
 !
    WORK( 1 ) = REAL( LWOPT )
@@ -530,4 +500,3 @@
 !     End of CGELST
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

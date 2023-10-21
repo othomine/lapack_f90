@@ -126,6 +126,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup geqp3
 !
@@ -177,20 +178,18 @@
    PARAMETER          ( INB = 1, INBMIN = 2, IXOVER = 3 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            A_TMP( M )
    LOGICAL            LQUERY
    INTEGER            FJB, IWS, J, JB, LWKOPT, MINMN, MINWS, NA, NB, &
                       NBMIN, NFXD, NX, SM, SMINMN, SN, TOPBMN
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEQRF, CLAQP2, CLAQPS, CSWAP, CUNMQR, XERBLA
+   EXTERNAL           CGEQRF, CLAQP2, CLAQPS, CUNMQR, XERBLA
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
    REAL               SCNRM2
    EXTERNAL           ILAENV, SCNRM2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          INT, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -237,7 +236,9 @@
    DO J = 1, N
       IF( JPVT( J ) /= 0 ) THEN
          IF( J /= NFXD ) THEN
-            CALL CSWAP( M, A( 1, J ), 1, A( 1, NFXD ), 1 )
+            A_TMP(1:M) = A(1:M,J)
+            A(1:M,J) = A(1:M,NFXD)
+            A(1:M,NFXD) = A_TMP(1:M)
             JPVT( J ) = JPVT( NFXD )
             JPVT( NFXD ) = J
          ELSE
@@ -291,8 +292,7 @@
 !
 !           Determine when to cross over from blocked to unblocked code.
 !
-         NX = MAX( 0, ILAENV( IXOVER, 'CGEQRF', ' ', SM, SN, -1, &
-              -1 ) )
+         NX = MAX( 0, ILAENV( IXOVER, 'CGEQRF', ' ', SM, SN, -1, -1 ) )
 !
 !
          IF( NX < SMINMN ) THEN
@@ -307,8 +307,7 @@
 !                 determine the minimum value of NB.
 !
                NB = LWORK / ( SN+1 )
-               NBMIN = MAX( 2, ILAENV( INBMIN, 'CGEQRF', ' ', SM, SN, &
-                       -1, -1 ) )
+               NBMIN = MAX( 2, ILAENV( INBMIN, 'CGEQRF', ' ', SM, SN, -1, -1 ) )
 !
 !
             END IF
@@ -323,8 +322,7 @@
          RWORK( N+J ) = RWORK( J )
       ENDDO
 !
-      IF( ( NB >= NBMIN ) .AND. ( NB < SMINMN ) .AND. &
-          ( NX < SMINMN ) ) THEN
+      IF( ( NB >= NBMIN ) .AND. ( NB < SMINMN ) .AND. ( NX < SMINMN ) ) THEN
 !
 !           Use blocked code initially.
 !
@@ -355,8 +353,7 @@
 !        Use unblocked code to factor the last or only block.
 !
 !
-      IF( J <= MINMN ) &
-         CALL CLAQP2( M, N-J+1, J-1, A( 1, J ), LDA, JPVT( J ), &
+      IF( J <= MINMN ) CALL CLAQP2( M, N-J+1, J-1, A( 1, J ), LDA, JPVT( J ), &
                       TAU( J ), RWORK( J ), RWORK( N+J ), WORK( 1 ) )
 !
    END IF
@@ -367,4 +364,3 @@
 !     End of CGEQP3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

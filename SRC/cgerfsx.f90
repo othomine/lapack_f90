@@ -403,6 +403,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gerfsx
 !
@@ -434,8 +435,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    REAL               ITREF_DEFAULT, ITHRESH_DEFAULT, &
                       COMPONENTWISE_DEFAULT
    REAL               RTHRESH_DEFAULT, DZTHRESH_DEFAULT
@@ -468,13 +467,10 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CGECON, CLA_GERFSX_EXTENDED
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT, TRANSFER
-!     ..
 !     .. External Functions ..
    EXTERNAL           LSAME, ILATRANS, ILAPREC
-   EXTERNAL           SLAMCH, CLANGE, CLA_GERCOND_X, CLA_GERCOND_C
-   REAL               SLAMCH, CLANGE, CLA_GERCOND_X, CLA_GERCOND_C
+   EXTERNAL           SLAMCH, CLA_GERCOND_X, CLA_GERCOND_C
+   REAL               SLAMCH, CLA_GERCOND_X, CLA_GERCOND_C
    LOGICAL            LSAME
    INTEGER            ILATRANS, ILAPREC
 !     ..
@@ -602,8 +598,10 @@
 !
    IF( NOTRAN ) THEN
       NORM = 'I'
+!       ANORM = MAXVAL(SUM(ABS(A(1:N,1:N)), DIM=2))
    ELSE
       NORM = '1'
+!       ANORM = MAXVAL(SUM(ABS(A(1:N,1:N)), DIM=1))
    END IF
    ANORM = CLANGE( NORM, N, N, A, LDA, RWORK )
    CALL CGECON( NORM, N, AF, LDAF, ANORM, RCOND, WORK, RWORK, INFO )
@@ -619,7 +617,7 @@
               NRHS, A, LDA, AF, LDAF, IPIV, COLEQU, C, B, &
               LDB, X, LDX, BERR, N_NORMS, ERR_BNDS_NORM, &
               ERR_BNDS_COMP, WORK, RWORK, WORK(N+1), &
-              TRANSFER (RWORK(1:2*N), (/ (ZERO, ZERO) /), N), &
+              TRANSFER (RWORK(1:2*N), (/ (0.0E+0, 0.0E+0) /), N), &
               RCOND, ITHRESH, RTHRESH, UNSTABLE_THRESH, IGNORE_CWISE, &
               INFO )
       ELSE
@@ -627,7 +625,7 @@
               NRHS, A, LDA, AF, LDAF, IPIV, ROWEQU, R, B, &
               LDB, X, LDX, BERR, N_NORMS, ERR_BNDS_NORM, &
               ERR_BNDS_COMP, WORK, RWORK, WORK(N+1), &
-              TRANSFER (RWORK(1:2*N), (/ (ZERO, ZERO) /), N), &
+              TRANSFER (RWORK(1:2*N), (/ (0.0E+0, 0.0E+0) /), N), &
               RCOND, ITHRESH, RTHRESH, UNSTABLE_THRESH, IGNORE_CWISE, &
               INFO )
       END IF
@@ -729,4 +727,3 @@
 !     End of CGERFSX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

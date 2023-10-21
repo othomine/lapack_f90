@@ -203,6 +203,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gelsd
 !
@@ -232,12 +233,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TWO = 2.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -254,11 +249,8 @@
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
-   REAL               CLANGE, SLAMCH
-   EXTERNAL           CLANGE, SLAMCH, ILAENV
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          INT, LOG, MAX, MIN, REAL
+   REAL               SLAMCH
+   EXTERNAL           SLAMCH, ILAENV
 !     ..
 !     .. Executable Statements ..
 !
@@ -296,7 +288,7 @@
          SMLSIZ = ILAENV( 9, 'CGELSD', ' ', 0, 0, 0, 0 )
          MNTHR = ILAENV( 6, 'CGELSD', ' ', M, N, NRHS, -1 )
          NLVL = MAX( INT( LOG( REAL( MINMN ) / REAL( SMLSIZ + 1 ) ) / &
-                     LOG( TWO ) ) + 1, 0 )
+                     LOG( 2.0E+0 ) ) + 1, 0 )
          LIWORK = 3*MINMN*NLVL + 11*MINMN
          MM = M
          IF( M >= N .AND. M >= MNTHR ) THEN
@@ -371,9 +363,7 @@
       IWORK( 1 ) = LIWORK
       RWORK( 1 ) = LRWORK
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) THEN
-         INFO = -12
-      END IF
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -12
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -395,13 +385,13 @@
    EPS = SLAMCH( 'P' )
    SFMIN = SLAMCH( 'S' )
    SMLNUM = SFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max entry outside range [SMLNUM,BIGNUM].
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, RWORK )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -413,21 +403,21 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'F', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
-      CALL SLASET( 'F', MINMN, 1, ZERO, ZERO, S, 1 )
+      B(1:MAX(M,N ),1:NRHS) = (0.0E+0,0.0E+0)
+      CALL SLASET( 'F', MINMN, 1, 0.0E+0, 0.0E+0, S, 1 )
       RANK = 0
       GO TO 10
    END IF
 !
 !     Scale B if max entry outside range [SMLNUM,BIGNUM].
 !
-   BNRM = CLANGE( 'M', M, NRHS, B, LDB, RWORK )
+   BNRM = MAXVAL(ABS(B(1:M,1:NRHS)))
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM.
 !
@@ -443,8 +433,7 @@
 !
 !     If M < N make sure B(M+1:N,:) = 0
 !
-   IF( M < N ) &
-      CALL CLASET( 'F', N-M, NRHS, CZERO, CZERO, B( M+1, 1 ), LDB )
+   IF( M < N ) B(M+1:N,1:NRHS) = (0.0E+0,0.0E+0)
 !
 !     Overdetermined case.
 !
@@ -478,7 +467,7 @@
 !           Zero out below R.
 !
          IF( N > 1 ) THEN
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, A( 2, 1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 2, 1 ), &
                          LDA )
          END IF
       END IF
@@ -539,7 +528,7 @@
 !        Copy L to WORK(IL), zeroing out above its diagonal.
 !
       CALL CLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWORK )
-      CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, WORK( IL+LDWORK ), &
+      CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( IL+LDWORK ), &
                    LDWORK )
       ITAUQ = IL + LDWORK*M
       ITAUP = ITAUQ + M
@@ -567,9 +556,7 @@
       CALL CLALSD( 'U', SMLSIZ, M, NRHS, S, RWORK( IE ), B, LDB, &
                    RCOND, RANK, WORK( NWORK ), RWORK( NRWORK ), &
                    IWORK, INFO )
-      IF( INFO /= 0 ) THEN
-         GO TO 10
-      END IF
+      IF( INFO /= 0 ) GO TO 10
 !
 !        Multiply B by right bidiagonalizing vectors of L.
 !
@@ -579,7 +566,7 @@
 !
 !        Zero out below first M rows of B.
 !
-      CALL CLASET( 'F', N-M, NRHS, CZERO, CZERO, B( M+1, 1 ), LDB )
+      B(M+1:N,1:NRHS) = (0.0E+0,0.0E+0)
       NWORK = ITAU + M
 !
 !        Multiply transpose(Q) by B.
@@ -654,4 +641,3 @@
 !     End of CGELSD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

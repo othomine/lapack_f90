@@ -196,6 +196,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gelsy
 !
@@ -229,11 +230,6 @@
 !     .. Parameters ..
    INTEGER            IMAX, IMIN
    PARAMETER          ( IMAX = 1, IMIN = 2 )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -249,11 +245,8 @@
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
-   REAL               CLANGE, SLAMCH
-   EXTERNAL           CLANGE, ILAENV, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, CMPLX
+   REAL               SLAMCH
+   EXTERNAL           ILAENV, SLAMCH
 !     ..
 !     .. Executable Statements ..
 !
@@ -304,13 +297,13 @@
 !     Get machine parameters
 !
    SMLNUM = SLAMCH( 'S' ) / SLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A, B if max entries outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, RWORK )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -322,18 +315,18 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'F', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       RANK = 0
       GO TO 70
    END IF
 !
-   BNRM = CLANGE( 'M', M, NRHS, B, LDB, RWORK )
+   BNRM = MAXVAL(ABS(B(1:M,1:NRHS)))
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -359,13 +352,13 @@
 !
 !     Determine RANK using incremental condition estimation
 !
-   WORK( ISMIN ) = CONE
-   WORK( ISMAX ) = CONE
+   WORK( ISMIN ) = (1.0E+0,0.0E+0)
+   WORK( ISMAX ) = (1.0E+0,0.0E+0)
    SMAX = ABS( A( 1, 1 ) )
    SMIN = SMAX
-   IF( ABS( A( 1, 1 ) ) == ZERO ) THEN
+   IF( ABS( A( 1, 1 ) ) == 0.0E+0 ) THEN
       RANK = 0
-      CALL CLASET( 'F', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
       GO TO 70
    ELSE
       RANK = 1
@@ -419,12 +412,10 @@
 !     B(1:RANK,1:NRHS) := inv(T11) * B(1:RANK,1:NRHS)
 !
    CALL CTRSM( 'Left', 'Upper', 'No transpose', 'Non-unit', RANK, &
-               NRHS, CONE, A, LDA, B, LDB )
+               NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
    DO J = 1, NRHS
-      DO I = RANK + 1, N
-         B( I, J ) = CZERO
-      ENDDO
+      B(RANK+1:N, J ) = (0.0E+0,0.0E+0)
    ENDDO
 !
 !     B(1:N,1:NRHS) := Y**H * B(1:N,1:NRHS)
@@ -443,7 +434,7 @@
       DO I = 1, N
          WORK( JPVT( I ) ) = B( I, J )
       ENDDO
-      CALL CCOPY( N, WORK( 1 ), 1, B( 1, J ), 1 )
+      B(1:N,J) = WORK(1:N)
    ENDDO
 !
 !     complex workspace: N.
@@ -473,4 +464,3 @@
 !     End of CGELSY
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

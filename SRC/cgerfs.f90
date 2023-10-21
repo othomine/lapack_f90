@@ -177,6 +177,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gerfs
 !
@@ -204,14 +205,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -229,10 +222,7 @@
    EXTERNAL           LSAME, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CGEMV, CGETRS, CLACN2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
+   EXTERNAL           CGEMV, CGETRS, CLACN2, XERBLA
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -270,10 +260,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -298,7 +286,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -306,8 +294,8 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CGEMV( TRANS, N, N, -ONE, A, LDA, X( 1, J ), 1, ONE, WORK, &
+      WORK(1:N) = B(1:N,J)
+      CALL CGEMV( TRANS, N, N, -(1.0E+0,0.0E+0), A, LDA, X( 1, J ), 1, (1.0E+0,0.0E+0), WORK, &
                   1 )
 !
 !        Compute componentwise relative backward error from formula
@@ -334,14 +322,14 @@
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             DO I = 1, N
                S = S + CABS1( A( I, K ) )*CABS1( X( I, J ) )
             ENDDO
             RWORK( K ) = RWORK( K ) + S
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
@@ -358,13 +346,13 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. &
           COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CGETRS( TRANS, N, 1, AF, LDAF, IPIV, WORK, N, INFO )
-         CALL CAXPY( N, ONE, WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -409,32 +397,25 @@
 !
 !              Multiply by diag(W)*inv(op(A)**H).
 !
-            CALL CGETRS( TRANST, N, 1, AF, LDAF, IPIV, WORK, N, &
-                         INFO )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            CALL CGETRS( TRANST, N, 1, AF, LDAF, IPIV, WORK, N, INFO )
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
-            CALL CGETRS( TRANSN, N, 1, AF, LDAF, IPIV, WORK, N, &
-                         INFO )
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
+            CALL CGETRS( TRANSN, N, 1, AF, LDAF, IPIV, WORK, N, INFO )
          END IF
          GO TO 100
       END IF
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
+      ENDDO
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
 !
@@ -443,4 +424,3 @@
 !     End of CGERFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

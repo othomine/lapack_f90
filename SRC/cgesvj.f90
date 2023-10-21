@@ -73,7 +73,7 @@
 !>                 level of numerical orthogonality of the computed left
 !>                 singular vectors. TOL can be set to TOL = CTOL*EPS, where
 !>                 CTOL is given on input in the array WORK.
-!>                 No CTOL smaller than ONE is allowed. CTOL greater
+!>                 No CTOL smaller than 1.0E+0 is allowed. CTOL greater
 !>                 than 1 / EPS is meaningless. The option 'C'
 !>                 can be used if M*EPS is satisfactory orthogonality
 !>                 of the computed left singular vectors, so CTOL=M could
@@ -164,11 +164,11 @@
 !>          On exit,
 !>          If INFO = 0 :
 !>          depending on the value SCALE = RWORK(1), we have:
-!>                 If SCALE = ONE:
+!>                 If SCALE = 1.0E+0:
 !>                 SVA(1:N) contains the computed singular values of A.
 !>                 During the computation SVA contains the Euclidean column
 !>                 norms of the iterated matrices in the array A.
-!>                 If SCALE  /=  ONE:
+!>                 If SCALE  /=  1.0E+0:
 !>                 The singular values of A are SCALE*SVA(1:N), and this
 !>                 factored representation is due to the fact that some of the
 !>                 singular values of A might underflow or overflow.
@@ -227,7 +227,7 @@
 !>          RWORK(1) = CTOL, where CTOL defines the threshold for convergence.
 !>                    The process stops if all columns of A are mutually
 !>                    orthogonal up to CTOL*EPS, EPS=SLAMCH('E').
-!>                    It is required that CTOL >= ONE, i.e. it is not
+!>                    It is required that CTOL >= 1.0E+0, i.e. it is not
 !>                    allowed to force the routine to obtain orthogonality
 !>                    below EPSILON.
 !>          On exit,
@@ -275,6 +275,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesvj
 !
@@ -366,14 +367,11 @@
 !  =====================================================================
 !
 !     .. Local Parameters ..
-   REAL         ZERO,         HALF,         ONE
-   PARAMETER  ( ZERO = 0.0E0, HALF = 0.5E0, ONE = 1.0E0)
-   COMPLEX      CZERO,                  CONE
-   PARAMETER  ( CZERO = (0.0E0, 0.0E0), CONE = (1.0E0, 0.0E0) )
    INTEGER      NSWEEP
    PARAMETER  ( NSWEEP = 30 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX A_TMP( LDA ), V_TMP( LDV )
    COMPLEX AAPQ, OMPQ
    REAL    AAPP, AAPP0, AAPQ1, AAQQ, APOAQ, AQOAP, BIG, &
            BIGTHETA, CS, CTOL, EPSLN, MXAAPQ, &
@@ -385,9 +383,6 @@
    LOGICAL APPLV, GOSCALE, LOWER, LQUERY, LSVEC, NOSCALE, ROTOK, &
            RSVEC, UCTOL, UPPER
 !     ..
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS, MAX, MIN, CONJG, REAL, SIGN, SQRT
 !     ..
 !     .. External Functions ..
 !     ..
@@ -406,7 +401,7 @@
 !     .. External Subroutines ..
 !     ..
 !     from BLAS
-   EXTERNAL           CCOPY, CROT, CSSCAL, CSWAP, CAXPY
+   EXTERNAL           CCOPY, CROT, CSSCAL
 !     from LAPACK
    EXTERNAL           CLASCL, CLASET, CLASSQ, SLASCL, XERBLA
    EXTERNAL           CGSVJ0, CGSVJ1
@@ -440,7 +435,7 @@
    ELSE IF( ( RSVEC .AND. ( LDV < N ) ) .OR. &
              ( APPLV .AND. ( LDV < MV ) ) ) THEN
       INFO = -11
-   ELSE IF( UCTOL .AND. ( RWORK( 1 ) <= ONE ) ) THEN
+   ELSE IF( UCTOL .AND. ( RWORK( 1 ) <= 1.0E+0 ) ) THEN
       INFO = -12
    ELSE IF( LWORK < ( M+N ) .AND. ( .NOT.LQUERY ) ) THEN
       INFO = -13
@@ -491,15 +486,15 @@
    ROOTSFMIN = SQRT( SFMIN )
    SMALL = SFMIN / EPSLN
 !      BIG = SLAMCH( 'Overflow' )
-   BIG     = ONE  / SFMIN
-   ROOTBIG = ONE / ROOTSFMIN
+   BIG     = 1.0E+0  / SFMIN
+   ROOTBIG = 1.0E+0 / ROOTSFMIN
 !     LARGE = BIG / SQRT( REAL( M*N ) )
-   BIGTHETA = ONE / ROOTEPS
+   BIGTHETA = 1.0E+0 / ROOTEPS
 !
    TOL = CTOL*EPSLN
    ROOTTOL = SQRT( TOL )
 !
-   IF( REAL( M )*EPSLN >= ONE ) THEN
+   IF( REAL( M )*EPSLN >= 1.0E+0 ) THEN
       INFO = -4
       CALL XERBLA( 'CGESVJ', -INFO )
       RETURN
@@ -509,7 +504,7 @@
 !
    IF( RSVEC ) THEN
       MVL = N
-      CALL CLASET( 'A', MVL, N, CZERO, CONE, V, LDV )
+      CALL CLASET( 'A', MVL, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), V, LDV )
    ELSE IF( APPLV ) THEN
       MVL = MV
    END IF
@@ -524,15 +519,15 @@
 !     SQRT(N)*max_i SVA(i) does not overflow. If INFinite entries
 !     in A are detected, the procedure returns with INFO=-6.
 !
-   SKL = ONE / SQRT( REAL( M )*REAL( N ) )
+   SKL = 1.0E+0 / SQRT( REAL( M )*REAL( N ) )
    NOSCALE = .TRUE.
    GOSCALE = .TRUE.
 !
    IF( LOWER ) THEN
 !        the input matrix is M-by-N lower triangular (trapezoidal)
       DO p = 1, N
-         AAPP = ZERO
-         AAQQ = ONE
+         AAPP = 0.0E+0
+         AAQQ = 1.0E+0
          CALL CLASSQ( M-p+1, A( p, p ), 1, AAPP, AAQQ )
          IF( AAPP > BIG ) THEN
             INFO = -6
@@ -547,17 +542,15 @@
             SVA( p ) = AAPP*( AAQQ*SKL )
             IF( GOSCALE ) THEN
                GOSCALE = .FALSE.
-               DO q = 1, p - 1
-                  SVA( q ) = SVA( q )*SKL
-                  ENDDO
+               SVA(1:p-1) = SVA(1:p-1)*SKL
             END IF
          END IF
-         ENDDO
+      ENDDO
    ELSE IF( UPPER ) THEN
 !        the input matrix is M-by-N upper triangular (trapezoidal)
       DO p = 1, N
-         AAPP = ZERO
-         AAQQ = ONE
+         AAPP = 0.0E+0
+         AAQQ = 1.0E+0
          CALL CLASSQ( p, A( 1, p ), 1, AAPP, AAQQ )
          IF( AAPP > BIG ) THEN
             INFO = -6
@@ -572,17 +565,15 @@
             SVA( p ) = AAPP*( AAQQ*SKL )
             IF( GOSCALE ) THEN
                GOSCALE = .FALSE.
-               DO q = 1, p - 1
-                  SVA( q ) = SVA( q )*SKL
-                  ENDDO
+               SVA(1:p-1) = SVA(1:p-1)*SKL
             END IF
          END IF
-         ENDDO
+      ENDDO
    ELSE
 !        the input matrix is M-by-N general dense
       DO p = 1, N
-         AAPP = ZERO
-         AAQQ = ONE
+         AAPP = 0.0E+0
+         AAQQ = 1.0E+0
          CALL CLASSQ( M, A( 1, p ), 1, AAPP, AAQQ )
          IF( AAPP > BIG ) THEN
             INFO = -6
@@ -597,37 +588,31 @@
             SVA( p ) = AAPP*( AAQQ*SKL )
             IF( GOSCALE ) THEN
                GOSCALE = .FALSE.
-               DO q = 1, p - 1
-                  SVA( q ) = SVA( q )*SKL
-                  ENDDO
+               SVA(1:p-1) = SVA(1:p-1)*SKL
             END IF
          END IF
          ENDDO
    END IF
 !
-   IF( NOSCALE )SKL = ONE
+   IF( NOSCALE )SKL = 1.0E+0
 !
 !     Move the smaller part of the spectrum from the underflow threshold
 !(!)  Start by determining the position of the nonzero entries of the
 !     array SVA() relative to ( SFMIN, BIG ).
 !
-   AAPP = ZERO
+   AAPP = 0.0E+0
    AAQQ = BIG
    DO p = 1, N
-      IF( SVA( p ) /= ZERO )AAQQ = MIN( AAQQ, SVA( p ) )
+      IF( SVA( p ) /= 0.0E+0 ) AAQQ = MIN( AAQQ, SVA( p ) )
       AAPP = MAX( AAPP, SVA( p ) )
-      ENDDO
+   ENDDO
 !
 ! #:) Quick return for zero matrix
 !
-   IF( AAPP == ZERO ) THEN
-      IF( LSVEC )CALL CLASET( 'G', M, N, CZERO, CONE, A, LDA )
-      RWORK( 1 ) = ONE
-      RWORK( 2 ) = ZERO
-      RWORK( 3 ) = ZERO
-      RWORK( 4 ) = ZERO
-      RWORK( 5 ) = ZERO
-      RWORK( 6 ) = ZERO
+   IF( AAPP == 0.0E+0 ) THEN
+      IF( LSVEC )CALL CLASET( 'G', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), A, LDA )
+      RWORK( 1 ) = 1.0E+0
+      RWORK( 2:6 ) = 0.0E+0
       RETURN
    END IF
 !
@@ -636,16 +621,13 @@
    IF( N == 1 ) THEN
       IF( LSVEC )CALL CLASCL( 'G', 0, 0, SVA( 1 ), SKL, M, 1, &
                               A( 1, 1 ), LDA, IERR )
-      RWORK( 1 ) = ONE / SKL
+      RWORK( 1 ) = 1.0E+0 / SKL
       IF( SVA( 1 ) >= SFMIN ) THEN
-         RWORK( 2 ) = ONE
+         RWORK( 2 ) = 1.0E+0
       ELSE
-         RWORK( 2 ) = ZERO
+         RWORK( 2 ) = 0.0E+0
       END IF
-      RWORK( 3 ) = ZERO
-      RWORK( 4 ) = ZERO
-      RWORK( 5 ) = ZERO
-      RWORK( 6 ) = ZERO
+      RWORK( 3:6 ) = 0.0E+0
       RETURN
    END IF
 !
@@ -672,18 +654,18 @@
 !         AAQQ  = AAQQ*TEMP1
 !         AAPP  = AAPP*TEMP1
    ELSE
-      TEMP1 = ONE
+      TEMP1 = 1.0E+0
    END IF
 !
 !     Scale, if necessary
 !
-   IF( TEMP1 /= ONE ) THEN
-      CALL SLASCL( 'G', 0, 0, ONE, TEMP1, N, 1, SVA, N, IERR )
+   IF( TEMP1 /= 1.0E+0 ) THEN
+      CALL SLASCL( 'G', 0, 0, 1.0E+0, TEMP1, N, 1, SVA, N, IERR )
    END IF
    SKL = TEMP1*SKL
-   IF( SKL /= ONE ) THEN
-      CALL CLASCL( JOBA, 0, 0, ONE, SKL, M, N, A, LDA, IERR )
-      SKL = ONE / SKL
+   IF( SKL /= 1.0E+0 ) THEN
+      CALL CLASCL( JOBA, 0, 0, 1.0E+0, SKL, M, N, A, LDA, IERR )
+      SKL = 1.0E+0 / SKL
    END IF
 !
 !     Row-cyclic Jacobi SVD algorithm with column pivoting
@@ -691,9 +673,7 @@
    EMPTSW = ( N*( N-1 ) ) / 2
    NOTROT = 0
 
-   DO q = 1, N
-      CWORK( q ) = CONE
-      ENDDO
+   CWORK(1:N) = (1.0E+0,0.0E+0)
 !
 !
 !
@@ -810,8 +790,8 @@
 !
 !     .. go go go ...
 !
-      MXAAPQ = ZERO
-      MXSINJ = ZERO
+      MXAAPQ = 0.0E+0
+      MXSINJ = 0.0E+0
       ISWROT = 0
 !
       NOTROT = 0
@@ -836,9 +816,14 @@
 !
                q = ISAMAX( N-p+1, SVA( p ), 1 ) + p - 1
                IF( p /= q ) THEN
-                  CALL CSWAP( M, A( 1, p ), 1, A( 1, q ), 1 )
-                  IF( RSVEC )CALL CSWAP( MVL, V( 1, p ), 1, &
-                                              V( 1, q ), 1 )
+                  A_TMP(1:M) = A(1:M,p)
+                  A(1:M,p) = A(1:M,q)
+                  A(1:M,q) = A_TMP(1:M)
+                  IF( RSVEC ) THEN
+                     V_TMP(1:MVL) = V(1:MVL,p)
+                     V(1:MVL,p) = V(1:MVL,q)
+                     V(1:MVL,q) = V_TMP(1:MVL)
+                  ENDIF
                   TEMP1 = SVA( p )
                   SVA( p ) = SVA( q )
                   SVA( q ) = TEMP1
@@ -865,8 +850,8 @@
                        ( SVA( p ) > ROOTSFMIN ) ) THEN
                      SVA( p ) = SCNRM2( M, A( 1, p ), 1 )
                   ELSE
-                     TEMP1 = ZERO
-                     AAPP = ONE
+                     TEMP1 = 0.0E+0
+                     AAPP = 1.0E+0
                      CALL CLASSQ( M, A( 1, p ), 1, TEMP1, AAPP )
                      SVA( p ) = TEMP1*SQRT( AAPP )
                   END IF
@@ -875,7 +860,7 @@
                   AAPP = SVA( p )
                END IF
 !
-               IF( AAPP > ZERO ) THEN
+               IF( AAPP > 0.0E+0 ) THEN
 !
                   PSKIPPED = 0
 !
@@ -883,18 +868,17 @@
 !
                      AAQQ = SVA( q )
 !
-                     IF( AAQQ > ZERO ) THEN
+                     IF( AAQQ > 0.0E+0 ) THEN
 !
                         AAPP0 = AAPP
-                        IF( AAQQ >= ONE ) THEN
+                        IF( AAQQ >= 1.0E+0 ) THEN
                            ROTOK = ( SMALL*AAPP ) <= AAQQ
                            IF( AAPP < ( BIG / AAQQ ) ) THEN
                               AAPQ = ( CDOTC( M, A( 1, p ), 1, &
                                       A( 1, q ), 1 ) / AAQQ ) / AAPP
                            ELSE
-                              CALL CCOPY( M, A( 1, p ), 1, &
-                                           CWORK(N+1), 1 )
-                              CALL CLASCL( 'G', 0, 0, AAPP, ONE, &
+                              CWORK(N+1:N+M) = A(1:M,p)
+                              CALL CLASCL( 'G', 0, 0, AAPP, 1.0E+0, &
                                    M, 1, CWORK(N+1), LDA, IERR )
                               AAPQ = CDOTC( M, CWORK(N+1), 1, &
                                       A( 1, q ), 1 ) / AAQQ
@@ -905,10 +889,9 @@
                               AAPQ = ( CDOTC( M, A( 1, p ), 1, &
                                        A( 1, q ), 1 ) / AAPP ) / AAQQ
                            ELSE
-                              CALL CCOPY( M, A( 1, q ), 1, &
-                                           CWORK(N+1), 1 )
+                              CWORK(N+1:N+M) = A(1:M,q)
                               CALL CLASCL( 'G', 0, 0, AAQQ, &
-                                            ONE, M, 1, &
+                                            1.0E+0, M, 1, &
                                             CWORK(N+1), LDA, IERR )
                               AAPQ = CDOTC( M, A(1, p ), 1, &
                                       CWORK(N+1), 1 ) / AAPP
@@ -925,7 +908,7 @@
                             OMPQ = AAPQ / ABS(AAPQ)
 !
 !           .. rotate
-![RTD]      ROTATED = ROTATED + ONE
+![RTD]      ROTATED = ROTATED + 1.0E+0
 !
                            IF( ir1 == 0 ) THEN
                               NOTROT = 0
@@ -937,12 +920,12 @@
 !
                               AQOAP = AAQQ / AAPP
                               APOAQ = AAPP / AAQQ
-                              THETA = -HALF*ABS( AQOAP-APOAQ )/AAPQ1
+                              THETA = -0.5E+0*ABS( AQOAP-APOAQ )/AAPQ1
 !
                               IF( ABS( THETA ) > BIGTHETA ) THEN
 !
-                                 T  = HALF / THETA
-                                 CS = ONE
+                                 T  = 0.5E+0 / THETA
+                                 CS = 1.0E+0
 
                                  CALL CROT( M, A(1,p), 1, A(1,q), 1, &
                                              CS, CONJG(OMPQ)*T )
@@ -951,27 +934,27 @@
                                      V(1,q), 1, CS, CONJG(OMPQ)*T )
                                  END IF
 
-                                 SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                             ONE+T*APOAQ*AAPQ1 ) )
-                                 AAPP = AAPP*SQRT( MAX( ZERO, &
-                                             ONE-T*AQOAP*AAPQ1 ) )
+                                 SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                             1.0E+0+T*APOAQ*AAPQ1 ) )
+                                 AAPP = AAPP*SQRT( MAX( 0.0E+0, &
+                                             1.0E+0-T*AQOAP*AAPQ1 ) )
                                  MXSINJ = MAX( MXSINJ, ABS( T ) )
 !
                               ELSE
 !
 !                 .. choose correct signum for THETA and rotate
 !
-                                 THSIGN = -SIGN( ONE, AAPQ1 )
-                                 T = ONE / ( THETA+THSIGN* &
-                                      SQRT( ONE+THETA*THETA ) )
-                                 CS = SQRT( ONE / ( ONE+T*T ) )
+                                 THSIGN = -SIGN( 1.0E+0, AAPQ1 )
+                                 T = 1.0E+0 / ( THETA+THSIGN* &
+                                      SQRT( 1.0E+0+THETA*THETA ) )
+                                 CS = SQRT( 1.0E+0 / ( 1.0E+0+T*T ) )
                                  SN = T*CS
 !
                                  MXSINJ = MAX( MXSINJ, ABS( SN ) )
-                                 SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                             ONE+T*APOAQ*AAPQ1 ) )
-                                 AAPP = AAPP*SQRT( MAX( ZERO, &
-                                         ONE-T*AQOAP*AAPQ1 ) )
+                                 SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                             1.0E+0+T*APOAQ*AAPQ1 ) )
+                                 AAPP = AAPP*SQRT( MAX( 0.0E+0, &
+                                         1.0E+0-T*AQOAP*AAPQ1 ) )
 !
                                  CALL CROT( M, A(1,p), 1, A(1,q), 1, &
                                              CS, CONJG(OMPQ)*SN )
@@ -984,19 +967,17 @@
 !
                               ELSE
 !              .. have to use modified Gram-Schmidt like transformation
-                              CALL CCOPY( M, A( 1, p ), 1, &
-                                          CWORK(N+1), 1 )
-                              CALL CLASCL( 'G', 0, 0, AAPP, ONE, M, &
+                              CWORK(N+1:N+M) = A(1:M,p)
+                              CALL CLASCL( 'G', 0, 0, AAPP, 1.0E+0, M, &
                                            1, CWORK(N+1), LDA, &
                                            IERR )
-                              CALL CLASCL( 'G', 0, 0, AAQQ, ONE, M, &
+                              CALL CLASCL( 'G', 0, 0, AAQQ, 1.0E+0, M, &
                                            1, A( 1, q ), LDA, IERR )
-                              CALL CAXPY( M, -AAPQ, CWORK(N+1), 1, &
-                                          A( 1, q ), 1 )
-                              CALL CLASCL( 'G', 0, 0, ONE, AAQQ, M, &
+                              A(1:M,q) = A(1:M,q) - AAPQ*CWORK(N+1:N+M)
+                              CALL CLASCL( 'G', 0, 0, 1.0E+0, AAQQ, M, &
                                            1, A( 1, q ), LDA, IERR )
-                              SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                         ONE-AAPQ1*AAPQ1 ) )
+                              SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                         1.0E+0-AAPQ1*AAPQ1 ) )
                               MXSINJ = MAX( MXSINJ, SFMIN )
                            END IF
 !           END IF ROTOK THEN ... ELSE
@@ -1004,16 +985,14 @@
 !           In the case of cancellation in updating SVA(q), SVA(p)
 !           recompute SVA(q), SVA(p).
 !
-                           IF( ( SVA( q ) / AAQQ )**2 <= ROOTEPS ) &
-                               THEN
+                           IF( ( SVA( q ) / AAQQ )**2 <= ROOTEPS ) THEN
                               IF( ( AAQQ < ROOTBIG ) .AND. &
                                   ( AAQQ > ROOTSFMIN ) ) THEN
                                  SVA( q ) = SCNRM2( M, A( 1, q ), 1 )
                               ELSE
-                                 T = ZERO
-                                 AAQQ = ONE
-                                 CALL CLASSQ( M, A( 1, q ), 1, T, &
-                                              AAQQ )
+                                 T = 0.0E+0
+                                 AAQQ = 1.0E+0
+                                 CALL CLASSQ( M, A( 1, q ), 1, T, AAQQ )
                                  SVA( q ) = T*SQRT( AAQQ )
                               END IF
                            END IF
@@ -1022,10 +1001,9 @@
                                   ( AAPP > ROOTSFMIN ) ) THEN
                                  AAPP = SCNRM2( M, A( 1, p ), 1 )
                               ELSE
-                                 T = ZERO
-                                 AAPP = ONE
-                                 CALL CLASSQ( M, A( 1, p ), 1, T, &
-                                              AAPP )
+                                 T = 0.0E+0
+                                 AAPP = 1.0E+0
+                                 CALL CLASSQ( M, A( 1, p ), 1, T, AAPP )
                                  AAPP = T*SQRT( AAPP )
                               END IF
                               SVA( p ) = AAPP
@@ -1060,7 +1038,7 @@
 !
                ELSE
                   SVA( p ) = AAPP
-                  IF( ( ir1 == 0 ) .AND. ( AAPP == ZERO ) ) &
+                  IF( ( ir1 == 0 ) .AND. ( AAPP == 0.0E+0 ) ) &
                       NOTROT = NOTROT + MIN( igl+KBL-1, N ) - p
                END IF
 !
@@ -1084,21 +1062,21 @@
             DO p = igl, MIN( igl+KBL-1, N )
 !
                AAPP = SVA( p )
-               IF( AAPP > ZERO ) THEN
+               IF( AAPP > 0.0E+0 ) THEN
 !
                   PSKIPPED = 0
 !
                   DO q = jgl, MIN( jgl+KBL-1, N )
 !
                      AAQQ = SVA( q )
-                     IF( AAQQ > ZERO ) THEN
+                     IF( AAQQ > 0.0E+0 ) THEN
                         AAPP0 = AAPP
 !
 !     .. M x 2 Jacobi SVD ..
 !
 !        Safe Gram matrix computation
 !
-                        IF( AAQQ >= ONE ) THEN
+                        IF( AAQQ >= 1.0E+0 ) THEN
                            IF( AAPP >= AAQQ ) THEN
                               ROTOK = ( SMALL*AAPP ) <= AAQQ
                            ELSE
@@ -1108,10 +1086,9 @@
                               AAPQ = ( CDOTC( M, A( 1, p ), 1, &
                                      A( 1, q ), 1 ) / AAQQ ) / AAPP
                            ELSE
-                              CALL CCOPY( M, A( 1, p ), 1, &
-                                          CWORK(N+1), 1 )
+                              CWORK(N+1:N+M) = A(1:M,p)
                               CALL CLASCL( 'G', 0, 0, AAPP, &
-                                           ONE, M, 1, &
+                                           1.0E+0, M, 1, &
                                            CWORK(N+1), LDA, IERR )
                               AAPQ = CDOTC( M, CWORK(N+1), 1, &
                                      A( 1, q ), 1 ) / AAQQ
@@ -1127,10 +1104,9 @@
                                     A( 1, q ), 1 ) / MAX(AAQQ,AAPP) ) &
                                                    / MIN(AAQQ,AAPP)
                            ELSE
-                              CALL CCOPY( M, A( 1, q ), 1, &
-                                          CWORK(N+1), 1 )
+                              CWORK(N+1:N+M) = A(1:M,q)
                               CALL CLASCL( 'G', 0, 0, AAQQ, &
-                                           ONE, M, 1, &
+                                           1.0E+0, M, 1, &
                                            CWORK(N+1), LDA, IERR )
                               AAPQ = CDOTC( M, A( 1, p ), 1, &
                                      CWORK(N+1),  1 ) / AAPP
@@ -1154,38 +1130,38 @@
 !
                               AQOAP = AAQQ / AAPP
                               APOAQ = AAPP / AAQQ
-                              THETA = -HALF*ABS( AQOAP-APOAQ )/ AAPQ1
+                              THETA = -0.5E+0*ABS( AQOAP-APOAQ )/ AAPQ1
                               IF( AAQQ > AAPP0 )THETA = -THETA
 !
                               IF( ABS( THETA ) > BIGTHETA ) THEN
-                                 T  = HALF / THETA
-                                 CS = ONE
+                                 T  = 0.5E+0 / THETA
+                                 CS = 1.0E+0
                                  CALL CROT( M, A(1,p), 1, A(1,q), 1, &
                                              CS, CONJG(OMPQ)*T )
                                  IF( RSVEC ) THEN
                                      CALL CROT( MVL, V(1,p), 1, &
                                      V(1,q), 1, CS, CONJG(OMPQ)*T )
                                  END IF
-                                 SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                            ONE+T*APOAQ*AAPQ1 ) )
-                                 AAPP = AAPP*SQRT( MAX( ZERO, &
-                                        ONE-T*AQOAP*AAPQ1 ) )
+                                 SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                            1.0E+0+T*APOAQ*AAPQ1 ) )
+                                 AAPP = AAPP*SQRT( MAX( 0.0E+0, &
+                                        1.0E+0-T*AQOAP*AAPQ1 ) )
                                  MXSINJ = MAX( MXSINJ, ABS( T ) )
                               ELSE
 !
 !                 .. choose correct signum for THETA and rotate
 !
-                                 THSIGN = -SIGN( ONE, AAPQ1 )
+                                 THSIGN = -SIGN( 1.0E+0, AAPQ1 )
                                  IF( AAQQ > AAPP0 )THSIGN = -THSIGN
-                                 T = ONE / ( THETA+THSIGN* &
-                                     SQRT( ONE+THETA*THETA ) )
-                                 CS = SQRT( ONE / ( ONE+T*T ) )
+                                 T = 1.0E+0 / ( THETA+THSIGN* &
+                                     SQRT( 1.0E+0+THETA*THETA ) )
+                                 CS = SQRT( 1.0E+0 / ( 1.0E+0+T*T ) )
                                  SN = T*CS
                                  MXSINJ = MAX( MXSINJ, ABS( SN ) )
-                                 SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                            ONE+T*APOAQ*AAPQ1 ) )
-                                 AAPP = AAPP*SQRT( MAX( ZERO, &
-                                            ONE-T*AQOAP*AAPQ1 ) )
+                                 SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                            1.0E+0+T*APOAQ*AAPQ1 ) )
+                                 AAPP = AAPP*SQRT( MAX( 0.0E+0, &
+                                            1.0E+0-T*AQOAP*AAPQ1 ) )
 !
                                  CALL CROT( M, A(1,p), 1, A(1,q), 1, &
                                              CS, CONJG(OMPQ)*SN )
@@ -1199,38 +1175,34 @@
                            ELSE
 !              .. have to use modified Gram-Schmidt like transformation
                             IF( AAPP > AAQQ ) THEN
-                                 CALL CCOPY( M, A( 1, p ), 1, &
-                                             CWORK(N+1), 1 )
-                                 CALL CLASCL( 'G', 0, 0, AAPP, ONE, &
+                                 CWORK(N+1:N+M) = A(1:M,p)
+                                 CALL CLASCL( 'G', 0, 0, AAPP, 1.0E+0, &
                                               M, 1, CWORK(N+1),LDA, &
                                               IERR )
-                                 CALL CLASCL( 'G', 0, 0, AAQQ, ONE, &
+                                 CALL CLASCL( 'G', 0, 0, AAQQ, 1.0E+0, &
                                               M, 1, A( 1, q ), LDA, &
                                               IERR )
-                                 CALL CAXPY( M, -AAPQ, CWORK(N+1), &
-                                             1, A( 1, q ), 1 )
-                                 CALL CLASCL( 'G', 0, 0, ONE, AAQQ, &
+                                 A(1:M,q) = A(1:M,q) - AAPQ*CWORK(N+1:N+M)
+                                 CALL CLASCL( 'G', 0, 0, 1.0E+0, AAQQ, &
                                               M, 1, A( 1, q ), LDA, &
                                               IERR )
-                                 SVA( q ) = AAQQ*SQRT( MAX( ZERO, &
-                                            ONE-AAPQ1*AAPQ1 ) )
+                                 SVA( q ) = AAQQ*SQRT( MAX( 0.0E+0, &
+                                            1.0E+0-AAPQ1*AAPQ1 ) )
                                  MXSINJ = MAX( MXSINJ, SFMIN )
                             ELSE
-                                CALL CCOPY( M, A( 1, q ), 1, &
-                                             CWORK(N+1), 1 )
-                                 CALL CLASCL( 'G', 0, 0, AAQQ, ONE, &
+                                 CWORK(N+1:N+M) = A(1:M,q)
+                                 CALL CLASCL( 'G', 0, 0, AAQQ, 1.0E+0, &
                                               M, 1, CWORK(N+1),LDA, &
                                               IERR )
-                                 CALL CLASCL( 'G', 0, 0, AAPP, ONE, &
+                                 CALL CLASCL( 'G', 0, 0, AAPP, 1.0E+0, &
                                               M, 1, A( 1, p ), LDA, &
                                               IERR )
-                                 CALL CAXPY( M, -CONJG(AAPQ), &
-                                      CWORK(N+1), 1, A( 1, p ), 1 )
-                                 CALL CLASCL( 'G', 0, 0, ONE, AAPP, &
+                                 A(1:M,p) = A(1:M,p)-CONJG(AAPQ)*CWORK(N+1:N+M)
+                                 CALL CLASCL( 'G', 0, 0, 1.0E+0, AAPP, &
                                               M, 1, A( 1, p ), LDA, &
                                               IERR )
-                                 SVA( p ) = AAPP*SQRT( MAX( ZERO, &
-                                            ONE-AAPQ1*AAPQ1 ) )
+                                 SVA( p ) = AAPP*SQRT( MAX( 0.0E+0, &
+                                            1.0E+0-AAPQ1*AAPQ1 ) )
                                  MXSINJ = MAX( MXSINJ, SFMIN )
                             END IF
                            END IF
@@ -1244,8 +1216,8 @@
                                   ( AAQQ > ROOTSFMIN ) ) THEN
                                  SVA( q ) = SCNRM2( M, A( 1, q ), 1)
                                ELSE
-                                 T = ZERO
-                                 AAQQ = ONE
+                                 T = 0.0E+0
+                                 AAQQ = 1.0E+0
                                  CALL CLASSQ( M, A( 1, q ), 1, T, &
                                               AAQQ )
                                  SVA( q ) = T*SQRT( AAQQ )
@@ -1256,8 +1228,8 @@
                                   ( AAPP > ROOTSFMIN ) ) THEN
                                  AAPP = SCNRM2( M, A( 1, p ), 1 )
                               ELSE
-                                 T = ZERO
-                                 AAPP = ONE
+                                 T = 0.0E+0
+                                 AAPP = 1.0E+0
                                  CALL CLASSQ( M, A( 1, p ), 1, T, &
                                               AAPP )
                                  AAPP = T*SQRT( AAPP )
@@ -1287,43 +1259,41 @@
                          ( PSKIPPED > ROWSKIP ) ) THEN
                         AAPP = -AAPP
                         NOTROT = 0
-                        GO TO 2203
+                        EXIT
                      END IF
 !
-                     ENDDO
+                  ENDDO
 !        end of the q-loop
- 2203                CONTINUE
 !
                   SVA( p ) = AAPP
 !
                ELSE
 !
-                  IF( AAPP == ZERO )NOTROT = NOTROT + &
+                  IF( AAPP == 0.0E+0 )NOTROT = NOTROT + &
                       MIN( jgl+KBL-1, N ) - jgl + 1
-                  IF( AAPP < ZERO )NOTROT = 0
+                  IF( AAPP < 0.0E+0 )NOTROT = 0
 !
                END IF
 !
-               ENDDO
-!     end of the p-loop
             ENDDO
+!     end of the p-loop
+         ENDDO
 !     end of the jbc-loop
  2011       CONTINUE
 !2011 bailed out of the jbc-loop
          DO p = igl, MIN( igl+KBL-1, N )
             SVA( p ) = ABS( SVA( p ) )
-            ENDDO
-!**
          ENDDO
+!**
+      ENDDO
 !2000 :: end of the ibr-loop
 !
 !     .. update SVA(N)
-      IF( ( SVA( N ) < ROOTBIG ) .AND. ( SVA( N ) > ROOTSFMIN ) ) &
-          THEN
+      IF( ( SVA( N ) < ROOTBIG ) .AND. ( SVA( N ) > ROOTSFMIN ) ) THEN
          SVA( N ) = SCNRM2( M, A( 1, N ), 1 )
       ELSE
-         T = ZERO
-         AAPP = ONE
+         T = 0.0E+0
+         AAPP = 1.0E+0
          CALL CLASSQ( M, A( 1, N ), 1, T, AAPP )
          SVA( N ) = T*SQRT( AAPP )
       END IF
@@ -1340,7 +1310,7 @@
 !
       IF( NOTROT >= EMPTSW )GO TO 1994
 !
-      ENDDO
+   ENDDO
 !     end i=1:NSWEEP loop
 !
 ! #:( Reaching this point means that the procedure has not converged.
@@ -1366,15 +1336,21 @@
          TEMP1 = SVA( p )
          SVA( p ) = SVA( q )
          SVA( q ) = TEMP1
-         CALL CSWAP( M, A( 1, p ), 1, A( 1, q ), 1 )
-         IF( RSVEC )CALL CSWAP( MVL, V( 1, p ), 1, V( 1, q ), 1 )
+         A_TMP(1:M) = A(1:M,p)
+         A(1:M,p) = A(1:M,q)
+         A(1:M,q) = A_TMP(1:M)
+         IF( RSVEC ) THEN
+            V_TMP(1:MVL) = V(1:MVL,p)
+            V(1:MVL,p) = V(1:MVL,q)
+            V(1:MVL,q) = V_TMP(1:MVL)
+         ENDIF
       END IF
-      IF( SVA( p ) /= ZERO ) THEN
+      IF( SVA( p ) /= 0.0E+0 ) THEN
          N4 = N4 + 1
          IF( SVA( p )*SKL > SFMIN )N2 = N2 + 1
       END IF
-      ENDDO
-   IF( SVA( N ) /= ZERO ) THEN
+   ENDDO
+   IF( SVA( N ) /= 0.0E+0 ) THEN
       N4 = N4 + 1
       IF( SVA( N )*SKL > SFMIN )N2 = N2 + 1
    END IF
@@ -1383,32 +1359,29 @@
 !
    IF( LSVEC .OR. UCTOL ) THEN
       DO p = 1, N4
-!           CALL CSSCAL( M, ONE / SVA( p ), A( 1, p ), 1 )
-         CALL CLASCL( 'G',0,0, SVA(p), ONE, M, 1, A(1,p), M, IERR )
-         ENDDO
+!           CALL CSSCAL( M, 1.0E+0 / SVA( p ), A( 1, p ), 1 )
+         CALL CLASCL( 'G',0,0, SVA(p), 1.0E+0, M, 1, A(1,p), M, IERR )
+      ENDDO
    END IF
 !
 !     Scale the product of Jacobi rotations.
 !
    IF( RSVEC ) THEN
          DO p = 1, N
-            TEMP1 = ONE / SCNRM2( MVL, V( 1, p ), 1 )
-            CALL CSSCAL( MVL, TEMP1, V( 1, p ), 1 )
-            ENDDO
+            V(1:MVL,p) = V(1:MVL,p) / SCNRM2( MVL, V( 1, p ), 1 )
+         ENDDO
    END IF
 !
 !     Undo scaling, if necessary (and possible).
-   IF( ( ( SKL > ONE ) .AND. ( SVA( 1 ) < ( BIG / SKL ) ) ) &
-       .OR. ( ( SKL < ONE ) .AND. ( SVA( MAX( N2, 1 ) )  > &
+   IF( ( ( SKL > 1.0E+0 ) .AND. ( SVA( 1 ) < ( BIG / SKL ) ) ) &
+       .OR. ( ( SKL < 1.0E+0 ) .AND. ( SVA( MAX( N2, 1 ) )  > &
        ( SFMIN / SKL ) ) ) ) THEN
-      DO p = 1, N
-         SVA( P ) = SKL*SVA( P )
-         ENDDO
-      SKL = ONE
+      SVA(1:N) = SKL*SVA(1:N)
+      SKL = 1.0E+0
    END IF
 !
    RWORK( 1 ) = SKL
-!     The singular values of A are SKL*SVA(1:N). If SKL /= ONE
+!     The singular values of A are SKL*SVA(1:N). If SKL /= 1.0E+0
 !     then some of the singular values may overflow or underflow and
 !     the spectrum is given in this factored representation.
 !
@@ -1417,7 +1390,7 @@
 !
    RWORK( 3 ) = REAL( N2 )
 !     N2 is the number of singular values of A greater than SFMIN.
-!     If N2<N, SVA(N2:N) contains ZEROS and/or denormalized numbers
+!     If N2<N, SVA(N2:N) contains 0.0E+0S and/or denormalized numbers
 !     that may carry some information.
 !
    RWORK( 4 ) = REAL( i )
@@ -1437,4 +1410,3 @@
 !     ..
    END
 !
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

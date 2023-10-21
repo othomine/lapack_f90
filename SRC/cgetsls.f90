@@ -153,6 +153,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup getsls
 !
@@ -174,12 +175,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TRAN
@@ -197,9 +192,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEQR, CGEMQR, CLASCL, CLASET, &
                       CTRTRS, XERBLA, CGELQ, CGEMLQ
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, MAX, MIN, INT
 !     ..
 !     .. Executable Statements ..
 !
@@ -261,9 +253,7 @@
       WSIZEM = TSZM + LWM
     END IF
 !
-    IF( ( LWORK < WSIZEM ).AND.( .NOT.LQUERY ) ) THEN
-       INFO = -10
-    END IF
+    IF( ( LWORK < WSIZEM ).AND.( .NOT.LQUERY ) ) INFO = -10
 !
     WORK( 1 ) = REAL( WSIZEO )
 !
@@ -288,21 +278,20 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-        CALL CLASET( 'FULL', MAX( M, N ), NRHS, CZERO, CZERO, &
-                     B, LDB )
+        B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
         RETURN
    END IF
 !
 !     Get machine parameters
 !
     SMLNUM = SLAMCH( 'S' ) / SLAMCH( 'P' )
-    BIGNUM = ONE / SMLNUM
+    BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = CLANGE( 'M', M, N, A, LDA, DUM )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -314,11 +303,11 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'F', MAXMN, NRHS, CZERO, CZERO, B, LDB )
+      B(1:MAXMN,1:NRHS) = (0.0E+0,0.0E+0)
       GO TO 50
    END IF
 !
@@ -328,7 +317,7 @@
    END IF
    BNRM = CLANGE( 'M', BROW, NRHS, B, LDB, DUM )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -364,9 +353,7 @@
 !
        CALL CTRTRS( 'U', 'N', 'N', N, NRHS, &
                      A, LDA, B, LDB, INFO )
-       IF( INFO > 0 ) THEN
-         RETURN
-       END IF
+       IF( INFO > 0 ) RETURN
        SCLLEN = N
      ELSE
 !
@@ -377,17 +364,11 @@
          CALL CTRTRS( 'U', 'C', 'N', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
-!           B(N+1:M,1:NRHS) = CZERO
+!           B(N+1:M,1:NRHS) = (0.0E+0,0.0E+0)
 !
-         DO J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = CZERO
-            ENDDO
-         ENDDO
+         B(N+1:M,1:NRHS) = (0.0E+0,0.0E+0)
 !
 !           B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS)
 !
@@ -417,17 +398,11 @@
          CALL CTRTRS( 'L', 'N', 'N', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           B(M+1:N,1:NRHS) = 0
 !
-         DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = CZERO
-            ENDDO
-         ENDDO
+         B(M+1:N,1:NRHS) = (0.0E+0,0.0E+0)
 !
 !           B(1:N,1:NRHS) := Q(1:N,:)**T * B(1:M,1:NRHS)
 !
@@ -456,9 +431,7 @@
          CALL CTRTRS( 'L', 'C', 'N', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -490,4 +463,3 @@
 !     End of CGETSLS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

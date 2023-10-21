@@ -340,6 +340,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesvx
 !
@@ -366,10 +367,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COLEQU, EQUIL, NOFACT, NOTRAN, ROWEQU
@@ -387,9 +384,6 @@
    EXTERNAL           CGECON, CGEEQU, CGERFS, CGETRF, CGETRS, CLACPY, &
                       CLAQGE, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
@@ -404,7 +398,7 @@
       ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
       COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       SMLNUM = SLAMCH( 'Safe minimum' )
-      BIGNUM = ONE / SMLNUM
+      BIGNUM = 1.0E+0 / SMLNUM
    END IF
 !
 !     Test the input parameters.
@@ -428,33 +422,25 @@
       INFO = -10
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAX(0.0E+0,MAXVAL(R(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -11
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0E+0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAX(0.0E+0,MAXVAL(C(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -12
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0E+0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -492,16 +478,12 @@
    IF( NOTRAN ) THEN
       IF( ROWEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               B( I, J ) = R( I )*B( I, J )
-            ENDDO
+            B(1:N,J) = R(1:N)*B(1:N,J)
          ENDDO
       END IF
    ELSE IF( COLEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = C( I )*B( I, J )
-         ENDDO
+         B(1:N,J) = C(1:N)*B(1:N,J)
       ENDDO
    END IF
 !
@@ -509,7 +491,7 @@
 !
 !        Compute the LU factorization of A.
 !
-      CALL CLACPY( 'Full', N, N, A, LDA, AF, LDAF )
+      AF(1:N,1:N) = A(1:N,1:N)
       CALL CGETRF( N, N, AF, LDAF, IPIV, INFO )
 !
 !        Return if INFO is non-zero.
@@ -521,14 +503,14 @@
 !
          RPVGRW = CLANTR( 'M', 'U', 'N', INFO, INFO, AF, LDAF, &
                   RWORK )
-         IF( RPVGRW == ZERO ) THEN
-            RPVGRW = ONE
+         IF( RPVGRW == 0.0E+0 ) THEN
+            RPVGRW = 1.0E+0
          ELSE
             RPVGRW = CLANGE( 'M', N, INFO, A, LDA, RWORK ) / &
                      RPVGRW
          END IF
          RWORK( 1 ) = RPVGRW
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -538,13 +520,15 @@
 !
    IF( NOTRAN ) THEN
       NORM = '1'
+!       ANORM = MAXVAL(SUM(ABS(A(1:N,1:N)), DIM=1))
    ELSE
       NORM = 'I'
+!       ANORM = MAXVAL(SUM(ABS(A(1:N,1:N)), DIM=2))
    END IF
    ANORM = CLANGE( NORM, N, N, A, LDA, RWORK )
    RPVGRW = CLANTR( 'M', 'U', 'N', N, N, AF, LDAF, RWORK )
-   IF( RPVGRW == ZERO ) THEN
-      RPVGRW = ONE
+   IF( RPVGRW == 0.0E+0 ) THEN
+      RPVGRW = 1.0E+0
    ELSE
       RPVGRW = CLANGE( 'M', N, N, A, LDA, RWORK ) / RPVGRW
    END IF
@@ -601,3 +585,4 @@
 !
 END
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+

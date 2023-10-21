@@ -23,7 +23,7 @@
 !                          CWORK, LCWORK, RWORK, LRWORK, INFO )
 !
 !     .. Scalar Arguments ..
-!      IMPLICIT    NONE
+!      IMPLICIT    N1.0E+0
 !      CHARACTER   JOBA, JOBP, JOBR, JOBU, JOBV
 !      INTEGER     M, N, LDA, LDU, LDV, NUMRANK, LIWORK, LCWORK, LRWORK,
 !                  INFO
@@ -403,6 +403,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesvdq
 !
@@ -422,12 +423,6 @@
    INTEGER     IWORK( * )
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL        ZERO,         ONE
-   PARAMETER ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX     CZERO,                    CONE
-   PARAMETER ( CZERO = ( 0.0E0, 0.0E0 ), CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER     IERR, NR, N1, OPTRATIO, p, q
@@ -448,17 +443,14 @@
 !     ..
 !     .. External Subroutines (BLAS, LAPACK)
    EXTERNAL    CGELQF, CGEQP3, CGEQRF, CGESVD, CLACPY, CLAPMT, &
-               CLASCL, CLASET, CLASWP, CSSCAL, SLASET, SLASCL, &
+               CLASCL, CLASET, CLASWP, SLASET, SLASCL, &
                CPOCON, CUNMLQ, CUNMQR, XERBLA
 !     ..
 !     .. External Functions (BLAS, LAPACK)
    LOGICAL    LSAME
    INTEGER    ISAMAX
-   REAL       CLANGE, SCNRM2, SLAMCH
-   EXTERNAL   CLANGE, LSAME, ISAMAX, SCNRM2, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC   ABS, CONJG, MAX, MIN, REAL, SQRT
+   REAL       SCNRM2, SLAMCH
+   EXTERNAL   LSAME, ISAMAX, SCNRM2, SLAMCH
 !     ..
 !     .. Executable Statements ..
 !
@@ -737,10 +729,7 @@
 !
 !     Quick return if the matrix is void.
 !
-   IF( ( M == 0 ) .OR. ( N == 0 ) ) THEN
-!     .. all output is void.
-      RETURN
-   END IF
+   IF( ( M == 0 ) .OR. ( N == 0 ) ) RETURN !     .. all output is void.
 !
    BIG = SLAMCH('O')
    ASCALED = .FALSE.
@@ -750,44 +739,42 @@
 !           the case of differently scaled rows.
          DO p = 1, M
 !               RWORK(p) = ABS( A(p,ICAMAX(N,A(p,1),LDA)) )
-!               [[CLANGE will return NaN if an entry of the p-th row is Nan]]
-             RWORK(p) = CLANGE( 'M', 1, N, A(p,1), LDA, RDUMMY )
+!               [[MAXVAL will return NaN if an entry of the p-th row is Nan]]
+             RWORK(p) = MAXVAL(ABS(A(p,1:N)))
 !               .. check for NaN's and Inf's
              IF ( ( RWORK(p)  /=  RWORK(p) ) .OR. &
-                  ( (RWORK(p)*ZERO)  /=  ZERO ) ) THEN
+                  ( (RWORK(p)*0.0E+0)  /=  0.0E+0 ) ) THEN
                  INFO = - 8
                  CALL XERBLA( 'CGESVDQ', -INFO )
                  RETURN
              END IF
-            ENDDO
+         ENDDO
          DO p = 1, M - 1
-         q = ISAMAX( M-p+1, RWORK(p), 1 ) + p - 1
-         IWORK(N+p) = q
-         IF ( p  /=  q ) THEN
-            RTMP     = RWORK(p)
-            RWORK(p) = RWORK(q)
-            RWORK(q) = RTMP
-         END IF
-            ENDDO
+            q = ISAMAX( M-p+1, RWORK(p), 1 ) + p - 1
+            IWORK(N+p) = q
+            IF ( p  /=  q ) THEN
+               RTMP     = RWORK(p)
+               RWORK(p) = RWORK(q)
+               RWORK(q) = RTMP
+            END IF
+         ENDDO
 !
-         IF ( RWORK(1)  ==  ZERO ) THEN
+         IF ( RWORK(1)  ==  0.0E+0 ) THEN
 !              Quick return: A is the M x N zero matrix.
             NUMRANK = 0
-            CALL SLASET( 'G', N, 1, ZERO, ZERO, S, N )
-            IF ( WNTUS ) CALL CLASET('G', M, N, CZERO, CONE, U, LDU)
-            IF ( WNTUA ) CALL CLASET('G', M, M, CZERO, CONE, U, LDU)
-            IF ( WNTVA ) CALL CLASET('G', N, N, CZERO, CONE, V, LDV)
+            CALL SLASET( 'G', N, 1, 0.0E+0, 0.0E+0, S, N )
+            IF ( WNTUS ) CALL CLASET('G', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU)
+            IF ( WNTUA ) CALL CLASET('G', M, M, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU)
+            IF ( WNTVA ) CALL CLASET('G', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), V, LDV)
             IF ( WNTUF ) THEN
-                CALL CLASET( 'G', N, 1, CZERO, CZERO, CWORK, N )
-                CALL CLASET( 'G', M, N, CZERO, CONE, U, LDU )
+                CWORK(1:N) = (0.0E+0,0.0E+0)
+                CALL CLASET( 'G', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU )
             END IF
-            DO p = 1, N
-                IWORK(p) = p
-               ENDDO
+            IWORK(1:N) = p
             IF ( ROWPRM ) THEN
                 DO p = N + 1, N + M - 1
                     IWORK(p) = p - N
-                   ENDDO
+                ENDDO
             END IF
             IF ( CONDA ) RWORK(1) = -1
             RWORK(2) = -1
@@ -797,7 +784,7 @@
          IF ( RWORK(1)  >  BIG / SQRT(REAL(M)) ) THEN
 !               .. to prevent overflow in the QR factorization, scale the
 !               matrix by 1/sqrt(M) if too large entry detected
-             CALL CLASCL('G',0,0,SQRT(REAL(M)),ONE, M,N, A,LDA, IERR)
+             CALL CLASCL('G',0,0,SQRT(REAL(M)),1.0E+0, M,N, A,LDA, IERR)
              ASCALED = .TRUE.
          END IF
          CALL CLASWP( N, A, LDA, 1, M-1, IWORK(N+1), 1 )
@@ -809,9 +796,9 @@
 !    underflows. That depends on the SVD procedure.
 !
    IF ( .NOT.ROWPRM ) THEN
-       RTMP = CLANGE( 'M', M, N, A, LDA, RWORK )
+       RTMP = MAXVAL(ABS(A(1:M,1:N)))
        IF ( ( RTMP  /=  RTMP ) .OR. &
-            ( (RTMP*ZERO)  /=  ZERO ) ) THEN
+            ( (RTMP*0.0E+0)  /=  0.0E+0 ) ) THEN
             INFO = - 8
             CALL XERBLA( 'CGESVDQ', -INFO )
             RETURN
@@ -819,7 +806,7 @@
        IF ( RTMP  >  BIG / SQRT(REAL(M)) ) THEN
 !             .. to prevent overflow in the QR factorization, scale the
 !             matrix by 1/sqrt(M) if too large entry detected
-           CALL CLASCL('G',0,0, SQRT(REAL(M)),ONE, M,N, A,LDA, IERR)
+           CALL CLASCL('G',0,0, SQRT(REAL(M)),1.0E+0, M,N, A,LDA, IERR)
            ASCALED = .TRUE.
        END IF
    END IF
@@ -829,12 +816,9 @@
 !     A * P = Q * [ R ]
 !                 [ 0 ]
 !
-   DO p = 1, N
 !        .. all columns are free columns
-      IWORK(p) = 0
-      ENDDO
-   CALL CGEQP3( M, N, A, LDA, IWORK, CWORK, CWORK(N+1), LCWORK-N, &
-        RWORK, IERR )
+   IWORK(1:N) = 0
+   CALL CGEQP3( M, N, A, LDA, IWORK, CWORK, CWORK(N+1), LCWORK-N, RWORK, IERR )
 !
 !    If the user requested accuracy level allows truncation in the
 !    computed upper triangular factor, the matrix R is examined and,
@@ -854,10 +838,9 @@
       NR = 1
       RTMP = SQRT(REAL(N))*EPSLN
       DO p = 2, N
-         IF ( ABS(A(p,p))  <  (RTMP*ABS(A(1,1))) ) GO TO 3002
-            NR = NR + 1
-         ENDDO
- 3002    CONTINUE
+         IF ( ABS(A(p,p))  <  (RTMP*ABS(A(1,1))) ) EXIT
+         NR = NR + 1
+      ENDDO
 !
    ELSEIF ( ACCLM ) THEN
 !        .. similarly as above, only slightly more gentle (less aggressive).
@@ -869,10 +852,9 @@
       NR = 1
       DO p = 2, N
          IF ( ( ABS(A(p,p))  <  (EPSLN*ABS(A(p-1,p-1))) ) .OR. &
-              ( ABS(A(p,p))  <  SFMIN ) ) GO TO 3402
+              ( ABS(A(p,p))  <  SFMIN ) ) EXIT
          NR = NR + 1
-         ENDDO
- 3402    CONTINUE
+      ENDDO
 !
    ELSE
 !        .. RRQR not authorized to determine numerical rank except in the
@@ -881,10 +863,9 @@
 !        R(i,i)=0 => R(i:N,i:N)=0.
       NR = 1
       DO p = 2, N
-         IF ( ABS(A(p,p))  ==  ZERO ) GO TO 3502
+         IF ( ABS(A(p,p))  ==  0.0E+0 ) EXIT
          NR = NR + 1
-         ENDDO
- 3502    CONTINUE
+      ENDDO
 !
       IF ( CONDA ) THEN
 !           Estimate the scaled condition number of A. Use the fact that it is
@@ -897,17 +878,16 @@
 !              expert level and obtain useful information in the sense of
 !              perturbation theory.
             DO p = 1, NR
-               RTMP = SCNRM2( p, V(1,p), 1 )
-               CALL CSSCAL( p, ONE/RTMP, V(1,p), 1 )
-               ENDDO
+               V(1:p,p) = V(1:p,p)/SCNRM2( p, V(1,p), 1 )
+            ENDDO
             IF ( .NOT. ( LSVEC .OR. RSVEC ) ) THEN
-                CALL CPOCON( 'U', NR, V, LDV, ONE, RTMP, &
+                CALL CPOCON( 'U', NR, V, LDV, 1.0E+0, RTMP, &
                      CWORK, RWORK, IERR )
             ELSE
-                CALL CPOCON( 'U', NR, V, LDV, ONE, RTMP, &
+                CALL CPOCON( 'U', NR, V, LDV, 1.0E+0, RTMP, &
                      CWORK(N+1), RWORK, IERR )
             END IF
-            SCONDA = ONE / SQRT(RTMP)
+            SCONDA = 1.0E+0 / SQRT(RTMP)
 !           For NR=N, SCONDA is an estimate of SQRT(||(R^* * R)^(-1)||_1),
 !           N^(-1/4) * SCONDA <= ||R^(-1)||_2 <= N^(1/4) * SCONDA
 !           See the reference [1] for more details.
@@ -936,9 +916,9 @@
             A(p,p) = CONJG(A(p,p))
             DO q = p + 1, N
                A(q,p) = CONJG(A(p,q))
-               IF ( q  <=  NR ) A(p,q) = CZERO
-               ENDDO
+               IF ( q  <=  NR ) A(p,q) = (0.0E+0,0.0E+0)
             ENDDO
+         ENDDO
 !
          CALL CGESVD( 'N', 'N', N, NR, A, LDA, S, U, LDU, &
               V, LDV, CWORK, LCWORK, RWORK, INFO )
@@ -948,7 +928,7 @@
 !           .. compute the singular values of R = [A](1:NR,1:N)
 !
          IF ( NR  >  1 ) &
-             CALL CLASET( 'L', NR-1,NR-1, CZERO,CZERO, A(2,1), LDA )
+             CALL CLASET( 'L', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), A(2,1), LDA )
          CALL CGESVD( 'N', 'N', NR, N, A, LDA, S, U, LDU, &
               V, LDV, CWORK, LCWORK, RWORK, INFO )
 !
@@ -963,12 +943,10 @@
 !            .. copy R**H into [U] and overwrite [U] with the right singular
 !            vectors of R
          DO p = 1, NR
-            DO q = p, N
-               U(q,p) = CONJG(A(p,q))
-               ENDDO
-            ENDDO
+            U(p:N,p) = CONJG(A(p,p:N))
+         ENDDO
          IF ( NR  >  1 ) &
-             CALL CLASET( 'U', NR-1,NR-1, CZERO,CZERO, U(1,2), LDU )
+             CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), U(1,2), LDU )
 !           .. the left singular vectors not computed, the NR right singular
 !           vectors overwrite [U](1:NR,1:NR) as conjugate transposed. These
 !           will be pre-multiplied by Q to build the left singular vectors of A.
@@ -981,15 +959,15 @@
                    CTMP   = CONJG(U(q,p))
                    U(q,p) = CONJG(U(p,q))
                    U(p,q) = CTMP
-                   ENDDO
-               ENDDO
+                ENDDO
+            ENDDO
 !
       ELSE
 !            .. apply CGESVD to R
 !            .. copy R into [U] and overwrite [U] with the left singular vectors
-          CALL CLACPY( 'U', NR, N, A, LDA, U, LDU )
+          U(1:NR,1:N) = A(1:NR,1:N)
           IF ( NR  >  1 ) &
-            CALL CLASET( 'L', NR-1, NR-1, CZERO, CZERO, U(2,1), LDU )
+            CALL CLASET( 'L', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(2,1), LDU )
 !            .. the right singular vectors not computed, the NR left singular
 !            vectors overwrite [U](1:NR,1:NR)
              CALL CGESVD( 'O', 'N', NR, N, U, LDU, S, U, LDU, &
@@ -1002,10 +980,10 @@
 !           .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
       IF ( ( NR  <  M ) .AND. ( .NOT.WNTUF ) ) THEN
-          CALL CLASET('A', M-NR, NR, CZERO, CZERO, U(NR+1,1), LDU)
+          U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
           IF ( NR  <  N1 ) THEN
-             CALL CLASET( 'A',NR,N1-NR,CZERO,CZERO,U(1,NR+1), LDU )
-             CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE, &
+             U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+             CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                   U(NR+1,NR+1), LDU )
           END IF
       END IF
@@ -1027,12 +1005,10 @@
 !            .. apply CGESVD to R**H
 !            .. copy R**H into V and overwrite V with the left singular vectors
          DO p = 1, NR
-            DO q = p, N
-               V(q,p) = CONJG(A(p,q))
-               ENDDO
-            ENDDO
+            V(p:N,p) = CONJG(A(p,p:N))
+         ENDDO
          IF ( NR  >  1 ) &
-             CALL CLASET( 'U', NR-1,NR-1, CZERO,CZERO, V(1,2), LDV )
+             CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,2), LDV )
 !           .. the left singular vectors of R**H overwrite V, the right singular
 !           vectors not computed
          IF ( WNTVR .OR. ( NR  ==  N ) ) THEN
@@ -1045,15 +1021,13 @@
                    CTMP   = CONJG(V(q,p))
                    V(q,p) = CONJG(V(p,q))
                    V(p,q) = CTMP
-                   ENDDO
-               ENDDO
+                ENDDO
+            ENDDO
 !
             IF ( NR  <  N ) THEN
                 DO p = 1, NR
-                   DO q = NR + 1, N
-                       V(p,q) = CONJG(V(q,p))
-                      ENDDO
-                   ENDDO
+                   V(p,NR+1:N) = CONJG(V(NR+1:N,p))
+                ENDDO
             END IF
             CALL CLAPMT( .FALSE., NR, N, V, LDV, IWORK )
          ELSE
@@ -1062,7 +1036,7 @@
 !               by padding a zero block. In the case NR << N, a more efficient
 !               way is to first use the QR factorization. For more details
 !               how to implement this, see the " FULL SVD " branch.
-             CALL CLASET('G', N, N-NR, CZERO, CZERO, V(1,NR+1), LDV)
+             V(1:N,NR+1:N) = (0.0E+0,0.0E+0)
              CALL CGESVD( 'O', 'N', N, N, V, LDV, S, U, LDU, &
                   U, LDU, CWORK(N+1), LCWORK-N, RWORK, INFO )
 !
@@ -1072,8 +1046,8 @@
                    CTMP   = CONJG(V(q,p))
                    V(q,p) = CONJG(V(p,q))
                    V(p,q) = CTMP
-                   ENDDO
                 ENDDO
+             ENDDO
              CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
          END IF
 !
@@ -1082,7 +1056,7 @@
 !            .. copy R into V and overwrite V with the right singular vectors
           CALL CLACPY( 'U', NR, N, A, LDA, V, LDV )
           IF ( NR  >  1 ) &
-            CALL CLASET( 'L', NR-1, NR-1, CZERO, CZERO, V(2,1), LDV )
+            CALL CLASET( 'L', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(2,1), LDV )
 !            .. the right singular vectors overwrite V, the NR left singular
 !            vectors stored in U(1:NR,1:NR)
           IF ( WNTVR .OR. ( NR  ==  N ) ) THEN
@@ -1096,7 +1070,7 @@
 !               by padding a zero block. In the case NR << N, a more efficient
 !               way is to first use the LQ factorization. For more details
 !               how to implement this, see the " FULL SVD " branch.
-              CALL CLASET('G', N-NR, N, CZERO,CZERO, V(NR+1,1), LDV)
+              V(NR+1:N,1:N) = (0.0E+0,0.0E+0)
               CALL CGESVD( 'N', 'O', N, N, V, LDV, S, U, LDU, &
                    V, LDV, CWORK(N+1), LCWORK-N, RWORK, INFO )
               CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
@@ -1117,12 +1091,10 @@
 !            .. copy R**H into [V] and overwrite [V] with the left singular
 !            vectors of R**H
          DO p = 1, NR
-            DO q = p, N
-               V(q,p) = CONJG(A(p,q))
-               ENDDO
-            ENDDO
+            V(p:N,p) = CONJG(A(p,p:N))
+         ENDDO
          IF ( NR  >  1 ) &
-             CALL CLASET( 'U', NR-1,NR-1, CZERO,CZERO, V(1,2), LDV )
+             CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,2), LDV )
 !
 !           .. the left singular vectors of R**H overwrite [V], the NR right
 !           singular vectors of R**H stored in [U](1:NR,1:NR) as conjugate
@@ -1136,14 +1108,12 @@
                   CTMP   = CONJG(V(q,p))
                   V(q,p) = CONJG(V(p,q))
                   V(p,q) = CTMP
-                  ENDDO
                ENDDO
+            ENDDO
             IF ( NR  <  N ) THEN
                 DO p = 1, NR
-                   DO q = NR+1, N
-                      V(p,q) = CONJG(V(q,p))
-                      ENDDO
-                   ENDDO
+                   V(p,NR+1:N) = CONJG(V(NR+1:N,p))
+                ENDDO
             END IF
             CALL CLAPMT( .FALSE., NR, N, V, LDV, IWORK )
 !
@@ -1153,14 +1123,14 @@
                    CTMP   = CONJG(U(q,p))
                    U(q,p) = CONJG(U(p,q))
                    U(p,q) = CTMP
-                   ENDDO
                 ENDDO
+             ENDDO
 !
              IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-               CALL CLASET('A', M-NR,NR, CZERO,CZERO, U(NR+1,1), LDU)
+               U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
                IF ( NR  <  N1 ) THEN
-                  CALL CLASET('A',NR,N1-NR,CZERO,CZERO,U(1,NR+1),LDU)
-                  CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE, &
+                  U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+                  CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                        U(NR+1,NR+1), LDU )
                END IF
             END IF
@@ -1177,14 +1147,12 @@
              OPTRATIO = 2
              IF ( OPTRATIO*NR  >  N ) THEN
                 DO p = 1, NR
-                   DO q = p, N
-                      V(q,p) = CONJG(A(p,q))
-                      ENDDO
-                   ENDDO
+                   V(p:N,p) = CONJG(A(p,p:N))
+                ENDDO
                 IF ( NR  >  1 ) &
-                CALL CLASET('U',NR-1,NR-1, CZERO,CZERO, V(1,2),LDV)
+                CALL CLASET('U',NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,2),LDV)
 !
-                CALL CLASET('A',N,N-NR,CZERO,CZERO,V(1,NR+1),LDV)
+                V(1:N,NR+1:N) = (0.0E+0,0.0E+0)
                 CALL CGESVD( 'O', 'A', N, N, V, LDV, S, V, LDV, &
                      U, LDU, CWORK(N+1), LCWORK-N, RWORK, INFO )
 !
@@ -1194,8 +1162,8 @@
                       CTMP   = CONJG(V(q,p))
                       V(q,p) = CONJG(V(p,q))
                       V(p,q) = CTMP
-                      ENDDO
                    ENDDO
+                ENDDO
                 CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !              .. assemble the left singular vector matrix U of dimensions
 !              (M x N1), i.e. (M x N) or (M x M).
@@ -1206,14 +1174,14 @@
                       CTMP   = CONJG(U(q,p))
                       U(q,p) = CONJG(U(p,q))
                       U(p,q) = CTMP
-                      ENDDO
                    ENDDO
+                ENDDO
 !
                 IF ( ( N  <  M ) .AND. .NOT.(WNTUF)) THEN
-                   CALL CLASET('A',M-N,N,CZERO,CZERO,U(N+1,1),LDU)
+                   U(N+1:M,1:N) = (0.0E+0,0.0E+0)
                    IF ( N  <  N1 ) THEN
-                     CALL CLASET('A',N,N1-N,CZERO,CZERO,U(1,N+1),LDU)
-                     CALL CLASET('A',M-N,N1-N,CZERO,CONE, &
+                     U(1:N,N+1:N1) = (0.0E+0,0.0E+0)
+                     CALL CLASET('A',M-N,N1-N,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                           U(N+1,N+1), LDU )
                    END IF
                 END IF
@@ -1221,36 +1189,31 @@
 !                  .. copy R**H into [U] and overwrite [U] with the right
 !                  singular vectors of R
                 DO p = 1, NR
-                   DO q = p, N
-                      U(q,NR+p) = CONJG(A(p,q))
-                      ENDDO
-                   ENDDO
-                IF ( NR  >  1 ) &
-                CALL CLASET('U',NR-1,NR-1,CZERO,CZERO,U(1,NR+2),LDU)
+                   U(p:N,NR+p) = CONJG(A(p,p:N))
+                ENDDO
+                IF ( NR  >  1 ) CALL CLASET('U',NR-1,NR-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),U(1,NR+2),LDU)
                 CALL CGEQRF( N, NR, U(1,NR+1), LDU, CWORK(N+1), &
                      CWORK(N+NR+1), LCWORK-N-NR, IERR )
                 DO p = 1, NR
-                    DO q = 1, N
-                        V(q,p) = CONJG(U(p,NR+q))
-                       ENDDO
-                   ENDDO
-               CALL CLASET('U',NR-1,NR-1,CZERO,CZERO,V(1,2),LDV)
+                    V(1:N,p) = CONJG(U(p,NR+1:N))
+                ENDDO
+               CALL CLASET('U',NR-1,NR-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,2),LDV)
                CALL CGESVD( 'S', 'O', NR, NR, V, LDV, S, U, LDU, &
                     V,LDV, CWORK(N+NR+1),LCWORK-N-NR,RWORK, INFO )
-               CALL CLASET('A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV)
-               CALL CLASET('A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV)
-               CALL CLASET('A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV)
+               V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+               V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
+               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
                CALL CUNMQR('R','C', N, N, NR, U(1,NR+1), LDU, &
                     CWORK(N+1),V,LDV,CWORK(N+NR+1),LCWORK-N-NR,IERR)
                CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !                 .. assemble the left singular vector matrix U of dimensions
 !                 (M x NR) or (M x N) or (M x M).
                IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-                  CALL CLASET('A',M-NR,NR,CZERO,CZERO,U(NR+1,1),LDU)
+                  U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
                   IF ( NR  <  N1 ) THEN
-                  CALL CLASET('A',NR,N1-NR,CZERO,CZERO,U(1,NR+1),LDU)
-                  CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE, &
-                       U(NR+1,NR+1),LDU)
+                     U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+                     CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
+                          U(NR+1,NR+1),LDU)
                   END IF
                END IF
              END IF
@@ -1262,9 +1225,9 @@
 !
           IF ( WNTVR .OR. ( NR  ==  N ) ) THEN
 !                .. copy R into [V] and overwrite V with the right singular vectors
-              CALL CLACPY( 'U', NR, N, A, LDA, V, LDV )
+              V(1:NR,1:N) = A(1:NR,1:N)
              IF ( NR  >  1 ) &
-             CALL CLASET( 'L', NR-1,NR-1, CZERO,CZERO, V(2,1), LDV )
+             CALL CLASET( 'L', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(2,1), LDV )
 !               .. the right singular vectors of R overwrite [V], the NR left
 !               singular vectors of R stored in [U](1:NR,1:NR)
              CALL CGESVD( 'S', 'O', NR, N, V, LDV, S, U, LDU, &
@@ -1274,10 +1237,10 @@
 !               .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
             IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-               CALL CLASET('A', M-NR,NR, CZERO,CZERO, U(NR+1,1), LDU)
+               U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
                IF ( NR  <  N1 ) THEN
-                  CALL CLASET('A',NR,N1-NR,CZERO,CZERO,U(1,NR+1),LDU)
-                  CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE, &
+                  U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+                  CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                        U(NR+1,NR+1), LDU )
                END IF
             END IF
@@ -1295,10 +1258,10 @@
             IF ( OPTRATIO * NR  >  N ) THEN
                CALL CLACPY( 'U', NR, N, A, LDA, V, LDV )
                IF ( NR  >  1 ) &
-               CALL CLASET('L', NR-1,NR-1, CZERO,CZERO, V(2,1),LDV)
+               CALL CLASET('L', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(2,1),LDV)
 !              .. the right singular vectors of R overwrite [V], the NR left
 !                 singular vectors of R stored in [U](1:NR,1:NR)
-               CALL CLASET('A', N-NR,N, CZERO,CZERO, V(NR+1,1),LDV)
+               V(NR+1:N,1:N) = (0.0E+0,0.0E+0)
                CALL CGESVD( 'S', 'O', N, N, V, LDV, S, U, LDU, &
                     V, LDV, CWORK(N+1), LCWORK-N, RWORK, INFO )
                CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
@@ -1308,38 +1271,38 @@
 !                 .. assemble the left singular vector matrix U of dimensions
 !                 (M x N1), i.e. (M x N) or (M x M).
                IF ( ( N  <  M ) .AND. .NOT.(WNTUF)) THEN
-                   CALL CLASET('A',M-N,N,CZERO,CZERO,U(N+1,1),LDU)
+                   U(N+1:M,1:N) = (0.0E+0,0.0E+0)
                    IF ( N  <  N1 ) THEN
-                     CALL CLASET('A',N,N1-N,CZERO,CZERO,U(1,N+1),LDU)
-                     CALL CLASET( 'A',M-N,N1-N,CZERO,CONE, &
+                     U(1:N,N+1:N1) = (0.0E+0,0.0E+0)
+                     CALL CLASET( 'A',M-N,N1-N,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                           U(N+1,N+1), LDU )
                    END IF
                END IF
             ELSE
                CALL CLACPY( 'U', NR, N, A, LDA, U(NR+1,1), LDU )
                IF ( NR  >  1 ) &
-               CALL CLASET('L',NR-1,NR-1,CZERO,CZERO,U(NR+2,1),LDU)
+               CALL CLASET('L',NR-1,NR-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),U(NR+2,1),LDU)
                CALL CGELQF( NR, N, U(NR+1,1), LDU, CWORK(N+1), &
                     CWORK(N+NR+1), LCWORK-N-NR, IERR )
                CALL CLACPY('L',NR,NR,U(NR+1,1),LDU,V,LDV)
                IF ( NR  >  1 ) &
-               CALL CLASET('U',NR-1,NR-1,CZERO,CZERO,V(1,2),LDV)
+               CALL CLASET('U',NR-1,NR-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,2),LDV)
                CALL CGESVD( 'S', 'O', NR, NR, V, LDV, S, U, LDU, &
                     V, LDV, CWORK(N+NR+1), LCWORK-N-NR, RWORK, INFO )
-               CALL CLASET('A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV)
-               CALL CLASET('A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV)
-               CALL CLASET('A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV)
+               V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+               V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
+               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
                CALL CUNMLQ('R','N',N,N,NR,U(NR+1,1),LDU,CWORK(N+1), &
                     V, LDV, CWORK(N+NR+1),LCWORK-N-NR,IERR)
                CALL CLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !               .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
                IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-                  CALL CLASET('A',M-NR,NR,CZERO,CZERO,U(NR+1,1),LDU)
+                  U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
                   IF ( NR  <  N1 ) THEN
-                  CALL CLASET('A',NR,N1-NR,CZERO,CZERO,U(1,NR+1),LDU)
-                  CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE, &
-                       U(NR+1,NR+1), LDU )
+                     U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+                     CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
+                          U(NR+1,NR+1), LDU )
                   END IF
                END IF
             END IF
@@ -1363,18 +1326,17 @@
 !     due to underflow, and update the numerical rank.
    p = NR
    DO q = p, 1, -1
-       IF ( S(q)  >  ZERO ) GO TO 4002
+       IF ( S(q)  >  0.0E+0 ) EXIT
        NR = NR - 1
-      ENDDO
- 4002 CONTINUE
+   ENDDO
 !
 !     .. if numerical rank deficiency is detected, the truncated
 !     singular values are set to zero.
-   IF ( NR  <  N ) CALL SLASET( 'G', N-NR,1, ZERO,ZERO, S(NR+1), N )
+   IF ( NR  <  N ) CALL SLASET( 'G', N-NR,1, 0.0E+0,0.0E+0, S(NR+1), N )
 !     .. undo scaling; this may cause overflow in the largest singular
 !     values.
    IF ( ASCALED ) &
-      CALL SLASCL( 'G',0,0, ONE,SQRT(REAL(M)), NR,1, S, N, IERR )
+      CALL SLASCL( 'G',0,0, 1.0E+0,SQRT(REAL(M)), NR,1, S, N, IERR )
    IF ( CONDA ) RWORK(1) = SCONDA
    RWORK(2) = p - NR
 !     .. p-NR is the number of singular values that are computed as
@@ -1387,4 +1349,3 @@
 !     End of CGESVDQ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

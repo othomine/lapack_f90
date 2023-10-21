@@ -829,11 +829,9 @@
                             2*N+N**2+N+LWUNMQR,2*N+N**2+N+LWUNMLQ, &
                             N+N**2+LWSVDJ,   N+LWUNMQRM )
               ELSE
-                 MINWRK = MAX( N+LWQP3,        2*N+N**2+LWCON, &
-                            2*N+LWQRF,         2*N+LWQP3, &
-                            2*N+N**2+N+LWLQF,  2*N+N**2+N+N**2+LWCON, &
-                            2*N+N**2+N+LWSVDJ, 2*N+N**2+N+LWSVDJV, &
-                            2*N+N**2+N+LWUNMQR,2*N+N**2+N+LWUNMLQ, &
+                 MINWRK = MAX( N+LWQP3, 3*N+N**2+MAX(&
+                            LWLQF, N**2+LWCON, LWSVDJ, LWSVDJV, LWUNMQR,&
+                            LWUNMLQ), 2*N+MAX(LWQRF, LWQP3, N**2+LWCON), &
                             N+N**2+LWSVDJ,      N+LWUNMQRM )
               END IF
               MINIWRK = MINIWRK + N
@@ -1260,7 +1258,7 @@
    IF ( AAQQ  <  XSC ) THEN
       DO p = 1, N
          IF ( SVA(p)  <  XSC ) THEN
-            CALL CLASET( 'A', M, 1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A(1,p), LDA )
+            A(1:M,p) = (0.0E+0,0.0E+0)
             SVA(p) = 0.0E+0
          END IF
       ENDDO
@@ -1441,7 +1439,7 @@
 !
 !         .. transpose A(1:NR,1:N)
       DO p = 1, MIN( N-1, NR )
-         CALL CCOPY( N-p, A(p,p+1), LDA, A(p+1,p), 1 )
+         A(p+1:N,p) = A(p,p+1:N)
          CALL CLACGV( N-p+1, A(p,p), 1 )
       ENDDO
       IF ( NR  ==  N ) A(N,N) = CONJG(A(N,N))
@@ -1481,7 +1479,7 @@
 !
 !           .. and transpose upper to lower triangular
          DO p = 1, NR - 1
-            CALL CCOPY( NR-p, A(p,p+1), LDA, A(p+1,p), 1 )
+            A(p+1:NR,p) = A(p,p+1:NR)
             CALL CLACGV( NR-p+1, A(p,p), 1 )
          ENDDO
 !
@@ -1527,7 +1525,7 @@
 !
 !           .. in this case NR equals N
          DO p = 1, NR
-            CALL CCOPY( N-p+1, A(p,p), LDA, V(p,p), 1 )
+            V(p,p:N) = A(p,p:N)
             CALL CLACGV( N-p+1, V(p,p), 1 )
          ENDDO
          CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV )
@@ -1549,7 +1547,6 @@
          CALL CGEQRF( NR, NR, V, LDV, CWORK(N+1), CWORK(2*N+1), &
                       LWORK-2*N, IERR )
          DO p = 1, NR
-            CALL CCOPY( NR-p+1, V(p,p), LDV, V(p,p), 1 )
             CALL CLACGV( NR-p+1, V(p,p), 1 )
          ENDDO
          CALL CLASET('U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV)
@@ -1559,13 +1556,12 @@
          SCALEM  = RWORK(1)
          NUMRANK = NINT(RWORK(2))
          IF ( NR  <  N ) THEN
-            CALL CLASET( 'A',N-NR, NR, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(NR+1,1),  LDV )
-            CALL CLASET( 'A',NR, N-NR, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,NR+1),  LDV )
+            V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+            V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
             CALL CLASET( 'A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), V(NR+1,NR+1),LDV )
          END IF
 !
-      CALL CUNMLQ( 'L', 'C', N, N, NR, A, LDA, CWORK, &
-                  V, LDV, CWORK(N+1), LWORK-N, IERR )
+      CALL CUNMLQ( 'L', 'C', N, N, NR, A, LDA, CWORK, V, LDV, CWORK(N+1), LWORK-N, IERR )
 !
       END IF
 !         .. permute the rows of V
@@ -1594,7 +1590,7 @@
 !        .. second preconditioning step to avoid need to accumulate
 !        Jacobi rotations in the Jacobi iterations.
       DO p = 1, NR
-         CALL CCOPY( N-p+1, A(p,p), LDA, U(p,p), 1 )
+         U(p,p:N) = A(p,p:N)
          CALL CLACGV( N-p+1, U(p,p), 1 )
       ENDDO
       CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,2), LDU )
@@ -1603,7 +1599,7 @@
                  LWORK-2*N, IERR )
 !
       DO p = 1, NR - 1
-         CALL CCOPY( NR-p, U(p,p+1), LDU, U(p+1,p), 1 )
+         U(p+1:NR,p) = U(p,p+1:NR)
          CALL CLACGV( N-p+1, U(p,p), 1 )
       ENDDO
       CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,2), LDU )
@@ -1614,24 +1610,22 @@
       NUMRANK = NINT(RWORK(2))
 !
       IF ( NR  <  M ) THEN
-         CALL CLASET( 'A',  M-NR, NR,(0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU )
+         U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
          IF ( NR  <  N1 ) THEN
-            CALL CLASET( 'A',NR, N1-NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,NR+1),LDU )
-            CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),U(NR+1,NR+1),LDU )
+            U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
+            U(NR+1:M,NR+1:N1) = (0.0E+0,0.0E+0)
          END IF
       END IF
 !
-      CALL CUNMQR( 'L', 'N', M, N1, N, A, LDA, CWORK, U, &
-                  LDU, CWORK(N+1), LWORK-N, IERR )
+      CALL CUNMQR( 'L', 'N', M, N1, N, A, LDA, CWORK, U, LDU, CWORK(N+1), LWORK-N, IERR )
 !
-      IF ( ROWPIV ) &
-          CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
+      IF ( ROWPIV ) CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
 !
       DO p = 1, N1
          U(1:M,p) = U(1:M,p) / SCNRM2( M, U(1,p), 1 )
       ENDDO
 !
-      IF ( TRANSP ) CALL CLACPY( 'A', N, N, U, LDU, V, LDV )
+      IF ( TRANSP ) V(1:N,1:N) = U(1:N,1:N)
 !
    ELSE
 !
@@ -1649,9 +1643,9 @@
 !           optimized implementation of CGEJSV.
 !
          DO p = 1, NR
-            CALL CCOPY( N-p+1, A(p,p), LDA, V(p,p), 1 )
+            V(p:N,p) = A(p,p:N)
             CALL CLACGV( N-p+1, V(p,p), 1 )
-            ENDDO
+         ENDDO
 !
 !           .. the following two loops perturb small entries to avoid
 !           denormals in the second QR factorization, where they are
@@ -1686,8 +1680,8 @@
 !
          CALL CLACPY( 'L', NR, NR, V, LDV, CWORK(2*N+1), NR )
          DO p = 1, NR
-            TEMP1 = SCNRM2(NR-p+1,CWORK(2*N+(p-1)*NR+p),1)
-            CALL CSSCAL(NR-p+1,1.0E+0/TEMP1,CWORK(2*N+(p-1)*NR+p),1)
+            CWORK(2*N+(p-1)*NR+p:2*N+p*NR) = CWORK(2*N+(p-1)*NR+p:2*N+p*NR)/&
+              SCNRM2(NR-p+1,CWORK(2*N+(p-1)*NR+p),1)
          ENDDO
          CALL CPOCON('L',NR,CWORK(2*N+1),NR,1.0E+0,TEMP1, &
                       CWORK(2*N+NR*NR+1),RWORK,IERR)
@@ -1725,7 +1719,7 @@
 !
 !           .. this transposed copy should be better than naive
             DO p = 1, NR - 1
-               CALL CCOPY( NR-p, V(p,p+1), LDV, V(p+1,p), 1 )
+               V(p+1:NR,p) = V(p,p+1:NR)
                CALL CLACGV(NR-p+1, V(p,p), 1 )
             ENDDO
             V(NR,NR)=CONJG(V(NR,NR))
@@ -1778,8 +1772,8 @@
 !              .. and estimate the condition number
             CALL CLACPY( 'L',NR,NR,V,LDV,CWORK(2*N+N*NR+NR+1),NR )
             DO p = 1, NR
-               TEMP1 = SCNRM2( p, CWORK(2*N+N*NR+NR+p), NR )
-               CALL CSSCAL( p, 1.0E+0/TEMP1, CWORK(2*N+N*NR+NR+p), NR )
+               TEMP1 = 1.0E+0/SCNRM2( p, CWORK(2*N+N*NR+NR+p), NR )
+               CALL CSSCAL( p, TEMP1, CWORK(2*N+N*NR+NR+p), NR )
             ENDDO
             CALL CPOCON( 'L',NR,CWORK(2*N+N*NR+NR+1),NR,1.0E+0,TEMP1, &
                  CWORK(2*N+N*NR+NR+NR*NR+1),RWORK,IERR )
@@ -1843,9 +1837,9 @@
                CALL CTRSM('L','U','C','N',NR,NR,(1.0E+0,0.0E+0),CWORK(2*N+1), &
                     N,V,LDV)
                IF ( NR  <  N ) THEN
-               CALL CLASET('A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV)
-               CALL CLASET('A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV)
-               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
+                  V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+                  V(1:NR,1:N) = (0.0E+0,0.0E+0)
+                  CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
                END IF
                CALL CUNMQR('L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
                    V,LDV,CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,IERR)
@@ -1863,8 +1857,7 @@
             SCALEM  = RWORK(1)
             NUMRANK = NINT(RWORK(2))
             DO p = 1, NR
-               U(1:NR,p) = V(1:NR,p)
-               U(1:NR,p) = SVA(p)*U(1:NR,p)
+               U(1:NR,p) = SVA(p)*V(1:NR,p)
             ENDDO
             CALL CTRSM('L','U','N','N',NR,NR,(1.0E+0,0.0E+0),CWORK(2*N+1),N, &
                        U,LDU)
@@ -1878,8 +1871,8 @@
                ENDDO
             ENDDO
             IF ( NR  <  N ) THEN
-               CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
-               CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+               V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+               V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
                CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
             END IF
             CALL CUNMQR( 'L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
@@ -1902,8 +1895,8 @@
             SCALEM  = RWORK(1)
             NUMRANK = NINT(RWORK(2))
             IF ( NR  <  N ) THEN
-               CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
-               CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+               V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+               V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
                CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
             END IF
             CALL CUNMQR( 'L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
@@ -1916,9 +1909,7 @@
                DO p = 1, NR
                   CWORK(2*N+N*NR+NR+IWORK(N+p)) = U(p,q)
                ENDDO
-               DO p = 1, NR
-                  U(p,q) = CWORK(2*N+N*NR+NR+p)
-               ENDDO
+               U(1:NR,q) = CWORK((2+NR)*N+NR+1:(2+NR)*N+2*NR)
             ENDDO
 !
          END IF
@@ -1932,19 +1923,17 @@
             DO p = 1, N
                CWORK(2*N+N*NR+NR+IWORK(p)) = V(p,q)
             ENDDO
-            DO p = 1, N
-               V(p,q) = CWORK(2*N+N*NR+NR+p)
-            ENDDO
+            V(1:N,q) = CWORK((2+NR)*N+NR+1:(2+NR)*N+NR+N)
             XSC = 1.0E+0 / SCNRM2( N, V(1,q), 1 )
             IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) &
-              CALL CSSCAL( N, XSC, V(1,q), 1 )
+              V(1:N,q) = XSC*V(1:N,q)
             ENDDO
 !           At this moment, V contains the right singular vectors of A.
 !           Next, assemble the left singular vector matrix U (M x N).
          IF ( NR  <  M ) THEN
-            CALL CLASET('A', M-NR, NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU)
+            U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
             IF ( NR  <  N1 ) THEN
-               CALL CLASET('A',NR,N1-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),U(1,NR+1),LDU)
+               U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
                CALL CLASET('A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                            U(NR+1,NR+1),LDU)
             END IF
@@ -1995,8 +1984,8 @@
          SCALEM  = RWORK(1)
          NUMRANK = NINT(RWORK(2))
          DO p = 1, N
-            CALL CCOPY( N, CWORK(N+(p-1)*N+1), 1, U(1,p), 1 )
-            CALL CSSCAL( N, SVA(p), CWORK(N+(p-1)*N+1), 1 )
+            U(1:N,p) = CWORK(p*N+1:N*(p+1))
+            CWORK(p*N+1:(p+1)*N) = SVA(p)*CWORK(p*N+1:(p+1)*N)
          ENDDO
 !
          CALL CTRSM( 'L', 'U', 'N', 'N', N, N, &
@@ -2007,16 +1996,15 @@
          TEMP1 = SQRT(REAL(N))*EPSLN
          DO p = 1, N
             XSC = 1.0E+0 / SCNRM2( N, V(1,p), 1 )
-            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) &
-               CALL CSSCAL( N, XSC, V(1,p), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) V(1:N,p) = XSC*V(1:N,p)
          ENDDO
 !
 !           Assemble the left singular vector matrix U (M x N).
 !
          IF ( N  <  M ) THEN
-            CALL CLASET( 'A',  M-N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(N+1,1), LDU )
+            U(N+1:M,1:N) = (0.0E+0,0.0E+0)
             IF ( N  <  N1 ) THEN
-               CALL CLASET('A',N,  N1-N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0),  U(1,N+1),LDU)
+               U(1:N,N+1:N1) = (0.0E+0,0.0E+0)
                CALL CLASET( 'A',M-N,N1-N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0),U(N+1,N+1),LDU)
             END IF
          END IF
@@ -2048,7 +2036,7 @@
 !        the underflow to the overflow threshold.
 !
       DO p = 1, NR
-         CALL CCOPY( N-p+1, A(p,p), LDA, V(p,p), 1 )
+         V(p:N,p) = A(p,p:N)
          CALL CLACGV( N-p+1, V(p,p), 1 )
       ENDDO
 !
@@ -2071,7 +2059,7 @@
       CALL CLACPY( 'L', N, NR, V, LDV, CWORK(2*N+1), N )
 !
       DO p = 1, NR
-         CALL CCOPY( NR-p+1, V(p,p), LDV, U(p,p), 1 )
+         U(p:NR,p) = V(p,p:NR)
          CALL CLACGV( NR-p+1, U(p,p), 1 )
       ENDDO
 
@@ -2079,8 +2067,7 @@
          XSC = SQRT(SMALL/EPSLN)
          DO q = 2, NR
             DO p = 1, q - 1
-               CTEMP = CMPLX(XSC * MIN(ABS(U(p,p)),ABS(U(q,q))), &
-                              0.0E+0)
+               CTEMP = CMPLX(XSC * MIN(ABS(U(p,p)),ABS(U(q,q))), 0.0E+0)
 !                  U(p,q) = - TEMP1 * ( U(q,p) / ABS(U(q,p)) )
                U(p,q) = - CTEMP
             ENDDO
@@ -2096,8 +2083,8 @@
       NUMRANK = NINT(RWORK(2))
 
       IF ( NR  <  N ) THEN
-         CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
-         CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+         V(NR+1:N,1:NR) = (0.0E+0,0.0E+0)
+         V(1:NR,NR+1:N) = (0.0E+0,0.0E+0)
          CALL CLASET( 'A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV )
       END IF
 
@@ -2113,9 +2100,7 @@
             DO p = 1, N
                CWORK(2*N+N*NR+NR+IWORK(p)) = V(p,q)
             ENDDO
-            DO p = 1, N
-               V(p,q) = CWORK(2*N+N*NR+NR+p)
-            ENDDO
+            V(1:N,q) = CWORK((2+NR)*N+NR+1:(3+NR)*N+NR)
             XSC = 1.0E+0 / SCNRM2( N, V(1,q), 1 )
             IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) V(1:N,q) = XSC*V(1:N,q)
          ENDDO
@@ -2124,9 +2109,9 @@
 !           Next, assemble the left singular vector matrix U (M x N).
 !
       IF ( NR  <  M ) THEN
-         CALL CLASET( 'A',  M-NR, NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU )
+         U(NR+1:M,1:NR) = (0.0E+0,0.0E+0)
          IF ( NR  <  N1 ) THEN
-            CALL CLASET('A',NR,  N1-NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0),  U(1,NR+1),LDU)
+            U(1:NR,NR+1:N1) = (0.0E+0,0.0E+0)
             CALL CLASET('A',M-NR,N1-NR, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0),U(NR+1,NR+1),LDU)
          END IF
       END IF
@@ -2155,11 +2140,7 @@
       USCAL2 = 1.0E+0
    END IF
 !
-   IF ( NR  <  N ) THEN
-      DO p = NR+1, N
-         SVA(p) = 0.0E+0
-      ENDDO
-   END IF
+   IF ( NR  <  N ) SVA(NR+1:N) = 0.0E+0
 !
    RWORK(1) = USCAL2 * SCALEM
    RWORK(2) = USCAL1

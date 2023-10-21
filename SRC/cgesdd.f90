@@ -206,6 +206,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesdd
 !
@@ -236,13 +237,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WNTQA, WNTQAS, WNTQN, WNTQO, WNTQS
@@ -274,12 +268,9 @@
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, SISNAN
-   REAL               SLAMCH, CLANGE, SROUNDUP_LWORK
-   EXTERNAL           LSAME, SLAMCH, CLANGE, SISNAN, &
+   REAL               SLAMCH, SROUNDUP_LWORK
+   EXTERNAL           LSAME, SLAMCH, SISNAN, &
                       SROUNDUP_LWORK
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          INT, MAX, MIN, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -627,25 +618,23 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SQRT( SLAMCH( 'S' ) ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, DUM )
+   ANRM = MAXVAL(ABS(A(1:N,1:N)))
    IF( SISNAN ( ANRM ) ) THEN
        INFO = -4
        RETURN
    END IF
    ISCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       ISCL = 1
       CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, M, N, A, LDA, IERR )
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -679,7 +668,7 @@
 !
 !              Zero out below R
 !
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, A( 2, 1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 2, 1 ), &
                          LDA )
             IE = 1
             ITAUQ = 1
@@ -737,7 +726,7 @@
 !              Copy R to WORK( IR ), zeroing out below it
 !
             CALL CLACPY( 'U', N, N, A, LDA, WORK( IR ), LDWRKR )
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, WORK( IR+1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( IR+1 ), &
                          LDWRKR )
 !
 !              Generate Q in A
@@ -805,8 +794,8 @@
 !
             DO I = 1, M, LDWRKR
                CHUNK = MIN( M-I+1, LDWRKR )
-               CALL CGEMM( 'N', 'N', CHUNK, N, N, CONE, A( I, 1 ), &
-                           LDA, WORK( IU ), LDWRKU, CZERO, &
+               CALL CGEMM( 'N', 'N', CHUNK, N, N, (1.0E+0,0.0E+0), A( I, 1 ), &
+                           LDA, WORK( IU ), LDWRKU, (0.0E+0,0.0E+0), &
                            WORK( IR ), LDWRKR )
                CALL CLACPY( 'F', CHUNK, N, WORK( IR ), LDWRKR, &
                             A( I, 1 ), LDA )
@@ -837,7 +826,7 @@
 !              Copy R to WORK(IR), zeroing out below it
 !
             CALL CLACPY( 'U', N, N, A, LDA, WORK( IR ), LDWRKR )
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, WORK( IR+1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( IR+1 ), &
                          LDWRKR )
 !
 !              Generate Q in A
@@ -902,8 +891,8 @@
 !              RWorkspace: need   0
 !
             CALL CLACPY( 'F', N, N, U, LDU, WORK( IR ), LDWRKR )
-            CALL CGEMM( 'N', 'N', M, N, N, CONE, A, LDA, WORK( IR ), &
-                        LDWRKR, CZERO, U, LDU )
+            CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), A, LDA, WORK( IR ), &
+                        LDWRKR, (0.0E+0,0.0E+0), U, LDU )
 !
          ELSE IF( WNTQA ) THEN
 !
@@ -938,7 +927,7 @@
 !
 !              Produce R in A, zeroing out below it
 !
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, A( 2, 1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 2, 1 ), &
                          LDA )
             IE = 1
             ITAUQ = ITAU
@@ -995,12 +984,12 @@
 !              CWorkspace: need   N*N [U]
 !              RWorkspace: need   0
 !
-            CALL CGEMM( 'N', 'N', M, N, N, CONE, U, LDU, WORK( IU ), &
-                        LDWRKU, CZERO, A, LDA )
+            CALL CGEMM( 'N', 'N', M, N, N, (1.0E+0,0.0E+0), U, LDU, WORK( IU ), &
+                        LDWRKU, (0.0E+0,0.0E+0), A, LDA )
 !
 !              Copy left singular vectors of A from A to U
 !
-            CALL CLACPY( 'F', M, N, A, LDA, U, LDU )
+            U(1:M,1:N) = A(1:M,1:N)
 !
          END IF
 !
@@ -1148,7 +1137,7 @@
 !
             CALL CLARCM( N, N, RWORK( IRVT ), N, VT, LDVT, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', N, N, A, LDA, VT, LDVT )
+            VT(1:N,1:N) = A(1:N,1:N)
 !
 !              Multiply Q in U by real matrix RWORK(IRU), storing the
 !              result in A, copying to U
@@ -1158,7 +1147,7 @@
             NRWORK = IRVT
             CALL CLACRM( M, N, U, LDU, RWORK( IRU ), N, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, N, A, LDA, U, LDU )
+            U(1:M,1:N) = A(1:M,1:N)
          ELSE
 !
 !              Path 5a (M >> N, JOBZ='A')
@@ -1200,7 +1189,7 @@
 !
             CALL CLARCM( N, N, RWORK( IRVT ), N, VT, LDVT, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', N, N, A, LDA, VT, LDVT )
+            VT(1:N,1:N) = A(1:N,1:N)
 !
 !              Multiply Q in U by real matrix RWORK(IRU), storing the
 !              result in A, copying to U
@@ -1210,7 +1199,7 @@
             NRWORK = IRVT
             CALL CLACRM( M, N, U, LDU, RWORK( IRU ), N, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, N, A, LDA, U, LDU )
+            U(1:M,1:N) = A(1:M,1:N)
          END IF
 !
       ELSE
@@ -1294,8 +1283,7 @@
 !                 CWorkspace: prefer 2*N [tauq, taup] + M*N [U] + N*NB [work]
 !                 RWorkspace: need   N [e] + N*N [RU]
 !
-               CALL CLASET( 'F', M, N, CZERO, CZERO, WORK( IU ), &
-                            LDWRKU )
+               WORK(IU:IU+M*N-1) = (0.0E+0,0.0E+0)
                CALL CLACP2( 'F', N, N, RWORK( IRU ), N, WORK( IU ), &
                             LDWRKU )
                CALL CUNMBR( 'Q', 'L', 'N', M, N, N, A, LDA, &
@@ -1353,7 +1341,7 @@
 !              CWorkspace: prefer 2*N [tauq, taup] + N*NB [work]
 !              RWorkspace: need   N [e] + N*N [RU] + N*N [RVT]
 !
-            CALL CLASET( 'F', M, N, CZERO, CZERO, U, LDU )
+            U(1:M,1:N) = (0.0E+0,0.0E+0)
             CALL CLACP2( 'F', N, N, RWORK( IRU ), N, U, LDU )
             CALL CUNMBR( 'Q', 'L', 'N', M, N, N, A, LDA, &
                          WORK( ITAUQ ), U, LDU, WORK( NWORK ), &
@@ -1387,9 +1375,9 @@
 !
 !              Set the right corner of U to identity matrix
 !
-            CALL CLASET( 'F', M, M, CZERO, CZERO, U, LDU )
+            U(1:M,1:M) = (0.0E+0,0.0E+0)
             IF( M > N ) THEN
-               CALL CLASET( 'F', M-N, M-N, CZERO, CONE, &
+               CALL CLASET( 'F', M-N, M-N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                             U( N+1, N+1 ), LDU )
             END IF
 !
@@ -1444,7 +1432,7 @@
 !
 !              Zero out above L
 !
-            CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, A( 1, 2 ), &
+            CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 1, 2 ), &
                          LDA )
             IE = 1
             ITAUQ = 1
@@ -1507,7 +1495,7 @@
 !              Copy L to WORK(IL), zeroing about above it
 !
             CALL CLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWRKL )
-            CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+            CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          WORK( IL+LDWRKL ), LDWRKL )
 !
 !              Generate Q in A
@@ -1575,8 +1563,8 @@
 !
             DO I = 1, N, CHUNK
                BLK = MIN( N-I+1, CHUNK )
-               CALL CGEMM( 'N', 'N', M, BLK, M, CONE, WORK( IVT ), M, &
-                           A( 1, I ), LDA, CZERO, WORK( IL ), &
+               CALL CGEMM( 'N', 'N', M, BLK, M, (1.0E+0,0.0E+0), WORK( IVT ), M, &
+                           A( 1, I ), LDA, (0.0E+0,0.0E+0), WORK( IL ), &
                            LDWRKL )
                CALL CLACPY( 'F', M, BLK, WORK( IL ), LDWRKL, &
                             A( 1, I ), LDA )
@@ -1607,7 +1595,7 @@
 !              Copy L to WORK(IL), zeroing out above it
 !
             CALL CLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWRKL )
-            CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+            CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          WORK( IL+LDWRKL ), LDWRKL )
 !
 !              Generate Q in A
@@ -1672,8 +1660,8 @@
 !              RWorkspace: need   0
 !
             CALL CLACPY( 'F', M, M, VT, LDVT, WORK( IL ), LDWRKL )
-            CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IL ), LDWRKL, &
-                        A, LDA, CZERO, VT, LDVT )
+            CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IL ), LDWRKL, &
+                        A, LDA, (0.0E+0,0.0E+0), VT, LDVT )
 !
          ELSE IF( WNTQA ) THEN
 !
@@ -1708,7 +1696,7 @@
 !
 !              Produce L in A, zeroing out above it
 !
-            CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, A( 1, 2 ), &
+            CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 1, 2 ), &
                          LDA )
             IE = 1
             ITAUQ = ITAU
@@ -1765,12 +1753,12 @@
 !              CWorkspace: need   M*M [VT]
 !              RWorkspace: need   0
 !
-            CALL CGEMM( 'N', 'N', M, N, M, CONE, WORK( IVT ), LDWKVT, &
-                        VT, LDVT, CZERO, A, LDA )
+            CALL CGEMM( 'N', 'N', M, N, M, (1.0E+0,0.0E+0), WORK( IVT ), LDWKVT, &
+                        VT, LDVT, (0.0E+0,0.0E+0), A, LDA )
 !
 !              Copy right singular vectors of A from A to VT
 !
-            CALL CLACPY( 'F', M, N, A, LDA, VT, LDVT )
+            VT(1:M,1:N) = A(1:M,1:N)
 !
          END IF
 !
@@ -1920,7 +1908,7 @@
 !
             CALL CLACRM( M, M, U, LDU, RWORK( IRU ), M, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, M, A, LDA, U, LDU )
+            U(1:M,1:M) = A(1:M,1:M)
 !
 !              Multiply real matrix RWORK(IRVT) by P**H in VT,
 !              storing the result in A, copying to VT
@@ -1930,7 +1918,7 @@
             NRWORK = IRU
             CALL CLARCM( M, N, RWORK( IRVT ), M, VT, LDVT, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, N, A, LDA, VT, LDVT )
+            VT(1:M,1:N) = A(1:M,1:N)
          ELSE
 !
 !              Path 5ta (N >> M, JOBZ='A')
@@ -1972,7 +1960,7 @@
 !
             CALL CLACRM( M, M, U, LDU, RWORK( IRU ), M, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, M, A, LDA, U, LDU )
+            U(1:M,1:M) = A(1:M,1:M)
 !
 !              Multiply real matrix RWORK(IRVT) by P**H in VT,
 !              storing the result in A, copying to VT
@@ -1982,7 +1970,7 @@
             NRWORK = IRU
             CALL CLARCM( M, N, RWORK( IRVT ), M, VT, LDVT, A, LDA, &
                          RWORK( NRWORK ) )
-            CALL CLACPY( 'F', M, N, A, LDA, VT, LDVT )
+            VT(1:M,1:N) = A(1:M,1:N)
          END IF
 !
       ELSE
@@ -2024,8 +2012,7 @@
 !
 !                 WORK( IVT ) is M by N
 !
-               CALL CLASET( 'F', M, N, CZERO, CZERO, WORK( IVT ), &
-                            LDWKVT )
+               WORK(IVT:IVT+M*N-1) = (0.0E+0,0.0E+0)
                NWORK = IVT + LDWKVT*N
             ELSE
 !
@@ -2136,7 +2123,7 @@
 !              CWorkspace: prefer 2*M [tauq, taup] + M*NB [work]
 !              RWorkspace: need   M [e] + M*M [RVT]
 !
-            CALL CLASET( 'F', M, N, CZERO, CZERO, VT, LDVT )
+            VT(1:M,1:N) = (0.0E+0,0.0E+0)
             CALL CLACP2( 'F', M, M, RWORK( IRVT ), M, VT, LDVT )
             CALL CUNMBR( 'P', 'R', 'C', M, N, M, A, LDA, &
                          WORK( ITAUP ), VT, LDVT, WORK( NWORK ), &
@@ -2171,7 +2158,7 @@
 !
 !              Set all of VT to identity matrix
 !
-            CALL CLASET( 'F', N, N, CZERO, CONE, VT, LDVT )
+            CALL CLASET( 'F', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VT, LDVT )
 !
 !              Copy real matrix RWORK(IRVT) to complex matrix VT
 !              Overwrite VT by right singular vectors of A
@@ -2215,4 +2202,4 @@
 !     End of CGESDD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

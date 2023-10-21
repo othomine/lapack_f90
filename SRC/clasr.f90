@@ -192,6 +192,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup lasr
 !
@@ -212,18 +213,11 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J
    REAL               CTEMP, STEMP
    COMPLEX            TEMP
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -259,8 +253,7 @@
 !
 !     Quick return if possible
 !
-   IF( ( M == 0 ) .OR. ( N == 0 ) ) &
-      RETURN
+   IF( ( M == 0 ) .OR. ( N == 0 ) ) RETURN
    IF( LSAME( SIDE, 'L' ) ) THEN
 !
 !        Form  P * A
@@ -270,7 +263,7 @@
             DO J = 1, M - 1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, N
                      TEMP = A( J+1, I )
                      A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
@@ -282,7 +275,7 @@
             DO J = M - 1, 1, -1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, N
                      TEMP = A( J+1, I )
                      A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
@@ -296,7 +289,7 @@
             DO J = 2, M
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, N
                      TEMP = A( J, I )
                      A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
@@ -308,7 +301,7 @@
             DO J = M, 2, -1
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, N
                      TEMP = A( J, I )
                      A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
@@ -322,26 +315,26 @@
             DO J = 1, M - 1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
+                  DO I = 1, N
+                     TEMP = A( J, I )
+                     A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
+                     A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
+               ENDDO
+               END IF
+            ENDDO
+         ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+            DO J = M - 1, 1, -1
+               CTEMP = C( J )
+               STEMP = S( J )
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, N
                      TEMP = A( J, I )
                      A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
                      A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
                   ENDDO
                END IF
-               ENDDO
-         ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
-            DO J = M - 1, 1, -1
-               CTEMP = C( J )
-               STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J, I )
-                     A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
-                     A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
-                     ENDDO
-               END IF
-               ENDDO
+            ENDDO
          END IF
       END IF
    ELSE IF( LSAME( SIDE, 'R' ) ) THEN
@@ -353,59 +346,59 @@
             DO J = 1, N - 1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J+1 )
                      A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
                      A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
-                     ENDDO
+                  ENDDO
                END IF
-               ENDDO
+            ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
             DO J = N - 1, 1, -1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J+1 )
                      A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
                      A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
-                     ENDDO
+                  ENDDO
                END IF
-               ENDDO
+            ENDDO
          END IF
       ELSE IF( LSAME( PIVOT, 'T' ) ) THEN
          IF( LSAME( DIRECT, 'F' ) ) THEN
             DO J = 2, N
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J )
                      A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
                      A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
-                     ENDDO
+                  ENDDO
                END IF
-               ENDDO
+            ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
             DO J = N, 2, -1
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J )
                      A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
                      A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
-                     ENDDO
+                  ENDDO
                END IF
-               ENDDO
+            ENDDO
          END IF
       ELSE IF( LSAME( PIVOT, 'B' ) ) THEN
          IF( LSAME( DIRECT, 'F' ) ) THEN
             DO J = 1, N - 1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J )
                      A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
@@ -417,7 +410,7 @@
             DO J = N - 1, 1, -1
                CTEMP = C( J )
                STEMP = S( J )
-               IF( ( CTEMP /= ONE ) .OR. ( STEMP /= ZERO ) ) THEN
+               IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
                   DO I = 1, M
                      TEMP = A( I, J )
                      A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
@@ -434,4 +427,3 @@
 !     End of CLASR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

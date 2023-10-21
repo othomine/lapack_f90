@@ -260,6 +260,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gesvdx
 !
@@ -285,13 +286,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          JOBZ, RNGTGK
@@ -312,11 +306,8 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ILAENV
-   REAL               SLAMCH, CLANGE
-   EXTERNAL           LSAME, ILAENV, SLAMCH, CLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SQRT
+   REAL               SLAMCH
+   EXTERNAL           LSAME, ILAENV, SLAMCH
 !     ..
 !     .. Executable Statements ..
 !
@@ -356,7 +347,7 @@
       INFO = -7
    ELSE IF( MINMN > 0 ) THEN
       IF( VALS ) THEN
-         IF( VL < ZERO ) THEN
+         IF( VL < 0.0E+0 ) THEN
             INFO = -8
          ELSE IF( VU <= VL ) THEN
             INFO = -9
@@ -448,7 +439,7 @@
          END IF
       END IF
       MAXWRK = MAX( MAXWRK, MINWRK )
-      WORK( 1 ) = CMPLX( REAL( MAXWRK ), ZERO )
+      WORK( 1 ) = CMPLX( REAL( MAXWRK ), 0.0E+0 )
 !
       IF( LWORK < MINWRK .AND. .NOT.LQUERY ) THEN
          INFO = -19
@@ -464,9 +455,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Set singular values indices accord to RANGE='A'.
 !
@@ -488,13 +477,13 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SQRT( SLAMCH( 'S' ) ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, DUM )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    ISCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       ISCL = 1
       CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, M, N, A, LDA, INFO )
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -534,7 +523,7 @@
          IE = ID + N
          ITGKZ = IE + N
          CALL CLACPY( 'U', N, N, A, LDA, WORK( IQRF ), N )
-         CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, &
+         CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                       WORK( IQRF+1 ), N )
          CALL CGEBRD( N, N, WORK( IQRF ), N, RWORK( ID ), &
                       RWORK( IE ), WORK( ITAUQ ), WORK( ITAUP ), &
@@ -555,12 +544,12 @@
             K = ITGKZ
             DO I = 1, NS
                DO J = 1, N
-                  U( J, I ) = CMPLX( RWORK( K ), ZERO )
+                  U( J, I ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + N
             END DO
-            CALL CLASET( 'A', M-N, NS, CZERO, CZERO, U( N+1,1 ), LDU)
+            U(N+1:M,1:NS) = (0.0E+0,0.0E+0)
 !
 !              Call CUNMBR to compute QB*UB.
 !              (Workspace in WORK( ITEMP ): need N, prefer N*NB)
@@ -583,7 +572,7 @@
             K = ITGKZ + N
             DO I = 1, NS
                DO J = 1, N
-                  VT( I, J ) = CMPLX( RWORK( K ), ZERO )
+                  VT( I, J ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + N
@@ -631,12 +620,12 @@
             K = ITGKZ
             DO I = 1, NS
                DO J = 1, N
-                  U( J, I ) = CMPLX( RWORK( K ), ZERO )
+                  U( J, I ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + N
             END DO
-            CALL CLASET( 'A', M-N, NS, CZERO, CZERO, U( N+1,1 ), LDU)
+            U(N+1:M,1:NS) = (0.0E+0,0.0E+0)
 !
 !              Call CUNMBR to compute QB*UB.
 !              (Workspace in WORK( ITEMP ): need N, prefer N*NB)
@@ -652,7 +641,7 @@
             K = ITGKZ + N
             DO I = 1, NS
                DO J = 1, N
-                  VT( I, J ) = CMPLX( RWORK( K ), ZERO )
+                  VT( I, J ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + N
@@ -697,7 +686,7 @@
          IE = ID + M
          ITGKZ = IE + M
          CALL CLACPY( 'L', M, M, A, LDA, WORK( ILQF ), M )
-         CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, &
+         CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                       WORK( ILQF+M ), M )
          CALL CGEBRD( M, M, WORK( ILQF ), M, RWORK( ID ), &
                       RWORK( IE ), WORK( ITAUQ ), WORK( ITAUP ), &
@@ -718,7 +707,7 @@
             K = ITGKZ
             DO I = 1, NS
                DO J = 1, M
-                  U( J, I ) = CMPLX( RWORK( K ), ZERO )
+                  U( J, I ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + M
@@ -738,13 +727,12 @@
             K = ITGKZ + M
             DO I = 1, NS
                DO J = 1, M
-                  VT( I, J ) = CMPLX( RWORK( K ), ZERO )
+                  VT( I, J ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + M
             END DO
-            CALL CLASET( 'A', NS, N-M, CZERO, CZERO, &
-                         VT( 1,M+1 ), LDVT )
+            VT(1:NS,M+1:N) = (0.0E+0,0.0E+0)
 !
 !              Call CUNMBR to compute (VB**T)*(PB**T)
 !              (Workspace in WORK( ITEMP ): need M, prefer M*NB)
@@ -795,7 +783,7 @@
             K = ITGKZ
             DO I = 1, NS
                DO J = 1, M
-                  U( J, I ) = CMPLX( RWORK( K ), ZERO )
+                  U( J, I ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + M
@@ -815,13 +803,12 @@
             K = ITGKZ + M
             DO I = 1, NS
                DO J = 1, M
-                  VT( I, J ) = CMPLX( RWORK( K ), ZERO )
+                  VT( I, J ) = CMPLX( RWORK( K ), 0.0E+0 )
                   K = K + 1
                END DO
                K = K + M
             END DO
-            CALL CLASET( 'A', NS, N-M, CZERO, CZERO, &
-                         VT( 1,M+1 ), LDVT )
+            VT(1:NS,M+1:N) = (0.0E+0,0.0E+0)
 !
 !              Call CUNMBR to compute VB**T * PB**T
 !              (Workspace in WORK( ITEMP ): need M, prefer M*NB)
@@ -846,11 +833,10 @@
 !
 !     Return optimal workspace in WORK(1)
 !
-   WORK( 1 ) = CMPLX( REAL( MAXWRK ), ZERO )
+   WORK( 1 ) = CMPLX( REAL( MAXWRK ), 0.0E+0 )
 !
    RETURN
 !
 !     End of CGESVDX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

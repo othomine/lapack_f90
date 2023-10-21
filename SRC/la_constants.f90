@@ -9,6 +9,7 @@
 !  ========
 !
 !> \author Edward Anderson, Lockheed Martin
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \date May 2016
 !
@@ -129,4 +130,5 @@ module LA_CONSTANTS
        (maxexponent(0._dp) + digits(0._dp) - 1) * 0.5_dp))
 
 end module LA_CONSTANTS
+
 

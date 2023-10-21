@@ -215,8 +215,8 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ISAMAX, ILAENV
-   REAL   SLAMCH, SCNRM2, CLANGE
-   EXTERNAL           LSAME, ISAMAX, ILAENV, SLAMCH, SCNRM2, CLANGE
+   REAL   SLAMCH, SCNRM2
+   EXTERNAL           LSAME, ISAMAX, ILAENV, SLAMCH, SCNRM2
 !     ..
 !     .. Executable Statements ..
 !
@@ -313,7 +313,7 @@
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', N, N, A, LDA, DUM )
+   ANRM = MAXVAL(ABS(A(1:N,1:N)))
    SCALEA = .FALSE.
    IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.

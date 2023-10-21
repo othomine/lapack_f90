@@ -169,6 +169,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gelss
 !
@@ -190,13 +191,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -212,17 +206,14 @@
    COMPLEX            DUM( 1 )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CBDSQR, CCOPY, CGEBRD, CGELQF, CGEMM, CGEMV, &
+   EXTERNAL           CBDSQR, CGEBRD, CGELQF, CGEMM, CGEMV, &
                       CGEQRF, CLACPY, CLASCL, CLASET, CSRSCL, CUNGBR, &
                       CUNMBR, CUNMLQ, CUNMQR, SLASCL, SLASET, XERBLA
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
-   REAL               CLANGE, SLAMCH
-   EXTERNAL           ILAENV, CLANGE, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
+   REAL               SLAMCH
+   EXTERNAL           ILAENV, SLAMCH
 !     ..
 !     .. Executable Statements ..
 !
@@ -363,8 +354,7 @@
       END IF
       WORK( 1 ) = MAXWRK
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) &
-         INFO = -12
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -12
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -386,13 +376,13 @@
    EPS = SLAMCH( 'P' )
    SFMIN = SLAMCH( 'S' )
    SMLNUM = SFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
-   ANRM = CLANGE( 'M', M, N, A, LDA, RWORK )
+   ANRM = MAXVAL(ABS(A(1:M,1:N)))
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -404,21 +394,21 @@
 !
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0E+0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL CLASET( 'F', MAX( M, N ), NRHS, CZERO, CZERO, B, LDB )
-      CALL SLASET( 'F', MINMN, 1, ZERO, ZERO, S, MINMN )
+      B(1:MAX(M,N),1:NRHS) = (0.0E+0,0.0E+0)
+      S(1:MINMN) = 0.0E+0
       RANK = 0
       GO TO 70
    END IF
 !
 !     Scale B if max element outside range [SMLNUM,BIGNUM]
 !
-   BNRM = CLANGE( 'M', M, NRHS, B, LDB, RWORK )
+   BNRM = MAXVAL(ABS(B(1:M,1:NRHS)))
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -464,7 +454,7 @@
 !           Zero out below R
 !
          IF( N > 1 ) &
-            CALL CLASET( 'L', N-1, N-1, CZERO, CZERO, A( 2, 1 ), &
+            CALL CLASET( 'L', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A( 2, 1 ), &
                          LDA )
       END IF
 !
@@ -504,21 +494,19 @@
 !
       CALL CBDSQR( 'U', N, N, 0, NRHS, S, RWORK( IE ), A, LDA, DUM, &
                    1, B, LDB, RWORK( IRWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
-         THR = MAX( EPS*S( 1 ), SFMIN )
+      IF( RCOND < 0.0E+0 ) THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, N
          IF( S( I ) > THR ) THEN
             CALL CSRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL CLASET( 'F', 1, NRHS, CZERO, CZERO, B( I, 1 ), LDB )
+            B(i,1:NRHS) = (0.0E+0,0.0E+0)
          END IF
       ENDDO
 !
@@ -527,24 +515,23 @@
 !        (RWorkspace: none)
 !
       IF( LWORK >= LDB*NRHS .AND. NRHS > 1 ) THEN
-         CALL CGEMM( 'C', 'N', N, NRHS, N, CONE, A, LDA, B, LDB, &
-                     CZERO, WORK, LDB )
+         CALL CGEMM( 'C', 'N', N, NRHS, N, (1.0E+0,0.0E+0), A, LDA, B, LDB, &
+                     (0.0E+0,0.0E+0), WORK, LDB )
          CALL CLACPY( 'G', N, NRHS, WORK, LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = LWORK / N
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL CGEMM( 'C', 'N', N, BL, N, CONE, A, LDA, B( 1, I ), &
-                        LDB, CZERO, WORK, N )
+            CALL CGEMM( 'C', 'N', N, BL, N, (1.0E+0,0.0E+0), A, LDA, B( 1, I ), &
+                        LDB, (0.0E+0,0.0E+0), WORK, N )
             CALL CLACPY( 'G', N, BL, WORK, N, B( 1, I ), LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL CGEMV( 'C', N, N, CONE, A, LDA, B, 1, CZERO, WORK, 1 )
-         CALL CCOPY( N, WORK, 1, B, 1 )
+         CALL CGEMV( 'C', N, N, (1.0E+0,0.0E+0), A, LDA, B, 1, (0.0E+0,0.0E+0), WORK, 1 )
+         B(1:N,1) = WORK(1:N)
       END IF
 !
-   ELSE IF( N >= MNTHR .AND. LWORK >= 3*M+M*M+MAX( M, NRHS, N-2*M ) ) &
-             THEN
+   ELSE IF( N >= MNTHR .AND. LWORK >= 3*M+M*M+MAX( M, NRHS, N-2*M ) ) THEN
 !
 !        Underdetermined case, M much less than N
 !
@@ -552,8 +539,7 @@
 !        and sufficient workspace for an efficient algorithm
 !
       LDWORK = M
-      IF( LWORK >= 3*M+M*LDA+MAX( M, NRHS, N-2*M ) ) &
-         LDWORK = LDA
+      IF( LWORK >= 3*M+M*LDA+MAX( M, NRHS, N-2*M ) ) LDWORK = LDA
       ITAU = 1
       IWORK = M + 1
 !
@@ -568,7 +554,7 @@
 !        Copy L to WORK(IL), zeroing out above it
 !
       CALL CLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWORK )
-      CALL CLASET( 'U', M-1, M-1, CZERO, CZERO, WORK( IL+LDWORK ), &
+      CALL CLASET( 'U', M-1, M-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( IL+LDWORK ), &
                    LDWORK )
       IE = 1
       ITAUQ = IL + LDWORK*M
@@ -607,13 +593,12 @@
 !
       CALL CBDSQR( 'U', M, M, 0, NRHS, S, RWORK( IE ), WORK( IL ), &
                    LDWORK, A, LDA, B, LDB, RWORK( IRWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
+      IF( RCOND < 0.0E+0 ) &
          THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, M
@@ -621,7 +606,7 @@
             CALL CSRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL CLASET( 'F', 1, NRHS, CZERO, CZERO, B( I, 1 ), LDB )
+            B(I,1:NRHS) = (0.0E+0,0.0E+0)
          END IF
       ENDDO
       IWORK = IL + M*LDWORK
@@ -631,27 +616,27 @@
 !        (RWorkspace: none)
 !
       IF( LWORK >= LDB*NRHS+IWORK-1 .AND. NRHS > 1 ) THEN
-         CALL CGEMM( 'C', 'N', M, NRHS, M, CONE, WORK( IL ), LDWORK, &
-                     B, LDB, CZERO, WORK( IWORK ), LDB )
+         CALL CGEMM( 'C', 'N', M, NRHS, M, (1.0E+0,0.0E+0), WORK( IL ), LDWORK, &
+                     B, LDB, (0.0E+0,0.0E+0), WORK( IWORK ), LDB )
          CALL CLACPY( 'G', M, NRHS, WORK( IWORK ), LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = ( LWORK-IWORK+1 ) / M
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL CGEMM( 'C', 'N', M, BL, M, CONE, WORK( IL ), LDWORK, &
-                        B( 1, I ), LDB, CZERO, WORK( IWORK ), M )
+            CALL CGEMM( 'C', 'N', M, BL, M, (1.0E+0,0.0E+0), WORK( IL ), LDWORK, &
+                        B( 1, I ), LDB, (0.0E+0,0.0E+0), WORK( IWORK ), M )
             CALL CLACPY( 'G', M, BL, WORK( IWORK ), M, B( 1, I ), &
                          LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL CGEMV( 'C', M, M, CONE, WORK( IL ), LDWORK, B( 1, 1 ), &
-                     1, CZERO, WORK( IWORK ), 1 )
-         CALL CCOPY( M, WORK( IWORK ), 1, B( 1, 1 ), 1 )
+         CALL CGEMV( 'C', M, M, (1.0E+0,0.0E+0), WORK( IL ), LDWORK, B( 1, 1 ), &
+                     1, (0.0E+0,0.0E+0), WORK( IWORK ), 1 )
+         B(1:M,1) = WORK(IWORK:IWORK+M-1)
       END IF
 !
 !        Zero out below first M rows of B
 !
-      CALL CLASET( 'F', N-M, NRHS, CZERO, CZERO, B( M+1, 1 ), LDB )
+      B(M+1:N,1:NRHS) = (0.0E+0,0.0E+0)
       IWORK = ITAU + M
 !
 !        Multiply transpose(Q) by B
@@ -701,21 +686,19 @@
 !
       CALL CBDSQR( 'L', M, N, 0, NRHS, S, RWORK( IE ), A, LDA, DUM, &
                    1, B, LDB, RWORK( IRWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
-         THR = MAX( EPS*S( 1 ), SFMIN )
+      IF( RCOND < 0.0E+0 ) THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, M
          IF( S( I ) > THR ) THEN
             CALL CSRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL CLASET( 'F', 1, NRHS, CZERO, CZERO, B( I, 1 ), LDB )
+            B(I,1:NRHS) = (0.0E+0,0.0E+0)
          END IF
       ENDDO
 !
@@ -724,20 +707,20 @@
 !        (RWorkspace: none)
 !
       IF( LWORK >= LDB*NRHS .AND. NRHS > 1 ) THEN
-         CALL CGEMM( 'C', 'N', N, NRHS, M, CONE, A, LDA, B, LDB, &
-                     CZERO, WORK, LDB )
+         CALL CGEMM( 'C', 'N', N, NRHS, M, (1.0E+0,0.0E+0), A, LDA, B, LDB, &
+                     (0.0E+0,0.0E+0), WORK, LDB )
          CALL CLACPY( 'G', N, NRHS, WORK, LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = LWORK / N
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL CGEMM( 'C', 'N', N, BL, M, CONE, A, LDA, B( 1, I ), &
-                        LDB, CZERO, WORK, N )
+            CALL CGEMM( 'C', 'N', N, BL, M, (1.0E+0,0.0E+0), A, LDA, B( 1, I ), &
+                        LDB, (0.0E+0,0.0E+0), WORK, N )
             CALL CLACPY( 'F', N, BL, WORK, N, B( 1, I ), LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL CGEMV( 'C', M, N, CONE, A, LDA, B, 1, CZERO, WORK, 1 )
-         CALL CCOPY( N, WORK, 1, B, 1 )
+         CALL CGEMV( 'C', M, N, (1.0E+0,0.0E+0), A, LDA, B, 1, (0.0E+0,0.0E+0), WORK, 1 )
+         B(1:N,1) = WORK(1:N)
       END IF
    END IF
 !
@@ -745,12 +728,10 @@
 !
    IF( IASCL == 1 ) THEN
       CALL CLASCL( 'G', 0, 0, ANRM, SMLNUM, N, NRHS, B, LDB, INFO )
-      CALL SLASCL( 'G', 0, 0, SMLNUM, ANRM, MINMN, 1, S, MINMN, &
-                   INFO )
+      CALL SLASCL( 'G', 0, 0, SMLNUM, ANRM, MINMN, 1, S, MINMN, INFO )
    ELSE IF( IASCL == 2 ) THEN
       CALL CLASCL( 'G', 0, 0, ANRM, BIGNUM, N, NRHS, B, LDB, INFO )
-      CALL SLASCL( 'G', 0, 0, BIGNUM, ANRM, MINMN, 1, S, MINMN, &
-                   INFO )
+      CALL SLASCL( 'G', 0, 0, BIGNUM, ANRM, MINMN, 1, S, MINMN, INFO )
    END IF
    IF( IBSCL == 1 ) THEN
       CALL CLASCL( 'G', 0, 0, SMLNUM, BNRM, N, NRHS, B, LDB, INFO )
@@ -764,4 +745,3 @@
 !     End of CGELSS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
