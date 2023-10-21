@@ -428,6 +428,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbrfsx
 !
@@ -460,10 +461,7 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               ITREF_DEFAULT, ITHRESH_DEFAULT, &
-                      COMPONENTWISE_DEFAULT
+   REAL               ITREF_DEFAULT, ITHRESH_DEFAULT, COMPONENTWISE_DEFAULT
    REAL               RTHRESH_DEFAULT, DZTHRESH_DEFAULT
    PARAMETER          ( ITREF_DEFAULT = 1.0 )
    PARAMETER          ( ITHRESH_DEFAULT = 10.0 )
@@ -490,9 +488,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CGBCON, CLA_GBRFSX_EXTENDED
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT, TRANSFER
 !     ..
 !     .. External Functions ..
    EXTERNAL           LSAME, ILATRANS, ILAPREC
@@ -647,7 +642,7 @@
               NRHS, AB, LDAB, AFB, LDAFB, IPIV, COLEQU, C, B, &
               LDB, X, LDX, BERR, N_NORMS, ERR_BNDS_NORM, &
               ERR_BNDS_COMP, WORK, RWORK, WORK(N+1), &
-              TRANSFER (RWORK(1:2*N), (/ (ZERO, ZERO) /), N), &
+              TRANSFER (RWORK(1:2*N), (/ (0.0E+0, 0.0E+0) /), N), &
               RCOND, ITHRESH, RTHRESH, UNSTABLE_THRESH, IGNORE_CWISE, &
               INFO )
       ELSE
@@ -655,7 +650,7 @@
               NRHS, AB, LDAB, AFB, LDAFB, IPIV, ROWEQU, R, B, &
               LDB, X, LDX, BERR, N_NORMS, ERR_BNDS_NORM, &
               ERR_BNDS_COMP, WORK, RWORK, WORK(N+1), &
-              TRANSFER (RWORK(1:2*N), (/ (ZERO, ZERO) /), N), &
+              TRANSFER (RWORK(1:2*N), (/ (0.0E+0, 0.0E+0) /), N), &
               RCOND, ITHRESH, RTHRESH, UNSTABLE_THRESH, IGNORE_CWISE, &
               INFO )
       END IF
@@ -758,4 +753,5 @@
 !     End of CGBRFSX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

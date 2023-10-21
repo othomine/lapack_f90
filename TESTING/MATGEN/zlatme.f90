@@ -294,10 +294,8 @@
 !> \ingroup complex16_matgen
 !
 !  =====================================================================
-   SUBROUTINE ZLATME( N, DIST, ISEED, D, MODE, COND, DMAX, &
-     RSIGN, &
-                      UPPER, SIM, DS, MODES, CONDS, KL, KU, ANORM, &
-     A, &
+   SUBROUTINE ZLATME( N, DIST, ISEED, D, MODE, COND, DMAX, RSIGN, &
+                      UPPER, SIM, DS, MODES, CONDS, KL, KU, ANORM, A, &
                       LDA, WORK, INFO )
 !
 !  -- LAPACK computational routine --
@@ -317,16 +315,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D+0 )
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D+0 )
-   COMPLEX*16         CZERO
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ) )
-   COMPLEX*16         CONE
-   PARAMETER          ( CONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BADS
@@ -352,9 +340,6 @@
                       ZLACGV, ZLARFG, ZLARGE, ZLARNV, ZLASET, ZLATM1, &
                       ZSCAL
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DCONJG, MAX, MOD
-!     ..
 !     .. Executable Statements ..
 !
 !     1)      Decode and Test the input parameters.
@@ -364,8 +349,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Decode DIST
 !
@@ -414,12 +398,7 @@
 !     Check DS, if MODES=0 and ISIM=1
 !
    BADS = .FALSE.
-   IF( MODES == 0 .AND. ISIM == 1 ) THEN
-      DO J = 1, N
-         IF( DS( J ) == ZERO ) &
-            BADS = .TRUE.
-      ENDDO
-   END IF
+   IF( MODES == 0 .AND. ISIM == 1 ) BADS = ANY(DS(1:N) == 0.0D+0 )
 !
 !     Set INFO if an error
 !
@@ -429,7 +408,7 @@
       INFO = -2
    ELSE IF( ABS( MODE ) > 6 ) THEN
       INFO = -5
-   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < ONE ) &
+   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < 1.0D+0 ) &
              THEN
       INFO = -6
    ELSE IF( IRSIGN == -1 ) THEN
@@ -442,7 +421,7 @@
       INFO = -12
    ELSE IF( ISIM == 1 .AND. ABS( MODES ) > 5 ) THEN
       INFO = -13
-   ELSE IF( ISIM == 1 .AND. MODES /= 0 .AND. CONDS < ONE ) THEN
+   ELSE IF( ISIM == 1 .AND. MODES /= 0 .AND. CONDS < 1.0D+0 ) THEN
       INFO = -14
    ELSE IF( KL < 1 ) THEN
       INFO = -15
@@ -469,12 +448,9 @@
 !
 !     Initialize random number generator
 !
-   DO I = 1, 4
-      ISEED( I ) = MOD( ABS( ISEED( I ) ), 4096 )
-   ENDDO
+   ISEED(1:4) = MOD( ABS( ISEED(1:4) ), 4096 )
 !
-   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) &
-      ISEED( 4 ) = ISEED( 4 ) + 1
+   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) ISEED( 4 ) = ISEED( 4 ) + 1
 !
 !     2)      Set up diagonal of A
 !
@@ -489,12 +465,9 @@
 !
 !        Scale by DMAX
 !
-      TEMP = ABS( D( 1 ) )
-      DO I = 2, N
-         TEMP = MAX( TEMP, ABS( D( I ) ) )
-      ENDDO
+      TEMP = MAXVAL(ABS( D(1:N) ) )
 !
-      IF( TEMP > ZERO ) THEN
+      IF( TEMP > 0.0D+0 ) THEN
          ALPHA = DMAX / TEMP
       ELSE
          INFO = 2
@@ -518,7 +491,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL ZLASET( 'Full', N, N, CZERO, CZERO, A, LDA )
+   CALL ZLASET( 'Full', N, N, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), A, LDA )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -596,11 +569,11 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         IF( DS( J ) /= ZERO ) THEN
+         IF( DS( J ) /= 0.0D+0 ) THEN
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL ZDSCAL( N, ONE / DS( J ), A( 1, J ), 1 )
+            CALL ZDSCAL( N, 1.0D+0 / DS( J ), A( 1, J ), 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
             open(file='results.out', unit=10, position = 'append')
@@ -658,14 +631,14 @@
          close(10)
 #endif
          TAU = DCONJG( TAU )
-         WORK( 1 ) = CONE
+         WORK( 1 ) = (1.0D+0,0.0D+0)
          ALPHA = ZLARND( 5, ISEED )
 !
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'C', IROWS, ICOLS, CONE, A( JCR, IC+1 ), LDA, &
-                     WORK, 1, CZERO, WORK( IROWS+1 ), 1 )
+         CALL ZGEMV( 'C', IROWS, ICOLS, (1.0D+0,0.0D+0), A( JCR, IC+1 ), LDA, &
+                     WORK, 1, (0.0D+0,0.0D+0), WORK( IROWS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -689,8 +662,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'N', N, IROWS, CONE, A( 1, JCR ), LDA, WORK, 1, &
-                     CZERO, WORK( IROWS+1 ), 1 )
+         CALL ZGEMV( 'N', N, IROWS, (1.0D+0,0.0D+0), A( 1, JCR ), LDA, WORK, 1, &
+                     (0.0D+0,0.0D+0), WORK( IROWS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -715,7 +688,7 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZLASET( 'Full', IROWS-1, 1, CZERO, CZERO, &
+         CALL ZLASET( 'Full', IROWS-1, 1, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), &
                       A( JCR+1, IC ), LDA )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -781,7 +754,7 @@
          close(10)
 #endif
          TAU = DCONJG( TAU )
-         WORK( 1 ) = CONE
+         WORK( 1 ) = (1.0D+0,0.0D+0)
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
@@ -798,8 +771,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'N', IROWS, ICOLS, CONE, A( IR+1, JCR ), LDA, &
-                     WORK, 1, CZERO, WORK( ICOLS+1 ), 1 )
+         CALL ZGEMV( 'N', IROWS, ICOLS, (1.0D+0,0.0D+0), A( IR+1, JCR ), LDA, &
+                     WORK, 1, (0.0D+0,0.0D+0), WORK( ICOLS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -823,8 +796,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'C', ICOLS, N, CONE, A( JCR, 1 ), LDA, WORK, 1, &
-                     CZERO, WORK( ICOLS+1 ), 1 )
+         CALL ZGEMV( 'C', ICOLS, N, (1.0D+0,0.0D+0), A( JCR, 1 ), LDA, WORK, 1, &
+                     (0.0D+0,0.0D+0), WORK( ICOLS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -849,7 +822,7 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZLASET( 'Full', 1, ICOLS-1, CZERO, CZERO, &
+         CALL ZLASET( 'Full', 1, ICOLS-1, (0.0D+0,0.0D+0), (0.0D+0,0.0D+0), &
                       A( IR, JCR+1 ), LDA )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -886,9 +859,9 @@
 !
 !     Scale the matrix to have norm ANORM
 !
-   IF( ANORM >= ZERO ) THEN
+   IF( ANORM >= 0.0D+0 ) THEN
       TEMP = ZLANGE( 'M', N, N, A, LDA, TEMPA )
-      IF( TEMP > ZERO ) THEN
+      IF( TEMP > 0.0D+0 ) THEN
          RALPHA = ANORM / TEMP
          DO J = 1, N
 #ifdef _TIMER
@@ -911,6 +884,4 @@
 !     End of ZLATME
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

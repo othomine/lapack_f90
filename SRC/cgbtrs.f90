@@ -129,6 +129,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbtrs
 !
@@ -150,14 +151,11 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LNOTI, NOTRAN
    INTEGER            I, J, KD, L, LM
+   COMPLEX            B_TMP( NRHS )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -165,9 +163,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMV, CGERU, CLACGV, CSWAP, CTBSV, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -198,8 +193,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
    KD = KU + KL + 1
    LNOTI = KL > 0
@@ -219,9 +213,12 @@
          DO J = 1, N - 1
             LM = MIN( KL, N-J )
             L = IPIV( J )
-            IF( L /= J ) &
-               CALL CSWAP( NRHS, B( L, 1 ), LDB, B( J, 1 ), LDB )
-            CALL CGERU( LM, NRHS, -ONE, AB( KD+1, J ), 1, B( J, 1 ), &
+            IF( L /= J ) THEN
+               B_TMP(1:NRHS) = B(L,1:NRHS)
+               B(L,1:NRHS) = B(J,1:NRHS)
+               B(J,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
+            CALL CGERU( LM, NRHS, -(1.0E+0,0.0E+0), AB( KD+1, J ), 1, B( J, 1 ), &
                         LDB, B( J+1, 1 ), LDB )
          ENDDO
       END IF
@@ -251,11 +248,14 @@
       IF( LNOTI ) THEN
          DO J = N - 1, 1, -1
             LM = MIN( KL, N-J )
-            CALL CGEMV( 'Transpose', LM, NRHS, -ONE, B( J+1, 1 ), &
-                        LDB, AB( KD+1, J ), 1, ONE, B( J, 1 ), LDB )
+            CALL CGEMV( 'Transpose', LM, NRHS, -(1.0E+0,0.0E+0), B( J+1, 1 ), &
+                        LDB, AB( KD+1, J ), 1, (1.0E+0,0.0E+0), B( J, 1 ), LDB )
             L = IPIV( J )
-            IF( L /= J ) &
-               CALL CSWAP( NRHS, B( L, 1 ), LDB, B( J, 1 ), LDB )
+            IF( L /= J ) THEN
+               B_TMP(1:NRHS) = B(L,1:NRHS)
+               B(L,1:NRHS) = B(J,1:NRHS)
+               B(J,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
          ENDDO
       END IF
 !
@@ -277,13 +277,16 @@
          DO J = N - 1, 1, -1
             LM = MIN( KL, N-J )
             CALL CLACGV( NRHS, B( J, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', LM, NRHS, -ONE, &
-                        B( J+1, 1 ), LDB, AB( KD+1, J ), 1, ONE, &
+            CALL CGEMV( 'Conjugate transpose', LM, NRHS, -(1.0E+0,0.0E+0), &
+                        B( J+1, 1 ), LDB, AB( KD+1, J ), 1, (1.0E+0,0.0E+0), &
                         B( J, 1 ), LDB )
             CALL CLACGV( NRHS, B( J, 1 ), LDB )
             L = IPIV( J )
-            IF( L /= J ) &
-               CALL CSWAP( NRHS, B( L, 1 ), LDB, B( J, 1 ), LDB )
+            IF( L /= J ) THEN
+               B_TMP(1:NRHS) = B(L,1:NRHS)
+               B(L,1:NRHS) = B(J,1:NRHS)
+               B(J,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
          ENDDO
       END IF
    END IF
@@ -292,4 +295,4 @@
 !     End of CGBTRS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

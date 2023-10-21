@@ -213,6 +213,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup bdsqr
 !
@@ -236,24 +237,11 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E0 )
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E0 )
-   REAL               NEGONE
-   PARAMETER          ( NEGONE = -1.0E0 )
-   REAL               HNDRTH
-   PARAMETER          ( HNDRTH = 0.01E0 )
-   REAL               TEN
-   PARAMETER          ( TEN = 10.0E0 )
-   REAL               HNDRD
-   PARAMETER          ( HNDRD = 100.0E0 )
-   REAL               MEIGTH
-   PARAMETER          ( MEIGTH = -0.125E0 )
    INTEGER            MAXITR
    PARAMETER          ( MAXITR = 6 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            U_TMP( LDU ), VTT_TMP( NCVT ), C_TMP( NCC )
    LOGICAL            LOWER, ROTATE
    INTEGER            I, IDIR, ISUB, ITER, J, LL, LLL, M, MAXIT, NM1, &
                       NM12, NM13, OLDLL, OLDM
@@ -268,11 +256,7 @@
    EXTERNAL           LSAME, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLASR, CSROT, CSSCAL, CSWAP, SLARTG, SLAS2, &
-                      SLASQ1, SLASV2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SIGN, SQRT
+   EXTERNAL           CLASR, CSROT, SLARTG, SLAS2, SLASQ1, SLASV2, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -303,10 +287,8 @@
       CALL XERBLA( 'CBDSQR', -INFO )
       RETURN
    END IF
-   IF( N == 0 ) &
-      RETURN
-   IF( N == 1 ) &
-      GO TO 160
+   IF( N == 0 ) RETURN
+   IF( N == 1 ) GO TO 160
 !
 !     ROTATE is true if any singular vectors desired, false otherwise
 !
@@ -348,46 +330,35 @@
 !
 !        Update singular vectors if desired
 !
-      IF( NRU > 0 ) &
-         CALL CLASR( 'R', 'V', 'F', NRU, N, RWORK( 1 ), RWORK( N ), &
-                     U, LDU )
-      IF( NCC > 0 ) &
-         CALL CLASR( 'L', 'V', 'F', N, NCC, RWORK( 1 ), RWORK( N ), &
-                     C, LDC )
+      IF( NRU > 0 ) CALL CLASR( 'R', 'V', 'F', NRU, N, RWORK( 1 ), RWORK( N ), U, LDU )
+      IF( NCC > 0 ) CALL CLASR( 'L', 'V', 'F', N, NCC, RWORK( 1 ), RWORK( N ), C, LDC )
    END IF
 !
 !     Compute singular values to relative accuracy TOL
 !     (By setting TOL to be negative, algorithm will compute
 !     singular values to absolute accuracy ABS(TOL)*norm(input matrix))
 !
-   TOLMUL = MAX( TEN, MIN( HNDRD, EPS**MEIGTH ) )
+   TOLMUL = MAX( 10.0E+0, MIN( 100.0E+0, EPS**-0.125E+0 ) )
    TOL = TOLMUL*EPS
 !
 !     Compute approximate maximum, minimum singular values
 !
-   SMAX = ZERO
-   DO I = 1, N
-      SMAX = MAX( SMAX, ABS( D( I ) ) )
-   ENDDO
-   DO I = 1, N - 1
-      SMAX = MAX( SMAX, ABS( E( I ) ) )
-   ENDDO
-   SMIN = ZERO
-   IF( TOL >= ZERO ) THEN
+   SMAX = MAXVAL(ABS( D(1:N) ) )
+   SMAX = MAX( SMAX, MAXVAL(ABS( E(1:N-1) ) ))
+   SMIN = 0.0E+0
+   IF( TOL >= 0.0E+0 ) THEN
 !
 !        Relative accuracy desired
 !
       SMINOA = ABS( D( 1 ) )
-      IF( SMINOA == ZERO ) &
-         GO TO 50
-      MU = SMINOA
-      DO I = 2, N
-         MU = ABS( D( I ) )*( MU / ( MU+ABS( E( I-1 ) ) ) )
-         SMINOA = MIN( SMINOA, MU )
-         IF( SMINOA == ZERO ) &
-            GO TO 50
-      ENDDO
-50    CONTINUE
+      IF( SMINOA /= 0.0E+0 ) THEN
+         MU = SMINOA
+         DO I = 2, N
+            MU = ABS( D( I ) )*( MU / ( MU+ABS( E( I-1 ) ) ) )
+            SMINOA = MIN( SMINOA, MU )
+            IF( SMINOA == 0.0E+0 ) EXIT
+         ENDDO
+      ENDIF
       SMINOA = SMINOA / SQRT( REAL( N ) )
       THRESH = MAX( TOL*SMINOA, MAXITR*N*N*UNFL )
    ELSE
@@ -416,40 +387,40 @@
 !
 !     Check for convergence or exceeding iteration count
 !
-   IF( M <= 1 ) &
-      GO TO 160
-   IF( ITER > MAXIT ) &
-      GO TO 200
+   IF( M <= 1 ) GO TO 160
+   IF( ITER > MAXIT ) THEN
+     INFO = COUNT(E(1:N-1) /= 0.0E+0)
+     RETURN
+   ENDIF
 !
 !     Find diagonal block of matrix to work on
 !
-   IF( TOL < ZERO .AND. ABS( D( M ) ) <= THRESH ) &
-      D( M ) = ZERO
+   IF( TOL < 0.0E+0 .AND. ABS( D( M ) ) <= THRESH ) &
+      D( M ) = 0.0E+0
    SMAX = ABS( D( M ) )
    DO LLL = 1, M - 1
       LL = M - LLL
       ABSS = ABS( D( LL ) )
       ABSE = ABS( E( LL ) )
-      IF( TOL < ZERO .AND. ABSS <= THRESH ) &
-         D( LL ) = ZERO
-      IF( ABSE <= THRESH ) &
-         GO TO 80
-      SMAX = MAX( SMAX, ABSS, ABSE )
-   ENDDO
-   LL = 0
-   GO TO 90
-80 CONTINUE
-   E( LL ) = ZERO
+      IF( TOL < 0.0E+0 .AND. ABSS <= THRESH ) D( LL ) = 0.0E+0
+      IF( ABSE <= THRESH ) THEN
+         E( LL ) = 0.0E+0
 !
 !     Matrix splits since E(LL) = 0
 !
-   IF( LL == M-1 ) THEN
+         IF( LL == M-1 ) THEN
 !
 !        Convergence of bottom singular value, return to top of loop
 !
-      M = M - 1
-      GO TO 60
-   END IF
+            M = M - 1
+            GO TO 60
+         ELSE
+            GO TO 90
+         END IF
+      ENDIF
+      SMAX = MAX( SMAX, ABSS, ABSE )
+   ENDDO
+   LL = 0
 90 CONTINUE
    LL = LL + 1
 !
@@ -462,7 +433,7 @@
       CALL SLASV2( D( M-1 ), E( M-1 ), D( M ), SIGMN, SIGMX, SINR, &
                    COSR, SINL, COSL )
       D( M-1 ) = SIGMX
-      E( M-1 ) = ZERO
+      E( M-1 ) = 0.0E+0
       D( M ) = SIGMN
 !
 !        Compute singular vectors, if desired
@@ -504,12 +475,12 @@
 !        First apply standard test to bottom of matrix
 !
       IF( ABS( E( M-1 ) ) <= ABS( TOL )*ABS( D( M ) ) .OR. &
-          ( TOL < ZERO .AND. ABS( E( M-1 ) ) <= THRESH ) ) THEN
-         E( M-1 ) = ZERO
+          ( TOL < 0.0E+0 .AND. ABS( E( M-1 ) ) <= THRESH ) ) THEN
+         E( M-1 ) = 0.0E+0
          GO TO 60
       END IF
 !
-      IF( TOL >= ZERO ) THEN
+      IF( TOL >= 0.0E+0 ) THEN
 !
 !           If relative accuracy desired,
 !           apply convergence criterion forward
@@ -518,12 +489,12 @@
          SMIN = MU
          DO LLL = LL, M - 1
             IF( ABS( E( LLL ) ) <= TOL*MU ) THEN
-               E( LLL ) = ZERO
+               E( LLL ) = 0.0E+0
                GO TO 60
             END IF
             MU = ABS( D( LLL+1 ) )*( MU / ( MU+ABS( E( LLL ) ) ) )
             SMIN = MIN( SMIN, MU )
-            ENDDO
+         ENDDO
       END IF
 !
    ELSE
@@ -532,12 +503,12 @@
 !        First apply standard test to top of matrix
 !
       IF( ABS( E( LL ) ) <= ABS( TOL )*ABS( D( LL ) ) .OR. &
-          ( TOL < ZERO .AND. ABS( E( LL ) ) <= THRESH ) ) THEN
-         E( LL ) = ZERO
+          ( TOL < 0.0E+0 .AND. ABS( E( LL ) ) <= THRESH ) ) THEN
+         E( LL ) = 0.0E+0
          GO TO 60
       END IF
 !
-      IF( TOL >= ZERO ) THEN
+      IF( TOL >= 0.0E+0 ) THEN
 !
 !           If relative accuracy desired,
 !           apply convergence criterion backward
@@ -546,12 +517,12 @@
          SMIN = MU
          DO LLL = M - 1, LL, -1
             IF( ABS( E( LLL ) ) <= TOL*MU ) THEN
-               E( LLL ) = ZERO
+               E( LLL ) = 0.0E+0
                GO TO 60
             END IF
             MU = ABS( D( LLL ) )*( MU / ( MU+ABS( E( LLL ) ) ) )
             SMIN = MIN( SMIN, MU )
-            ENDDO
+         ENDDO
       END IF
    END IF
    OLDLL = LL
@@ -560,12 +531,12 @@
 !     Compute shift.  First, test if shifting would ruin relative
 !     accuracy, and if so set the shift to zero.
 !
-   IF( TOL >= ZERO .AND. N*TOL*( SMIN / SMAX ) <= &
-       MAX( EPS, HNDRTH*TOL ) ) THEN
+   IF( TOL >= 0.0E+0 .AND. N*TOL*( SMIN / SMAX ) <= &
+       MAX( EPS, 0.01E+0*TOL ) ) THEN
 !
 !        Use a zero shift to avoid loss of relative accuracy
 !
-      SHIFT = ZERO
+      SHIFT = 0.0E+0
    ELSE
 !
 !        Compute the shift from 2-by-2 block at end of matrix
@@ -580,9 +551,8 @@
 !
 !        Test if shift negligible, and if so set to zero
 !
-      IF( SLL > ZERO ) THEN
-         IF( ( SHIFT / SLL )**2 < EPS ) &
-            SHIFT = ZERO
+      IF( SLL > 0.0E+0 ) THEN
+         IF( ( SHIFT / SLL )**2 < EPS ) SHIFT = 0.0E+0
       END IF
    END IF
 !
@@ -592,24 +562,23 @@
 !
 !     If SHIFT = 0, do simplified QR iteration
 !
-   IF( SHIFT == ZERO ) THEN
+   IF( SHIFT == 0.0E+0 ) THEN
       IF( IDIR == 1 ) THEN
 !
 !           Chase bulge from top to bottom
 !           Save cosines and sines for later singular vector updates
 !
-         CS = ONE
-         OLDCS = ONE
+         CS = 1.0E+0
+         OLDCS = 1.0E+0
          DO I = LL, M - 1
             CALL SLARTG( D( I )*CS, E( I ), CS, SN, R )
-            IF( I > LL ) &
-               E( I-1 ) = OLDSN*R
+            IF( I > LL ) E( I-1 ) = OLDSN*R
             CALL SLARTG( OLDCS*R, D( I+1 )*SN, OLDCS, OLDSN, D( I ) )
             RWORK( I-LL+1 ) = CS
             RWORK( I-LL+1+NM1 ) = SN
             RWORK( I-LL+1+NM12 ) = OLDCS
             RWORK( I-LL+1+NM13 ) = OLDSN
-            ENDDO
+         ENDDO
          H = D( M )*CS
          D( M ) = H*OLDCS
          E( M-1 ) = H*OLDSN
@@ -628,26 +597,24 @@
 !
 !           Test convergence
 !
-         IF( ABS( E( M-1 ) ) <= THRESH ) &
-            E( M-1 ) = ZERO
+         IF( ABS( E( M-1 ) ) <= THRESH ) E( M-1 ) = 0.0E+0
 !
       ELSE
 !
 !           Chase bulge from bottom to top
 !           Save cosines and sines for later singular vector updates
 !
-         CS = ONE
-         OLDCS = ONE
+         CS = 1.0E+0
+         OLDCS = 1.0E+0
          DO I = M, LL + 1, -1
             CALL SLARTG( D( I )*CS, E( I-1 ), CS, SN, R )
-            IF( I < M ) &
-               E( I ) = OLDSN*R
+            IF( I < M ) E( I ) = OLDSN*R
             CALL SLARTG( OLDCS*R, D( I-1 )*SN, OLDCS, OLDSN, D( I ) )
             RWORK( I-LL ) = CS
             RWORK( I-LL+NM1 ) = -SN
             RWORK( I-LL+NM12 ) = OLDCS
             RWORK( I-LL+NM13 ) = -OLDSN
-            ENDDO
+         ENDDO
          H = D( LL )*CS
          D( LL ) = H*OLDCS
          E( LL ) = H*OLDSN
@@ -666,8 +633,7 @@
 !
 !           Test convergence
 !
-         IF( ABS( E( LL ) ) <= THRESH ) &
-            E( LL ) = ZERO
+         IF( ABS( E( LL ) ) <= THRESH ) E( LL ) = 0.0E+0
       END IF
    ELSE
 !
@@ -679,12 +645,11 @@
 !           Save cosines and sines for later singular vector updates
 !
          F = ( ABS( D( LL ) )-SHIFT )* &
-             ( SIGN( ONE, D( LL ) )+SHIFT / D( LL ) )
+             ( SIGN( 1.0E+0, D( LL ) )+SHIFT / D( LL ) )
          G = E( LL )
          DO I = LL, M - 1
             CALL SLARTG( F, G, COSR, SINR, R )
-            IF( I > LL ) &
-               E( I-1 ) = R
+            IF( I > LL ) E( I-1 ) = R
             F = COSR*D( I ) + SINR*E( I )
             E( I ) = COSR*E( I ) - SINR*D( I )
             G = SINR*D( I+1 )
@@ -701,7 +666,7 @@
             RWORK( I-LL+1+NM1 ) = SINR
             RWORK( I-LL+1+NM12 ) = COSL
             RWORK( I-LL+1+NM13 ) = SINL
-            ENDDO
+         ENDDO
          E( M-1 ) = F
 !
 !           Update singular vectors
@@ -718,21 +683,19 @@
 !
 !           Test convergence
 !
-         IF( ABS( E( M-1 ) ) <= THRESH ) &
-            E( M-1 ) = ZERO
+         IF( ABS( E( M-1 ) ) <= THRESH ) E( M-1 ) = 0.0E+0
 !
       ELSE
 !
 !           Chase bulge from bottom to top
 !           Save cosines and sines for later singular vector updates
 !
-         F = ( ABS( D( M ) )-SHIFT )*( SIGN( ONE, D( M ) )+SHIFT / &
+         F = ( ABS( D( M ) )-SHIFT )*( SIGN( 1.0E+0, D( M ) )+SHIFT / &
              D( M ) )
          G = E( M-1 )
          DO I = M, LL + 1, -1
             CALL SLARTG( F, G, COSR, SINR, R )
-            IF( I < M ) &
-               E( I ) = R
+            IF( I < M ) E( I ) = R
             F = COSR*D( I ) + SINR*E( I-1 )
             E( I-1 ) = COSR*E( I-1 ) - SINR*D( I )
             G = SINR*D( I-1 )
@@ -749,13 +712,12 @@
             RWORK( I-LL+NM1 ) = -SINR
             RWORK( I-LL+NM12 ) = COSL
             RWORK( I-LL+NM13 ) = -SINL
-            ENDDO
+         ENDDO
          E( LL ) = F
 !
 !           Test convergence
 !
-         IF( ABS( E( LL ) ) <= THRESH ) &
-            E( LL ) = ZERO
+         IF( ABS( E( LL ) ) <= THRESH ) E( LL ) = 0.0E+0
 !
 !           Update singular vectors if desired
 !
@@ -779,15 +741,14 @@
 !
   160 CONTINUE
    DO I = 1, N
-      IF( D( I ) < ZERO ) THEN
+      IF( D( I ) < 0.0E+0 ) THEN
          D( I ) = -D( I )
 !
 !           Change sign of singular vectors, if desired
 !
-         IF( NCVT > 0 ) &
-            CALL CSSCAL( NCVT, NEGONE, VT( I, 1 ), LDVT )
+         IF( NCVT > 0 ) VT( I, 1:NCVT ) = -VT( I, 1:NCVT )
       END IF
-      ENDDO
+   ENDDO
 !
 !     Sort the singular values into decreasing order (insertion sort on
 !     singular values, but only one transposition per singular vector)
@@ -803,36 +764,38 @@
             ISUB = J
             SMIN = D( J )
          END IF
-         ENDDO
+      ENDDO
       IF( ISUB /= N+1-I ) THEN
 !
 !           Swap singular values and vectors
 !
          D( ISUB ) = D( N+1-I )
          D( N+1-I ) = SMIN
-         IF( NCVT > 0 ) &
-            CALL CSWAP( NCVT, VT( ISUB, 1 ), LDVT, VT( N+1-I, 1 ), &
-                        LDVT )
-         IF( NRU > 0 ) &
-            CALL CSWAP( NRU, U( 1, ISUB ), 1, U( 1, N+1-I ), 1 )
-         IF( NCC > 0 ) &
-            CALL CSWAP( NCC, C( ISUB, 1 ), LDC, C( N+1-I, 1 ), LDC )
+         IF( NCVT > 0 ) THEN
+            VTT_TMP(1:NCVT) = VT(ISUB,1:NCVT)
+            VT(ISUB,1:NCVT) = VT(N+1-I,1:NCVT)
+            VT(N+1-I,1:NCVT) = VTT_TMP(1:NCVT)
+         ENDIF
+         IF( NRU > 0 ) THEN
+            U_TMP(1:NRU) = U(1:NRU,ISUB)
+            U(1:NRU,ISUB) = U(1:NRU,N+1-I)
+            U(1:NRU,N+1-I) = U_TMP(1:NRU)
+         ENDIF
+         IF( NCC > 0 ) THEN
+            C_TMP(1:NCC) = C(ISUB,1:NCC)
+            C(ISUB,1:NCC) = C(N+1-I,1:NCC)
+            C(N+1-I,1:NCC) = C_TMP(1:NCC)
+         ENDIF
       END IF
-      ENDDO
-   GO TO 220
+   ENDDO
+   RETURN
 !
 !     Maximum number of iterations exceeded, failure to converge
 !
-  200 CONTINUE
-   INFO = 0
-   DO I = 1, N - 1
-      IF( E( I ) /= ZERO ) &
-         INFO = INFO + 1
-      ENDDO
-  220 CONTINUE
    RETURN
 !
 !     End of CBDSQR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

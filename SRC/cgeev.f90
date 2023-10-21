@@ -168,6 +168,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !
 !  @generated from zgeev.f, fortran z -> c, Tue Apr 19 01:47:44 2016
@@ -194,10 +195,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SCALEA, WANTVL, WANTVR
@@ -220,9 +217,6 @@
    INTEGER            ISAMAX, ILAENV
    REAL   SLAMCH, SCNRM2, CLANGE
    EXTERNAL           LSAME, ISAMAX, ILAENV, SLAMCH, SCNRM2, CLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, CMPLX, CONJG, AIMAG, MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -307,30 +301,28 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = CLANGE( 'M', N, N, A, LDA, DUM )
    SCALEA = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = SMLNUM
    ELSE IF( ANRM > BIGNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = BIGNUM
    END IF
-   IF( SCALEA ) &
-      CALL CLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+   IF( SCALEA ) CALL CLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
 !
 !     Balance the matrix
 !     (CWorkspace: none)
@@ -377,7 +369,7 @@
 !           Copy Schur vectors to VR
 !
          SIDE = 'B'
-         CALL CLACPY( 'F', N, N, VL, LDVL, VR, LDVR )
+         VR(1:N,1:N) = VL(1:N,1:N)
       END IF
 !
    ELSE IF( WANTVR ) THEN
@@ -416,8 +408,7 @@
 !
 !     If INFO  /=  0 from CHSEQR, then quit
 !
-   IF( INFO /= 0 ) &
-      GO TO 50
+   IF( INFO /= 0 ) GO TO 50
 !
    IF( WANTVL .OR. WANTVR ) THEN
 !
@@ -443,16 +434,12 @@
 !        Normalize left eigenvectors and make largest component real
 !
       DO I = 1, N
-         SCL = ONE / SCNRM2( N, VL( 1, I ), 1 )
-         CALL CSSCAL( N, SCL, VL( 1, I ), 1 )
-         DO K = 1, N
-            RWORK( IRWORK+K-1 ) = REAL( VL( K, I ) )**2 + &
-                                  AIMAG( VL( K, I ) )**2
-         ENDDO
+         VL(1:N,I) = VL(1:N,I) / SCNRM2( N, VL( 1, I ), 1 )
+         RWORK(IRWORK:IRWORK-1+N ) = REAL( VL( 1:N, I ) )**2 + AIMAG( VL( 1:N, I ) )**2
          K = ISAMAX( N, RWORK( IRWORK ), 1 )
          TMP = CONJG( VL( K, I ) ) / SQRT( RWORK( IRWORK+K-1 ) )
-         CALL CSCAL( N, TMP, VL( 1, I ), 1 )
-         VL( K, I ) = CMPLX( REAL( VL( K, I ) ), ZERO )
+         VL(1:N,I) = TMP*VL(1:N,I)
+         VL( K, I ) = CMPLX( REAL( VL( K, I ) ), 0.0E+0 )
       ENDDO
    END IF
 !
@@ -468,16 +455,12 @@
 !        Normalize right eigenvectors and make largest component real
 !
       DO I = 1, N
-         SCL = ONE / SCNRM2( N, VR( 1, I ), 1 )
-         CALL CSSCAL( N, SCL, VR( 1, I ), 1 )
-         DO K = 1, N
-            RWORK( IRWORK+K-1 ) = REAL( VR( K, I ) )**2 + &
-                                  AIMAG( VR( K, I ) )**2
-         ENDDO
+         VR(1:N,I) = VR(1:N,I) / SCNRM2( N, VR( 1, I ), 1 )
+         RWORK(IRWORK:IRWORK-1+N) = REAL( VR( 1:N, I ) )**2 + AIMAG( VR( 1:N, I ) )**2
          K = ISAMAX( N, RWORK( IRWORK ), 1 )
          TMP = CONJG( VR( K, I ) ) / SQRT( RWORK( IRWORK+K-1 ) )
-         CALL CSCAL( N, TMP, VR( 1, I ), 1 )
-         VR( K, I ) = CMPLX( REAL( VR( K, I ) ), ZERO )
+         VR(1:N,I) = TMP*VR(1:N,I)
+         VR( K, I ) = CMPLX( REAL( VR( K, I ) ), 0.0E+0 )
       ENDDO
    END IF
 !
@@ -498,4 +481,4 @@
 !     End of CGEEV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -184,6 +184,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbbrd
 !
@@ -206,13 +207,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            WANTB, WANTC, WANTPT, WANTQ
@@ -224,9 +218,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLARGV, CLARTG, CLARTV, CLASET, CROT, CSCAL, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -272,9 +263,9 @@
 !     Initialize Q and P**H to the unit matrix, if needed
 !
    IF( WANTQ ) &
-      CALL CLASET( 'Full', M, M, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'Full', M, M, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
    IF( WANTPT ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, PT, LDPT )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), PT, LDPT )
 !
 !     Quick return if possible.
 !
@@ -531,18 +522,16 @@
    DO I = 1, MINMN
       ABST = ABS( T )
       D( I ) = ABST
-      IF( ABST /= ZERO ) THEN
+      IF( ABST /= 0.0E+0 ) THEN
          T = T / ABST
       ELSE
-         T = CONE
+         T = (1.0E+0,0.0E+0)
       END IF
-      IF( WANTQ ) &
-         CALL CSCAL( M, T, Q( 1, I ), 1 )
-      IF( WANTC ) &
-         CALL CSCAL( NCC, CONJG( T ), C( I, 1 ), LDC )
+      IF( WANTQ ) Q(1:M,I) = T*Q(1:M,I)
+      IF( WANTC ) C(I,1:NCC) = CONJG(T)*C(I,1:NCC)
       IF( I < MINMN ) THEN
          IF( KU == 0 .AND. KL == 0 ) THEN
-            E( I ) = ZERO
+            E( I ) = 0.0E+0
             T = AB( 1, I+1 )
          ELSE
             IF( KU == 0 ) THEN
@@ -552,13 +541,12 @@
             END IF
             ABST = ABS( T )
             E( I ) = ABST
-            IF( ABST /= ZERO ) THEN
+            IF( ABST /= 0.0E+0 ) THEN
                T = T / ABST
             ELSE
-               T = CONE
+               T = (1.0E+0,0.0E+0)
             END IF
-            IF( WANTPT ) &
-               CALL CSCAL( N, T, PT( I+1, 1 ), LDPT )
+            IF( WANTPT ) PT(I+1,1:N) = T*PT(I+1,1:N)
             T = AB( KU+1, I+1 )*CONJG( T )
          END IF
       END IF
@@ -568,4 +556,5 @@
 !     End of CGBBRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

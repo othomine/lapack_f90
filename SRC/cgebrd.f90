@@ -147,6 +147,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gebrd
 !
@@ -218,10 +219,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -230,9 +227,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEBD2, CGEMM, CLABRD, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
@@ -317,12 +311,12 @@
 !        an update of the form  A := A - V*Y**H - X*U**H
 !
       CALL CGEMM( 'No transpose', 'Conjugate transpose', M-I-NB+1, &
-                  N-I-NB+1, NB, -ONE, A( I+NB, I ), LDA, &
-                  WORK( LDWRKX*NB+NB+1 ), LDWRKY, ONE, &
+                  N-I-NB+1, NB, -(1.0E+0,0.0E+0), A( I+NB, I ), LDA, &
+                  WORK( LDWRKX*NB+NB+1 ), LDWRKY, (1.0E+0,0.0E+0), &
                   A( I+NB, I+NB ), LDA )
       CALL CGEMM( 'No transpose', 'No transpose', M-I-NB+1, N-I-NB+1, &
-                  NB, -ONE, WORK( NB+1 ), LDWRKX, A( I, I+NB ), LDA, &
-                  ONE, A( I+NB, I+NB ), LDA )
+                  NB, -(1.0E+0,0.0E+0), WORK( NB+1 ), LDWRKX, A( I, I+NB ), LDA, &
+                  (1.0E+0,0.0E+0), A( I+NB, I+NB ), LDA )
 !
 !        Copy diagonal and off-diagonal elements of B back into A
 !
@@ -349,4 +343,4 @@
 !     End of CGEBRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

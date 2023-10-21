@@ -284,11 +284,6 @@
 !
 !  =====================================================================
 !
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE, ZERO, TWENTY, HALF, TWO
-   PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0, TWENTY = 2.0D+1, &
-                      HALF = 0.5D+0, TWO = 2.0D+0 )
-!     ..
 !     .. Local Scalars ..
    INTEGER            I, J, K
    DOUBLE PRECISION   IMEPS, REEPS
@@ -296,61 +291,40 @@
       INTEGER(8)         nb_periods_sec, S1_time, S2_time
 #endif
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MOD, SIN
-!     ..
 !     .. External Subroutines ..
    EXTERNAL           DGEMM
 !     ..
 !     .. Executable Statements ..
 !
    IF( PRTYPE == 1 ) THEN
-      DO I = 1, M
-         DO J = 1, M
-            IF( I == J ) THEN
-               A( I, J ) = ONE
-               D( I, J ) = ONE
-            ELSE IF( I == J-1 ) THEN
-               A( I, J ) = -ONE
-               D( I, J ) = ZERO
-            ELSE
-               A( I, J ) = ZERO
-               D( I, J ) = ZERO
-            END IF
-         ENDDO
-      ENDDO
+      A(1:M,1:M) = 0.0D+0
+      D(1:M,1:M) = 0.0D+0
+      FORALL (I=1:M) A( I, I ) = 1.0D+0
+      FORALL (I=1:M) D( I, I ) = 1.0D+0
+      FORALL (I=2:M) A( I-1, I ) = -1.0D+0
 !
-      DO I = 1, N
-         DO J = 1, N
-            IF( I == J ) THEN
-               B( I, J ) = ONE - ALPHA
-               E( I, J ) = ONE
-            ELSE IF( I == J-1 ) THEN
-               B( I, J ) = ONE
-               E( I, J ) = ZERO
-            ELSE
-               B( I, J ) = ZERO
-               E( I, J ) = ZERO
-            END IF
-         ENDDO
-      ENDDO
+      B(1:N,1:N) = 0.0D+0
+      E(1:N,1:N) = 0.0D+0
+      FORALL (I=1:N) B( I, I ) = 1.0D+0 - ALPHA
+      FORALL (I=1:N) E( I, I ) = 1.0D+0
+      FORALL (I=2:N) B( I-1, I ) = 1.0D+0
 !
       DO I = 1, M
          DO J = 1, N
-            R( I, J ) = ( HALF-SIN( DBLE( I / J ) ) )*TWENTY
-            L( I, J ) = R( I, J )
+            R( I, J ) = ( 0.5D+0-SIN( DBLE( I / J ) ) )*20.0D+0
          ENDDO
       ENDDO
+      L(1:M,1:N) = R(1:M,1:N)
 !
    ELSE IF( PRTYPE == 2 .OR. PRTYPE == 3 ) THEN
       DO I = 1, M
          DO J = 1, M
             IF( I <= J ) THEN
-               A( I, J ) = ( HALF-SIN( DBLE( I ) ) )*TWO
-               D( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*TWO
+               A( I, J ) = ( 0.5D+0-SIN( DBLE( I ) ) )*2.0D+0
+               D( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*2.0D+0
             ELSE
-               A( I, J ) = ZERO
-               D( I, J ) = ZERO
+               A( I, J ) = 0.0D+0
+               D( I, J ) = 0.0D+0
             END IF
          ENDDO
       ENDDO
@@ -358,79 +332,75 @@
       DO I = 1, N
          DO J = 1, N
             IF( I <= J ) THEN
-               B( I, J ) = ( HALF-SIN( DBLE( I+J ) ) )*TWO
-               E( I, J ) = ( HALF-SIN( DBLE( J ) ) )*TWO
+               B( I, J ) = ( 0.5D+0-SIN( DBLE( I+J ) ) )*2.0D+0
+               E( I, J ) = ( 0.5D+0-SIN( DBLE( J ) ) )*2.0D+0
             ELSE
-               B( I, J ) = ZERO
-               E( I, J ) = ZERO
+               B( I, J ) = 0.0D+0
+               E( I, J ) = 0.0D+0
             END IF
          ENDDO
-         ENDDO
+      ENDDO
 !
       DO I = 1, M
          DO J = 1, N
-            R( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*TWENTY
-            L( I, J ) = ( HALF-SIN( DBLE( I+J ) ) )*TWENTY
-            ENDDO
+            R( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*20.0D+0
+            L( I, J ) = ( 0.5D+0-SIN( DBLE( I+J ) ) )*20.0D+0
          ENDDO
+      ENDDO
 !
       IF( PRTYPE == 3 ) THEN
-         IF( QBLCKA <= 1 ) &
-            QBLCKA = 2
+         IF( QBLCKA <= 1 ) QBLCKA = 2
          DO K = 1, M - 1, QBLCKA
             A( K+1, K+1 ) = A( K, K )
             A( K+1, K ) = -SIN( A( K, K+1 ) )
-            ENDDO
+         ENDDO
 !
-         IF( QBLCKB <= 1 ) &
-            QBLCKB = 2
+         IF( QBLCKB <= 1 ) QBLCKB = 2
          DO K = 1, N - 1, QBLCKB
             B( K+1, K+1 ) = B( K, K )
             B( K+1, K ) = -SIN( B( K, K+1 ) )
-            ENDDO
+         ENDDO
       END IF
 !
    ELSE IF( PRTYPE == 4 ) THEN
       DO I = 1, M
          DO J = 1, M
-            A( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*TWENTY
-            D( I, J ) = ( HALF-SIN( DBLE( I+J ) ) )*TWO
-            ENDDO
+            A( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*20.0D+0
+            D( I, J ) = ( 0.5D+0-SIN( DBLE( I+J ) ) )*2.0D+0
          ENDDO
+      ENDDO
 !
       DO I = 1, N
          DO J = 1, N
-            B( I, J ) = ( HALF-SIN( DBLE( I+J ) ) )*TWENTY
-            E( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*TWO
-            ENDDO
+            B( I, J ) = ( 0.5D+0-SIN( DBLE( I+J ) ) )*20.0D+0
+            E( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*2.0D+0
          ENDDO
+      ENDDO
 !
       DO I = 1, M
          DO J = 1, N
-            R( I, J ) = ( HALF-SIN( DBLE( J / I ) ) )*TWENTY
-            L( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*TWO
-            ENDDO
+            R( I, J ) = ( 0.5D+0-SIN( DBLE( J / I ) ) )*20.0D+0
+            L( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*2.0D+0
          ENDDO
+      ENDDO
 !
    ELSE IF( PRTYPE >= 5 ) THEN
-      REEPS = HALF*TWO*TWENTY / ALPHA
-      IMEPS = ( HALF-TWO ) / ALPHA
+      REEPS = 0.5D+0*2.0D+0*20.0D+0 / ALPHA
+      IMEPS = ( 0.5D+0-2.0D+0 ) / ALPHA
       DO I = 1, M
          DO J = 1, N
-            R( I, J ) = ( HALF-SIN( DBLE( I*J ) ) )*ALPHA / TWENTY
-            L( I, J ) = ( HALF-SIN( DBLE( I+J ) ) )*ALPHA / TWENTY
-            ENDDO
+            R( I, J ) = ( 0.5D+0-SIN( DBLE( I*J ) ) )*ALPHA / 20.0D+0
+            L( I, J ) = ( 0.5D+0-SIN( DBLE( I+J ) ) )*ALPHA / 20.0D+0
          ENDDO
+      ENDDO
 !
-      DO I = 1, M
-         D( I, I ) = ONE
-         ENDDO
+      FORALL (I = 1:M) D( I, I ) = 1.0D+0
 !
       DO I = 1, M
          IF( I <= 4 ) THEN
-            A( I, I ) = ONE
+            A( I, I ) = 1.0D+0
             IF( I > 2 ) &
-               A( I, I ) = ONE + REEPS
+               A( I, I ) = 1.0D+0 + REEPS
             IF( MOD( I, 2 ) /= 0 .AND. I < M ) THEN
                A( I, I+1 ) = IMEPS
             ELSE IF( I > 1 ) THEN
@@ -443,12 +413,12 @@
                A( I, I ) = -REEPS
             END IF
             IF( MOD( I, 2 ) /= 0 .AND. I < M ) THEN
-               A( I, I+1 ) = ONE
+               A( I, I+1 ) = 1.0D+0
             ELSE IF( I > 1 ) THEN
-               A( I, I-1 ) = -ONE
+               A( I, I-1 ) = -1.0D+0
             END IF
          ELSE
-            A( I, I ) = ONE
+            A( I, I ) = 1.0D+0
             IF( MOD( I, 2 ) /= 0 .AND. I < M ) THEN
                A( I, I+1 ) = IMEPS*2
             ELSE IF( I > 1 ) THEN
@@ -458,11 +428,11 @@
          ENDDO
 !
       DO I = 1, N
-         E( I, I ) = ONE
+         E( I, I ) = 1.0D+0
          IF( I <= 4 ) THEN
-            B( I, I ) = -ONE
+            B( I, I ) = -1.0D+0
             IF( I > 2 ) &
-               B( I, I ) = ONE - REEPS
+               B( I, I ) = 1.0D+0 - REEPS
             IF( MOD( I, 2 ) /= 0 .AND. I < N ) THEN
                B( I, I+1 ) = IMEPS
             ELSE IF( I > 1 ) THEN
@@ -475,19 +445,19 @@
                B( I, I ) = -REEPS
             END IF
             IF( MOD( I, 2 ) /= 0 .AND. I < N ) THEN
-               B( I, I+1 ) = ONE + IMEPS
+               B( I, I+1 ) = 1.0D+0 + IMEPS
             ELSE IF( I > 1 ) THEN
-               B( I, I-1 ) = -ONE - IMEPS
+               B( I, I-1 ) = -1.0D+0 - IMEPS
             END IF
          ELSE
-            B( I, I ) = ONE - REEPS
+            B( I, I ) = 1.0D+0 - REEPS
             IF( MOD( I, 2 ) /= 0 .AND. I < N ) THEN
                B( I, I+1 ) = IMEPS*2
             ELSE IF( I > 1 ) THEN
                B( I, I-1 ) = -IMEPS*2
             END IF
          END IF
-         ENDDO
+      ENDDO
    END IF
 !
 !     Compute rhs (C, F)
@@ -495,7 +465,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL DGEMM( 'N', 'N', M, N, M, ONE, A, LDA, R, LDR, ZERO, C, LDC )
+   CALL DGEMM( 'N', 'N', M, N, M, 1.0D+0, A, LDA, R, LDR, 0.0D+0, C, LDC )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -506,7 +476,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL DGEMM( 'N', 'N', M, N, N, -ONE, L, LDL, B, LDB, ONE, C, LDC )
+   CALL DGEMM( 'N', 'N', M, N, N, -1.0D+0, L, LDL, B, LDB, 1.0D+0, C, LDC )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -517,7 +487,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL DGEMM( 'N', 'N', M, N, M, ONE, D, LDD, R, LDR, ZERO, F, LDF )
+   CALL DGEMM( 'N', 'N', M, N, M, 1.0D+0, D, LDD, R, LDR, 0.0D+0, F, LDF )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -528,7 +498,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL DGEMM( 'N', 'N', M, N, N, -ONE, L, LDL, E, LDE, ONE, F, LDF )
+   CALL DGEMM( 'N', 'N', M, N, N, -1.0D+0, L, LDL, E, LDE, 1.0D+0, F, LDF )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -540,6 +510,4 @@
 !     End of DLATM5
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

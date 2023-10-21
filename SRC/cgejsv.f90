@@ -23,7 +23,7 @@
 !                         CWORK, LWORK, RWORK, LRWORK, IWORK, INFO )
 !
 !     .. Scalar Arguments ..
-!     IMPLICIT    NONE
+!     IMPLICIT    N1.0E+0
 !     INTEGER     INFO, LDA, LDU, LDV, LWORK, M, N
 !     ..
 !     .. Array Arguments ..
@@ -209,7 +209,7 @@
 !> \verbatim
 !>          SVA is REAL array, dimension (N)
 !>          On exit,
-!>          - For RWORK(1)/RWORK(2) = ONE: The singular values of A. During
+!>          - For RWORK(1)/RWORK(2) = 1.0E+0: The singular values of A. During
 !>            the computation SVA contains Euclidean column norms of the
 !>            iterated matrices in the array A.
 !>          - For RWORK(1)  /=  RWORK(2): The singular values of A are
@@ -483,6 +483,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gejsv
 !
@@ -582,15 +583,9 @@
 !     ..
 !
 !  ===========================================================================
-!
-!     .. Local Parameters ..
-   REAL        ZERO,         ONE
-   PARAMETER ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX     CZERO,                    CONE
-   PARAMETER ( CZERO = ( 0.0E0, 0.0E0 ), CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
-   COMPLEX CTEMP
+   COMPLEX CTEMP, U_TMP(N,N)
    REAL    AAPP,   AAQQ,   AATMAX, AATMIN, BIG,    BIG1,   COND_OK, &
            CONDR1, CONDR2, ENTRA,  ENTRAT, EPSLN,  MAXPRJ, SCALEM, &
            SCONDA, SFMIN,  SMALL,  TEMP1,  USCAL1, USCAL2, XSC
@@ -609,9 +604,6 @@
 !     .. Local Arrays
    COMPLEX CDUMMY(1)
    REAL    RDUMMY(1)
-!
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS, CMPLX, CONJG, ALOG, MAX, MIN, REAL, NINT, SQRT
 !     ..
 !     .. External Functions ..
    REAL      SLAMCH, SCNRM2
@@ -976,7 +968,7 @@
    SFMIN = SLAMCH('SafeMinimum')
    SMALL = SFMIN / EPSLN
    BIG   = SLAMCH('O')
-!     BIG   = ONE / SFMIN
+!     BIG   = 1.0E+0 / SFMIN
 !
 !     Initialize SVA(1:N) = diag( ||A e_i||_2 )_1^N
 !
@@ -984,12 +976,12 @@
 !     overflow. It is possible that this scaling pushes the smallest
 !     column norm left from the underflow threshold (extreme case).
 !
-   SCALEM  = ONE / SQRT(REAL(M)*REAL(N))
+   SCALEM  = 1.0E+0 / SQRT(REAL(M)*REAL(N))
    NOSCAL  = .TRUE.
    GOSCAL  = .TRUE.
    DO p = 1, N
-      AAPP = ZERO
-      AAQQ = ONE
+      AAPP = 0.0E+0
+      AAQQ = 1.0E+0
       CALL CLASSQ( M, A(1,p), 1, AAPP, AAQQ )
       IF ( AAPP  >  BIG ) THEN
          INFO = - 9
@@ -1009,30 +1001,30 @@
       END IF
       ENDDO
 !
-   IF ( NOSCAL ) SCALEM = ONE
+   IF ( NOSCAL ) SCALEM = 1.0E+0
 !
-   AAPP = ZERO
+   AAPP = 0.0E+0
    AAQQ = BIG
    DO p = 1, N
       AAPP = MAX( AAPP, SVA(p) )
-      IF ( SVA(p)  /=  ZERO ) AAQQ = MIN( AAQQ, SVA(p) )
-      ENDDO
+      IF ( SVA(p)  /=  0.0E+0 ) AAQQ = MIN( AAQQ, SVA(p) )
+   ENDDO
 !
 !     Quick return for zero M x N matrix
 ! #:)
-   IF ( AAPP  ==  ZERO ) THEN
-      IF ( LSVEC ) CALL CLASET( 'G', M, N1, CZERO, CONE, U, LDU )
-      IF ( RSVEC ) CALL CLASET( 'G', N, N,  CZERO, CONE, V, LDV )
-      RWORK(1) = ONE
-      RWORK(2) = ONE
-      IF ( ERREST ) RWORK(3) = ONE
+   IF ( AAPP  ==  0.0E+0 ) THEN
+      IF ( LSVEC ) CALL CLASET( 'G', M, N1, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU )
+      IF ( RSVEC ) CALL CLASET( 'G', N, N,  (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), V, LDV )
+      RWORK(1) = 1.0E+0
+      RWORK(2) = 1.0E+0
+      IF ( ERREST ) RWORK(3) = 1.0E+0
       IF ( LSVEC .AND. RSVEC ) THEN
-         RWORK(4) = ONE
-         RWORK(5) = ONE
+         RWORK(4) = 1.0E+0
+         RWORK(5) = 1.0E+0
       END IF
       IF ( L2TRAN ) THEN
-         RWORK(6) = ZERO
-         RWORK(7) = ZERO
+         RWORK(6) = 0.0E+0
+         RWORK(7) = 0.0E+0
       END IF
       IWORK(1) = 0
       IWORK(2) = 0
@@ -1063,19 +1055,19 @@
          IF ( N1  /=  N  ) THEN
            CALL CGEQRF( M, N, U,LDU, CWORK, CWORK(N+1),LWORK-N,IERR )
            CALL CUNGQR( M,N1,1, U,LDU,CWORK,CWORK(N+1),LWORK-N,IERR )
-           CALL CCOPY( M, A(1,1), 1, U(1,1), 1 )
+           A(1:M,1) = U(1:M,1)
          END IF
       END IF
       IF ( RSVEC ) THEN
-          V(1,1) = CONE
+          V(1,1) = (1.0E+0,0.0E+0)
       END IF
       IF ( SVA(1)  <  (BIG*SCALEM) ) THEN
          SVA(1)  = SVA(1) / SCALEM
-         SCALEM  = ONE
+         SCALEM  = 1.0E+0
       END IF
-      RWORK(1) = ONE / SCALEM
-      RWORK(2) = ONE
-      IF ( SVA(1)  /=  ZERO ) THEN
+      RWORK(1) = 1.0E+0 / SCALEM
+      RWORK(2) = 1.0E+0
+      IF ( SVA(1)  /=  0.0E+0 ) THEN
          IWORK(1) = 1
          IF ( ( SVA(1) / SCALEM)  >=  SFMIN ) THEN
             IWORK(2) = 1
@@ -1088,14 +1080,14 @@
       END IF
       IWORK(3) = 0
       IWORK(4) = -1
-      IF ( ERREST ) RWORK(3) = ONE
+      IF ( ERREST ) RWORK(3) = 1.0E+0
       IF ( LSVEC .AND. RSVEC ) THEN
-         RWORK(4) = ONE
-         RWORK(5) = ONE
+         RWORK(4) = 1.0E+0
+         RWORK(5) = 1.0E+0
       END IF
       IF ( L2TRAN ) THEN
-         RWORK(6) = ZERO
-         RWORK(7) = ZERO
+         RWORK(6) = 0.0E+0
+         RWORK(7) = 0.0E+0
       END IF
       RETURN
 !
@@ -1103,7 +1095,7 @@
 !
    TRANSP = .FALSE.
 !
-   AATMAX = -ONE
+   AATMAX = -1.0E+0
    AATMIN =  BIG
    IF ( ROWPIV .OR. L2TRAN ) THEN
 !
@@ -1114,15 +1106,15 @@
 !
       IF ( L2TRAN ) THEN
          DO p = 1, M
-            XSC   = ZERO
-            TEMP1 = ONE
+            XSC   = 0.0E+0
+            TEMP1 = 1.0E+0
             CALL CLASSQ( N, A(p,1), LDA, XSC, TEMP1 )
 !              CLASSQ gets both the ell_2 and the ell_infinity norm
 !              in one pass through the vector
             RWORK(M+p)  = XSC * SCALEM
             RWORK(p)    = XSC * (SCALEM*SQRT(TEMP1))
             AATMAX = MAX( AATMAX, RWORK(p) )
-            IF (RWORK(p)  /=  ZERO) &
+            IF (RWORK(p)  /=  0.0E+0) &
                AATMIN = MIN(AATMIN,RWORK(p))
             ENDDO
       ELSE
@@ -1142,20 +1134,20 @@
 !     the right choice in most cases when the difference actually matters.
 !     It may fail and pick the slower converging side.
 !
-   ENTRA  = ZERO
-   ENTRAT = ZERO
+   ENTRA  = 0.0E+0
+   ENTRAT = 0.0E+0
    IF ( L2TRAN ) THEN
 !
-      XSC   = ZERO
-      TEMP1 = ONE
+      XSC   = 0.0E+0
+      TEMP1 = 1.0E+0
       CALL SLASSQ( N, SVA, 1, XSC, TEMP1 )
-      TEMP1 = ONE / TEMP1
+      TEMP1 = 1.0E+0 / TEMP1
 !
-      ENTRA = ZERO
+      ENTRA = 0.0E+0
       DO p = 1, N
          BIG1  = ( ( SVA(p) / XSC )**2 ) * TEMP1
-         IF ( BIG1  /=  ZERO ) ENTRA = ENTRA + BIG1 * ALOG(BIG1)
-         ENDDO
+         IF ( BIG1  /=  0.0E+0 ) ENTRA = ENTRA + BIG1 * ALOG(BIG1)
+      ENDDO
       ENTRA = - ENTRA / ALOG(REAL(N))
 !
 !        Now, SVA().^2/Trace(A^* * A) is a point in the probability simplex.
@@ -1164,11 +1156,11 @@
 !        probability distribution. Note that A * A^* and A^* * A have the
 !        same trace.
 !
-      ENTRAT = ZERO
+      ENTRAT = 0.0E+0
       DO p = 1, M
          BIG1 = ( ( RWORK(p) / XSC )**2 ) * TEMP1
-         IF ( BIG1  /=  ZERO ) ENTRAT = ENTRAT + BIG1 * ALOG(BIG1)
-         ENDDO
+         IF ( BIG1  /=  0.0E+0 ) ENTRAT = ENTRAT + BIG1 * ALOG(BIG1)
+      ENDDO
       ENTRAT = - ENTRAT / ALOG(REAL(M))
 !
 !        Analyze the entropies and decide A or A^*. Smaller entropy
@@ -1187,15 +1179,15 @@
                 CTEMP = CONJG(A(q,p))
                A(q,p) = CONJG(A(p,q))
                A(p,q) = CTEMP
-               ENDDO
             ENDDO
+         ENDDO
          A(N,N) = CONJG(A(N,N))
          DO p = 1, N
             RWORK(M+p) = SVA(p)
             SVA(p) = RWORK(p)
 !              previously computed row 2-norms are now column 2-norms
 !              of the transposed matrix
-            ENDDO
+         ENDDO
          TEMP1  = AAPP
          AAPP   = AATMAX
          AATMAX = TEMP1
@@ -1268,10 +1260,10 @@
    IF ( AAQQ  <  XSC ) THEN
       DO p = 1, N
          IF ( SVA(p)  <  XSC ) THEN
-            CALL CLASET( 'A', M, 1, CZERO, CZERO, A(1,p), LDA )
-            SVA(p) = ZERO
+            CALL CLASET( 'A', M, 1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A(1,p), LDA )
+            SVA(p) = 0.0E+0
          END IF
-         ENDDO
+      ENDDO
    END IF
 !
 !     Preconditioning using QR factorization with pivoting
@@ -1295,7 +1287,7 @@
             RWORK(M+p) = RWORK(M+q)
             RWORK(M+q) = TEMP1
          END IF
-         ENDDO
+      ENDDO
       CALL CLASWP( N, A, LDA, 1, M-1, IWORK(IWOFF+1), 1 )
    END IF
 !
@@ -1314,10 +1306,8 @@
 !     Any improvement of CGEQP3 improves overall performance of CGEJSV.
 !
 !     A * P1 = Q1 * [ R1^* 0]^*:
-   DO p = 1, N
 !        .. all columns are free columns
-      IWORK(p) = 0
-      ENDDO
+   IWORK(1:N) = 0
    CALL CGEQP3( M, N, A, LDA, IWORK, CWORK, CWORK(N+1), LWORK-N, &
                 RWORK, IERR )
 !
@@ -1340,10 +1330,9 @@
          IF ( ABS(A(p,p))  >=  (TEMP1*ABS(A(1,1))) ) THEN
             NR = NR + 1
          ELSE
-            GO TO 3002
+            EXIT
          END IF
-         ENDDO
- 3002    CONTINUE
+      ENDDO
    ELSE IF ( L2RANK ) THEN
 !        .. similarly as above, only slightly more gentle (less aggressive).
 !        Sudden drop on the diagonal of R1 is used as the criterion for
@@ -1352,10 +1341,9 @@
       DO p = 2, N
          IF ( ( ABS(A(p,p))  <  (EPSLN*ABS(A(p-1,p-1))) ) .OR. &
               ( ABS(A(p,p))  <  SMALL ) .OR. &
-              ( L2KILL .AND. (ABS(A(p,p))  <  TEMP1) ) ) GO TO 3402
+              ( L2KILL .AND. (ABS(A(p,p))  <  TEMP1) ) ) EXIT
          NR = NR + 1
-         ENDDO
- 3402    CONTINUE
+      ENDDO
 !
    ELSE
 !        The goal is high relative accuracy. However, if the matrix
@@ -1368,27 +1356,26 @@
       TEMP1  = SQRT(SFMIN)
       DO p = 2, N
          IF ( ( ABS(A(p,p))  <  SMALL ) .OR. &
-              ( L2KILL .AND. (ABS(A(p,p))  <  TEMP1) ) ) GO TO 3302
+              ( L2KILL .AND. (ABS(A(p,p))  <  TEMP1) ) ) EXIT
          NR = NR + 1
-         ENDDO
- 3302    CONTINUE
+      ENDDO
 !
    END IF
 !
    ALMORT = .FALSE.
    IF ( NR  ==  N ) THEN
-      MAXPRJ = ONE
+      MAXPRJ = 1.0E+0
       DO p = 2, N
          TEMP1  = ABS(A(p,p)) / SVA(IWORK(p))
          MAXPRJ = MIN( MAXPRJ, TEMP1 )
-         ENDDO
-      IF ( MAXPRJ**2  >=  ONE - REAL(N)*EPSLN ) ALMORT = .TRUE.
+      ENDDO
+      IF ( MAXPRJ**2  >=  1.0E+0 - REAL(N)*EPSLN ) ALMORT = .TRUE.
    END IF
 !
 !
-   SCONDA = - ONE
-   CONDR1 = - ONE
-   CONDR2 = - ONE
+   SCONDA = - 1.0E+0
+   CONDR1 = - 1.0E+0
+   CONDR2 = - 1.0E+0
 !
    IF ( ERREST ) THEN
       IF ( N  ==  NR ) THEN
@@ -1396,14 +1383,13 @@
 !              .. V is available as workspace
             CALL CLACPY( 'U', N, N, A, LDA, V, LDV )
             DO p = 1, N
-               TEMP1 = SVA(IWORK(p))
-               CALL CSSCAL( p, ONE/TEMP1, V(1,p), 1 )
-               ENDDO
+               V(1:p,p) = V(1:p,p)/SVA(IWORK(p))
+            ENDDO
             IF ( LSVEC )THEN
-                CALL CPOCON( 'U', N, V, LDV, ONE, TEMP1, &
+                CALL CPOCON( 'U', N, V, LDV, 1.0E+0, TEMP1, &
                      CWORK(N+1), RWORK, IERR )
             ELSE
-                CALL CPOCON( 'U', N, V, LDV, ONE, TEMP1, &
+                CALL CPOCON( 'U', N, V, LDV, 1.0E+0, TEMP1, &
                      CWORK, RWORK, IERR )
             END IF
 !
@@ -1411,10 +1397,9 @@
 !              .. U is available as workspace
             CALL CLACPY( 'U', N, N, A, LDA, U, LDU )
             DO p = 1, N
-               TEMP1 = SVA(IWORK(p))
-               CALL CSSCAL( p, ONE/TEMP1, U(1,p), 1 )
-               ENDDO
-            CALL CPOCON( 'U', N, U, LDU, ONE, TEMP1, &
+               U(1:p,p) = U(1:p,p)/SVA(IWORK(p))
+            ENDDO
+            CALL CPOCON( 'U', N, U, LDU, 1.0E+0, TEMP1, &
                  CWORK(N+1), RWORK, IERR )
          ELSE
             CALL CLACPY( 'U', N, N, A, LDA, CWORK, N )
@@ -1422,26 +1407,26 @@
 !              Change: here index shifted by N to the left, CWORK(1:N)
 !              not needed for SIGMA only computation
             DO p = 1, N
-               TEMP1 = SVA(IWORK(p))
-![]               CALL CSSCAL( p, ONE/TEMP1, CWORK(N+(p-1)*N+1), 1 )
-               CALL CSSCAL( p, ONE/TEMP1, CWORK((p-1)*N+1), 1 )
-               ENDDO
+!                TEMP1 = SVA(IWORK(p))
+![]               CALL CSSCAL( p, 1.0E+0/TEMP1, CWORK(N+(p-1)*N+1), 1 )
+               CWORK((p-1)*N+1:(p-1)*N+p) = CWORK((p-1)*N+1:(p-1)*N+p)/SVA(IWORK(p))
+!                CALL CSSCAL( p, 1.0E+0/TEMP1, CWORK((p-1)*N+1), 1 )
+            ENDDO
 !           .. the columns of R are scaled to have unit Euclidean lengths.
-![]               CALL CPOCON( 'U', N, CWORK(N+1), N, ONE, TEMP1,
+![]               CALL CPOCON( 'U', N, CWORK(N+1), N, 1.0E+0, TEMP1,
 ![]     $              CWORK(N+N*N+1), RWORK, IERR )
-            CALL CPOCON( 'U', N, CWORK, N, ONE, TEMP1, &
-                 CWORK(N*N+1), RWORK, IERR )
+            CALL CPOCON( 'U', N, CWORK, N, 1.0E+0, TEMP1, CWORK(N*N+1), RWORK, IERR )
 !
          END IF
-         IF ( TEMP1  /=  ZERO ) THEN
-            SCONDA = ONE / SQRT(TEMP1)
+         IF ( TEMP1  /=  0.0E+0 ) THEN
+            SCONDA = 1.0E+0 / SQRT(TEMP1)
          ELSE
-            SCONDA = - ONE
+            SCONDA = - 1.0E+0
          END IF
 !           SCONDA is an estimate of SQRT(||(R^* * R)^(-1)||_1).
 !           N^(-1/4) * SCONDA <= ||R^(-1)||_2 <= N^(1/4) * SCONDA
       ELSE
-         SCONDA = - ONE
+         SCONDA = - 1.0E+0
       END IF
    END IF
 !
@@ -1458,20 +1443,20 @@
       DO p = 1, MIN( N-1, NR )
          CALL CCOPY( N-p, A(p,p+1), LDA, A(p+1,p), 1 )
          CALL CLACGV( N-p+1, A(p,p), 1 )
-         ENDDO
+      ENDDO
       IF ( NR  ==  N ) A(N,N) = CONJG(A(N,N))
 !
 !        The following two DO-loops introduce small relative perturbation
 !        into the strict upper triangle of the lower triangular matrix.
 !        Small entries below the main diagonal are also changed.
 !        This modification is useful if the computing environment does not
-!        provide/allow FLUSH TO ZERO underflow, for it prevents many
+!        provide/allow FLUSH TO 0.0E+0 underflow, for it prevents many
 !        annoying denormalized numbers in case of strongly scaled matrices.
 !        The perturbation is structured so that it does not introduce any
 !        new perturbation of the singular values, and it does not destroy
 !        the job done by the preconditioner.
 !        The licence for this perturbation is in the variable L2PERT, which
-!        should be .FALSE. if FLUSH TO ZERO underflow is active.
+!        should be .FALSE. if FLUSH TO 0.0E+0 underflow is active.
 !
       IF ( .NOT. ALMORT ) THEN
 !
@@ -1479,16 +1464,15 @@
 !              XSC = SQRT(SMALL)
             XSC = EPSLN / REAL(N)
             DO q = 1, NR
-               CTEMP = CMPLX(XSC*ABS(A(q,q)),ZERO)
+               CTEMP = CMPLX(XSC*ABS(A(q,q)),0.0E+0)
                DO p = 1, N
                   IF ( ( (p > q) .AND. (ABS(A(p,q)) <= TEMP1) ) &
-                       .OR. ( p  <  q ) ) &
-                        A(p,q) = CTEMP
+                       .OR. ( p  <  q ) ) A(p,q) = CTEMP
 !     $                     A(p,q) = TEMP1 * ( A(p,q) / ABS(A(p,q)) ) &
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
-            CALL CLASET( 'U', NR-1,NR-1, CZERO,CZERO, A(1,2),LDA )
+            CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), A(1,2),LDA )
          END IF
 !
 !            .. second preconditioning using the QR factorization
@@ -1499,7 +1483,7 @@
          DO p = 1, NR - 1
             CALL CCOPY( NR-p, A(p,p+1), LDA, A(p+1,p), 1 )
             CALL CLACGV( NR-p+1, A(p,p), 1 )
-            ENDDO
+         ENDDO
 !
       END IF
 !
@@ -1511,16 +1495,15 @@
 !              XSC = SQRT(SMALL)
             XSC = EPSLN / REAL(N)
             DO q = 1, NR
-               CTEMP = CMPLX(XSC*ABS(A(q,q)),ZERO)
+               CTEMP = CMPLX(XSC*ABS(A(q,q)),0.0E+0)
                DO p = 1, NR
                   IF ( ( (p > q) .AND. (ABS(A(p,q)) <= TEMP1) ) &
-                          .OR. ( p  <  q ) ) &
-                      A(p,q) = CTEMP
+                          .OR. ( p  <  q ) ) A(p,q) = CTEMP
 !     $                   A(p,q) = TEMP1 * ( A(p,q) / ABS(A(p,q)) ) &
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
-            CALL CLASET( 'U', NR-1, NR-1, CZERO, CZERO, A(1,2), LDA )
+            CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A(1,2), LDA )
          END IF
 !
 !           .. and one-sided Jacobi rotations are started on a lower
@@ -1546,8 +1529,8 @@
          DO p = 1, NR
             CALL CCOPY( N-p+1, A(p,p), LDA, V(p,p), 1 )
             CALL CLACGV( N-p+1, V(p,p), 1 )
-            ENDDO
-         CALL CLASET( 'U', NR-1,NR-1, CZERO, CZERO, V(1,2), LDV )
+         ENDDO
+         CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV )
 !
          CALL CGESVJ( 'L','U','N', N, NR, V, LDV, SVA, NR, A, LDA, &
                      CWORK, LWORK, RWORK, LRWORK, INFO )
@@ -1559,26 +1542,26 @@
 !        .. two more QR factorizations ( one QRF is not enough, two require
 !        accumulated product of Jacobi rotations, three are perfect )
 !
-         CALL CLASET( 'L', NR-1,NR-1, CZERO, CZERO, A(2,1), LDA )
+         CALL CLASET( 'L', NR-1,NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A(2,1), LDA )
          CALL CGELQF( NR,N, A, LDA, CWORK, CWORK(N+1), LWORK-N, IERR)
          CALL CLACPY( 'L', NR, NR, A, LDA, V, LDV )
-         CALL CLASET( 'U', NR-1,NR-1, CZERO, CZERO, V(1,2), LDV )
+         CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV )
          CALL CGEQRF( NR, NR, V, LDV, CWORK(N+1), CWORK(2*N+1), &
                       LWORK-2*N, IERR )
          DO p = 1, NR
             CALL CCOPY( NR-p+1, V(p,p), LDV, V(p,p), 1 )
             CALL CLACGV( NR-p+1, V(p,p), 1 )
-            ENDDO
-         CALL CLASET('U', NR-1, NR-1, CZERO, CZERO, V(1,2), LDV)
+         ENDDO
+         CALL CLASET('U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV)
 !
          CALL CGESVJ( 'L', 'U','N', NR, NR, V,LDV, SVA, NR, U, &
                      LDU, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
          SCALEM  = RWORK(1)
          NUMRANK = NINT(RWORK(2))
          IF ( NR  <  N ) THEN
-            CALL CLASET( 'A',N-NR, NR, CZERO,CZERO, V(NR+1,1),  LDV )
-            CALL CLASET( 'A',NR, N-NR, CZERO,CZERO, V(1,NR+1),  LDV )
-            CALL CLASET( 'A',N-NR,N-NR,CZERO,CONE, V(NR+1,NR+1),LDV )
+            CALL CLASET( 'A',N-NR, NR, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(NR+1,1),  LDV )
+            CALL CLASET( 'A',NR, N-NR, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,NR+1),  LDV )
+            CALL CLASET( 'A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), V(NR+1,NR+1),LDV )
          END IF
 !
       CALL CUNMLQ( 'L', 'C', N, N, NR, A, LDA, CWORK, &
@@ -1592,13 +1575,11 @@
 !         CALL CLACPY( 'All', N, N, A, LDA, V, LDV )
       CALL CLAPMR( .FALSE., N, N, V, LDV, IWORK )
 !
-       IF ( TRANSP ) THEN
-         CALL CLACPY( 'A', N, N, V, LDV, U, LDU )
-       END IF
+      IF ( TRANSP ) U(1:N,1:N) = V(1:N,1:N)
 !
    ELSE IF ( JRACC .AND. (.NOT. LSVEC) .AND. ( NR ==  N ) ) THEN
 !
-      CALL CLASET( 'L', N-1,N-1, CZERO, CZERO, A(2,1), LDA )
+      CALL CLASET( 'L', N-1,N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A(2,1), LDA )
 !
       CALL CGESVJ( 'U','N','V', N, N, A, LDA, SVA, N, V, LDV, &
                   CWORK, LWORK, RWORK, LRWORK, INFO )
@@ -1615,8 +1596,8 @@
       DO p = 1, NR
          CALL CCOPY( N-p+1, A(p,p), LDA, U(p,p), 1 )
          CALL CLACGV( N-p+1, U(p,p), 1 )
-         ENDDO
-      CALL CLASET( 'U', NR-1, NR-1, CZERO, CZERO, U(1,2), LDU )
+      ENDDO
+      CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,2), LDU )
 !
       CALL CGEQRF( N, NR, U, LDU, CWORK(N+1), CWORK(2*N+1), &
                  LWORK-2*N, IERR )
@@ -1624,8 +1605,8 @@
       DO p = 1, NR - 1
          CALL CCOPY( NR-p, U(p,p+1), LDU, U(p+1,p), 1 )
          CALL CLACGV( N-p+1, U(p,p), 1 )
-         ENDDO
-      CALL CLASET( 'U', NR-1, NR-1, CZERO, CZERO, U(1,2), LDU )
+      ENDDO
+      CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,2), LDU )
 !
       CALL CGESVJ( 'L', 'U', 'N', NR,NR, U, LDU, SVA, NR, A, &
            LDA, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
@@ -1633,10 +1614,10 @@
       NUMRANK = NINT(RWORK(2))
 !
       IF ( NR  <  M ) THEN
-         CALL CLASET( 'A',  M-NR, NR,CZERO, CZERO, U(NR+1,1), LDU )
+         CALL CLASET( 'A',  M-NR, NR,(0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU )
          IF ( NR  <  N1 ) THEN
-            CALL CLASET( 'A',NR, N1-NR, CZERO, CZERO, U(1,NR+1),LDU )
-            CALL CLASET( 'A',M-NR,N1-NR,CZERO,CONE,U(NR+1,NR+1),LDU )
+            CALL CLASET( 'A',NR, N1-NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,NR+1),LDU )
+            CALL CLASET( 'A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),U(NR+1,NR+1),LDU )
          END IF
       END IF
 !
@@ -1647,13 +1628,10 @@
           CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
 !
       DO p = 1, N1
-         XSC = ONE / SCNRM2( M, U(1,p), 1 )
-         CALL CSSCAL( M, XSC, U(1,p), 1 )
-         ENDDO
+         U(1:M,p) = U(1:M,p) / SCNRM2( M, U(1,p), 1 )
+      ENDDO
 !
-      IF ( TRANSP ) THEN
-         CALL CLACPY( 'A', N, N, U, LDU, V, LDV )
-      END IF
+      IF ( TRANSP ) CALL CLACPY( 'A', N, N, U, LDU, V, LDV )
 !
    ELSE
 !
@@ -1690,17 +1668,16 @@
          IF ( L2PERT ) THEN
             XSC = SQRT(SMALL)
             DO q = 1, NR
-               CTEMP = CMPLX(XSC*ABS( V(q,q) ),ZERO)
+               CTEMP = CMPLX(XSC*ABS( V(q,q) ),0.0E+0)
                DO p = 1, N
                   IF ( ( p  >  q ) .AND. ( ABS(V(p,q))  <=  TEMP1 ) &
-                      .OR. ( p  <  q ) ) &
-                      V(p,q) = CTEMP
+                      .OR. ( p  <  q ) ) V(p,q) = CTEMP
 !     $                   V(p,q) = TEMP1 * ( V(p,q) / ABS(V(p,q)) ) &
                   IF ( p  <  q ) V(p,q) = - V(p,q)
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
-            CALL CLASET( 'U', NR-1, NR-1, CZERO, CZERO, V(1,2), LDV )
+            CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV )
          END IF
 !
 !           Estimate the row scaled condition number of R1
@@ -1710,11 +1687,11 @@
          CALL CLACPY( 'L', NR, NR, V, LDV, CWORK(2*N+1), NR )
          DO p = 1, NR
             TEMP1 = SCNRM2(NR-p+1,CWORK(2*N+(p-1)*NR+p),1)
-            CALL CSSCAL(NR-p+1,ONE/TEMP1,CWORK(2*N+(p-1)*NR+p),1)
-            ENDDO
-         CALL CPOCON('L',NR,CWORK(2*N+1),NR,ONE,TEMP1, &
+            CALL CSSCAL(NR-p+1,1.0E+0/TEMP1,CWORK(2*N+(p-1)*NR+p),1)
+         ENDDO
+         CALL CPOCON('L',NR,CWORK(2*N+1),NR,1.0E+0,TEMP1, &
                       CWORK(2*N+NR*NR+1),RWORK,IERR)
-         CONDR1 = ONE / SQRT(TEMP1)
+         CONDR1 = 1.0E+0 / SQRT(TEMP1)
 !           .. here need a second opinion on the condition number
 !           .. then assume worst case scenario
 !           R1 is OK for inverse <=> CONDR1  <  REAL(N)
@@ -1736,23 +1713,21 @@
                DO p = 2, NR
                   DO q = 1, p - 1
                      CTEMP=CMPLX(XSC*MIN(ABS(V(p,p)),ABS(V(q,q))), &
-                                 ZERO)
-                     IF ( ABS(V(q,p))  <=  TEMP1 ) &
-                        V(q,p) = CTEMP
+                                 0.0E+0)
+                     IF ( ABS(V(q,p))  <=  TEMP1 ) V(q,p) = CTEMP
 !     $                     V(q,p) = TEMP1 * ( V(q,p) / ABS(V(q,p)) ) &
-                     ENDDO
                   ENDDO
+               ENDDO
             END IF
 !
-            IF ( NR  /=  N ) &
-            CALL CLACPY( 'A', N, NR, V, LDV, CWORK(2*N+1), N )
+            IF ( NR  /=  N ) CALL CLACPY( 'A', N, NR, V, LDV, CWORK(2*N+1), N )
 !              .. save ...
 !
 !           .. this transposed copy should be better than naive
             DO p = 1, NR - 1
                CALL CCOPY( NR-p, V(p,p+1), LDV, V(p+1,p), 1 )
                CALL CLACGV(NR-p+1, V(p,p), 1 )
-               ENDDO
+            ENDDO
             V(NR,NR)=CONJG(V(NR,NR))
 !
             CONDR2 = CONDR1
@@ -1767,9 +1742,7 @@
 !              with properly (carefully) chosen parameters.
 !
 !              R1^* * P2 = Q2 * R2
-            DO p = 1, NR
-               IWORK(N+p) = 0
-               ENDDO
+            IWORK(N+1:N+NR) = 0
             CALL CGEQP3( N, NR, V, LDV, IWORK(N+1), CWORK(N+1), &
                      CWORK(2*N+1), LWORK-2*N, RWORK, IERR )
 !*               CALL CGEQRF( N, NR, V, LDV, CWORK(N+1), CWORK(2*N+1),
@@ -1778,10 +1751,8 @@
                XSC = SQRT(SMALL)
                DO p = 2, NR
                   DO q = 1, p - 1
-                     CTEMP=CMPLX(XSC*MIN(ABS(V(p,p)),ABS(V(q,q))), &
-                                   ZERO)
-                     IF ( ABS(V(q,p))  <=  TEMP1 ) &
-                        V(q,p) = CTEMP
+                     CTEMP=CMPLX(XSC*MIN(ABS(V(p,p)),ABS(V(q,q))), 0.0E+0)
+                     IF ( ABS(V(q,p))  <=  TEMP1 ) V(q,p) = CTEMP
 !     $                     V(q,p) = TEMP1 * ( V(q,p) / ABS(V(q,p)) ) &
                      ENDDO
                   ENDDO
@@ -1793,14 +1764,13 @@
                XSC = SQRT(SMALL)
                DO p = 2, NR
                   DO q = 1, p - 1
-                     CTEMP=CMPLX(XSC*MIN(ABS(V(p,p)),ABS(V(q,q))), &
-                                  ZERO)
+                     CTEMP=CMPLX(XSC*MIN(ABS(V(p,p)),ABS(V(q,q))), 0.0E+0)
 !                        V(p,q) = - TEMP1*( V(q,p) / ABS(V(q,p)) )
                      V(p,q) = - CTEMP
-                     ENDDO
                   ENDDO
+               ENDDO
             ELSE
-               CALL CLASET( 'L',NR-1,NR-1,CZERO,CZERO,V(2,1),LDV )
+               CALL CLASET( 'L',NR-1,NR-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(2,1),LDV )
             END IF
 !              Now, compute R2 = L3 * Q3, the LQ factorization.
             CALL CGELQF( NR, NR, V, LDV, CWORK(2*N+N*NR+1), &
@@ -1809,11 +1779,11 @@
             CALL CLACPY( 'L',NR,NR,V,LDV,CWORK(2*N+N*NR+NR+1),NR )
             DO p = 1, NR
                TEMP1 = SCNRM2( p, CWORK(2*N+N*NR+NR+p), NR )
-               CALL CSSCAL( p, ONE/TEMP1, CWORK(2*N+N*NR+NR+p), NR )
-               ENDDO
-            CALL CPOCON( 'L',NR,CWORK(2*N+N*NR+NR+1),NR,ONE,TEMP1, &
+               CALL CSSCAL( p, 1.0E+0/TEMP1, CWORK(2*N+N*NR+NR+p), NR )
+            ENDDO
+            CALL CPOCON( 'L',NR,CWORK(2*N+N*NR+NR+1),NR,1.0E+0,TEMP1, &
                  CWORK(2*N+N*NR+NR+NR*NR+1),RWORK,IERR )
-            CONDR2 = ONE / SQRT(TEMP1)
+            CONDR2 = 1.0E+0 / SQRT(TEMP1)
 !
 !
             IF ( CONDR2  >=  COND_OK ) THEN
@@ -1832,13 +1802,11 @@
             XSC = SQRT(SMALL)
             DO q = 2, NR
                CTEMP = XSC * V(q,q)
-               DO p = 1, q - 1
 !                     V(p,q) = - TEMP1*( V(p,q) / ABS(V(p,q)) )
-                  V(p,q) = - CTEMP
-                  ENDDO
-               ENDDO
+               V(1:q-1,q) = - CTEMP
+            ENDDO
          ELSE
-            CALL CLASET( 'U', NR-1,NR-1, CZERO,CZERO, V(1,2), LDV )
+            CALL CLASET( 'U', NR-1,NR-1, (0.0E+0,0.0E+0),(0.0E+0,0.0E+0), V(1,2), LDV )
          END IF
 !
 !        Second preconditioning finished; continue with Jacobi SVD
@@ -1855,9 +1823,9 @@
             SCALEM  = RWORK(1)
             NUMRANK = NINT(RWORK(2))
             DO p = 1, NR
-               CALL CCOPY(  NR, V(1,p), 1, U(1,p), 1 )
-               CALL CSSCAL( NR, SVA(p),    V(1,p), 1 )
-               ENDDO
+               U(1:NR,p) = V(1:NR,p)
+               V(1:NR,p) = SVA(p)*V(1:NR,p)
+            ENDDO
 
 !        .. pick the right matrix equation and solve it
 !
@@ -1866,18 +1834,18 @@
 !                 equation is Q2*V2 = the product of the Jacobi rotations
 !                 used in CGESVJ, premultiplied with the orthogonal matrix
 !                 from the second QR factorization.
-               CALL CTRSM('L','U','N','N', NR,NR,CONE, A,LDA, V,LDV)
+               CALL CTRSM('L','U','N','N', NR,NR,(1.0E+0,0.0E+0), A,LDA, V,LDV)
             ELSE
 !                 .. R1 is well conditioned, but non-square. Adjoint of R2
 !                 is inverted to get the product of the Jacobi rotations
 !                 used in CGESVJ. The Q-factor from the second QR
 !                 factorization is then built in explicitly.
-               CALL CTRSM('L','U','C','N',NR,NR,CONE,CWORK(2*N+1), &
+               CALL CTRSM('L','U','C','N',NR,NR,(1.0E+0,0.0E+0),CWORK(2*N+1), &
                     N,V,LDV)
                IF ( NR  <  N ) THEN
-               CALL CLASET('A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV)
-               CALL CLASET('A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV)
-               CALL CLASET('A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV)
+               CALL CLASET('A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV)
+               CALL CLASET('A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV)
+               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
                END IF
                CALL CUNMQR('L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
                    V,LDV,CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,IERR)
@@ -1895,24 +1863,24 @@
             SCALEM  = RWORK(1)
             NUMRANK = NINT(RWORK(2))
             DO p = 1, NR
-               CALL CCOPY( NR, V(1,p), 1, U(1,p), 1 )
-               CALL CSSCAL( NR, SVA(p),    U(1,p), 1 )
-               ENDDO
-            CALL CTRSM('L','U','N','N',NR,NR,CONE,CWORK(2*N+1),N, &
+               U(1:NR,p) = V(1:NR,p)
+               U(1:NR,p) = SVA(p)*U(1:NR,p)
+            ENDDO
+            CALL CTRSM('L','U','N','N',NR,NR,(1.0E+0,0.0E+0),CWORK(2*N+1),N, &
                        U,LDU)
 !              .. apply the permutation from the second QR factorization
             DO q = 1, NR
                DO p = 1, NR
                   CWORK(2*N+N*NR+NR+IWORK(N+p)) = U(p,q)
-                  ENDDO
+               ENDDO
                DO p = 1, NR
                   U(p,q) = CWORK(2*N+N*NR+NR+p)
-                  ENDDO
                ENDDO
+            ENDDO
             IF ( NR  <  N ) THEN
-               CALL CLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV )
-               CALL CLASET( 'A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV )
-               CALL CLASET('A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV)
+               CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
+               CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
             END IF
             CALL CUNMQR( 'L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
                  V,LDV,CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,IERR )
@@ -1922,7 +1890,7 @@
 !              improvement after two pivoted QR factorizations. Other
 !              possibility is that the rank revealing QR factorization
 !              or the condition estimator has failed, or the COND_OK
-!              is set very close to ONE (which is unnecessary). Normally,
+!              is set very close to 1.0E+0 (which is unnecessary). Normally,
 !              this branch should never be executed, but in rare cases of
 !              failure of the RRQR or condition estimator, the last line of
 !              defense ensures that CGEJSV completes the task.
@@ -1934,9 +1902,9 @@
             SCALEM  = RWORK(1)
             NUMRANK = NINT(RWORK(2))
             IF ( NR  <  N ) THEN
-               CALL CLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV )
-               CALL CLASET( 'A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV )
-               CALL CLASET('A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV)
+               CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
+               CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+               CALL CLASET('A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV)
             END IF
             CALL CUNMQR( 'L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
                  V,LDV,CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,IERR )
@@ -1947,11 +1915,11 @@
             DO q = 1, NR
                DO p = 1, NR
                   CWORK(2*N+N*NR+NR+IWORK(N+p)) = U(p,q)
-                  ENDDO
+               ENDDO
                DO p = 1, NR
                   U(p,q) = CWORK(2*N+N*NR+NR+p)
-                  ENDDO
                ENDDO
+            ENDDO
 !
          END IF
 !
@@ -1963,21 +1931,21 @@
          DO q = 1, N
             DO p = 1, N
                CWORK(2*N+N*NR+NR+IWORK(p)) = V(p,q)
-               ENDDO
+            ENDDO
             DO p = 1, N
                V(p,q) = CWORK(2*N+N*NR+NR+p)
-               ENDDO
-            XSC = ONE / SCNRM2( N, V(1,q), 1 )
-            IF ( (XSC  <  (ONE-TEMP1)) .OR. (XSC  >  (ONE+TEMP1)) ) &
+            ENDDO
+            XSC = 1.0E+0 / SCNRM2( N, V(1,q), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) &
               CALL CSSCAL( N, XSC, V(1,q), 1 )
             ENDDO
 !           At this moment, V contains the right singular vectors of A.
 !           Next, assemble the left singular vector matrix U (M x N).
          IF ( NR  <  M ) THEN
-            CALL CLASET('A', M-NR, NR, CZERO, CZERO, U(NR+1,1), LDU)
+            CALL CLASET('A', M-NR, NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU)
             IF ( NR  <  N1 ) THEN
-               CALL CLASET('A',NR,N1-NR,CZERO,CZERO,U(1,NR+1),LDU)
-               CALL CLASET('A',M-NR,N1-NR,CZERO,CONE, &
+               CALL CLASET('A',NR,N1-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),U(1,NR+1),LDU)
+               CALL CLASET('A',M-NR,N1-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0), &
                            U(NR+1,NR+1),LDU)
             END IF
          END IF
@@ -1991,16 +1959,14 @@
 !           The columns of U are normalized. The cost is O(M*N) flops.
          TEMP1 = SQRT(REAL(M)) * EPSLN
          DO p = 1, NR
-            XSC = ONE / SCNRM2( M, U(1,p), 1 )
-            IF ( (XSC  <  (ONE-TEMP1)) .OR. (XSC  >  (ONE+TEMP1)) ) &
-             CALL CSSCAL( M, XSC, U(1,p), 1 )
-            ENDDO
+            XSC = 1.0E+0 / SCNRM2( M, U(1,p), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) U(1:M,p) = U(1:M,p)*XSC
+         ENDDO
 !
 !           If the initial QRF is computed with row pivoting, the left
 !           singular vectors must be adjusted.
 !
-         IF ( ROWPIV ) &
-             CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
+         IF ( ROWPIV ) CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
 !
       ELSE
 !
@@ -2016,10 +1982,10 @@
 !                     CWORK(N+(q-1)*N+p)=-TEMP1 * ( CWORK(N+(p-1)*N+q) /
 !     $                                        ABS(CWORK(N+(p-1)*N+q)) )
                   CWORK(N+(q-1)*N+p)=-CTEMP
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
-            CALL CLASET( 'L',N-1,N-1,CZERO,CZERO,CWORK(N+2),N )
+            CALL CLASET( 'L',N-1,N-1,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),CWORK(N+2),N )
          END IF
 !
          CALL CGESVJ( 'U', 'U', 'N', N, N, CWORK(N+1), N, SVA, &
@@ -2031,40 +1997,38 @@
          DO p = 1, N
             CALL CCOPY( N, CWORK(N+(p-1)*N+1), 1, U(1,p), 1 )
             CALL CSSCAL( N, SVA(p), CWORK(N+(p-1)*N+1), 1 )
-            ENDDO
+         ENDDO
 !
          CALL CTRSM( 'L', 'U', 'N', 'N', N, N, &
-              CONE, A, LDA, CWORK(N+1), N )
+              (1.0E+0,0.0E+0), A, LDA, CWORK(N+1), N )
          DO p = 1, N
             CALL CCOPY( N, CWORK(N+p), N, V(IWORK(p),1), LDV )
-            ENDDO
+         ENDDO
          TEMP1 = SQRT(REAL(N))*EPSLN
          DO p = 1, N
-            XSC = ONE / SCNRM2( N, V(1,p), 1 )
-            IF ( (XSC  <  (ONE-TEMP1)) .OR. (XSC  >  (ONE+TEMP1)) ) &
+            XSC = 1.0E+0 / SCNRM2( N, V(1,p), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) &
                CALL CSSCAL( N, XSC, V(1,p), 1 )
-            ENDDO
+         ENDDO
 !
 !           Assemble the left singular vector matrix U (M x N).
 !
          IF ( N  <  M ) THEN
-            CALL CLASET( 'A',  M-N, N, CZERO, CZERO, U(N+1,1), LDU )
+            CALL CLASET( 'A',  M-N, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(N+1,1), LDU )
             IF ( N  <  N1 ) THEN
-               CALL CLASET('A',N,  N1-N, CZERO, CZERO,  U(1,N+1),LDU)
-               CALL CLASET( 'A',M-N,N1-N, CZERO, CONE,U(N+1,N+1),LDU)
+               CALL CLASET('A',N,  N1-N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0),  U(1,N+1),LDU)
+               CALL CLASET( 'A',M-N,N1-N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0),U(N+1,N+1),LDU)
             END IF
          END IF
          CALL CUNMQR( 'L', 'N', M, N1, N, A, LDA, CWORK, U, &
               LDU, CWORK(N+1), LWORK-N, IERR )
          TEMP1 = SQRT(REAL(M))*EPSLN
          DO p = 1, N1
-            XSC = ONE / SCNRM2( M, U(1,p), 1 )
-            IF ( (XSC  <  (ONE-TEMP1)) .OR. (XSC  >  (ONE+TEMP1)) ) &
-               CALL CSSCAL( M, XSC, U(1,p), 1 )
-            ENDDO
+            XSC = 1.0E+0 / SCNRM2( M, U(1,p), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) U(1:M,p) = XSC * U(1:M,p)
+         ENDDO
 !
-         IF ( ROWPIV ) &
-            CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
+         IF ( ROWPIV ) CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
 !
       END IF
 !
@@ -2086,45 +2050,43 @@
       DO p = 1, NR
          CALL CCOPY( N-p+1, A(p,p), LDA, V(p,p), 1 )
          CALL CLACGV( N-p+1, V(p,p), 1 )
-         ENDDO
+      ENDDO
 !
       IF ( L2PERT ) THEN
          XSC = SQRT(SMALL/EPSLN)
          DO q = 1, NR
-            CTEMP = CMPLX(XSC*ABS( V(q,q) ),ZERO)
+            CTEMP = CMPLX(XSC*ABS( V(q,q) ),0.0E+0)
             DO p = 1, N
                IF ( ( p  >  q ) .AND. ( ABS(V(p,q))  <=  TEMP1 ) &
-                   .OR. ( p  <  q ) ) &
-                   V(p,q) = CTEMP
+                   .OR. ( p  <  q ) ) V(p,q) = CTEMP
 !     $                V(p,q) = TEMP1 * ( V(p,q) / ABS(V(p,q)) ) &
                IF ( p  <  q ) V(p,q) = - V(p,q)
-               ENDDO
             ENDDO
+         ENDDO
       ELSE
-         CALL CLASET( 'U', NR-1, NR-1, CZERO, CZERO, V(1,2), LDV )
+         CALL CLASET( 'U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), V(1,2), LDV )
       END IF
 
-      CALL CGEQRF( N, NR, V, LDV, CWORK(N+1), CWORK(2*N+1), &
-           LWORK-2*N, IERR )
+      CALL CGEQRF( N, NR, V, LDV, CWORK(N+1), CWORK(2*N+1), LWORK-2*N, IERR )
       CALL CLACPY( 'L', N, NR, V, LDV, CWORK(2*N+1), N )
 !
       DO p = 1, NR
          CALL CCOPY( NR-p+1, V(p,p), LDV, U(p,p), 1 )
          CALL CLACGV( NR-p+1, U(p,p), 1 )
-         ENDDO
+      ENDDO
 
       IF ( L2PERT ) THEN
          XSC = SQRT(SMALL/EPSLN)
          DO q = 2, NR
             DO p = 1, q - 1
                CTEMP = CMPLX(XSC * MIN(ABS(U(p,p)),ABS(U(q,q))), &
-                              ZERO)
+                              0.0E+0)
 !                  U(p,q) = - TEMP1 * ( U(q,p) / ABS(U(q,p)) )
                U(p,q) = - CTEMP
-               ENDDO
             ENDDO
+         ENDDO
       ELSE
-         CALL CLASET('U', NR-1, NR-1, CZERO, CZERO, U(1,2), LDU )
+         CALL CLASET('U', NR-1, NR-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(1,2), LDU )
       END IF
 
       CALL CGESVJ( 'L', 'U', 'V', NR, NR, U, LDU, SVA, &
@@ -2134,9 +2096,9 @@
       NUMRANK = NINT(RWORK(2))
 
       IF ( NR  <  N ) THEN
-         CALL CLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV )
-         CALL CLASET( 'A',NR,N-NR,CZERO,CZERO,V(1,NR+1),LDV )
-         CALL CLASET( 'A',N-NR,N-NR,CZERO,CONE,V(NR+1,NR+1),LDV )
+         CALL CLASET( 'A',N-NR,NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(NR+1,1),LDV )
+         CALL CLASET( 'A',NR,N-NR,(0.0E+0,0.0E+0),(0.0E+0,0.0E+0),V(1,NR+1),LDV )
+         CALL CLASET( 'A',N-NR,N-NR,(0.0E+0,0.0E+0),(1.0E+0,0.0E+0),V(NR+1,NR+1),LDV )
       END IF
 
       CALL CUNMQR( 'L','N',N,N,NR,CWORK(2*N+1),N,CWORK(N+1), &
@@ -2150,39 +2112,36 @@
          DO q = 1, N
             DO p = 1, N
                CWORK(2*N+N*NR+NR+IWORK(p)) = V(p,q)
-               ENDDO
+            ENDDO
             DO p = 1, N
                V(p,q) = CWORK(2*N+N*NR+NR+p)
-               ENDDO
-            XSC = ONE / SCNRM2( N, V(1,q), 1 )
-            IF ( (XSC  <  (ONE-TEMP1)) .OR. (XSC  >  (ONE+TEMP1)) ) &
-              CALL CSSCAL( N, XSC, V(1,q), 1 )
             ENDDO
+            XSC = 1.0E+0 / SCNRM2( N, V(1,q), 1 )
+            IF ( (XSC  <  (1.0E+0-TEMP1)) .OR. (XSC  >  (1.0E+0+TEMP1)) ) V(1:N,q) = XSC*V(1:N,q)
+         ENDDO
 !
 !           At this moment, V contains the right singular vectors of A.
 !           Next, assemble the left singular vector matrix U (M x N).
 !
       IF ( NR  <  M ) THEN
-         CALL CLASET( 'A',  M-NR, NR, CZERO, CZERO, U(NR+1,1), LDU )
+         CALL CLASET( 'A',  M-NR, NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), U(NR+1,1), LDU )
          IF ( NR  <  N1 ) THEN
-            CALL CLASET('A',NR,  N1-NR, CZERO, CZERO,  U(1,NR+1),LDU)
-            CALL CLASET('A',M-NR,N1-NR, CZERO, CONE,U(NR+1,NR+1),LDU)
+            CALL CLASET('A',NR,  N1-NR, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0),  U(1,NR+1),LDU)
+            CALL CLASET('A',M-NR,N1-NR, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0),U(NR+1,NR+1),LDU)
          END IF
       END IF
 !
-      CALL CUNMQR( 'L', 'N', M, N1, N, A, LDA, CWORK, U, &
-           LDU, CWORK(N+1), LWORK-N, IERR )
+      CALL CUNMQR( 'L', 'N', M, N1, N, A, LDA, CWORK, U, LDU, CWORK(N+1), LWORK-N, IERR )
 !
-         IF ( ROWPIV ) &
-            CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
+      IF ( ROWPIV ) CALL CLASWP( N1, U, LDU, 1, M-1, IWORK(IWOFF+1), -1 )
 !
 !
       END IF
       IF ( TRANSP ) THEN
 !           .. swap U and V because the procedure worked on A^*
-         DO p = 1, N
-            CALL CSWAP( N, U(1,p), 1, V(1,p), 1 )
-            ENDDO
+         U_TMP(1:N,1:N) = U(1:N,1:N)
+         U(1:N,1:N) = V(1:N,1:N)
+         V(1:N,1:N) = U_TMP(1:N,1:N)
       END IF
 !
    END IF
@@ -2192,14 +2151,14 @@
 !
    IF ( USCAL2  <=  (BIG/SVA(1))*USCAL1 ) THEN
       CALL SLASCL( 'G', 0, 0, USCAL1, USCAL2, NR, 1, SVA, N, IERR )
-      USCAL1 = ONE
-      USCAL2 = ONE
+      USCAL1 = 1.0E+0
+      USCAL2 = 1.0E+0
    END IF
 !
    IF ( NR  <  N ) THEN
       DO p = NR+1, N
-         SVA(p) = ZERO
-         ENDDO
+         SVA(p) = 0.0E+0
+      ENDDO
    END IF
 !
    RWORK(1) = USCAL2 * SCALEM
@@ -2229,5 +2188,4 @@
 !     .. END OF CGEJSV
 !     ..
    END
-!
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

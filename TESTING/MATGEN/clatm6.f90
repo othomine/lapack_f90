@@ -188,13 +188,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               RONE, TWO, THREE
-   PARAMETER          ( RONE = 1.0E+0, TWO = 2.0E+0, THREE = 3.0E+0 )
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J
@@ -206,9 +199,6 @@
    REAL               RWORK( 50 )
    COMPLEX            WORK( 26 ), Z( 8, 8 )
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CABS, CMPLX, CONJG, REAL, SQRT
-!     ..
 !     .. External Subroutines ..
    EXTERNAL           CGESVD, CLACPY, CLAKF2
 !     ..
@@ -217,24 +207,16 @@
 !     Generate test problem ...
 !     (Da, Db) ...
 !
-   DO I = 1, N
-      DO J = 1, N
-!
-         IF( I == J ) THEN
-            A( I, I ) = CMPLX( I ) + ALPHA
-            B( I, I ) = ONE
-         ELSE
-            A( I, J ) = ZERO
-            B( I, J ) = ZERO
-         END IF
-!
-      ENDDO
-   ENDDO
+   A(1:N,1:N) = (0.0E+0,0.0E+0)
+   B(1:N,1:N) = (0.0E+0,0.0E+0)
+   FORALL (I=1:N) A( I, I ) = CMPLX( I ) + ALPHA
+   FORALL (I=1:N) B( I, I ) = (1.0E+0,0.0E+0)
+
    IF( TYPE == 2 ) THEN
-      A( 1, 1 ) = CMPLX( RONE, RONE )
+      A( 1, 1 ) = CMPLX( 1.0E+0, 1.0E+0 )
       A( 2, 2 ) = CONJG( A( 1, 1 ) )
-      A( 3, 3 ) = ONE
-      A( 4, 4 ) = CMPLX( REAL( ONE+ALPHA ), REAL( ONE+BETA ) )
+      A( 3, 3 ) = (1.0E+0,0.0E+0)
+      A( 4, 4 ) = CMPLX( REAL( (1.0E+0,0.0E+0)+ALPHA ), REAL( (1.0E+0,0.0E+0)+BETA ) )
       A( 5, 5 ) = CONJG( A( 4, 4 ) )
    END IF
 !
@@ -293,16 +275,16 @@
 !
 !     Compute condition numbers
 !
-   S( 1 ) = RONE / SQRT( ( RONE+THREE*CABS( WY )*CABS( WY ) ) / &
-            ( RONE+CABS( A( 1, 1 ) )*CABS( A( 1, 1 ) ) ) )
-   S( 2 ) = RONE / SQRT( ( RONE+THREE*CABS( WY )*CABS( WY ) ) / &
-            ( RONE+CABS( A( 2, 2 ) )*CABS( A( 2, 2 ) ) ) )
-   S( 3 ) = RONE / SQRT( ( RONE+TWO*CABS( WX )*CABS( WX ) ) / &
-            ( RONE+CABS( A( 3, 3 ) )*CABS( A( 3, 3 ) ) ) )
-   S( 4 ) = RONE / SQRT( ( RONE+TWO*CABS( WX )*CABS( WX ) ) / &
-            ( RONE+CABS( A( 4, 4 ) )*CABS( A( 4, 4 ) ) ) )
-   S( 5 ) = RONE / SQRT( ( RONE+TWO*CABS( WX )*CABS( WX ) ) / &
-            ( RONE+CABS( A( 5, 5 ) )*CABS( A( 5, 5 ) ) ) )
+   S( 1 ) = 1.0E+0 / SQRT( ( 1.0E+0+3.0E+0*CABS( WY )*CABS( WY ) ) / &
+            ( 1.0E+0+CABS( A( 1, 1 ) )*CABS( A( 1, 1 ) ) ) )
+   S( 2 ) = 1.0E+0 / SQRT( ( 1.0E+0+3.0E+0*CABS( WY )*CABS( WY ) ) / &
+            ( 1.0E+0+CABS( A( 2, 2 ) )*CABS( A( 2, 2 ) ) ) )
+   S( 3 ) = 1.0E+0 / SQRT( ( 1.0E+0+2.0E+0*CABS( WX )*CABS( WX ) ) / &
+            ( 1.0E+0+CABS( A( 3, 3 ) )*CABS( A( 3, 3 ) ) ) )
+   S( 4 ) = 1.0E+0 / SQRT( ( 1.0E+0+2.0E+0*CABS( WX )*CABS( WX ) ) / &
+            ( 1.0E+0+CABS( A( 4, 4 ) )*CABS( A( 4, 4 ) ) ) )
+   S( 5 ) = 1.0E+0 / SQRT( ( 1.0E+0+2.0E+0*CABS( WX )*CABS( WX ) ) / &
+            ( 1.0E+0+CABS( A( 5, 5 ) )*CABS( A( 5, 5 ) ) ) )
 !
    CALL CLAKF2( 1, 4, A, LDA, A( 2, 2 ), B, B( 2, 2 ), Z, 8 )
 #ifdef _TIMER
@@ -339,6 +321,4 @@
 !     End of CLATM6
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

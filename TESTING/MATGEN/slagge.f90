@@ -125,10 +125,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -139,9 +135,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           SGEMV, SGER, SLARNV, SSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SIGN
 !     ..
 !     .. External Functions ..
    REAL               SNRM2
@@ -180,14 +173,8 @@
 !
 !     initialize A to diagonal matrix
 !
-   DO J = 1, N
-      DO I = 1, M
-         A( I, J ) = ZERO
-      ENDDO
-   ENDDO
-   DO I = 1, MIN( M, N )
-      A( I, I ) = D( I )
-   ENDDO
+   A(1:M,1:N) = 0.0E+0
+   FORALL (I = 1:MIN( M, N )) A( I, I ) = D( I )
 !
 !     Quick exit if the user wants a diagonal matrix
 !
@@ -213,14 +200,14 @@
 #endif
          WN = SNRM2( M-I+1, WORK, 1 )
          WA = SIGN( WN, WORK( 1 ) )
-         IF( WN == ZERO ) THEN
-            TAU = ZERO
+         IF( WN == 0.0E+0 ) THEN
+            TAU = 0.0E+0
          ELSE
             WB = WORK( 1 ) + WA
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SSCAL( M-I, ONE / WB, WORK( 2 ), 1 )
+            CALL SSCAL( M-I, 1.0E+0 / WB, WORK( 2 ), 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
             open(file='results.out', unit=10, position = 'append')
@@ -228,7 +215,7 @@
                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
             close(10)
 #endif
-            WORK( 1 ) = ONE
+            WORK( 1 ) = 1.0E+0
             TAU = WB / WA
          END IF
 !
@@ -237,8 +224,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'Transpose', M-I+1, N-I+1, ONE, A( I, I ), LDA, &
-                     WORK, 1, ZERO, WORK( M+1 ), 1 )
+         CALL SGEMV( 'Transpose', M-I+1, N-I+1, 1.0E+0, A( I, I ), LDA, &
+                     WORK, 1, 0.0E+0, WORK( M+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -276,14 +263,14 @@
 #endif
          WN = SNRM2( N-I+1, WORK, 1 )
          WA = SIGN( WN, WORK( 1 ) )
-         IF( WN == ZERO ) THEN
-            TAU = ZERO
+         IF( WN == 0.0E+0 ) THEN
+            TAU = 0.0E+0
          ELSE
             WB = WORK( 1 ) + WA
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SSCAL( N-I, ONE / WB, WORK( 2 ), 1 )
+            CALL SSCAL( N-I, 1.0E+0 / WB, WORK( 2 ), 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
             open(file='results.out', unit=10, position = 'append')
@@ -291,7 +278,7 @@
                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
             close(10)
 #endif
-            WORK( 1 ) = ONE
+            WORK( 1 ) = 1.0E+0
             TAU = WB / WA
          END IF
 !
@@ -300,8 +287,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'No transpose', M-I+1, N-I+1, ONE, A( I, I ), &
-                     LDA, WORK, 1, ZERO, WORK( N+1 ), 1 )
+         CALL SGEMV( 'No transpose', M-I+1, N-I+1, 1.0E+0, A( I, I ), &
+                     LDA, WORK, 1, 0.0E+0, WORK( N+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -338,14 +325,14 @@
 !
             WN = SNRM2( M-KL-I+1, A( KL+I, I ), 1 )
             WA = SIGN( WN, A( KL+I, I ) )
-            IF( WN == ZERO ) THEN
-               TAU = ZERO
+            IF( WN == 0.0E+0 ) THEN
+               TAU = 0.0E+0
             ELSE
                WB = A( KL+I, I ) + WA
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL SSCAL( M-KL-I, ONE / WB, A( KL+I+1, I ), 1 )
+               CALL SSCAL( M-KL-I, 1.0E+0 / WB, A( KL+I+1, I ), 1 )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -353,7 +340,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               A( KL+I, I ) = ONE
+               A( KL+I, I ) = 1.0E+0
                TAU = WB / WA
             END IF
 !
@@ -362,8 +349,8 @@
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SGEMV( 'Transpose', M-KL-I+1, N-I, ONE, &
-                        A( KL+I, I+1 ), LDA, A( KL+I, I ), 1, ZERO, &
+            CALL SGEMV( 'Transpose', M-KL-I+1, N-I, 1.0E+0, &
+                        A( KL+I, I+1 ), LDA, A( KL+I, I ), 1, 0.0E+0, &
                         WORK, 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -393,14 +380,14 @@
 !
             WN = SNRM2( N-KU-I+1, A( I, KU+I ), LDA )
             WA = SIGN( WN, A( I, KU+I ) )
-            IF( WN == ZERO ) THEN
-               TAU = ZERO
+            IF( WN == 0.0E+0 ) THEN
+               TAU = 0.0E+0
             ELSE
                WB = A( I, KU+I ) + WA
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL SSCAL( N-KU-I, ONE / WB, A( I, KU+I+1 ), LDA )
+               CALL SSCAL( N-KU-I, 1.0E+0 / WB, A( I, KU+I+1 ), LDA )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -408,7 +395,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               A( I, KU+I ) = ONE
+               A( I, KU+I ) = 1.0E+0
                TAU = WB / WA
             END IF
 !
@@ -417,8 +404,8 @@
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SGEMV( 'No transpose', M-I, N-KU-I+1, ONE, &
-                        A( I+1, KU+I ), LDA, A( I, KU+I ), LDA, ZERO, &
+            CALL SGEMV( 'No transpose', M-I, N-KU-I+1, 1.0E+0, &
+                        A( I+1, KU+I ), LDA, A( I, KU+I ), LDA, 0.0E+0, &
                         WORK, 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -452,14 +439,14 @@
 !
             WN = SNRM2( N-KU-I+1, A( I, KU+I ), LDA )
             WA = SIGN( WN, A( I, KU+I ) )
-            IF( WN == ZERO ) THEN
-               TAU = ZERO
+            IF( WN == 0.0E+0 ) THEN
+               TAU = 0.0E+0
             ELSE
                WB = A( I, KU+I ) + WA
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL SSCAL( N-KU-I, ONE / WB, A( I, KU+I+1 ), LDA )
+               CALL SSCAL( N-KU-I, 1.0E+0 / WB, A( I, KU+I+1 ), LDA )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -467,7 +454,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               A( I, KU+I ) = ONE
+               A( I, KU+I ) = 1.0E+0
                TAU = WB / WA
             END IF
 !
@@ -476,8 +463,8 @@
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SGEMV( 'No transpose', M-I, N-KU-I+1, ONE, &
-                        A( I+1, KU+I ), LDA, A( I, KU+I ), LDA, ZERO, &
+            CALL SGEMV( 'No transpose', M-I, N-KU-I+1, 1.0E+0, &
+                        A( I+1, KU+I ), LDA, A( I, KU+I ), LDA, 0.0E+0, &
                         WORK, 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -507,14 +494,14 @@
 !
             WN = SNRM2( M-KL-I+1, A( KL+I, I ), 1 )
             WA = SIGN( WN, A( KL+I, I ) )
-            IF( WN == ZERO ) THEN
-               TAU = ZERO
+            IF( WN == 0.0E+0 ) THEN
+               TAU = 0.0E+0
             ELSE
                WB = A( KL+I, I ) + WA
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL SSCAL( M-KL-I, ONE / WB, A( KL+I+1, I ), 1 )
+               CALL SSCAL( M-KL-I, 1.0E+0 / WB, A( KL+I+1, I ), 1 )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -522,7 +509,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               A( KL+I, I ) = ONE
+               A( KL+I, I ) = 1.0E+0
                TAU = WB / WA
             END IF
 !
@@ -531,8 +518,8 @@
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SGEMV( 'Transpose', M-KL-I+1, N-I, ONE, &
-                        A( KL+I, I+1 ), LDA, A( KL+I, I ), 1, ZERO, &
+            CALL SGEMV( 'Transpose', M-KL-I+1, N-I, 1.0E+0, &
+                        A( KL+I, I+1 ), LDA, A( KL+I, I ), 1, 0.0E+0, &
                         WORK, 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -557,23 +544,13 @@
          END IF
       END IF
 !
-      IF (I  <=  N) THEN
-         DO J = KL + I + 1, M
-            A( J, I ) = ZERO
-         ENDDO
-      END IF
+      IF (I  <=  N) A(KL+I+1:M, I ) = 0.0E+0
 !
-      IF (I  <=  M) THEN
-         DO J = KU + I + 1, N
-            A( I, J ) = ZERO
-         ENDDO
-      END IF
+      IF (I  <=  M) A( I,KU+I+1:N) = 0.0E+0
    ENDDO
    RETURN
 !
 !     End of SLAGGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

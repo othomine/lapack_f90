@@ -173,12 +173,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TOOSML
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, &
-                      TOOSML = 1.0D-20 )
-   COMPLEX*16         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ), &
-                      CONE = ( 1.0D+0, 0.0D+0 ) )
+   DOUBLE PRECISION   TOOSML
+   PARAMETER          ( TOOSML = 1.0D-20 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            IROW, ITYPE, IXFRM, J, JCOL, KBEG, NXFRM
@@ -197,14 +193,10 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, ZGEMV, ZGERC, ZLACGV, ZLASET, ZSCAL
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DCMPLX, DCONJG
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
-   IF( N == 0 .OR. M == 0 ) &
-      RETURN
+   IF( N == 0 .OR. M == 0 ) RETURN
 !
    ITYPE = 0
    IF( LSAME( SIDE, 'L' ) ) THEN
@@ -255,7 +247,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL ZLASET( 'Full', M, N, CZERO, CONE, A, LDA )
+      CALL ZLASET( 'Full', M, N, (0.0D+0,0.0D+0), (1.0D+0,0.0D+0), A, LDA )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -272,9 +264,7 @@
 !              Transformations H(2), H(3), ..., H(n).  Note that the
 !              order in which they are computed is irrelevant.
 !
-   DO J = 1, NXFRM
-      X( J ) = CZERO
-   ENDDO
+   X(1:NXFRM) = (0.0D+0,0.0D+0)
 !
    DO IXFRM = 2, NXFRM
       KBEG = NXFRM - IXFRM + 1
@@ -289,10 +279,10 @@
 !
       XNORM = DZNRM2( IXFRM, X( KBEG ), 1 )
       XABS = ABS( X( KBEG ) )
-      IF( XABS /= CZERO ) THEN
+      IF( XABS /= (0.0D+0,0.0D+0) ) THEN
          CSIGN = X( KBEG ) / XABS
       ELSE
-         CSIGN = CONE
+         CSIGN = (1.0D+0,0.0D+0)
       END IF
       XNORMS = CSIGN*XNORM
       X( NXFRM+KBEG ) = -CSIGN
@@ -312,7 +302,7 @@
 #endif
          RETURN
       ELSE
-         FACTOR = ONE / FACTOR
+         FACTOR = 1.0D+0 / FACTOR
       END IF
       X( KBEG ) = X( KBEG ) + XNORMS
 !
@@ -325,8 +315,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'C', IXFRM, N, CONE, A( KBEG, 1 ), LDA, &
-                     X( KBEG ), 1, CZERO, X( 2*NXFRM+1 ), 1 )
+         CALL ZGEMV( 'C', IXFRM, N, (1.0D+0,0.0D+0), A( KBEG, 1 ), LDA, &
+                     X( KBEG ), 1, (0.0D+0,0.0D+0), X( 2*NXFRM+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -370,8 +360,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZGEMV( 'N', M, IXFRM, CONE, A( 1, KBEG ), LDA, &
-                     X( KBEG ), 1, CZERO, X( 2*NXFRM+1 ), 1 )
+         CALL ZGEMV( 'N', M, IXFRM, (1.0D+0,0.0D+0), A( 1, KBEG ), LDA, &
+                     X( KBEG ), 1, (0.0D+0,0.0D+0), X( 2*NXFRM+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -397,10 +387,10 @@
 !
    X( 1 ) = ZLARND( 3, ISEED )
    XABS = ABS( X( 1 ) )
-   IF( XABS /= ZERO ) THEN
+   IF( XABS /= 0.0D+0 ) THEN
       CSIGN = X( 1 ) / XABS
    ELSE
-      CSIGN = CONE
+      CSIGN = (1.0D+0,0.0D+0)
    END IF
    X( 2*NXFRM ) = CSIGN
 !
@@ -459,6 +449,4 @@
 !     End of ZLAROR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

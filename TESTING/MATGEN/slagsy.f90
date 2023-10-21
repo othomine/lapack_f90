@@ -113,10 +113,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, HALF
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, HALF = 0.5E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -132,9 +128,6 @@
 !     .. External Functions ..
    REAL               SDOT, SNRM2
    EXTERNAL           SDOT, SNRM2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SIGN
 !     ..
 !     .. Executable Statements ..
 !
@@ -166,13 +159,9 @@
 !     initialize lower triangle of A to diagonal matrix
 !
    DO J = 1, N
-      DO I = J + 1, N
-         A( I, J ) = ZERO
-      ENDDO
+      A(J+1:N, J ) = 0.0E+0
    ENDDO
-   DO I = 1, N
-      A( I, I ) = D( I )
-   ENDDO
+   FORALL (I = 1:N) A( I, I ) = D( I )
 !
 !     Generate lower triangle of symmetric matrix
 !
@@ -193,14 +182,14 @@
 #endif
       WN = SNRM2( N-I+1, WORK, 1 )
       WA = SIGN( WN, WORK( 1 ) )
-      IF( WN == ZERO ) THEN
-         TAU = ZERO
+      IF( WN == 0.0E+0 ) THEN
+         TAU = 0.0E+0
       ELSE
          WB = WORK( 1 ) + WA
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SSCAL( N-I, ONE / WB, WORK( 2 ), 1 )
+         CALL SSCAL( N-I, 1.0E+0 / WB, WORK( 2 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -208,7 +197,7 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         WORK( 1 ) = ONE
+         WORK( 1 ) = 1.0E+0
          TAU = WB / WA
       END IF
 !
@@ -220,7 +209,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL SSYMV( 'Lower', N-I+1, TAU, A( I, I ), LDA, WORK, 1, ZERO, &
+      CALL SSYMV( 'Lower', N-I+1, TAU, A( I, I ), LDA, WORK, 1, 0.0E+0, &
                   WORK( N+1 ), 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -232,7 +221,7 @@
 !
 !        compute  v := y - 1/2 * tau * ( y, u ) * u
 !
-      ALPHA = -HALF*TAU*SDOT( N-I+1, WORK( N+1 ), 1, WORK, 1 )
+      ALPHA = -0.5E+0*TAU*SDOT( N-I+1, WORK( N+1 ), 1, WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
@@ -250,7 +239,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL SSYR2( 'Lower', N-I+1, -ONE, WORK, 1, WORK( N+1 ), 1, &
+      CALL SSYR2( 'Lower', N-I+1, -1.0E+0, WORK, 1, WORK( N+1 ), 1, &
                   A( I, I ), LDA )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -269,14 +258,14 @@
 !
       WN = SNRM2( N-K-I+1, A( K+I, I ), 1 )
       WA = SIGN( WN, A( K+I, I ) )
-      IF( WN == ZERO ) THEN
-         TAU = ZERO
+      IF( WN == 0.0E+0 ) THEN
+         TAU = 0.0E+0
       ELSE
          WB = A( K+I, I ) + WA
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SSCAL( N-K-I, ONE / WB, A( K+I+1, I ), 1 )
+         CALL SSCAL( N-K-I, 1.0E+0 / WB, A( K+I+1, I ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -284,7 +273,7 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         A( K+I, I ) = ONE
+         A( K+I, I ) = 1.0E+0
          TAU = WB / WA
       END IF
 !
@@ -293,8 +282,8 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL SGEMV( 'Transpose', N-K-I+1, K-1, ONE, A( K+I, I+1 ), LDA, &
-                  A( K+I, I ), 1, ZERO, WORK, 1 )
+      CALL SGEMV( 'Transpose', N-K-I+1, K-1, 1.0E+0, A( K+I, I+1 ), LDA, &
+                  A( K+I, I ), 1, 0.0E+0, WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -323,7 +312,7 @@
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
       CALL SSYMV( 'Lower', N-K-I+1, TAU, A( K+I, K+I ), LDA, &
-                  A( K+I, I ), 1, ZERO, WORK, 1 )
+                  A( K+I, I ), 1, 0.0E+0, WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -334,7 +323,7 @@
 !
 !        compute  v := y - 1/2 * tau * ( y, u ) * u
 !
-      ALPHA = -HALF*TAU*SDOT( N-K-I+1, WORK, 1, A( K+I, I ), 1 )
+      ALPHA = -0.5E+0*TAU*SDOT( N-K-I+1, WORK, 1, A( K+I, I ), 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
@@ -352,7 +341,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL SSYR2( 'Lower', N-K-I+1, -ONE, A( K+I, I ), 1, WORK, 1, &
+      CALL SSYR2( 'Lower', N-K-I+1, -1.0E+0, A( K+I, I ), 1, WORK, 1, &
                   A( K+I, K+I ), LDA )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -363,23 +352,17 @@
 #endif
 !
       A( K+I, I ) = -WA
-      DO J = K + I + 1, N
-         A( J, I ) = ZERO
-      ENDDO
+      A(K+I+1:N, I ) = 0.0E+0
    ENDDO
 !
 !     Store full symmetric matrix
 !
    DO J = 1, N
-      DO I = J + 1, N
-         A( J, I ) = A( I, J )
-      ENDDO
+      A( J,J+1:N) = A(J+1:N, J )
    ENDDO
    RETURN
 !
 !     End of SLAGSY
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

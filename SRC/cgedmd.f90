@@ -376,12 +376,6 @@
 !               flag is set with INFO=4.
 !.............................................................
 !.............................................................
-!     Parameters
-!     ~~~~~~~~~~
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
-      COMPLEX(KIND=WP), PARAMETER ::  ZONE = ( 1.0_WP, 0.0_WP )
-      COMPLEX(KIND=WP), PARAMETER :: ZZERO = ( 0.0_WP, 0.0_WP )
 
 !     Local scalars
 !     ~~~~~~~~~~~~~
@@ -411,13 +405,9 @@
 
 !     External subroutines (BLAS and LAPACK)
 !     ~~~~~~~~~~~~~~~~~~~~
-      EXTERNAL      CAXPY,  CGEMM,  CSSCAL
+      EXTERNAL      CAXPY,  CGEMM
       EXTERNAL      CGEEV,  CGEJSV, CGESDD, CGESVD, CGESVDQ, &
-                    CLACPY, CLASCL, CLASSQ, XERBLA
-
-!     Intrinsic functions
-!     ~~~~~~~~~~~~~~~~~~~
-      INTRINSIC     FLOAT, INT, MAX, SQRT
+                    CLASCL, CLASSQ, XERBLA
 !............................................................
 !
 !    Test the input arguments
@@ -458,7 +448,7 @@
       ELSE IF ( .NOT. (( NRNK == -2).OR.(NRNK == -1).OR. &
                 ((NRNK >= 1).AND.(NRNK <=N ))) )      THEN
           INFO = -12
-      ELSE IF ( ( TOL < ZERO ) .OR. ( TOL >= ONE ) )  THEN
+      ELSE IF ( ( TOL < 0.0_WP ) .OR. ( TOL >= 1.0_WP ) )  THEN
           INFO = -13
       ELSE IF ( LDZ < M ) THEN
           INFO = -17
@@ -607,19 +597,19 @@
           K = 0
           DO i = 1, N
             !WORK(i) = SCNRM2( M, X(1,i), 1 )
-            SCALE  = ZERO
+            SCALE  = 0.0_WP
             CALL CLASSQ( M, X(1,i), 1, SCALE, SSUM )
             IF ( SISNAN(SCALE) .OR. SISNAN(SSUM) ) THEN
                 K    =  0
                 INFO = -8
                 CALL XERBLA('CGEDMD',-INFO)
             END IF
-            IF ( (SCALE /= ZERO) .AND. (SSUM /= ZERO) ) THEN
+            IF ( (SCALE /= 0.0_WP) .AND. (SSUM /= 0.0_WP) ) THEN
                ROOTSC = SQRT(SSUM)
                IF ( SCALE .GE. (OFL / ROOTSC) ) THEN
 !                 Norm of X(:,i) overflows. First, X(:,i)
 !                 is scaled by
-!                 ( ONE / ROOTSC ) / SCALE = 1/||X(:,i)||_2.
+!                 ( 1.0_WP / ROOTSC ) / SCALE = 1/||X(:,i)||_2.
 !                 Next, the norm of X(:,i) is stored without
 !                 overflow as WORK(i) = - SCALE * (ROOTSC/M),
 !                 the minus sign indicating the 1/M factor.
@@ -627,18 +617,18 @@
 !                 underflow may occur in the smallest entries
 !                 of X(:,i). The relative backward and forward
 !                 errors are small in the ell_2 norm.
-                  CALL CLASCL( 'G', 0, 0, SCALE, ONE/ROOTSC, &
+                  CALL CLASCL( 'G', 0, 0, SCALE, 1.0_WP/ROOTSC, &
                                M, 1, X(1,i), LDX, INFO2 )
                   RWORK(i) = - SCALE * ( ROOTSC / FLOAT(M) )
                ELSE
 !                 X(:,i) will be scaled to unit 2-norm
                   RWORK(i) =   SCALE * ROOTSC
-                  CALL CLASCL( 'G',0, 0, RWORK(i), ONE, M, 1, &
+                  CALL CLASCL( 'G',0, 0, RWORK(i), 1.0_WP, M, 1, &
                                X(1,i), LDX, INFO2 )             ! LAPACK CALL
-!                 X(1:M,i) = (ONE/RWORK(i)) * X(1:M,i)          ! INTRINSIC
+!                 X(1:M,i) = (1.0_WP/RWORK(i)) * X(1:M,i)          ! INTRINSIC
                END IF
             ELSE
-               RWORK(i) = ZERO
+               RWORK(i) = 0.0_WP
                K = K + 1
             END IF
           END DO
@@ -652,14 +642,14 @@
           END IF
           DO i = 1, N
 !           Now, apply the same scaling to the columns of Y.
-            IF ( RWORK(i) >  ZERO ) THEN
-                CALL CSSCAL( M, ONE/RWORK(i), Y(1,i), 1 ) ! BLAS CALL
-!               Y(1:M,i) = (ONE/RWORK(i)) * Y(1:M,i)      ! INTRINSIC
-            ELSE IF ( RWORK(i) < ZERO ) THEN
+            IF ( RWORK(i) >  0.0_WP ) THEN
+!                 CALL CSSCAL( M, 1.0_WP/RWORK(i), Y(1,i), 1 ) ! BLAS CALL
+                Y(1:M,i) = Y(1:M,i)/RWORK(i)      ! INTRINSIC
+            ELSE IF ( RWORK(i) < 0.0_WP ) THEN
                 CALL CLASCL( 'G', 0, 0, -RWORK(i),          &
-                     ONE/FLOAT(M), M, 1, Y(1,i), LDY, INFO2 ) ! LAPACK CALL
+                     1.0_WP/FLOAT(M), M, 1, Y(1,i), LDY, INFO2 ) ! LAPACK CALL
             ELSE IF ( ABS(Y(ICAMAX(M, Y(1,i),1),i ))  &
-                                            /= ZERO ) THEN
+                                            /= 0.0_WP ) THEN
 !               X(:,i) is zero vector. For consistency,
 !               Y(:,i) should also be zero. If Y(:,i) is not
 !               zero, then the data might be inconsistent or
@@ -668,8 +658,7 @@
 !               The computation continues but the
 !               situation will be reported in the output.
                 BADXY = .TRUE.
-                IF ( LSAME(JOBS,'C')) &
-                CALL CSSCAL( M, ZERO, Y(1,i), 1 )  ! BLAS CALL
+                IF ( LSAME(JOBS,'C')) Y(1:M,i) = 0.0_WP
             END IF
           END DO
       END IF
@@ -680,19 +669,19 @@
           ! carefully computed using CLASSQ.
           DO i = 1, N
             !RWORK(i) = SCNRM2( M, Y(1,i), 1 )
-            SCALE  = ZERO
+            SCALE  = 0.0_WP
             CALL CLASSQ( M, Y(1,i), 1, SCALE, SSUM )
             IF ( SISNAN(SCALE) .OR. SISNAN(SSUM) ) THEN
                 K    =  0
                 INFO = -10
                 CALL XERBLA('CGEDMD',-INFO)
             END IF
-            IF ( SCALE /= ZERO  .AND. (SSUM /= ZERO) ) THEN
+            IF ( SCALE /= 0.0_WP  .AND. (SSUM /= 0.0_WP) ) THEN
                ROOTSC = SQRT(SSUM)
                IF ( SCALE .GE. (OFL / ROOTSC) ) THEN
 !                 Norm of Y(:,i) overflows. First, Y(:,i)
 !                 is scaled by
-!                 ( ONE / ROOTSC ) / SCALE = 1/||Y(:,i)||_2.
+!                 ( 1.0_WP / ROOTSC ) / SCALE = 1/||Y(:,i)||_2.
 !                 Next, the norm of Y(:,i) is stored without
 !                 overflow as RWORK(i) = - SCALE * (ROOTSC/M),
 !                 the minus sign indicating the 1/M factor.
@@ -700,30 +689,30 @@
 !                 underflow may occur in the smallest entries
 !                 of Y(:,i). The relative backward and forward
 !                 errors are small in the ell_2 norm.
-                  CALL CLASCL( 'G', 0, 0, SCALE, ONE/ROOTSC, &
+                  CALL CLASCL( 'G', 0, 0, SCALE, 1.0_WP/ROOTSC, &
                                M, 1, Y(1,i), LDY, INFO2 )
                   RWORK(i) = - SCALE * ( ROOTSC / FLOAT(M) )
                ELSE
 !                 Y(:,i) will be scaled to unit 2-norm
                   RWORK(i) =   SCALE * ROOTSC
-                  CALL CLASCL( 'G',0, 0, RWORK(i), ONE, M, 1, &
-                               Y(1,i), LDY, INFO2 )              ! LAPACK CALL
-!                 Y(1:M,i) = (ONE/RWORK(i)) * Y(1:M,i)          ! INTRINSIC
+!                   CALL CLASCL( 'G',0, 0, RWORK(i), 1.0_WP, M, 1, &
+!                                Y(1,i), LDY, INFO2 )              ! LAPACK CALL
+                  Y(1:M,i) = Y(1:M,i)/RWORK(i)          ! INTRINSIC
                END IF
             ELSE
-               RWORK(i) = ZERO
+               RWORK(i) = 0.0_WP
             END IF
          END DO
          DO i = 1, N
 !           Now, apply the same scaling to the columns of X.
-            IF ( RWORK(i) >  ZERO ) THEN
-                CALL CSSCAL( M, ONE/RWORK(i), X(1,i), 1 )  ! BLAS CALL
-!               X(1:M,i) = (ONE/RWORK(i)) * X(1:M,i)      ! INTRINSIC
-            ELSE IF ( RWORK(i) < ZERO ) THEN
+            IF ( RWORK(i) >  0.0_WP ) THEN
+!                 CALL CSSCAL( M, 1.0_WP/RWORK(i), X(1,i), 1 )  ! BLAS CALL
+                X(1:M,i) = X(1:M,i)/RWORK(i)      ! INTRINSIC
+            ELSE IF ( RWORK(i) < 0.0_WP ) THEN
                 CALL CLASCL( 'G', 0, 0, -RWORK(i),          &
-                     ONE/FLOAT(M), M, 1, X(1,i), LDX, INFO2 ) ! LAPACK CALL
+                     1.0_WP/FLOAT(M), M, 1, X(1,i), LDX, INFO2 ) ! LAPACK CALL
             ELSE IF ( ABS(X(ICAMAX(M, X(1,i),1),i ))  &
-                                           /= ZERO ) THEN
+                                           /= 0.0_WP ) THEN
 !               Y(:,i) is zero vector.  If X(:,i) is not
 !               zero, then a warning flag is raised.
 !               The computation continues but the
@@ -754,13 +743,15 @@
                    X, LDX, RWORK, Z, LDZ, W, LDW, &
                    NUMRNK, IWORK, LIWORK, ZWORK,     &
                    LZWORK, RWORK(N+1), LRWORK-N, INFO1)     ! LAPACK CALL
-              CALL CLACPY( 'A', M, NUMRNK, Z, LDZ, X, LDX )   ! LAPACK CALL
+!               CALL CLACPY( 'A', M, NUMRNK, Z, LDZ, X, LDX )   ! LAPACK CALL
+              X(1:M,1:NUMRNK) = Z(1:M,1:NUMRNK)
          T_OR_N = 'C'
          CASE (4)
               CALL CGEJSV( 'F', 'U', JSVOPT, 'N', 'N', 'P', M, &
                    N, X, LDX, RWORK, Z, LDZ, W, LDW, &
                    ZWORK, LZWORK, RWORK(N+1), LRWORK-N, IWORK, INFO1 )    ! LAPACK CALL
-              CALL CLACPY( 'A', M, N, Z, LDZ, X, LDX )   ! LAPACK CALL
+!               CALL CLACPY( 'A', M, N, Z, LDZ, X, LDX )   ! LAPACK CALL
+              X(1:M,1:N) = Z(1:M,1:N)
               T_OR_N = 'N'
               XSCL1 = RWORK(N+1)
               XSCL2 = RWORK(N+2)
@@ -782,7 +773,7 @@
          RETURN
       END IF
 !
-      IF ( RWORK(1) == ZERO ) THEN
+      IF ( RWORK(1) == 0.0_WP ) THEN
           ! The largest computed singular value of (scaled)
           ! X is zero. Return error code -8
           ! (the 8th input variable had an illegal value).
@@ -831,24 +822,20 @@
       !    W(1:K,1:N). Here Sigma_k=diag(WORK(1:K)).
       IF ( LSAME(T_OR_N, 'N') ) THEN
           DO i = 1, K
-           CALL CSSCAL( N, ONE/RWORK(i), W(1,i), 1 )   ! BLAS CALL
-           ! W(1:N,i) = (ONE/RWORK(i)) * W(1:N,i)      ! INTRINSIC
+!            CALL CSSCAL( N, 1.0_WP/RWORK(i), W(1,i), 1 )   ! BLAS CALL
+           W(1:N,i) = W(1:N,i)/RWORK(i)      ! INTRINSIC
           END DO
       ELSE
           ! This non-unit stride access is due to the fact
           ! that CGESVD, CGESVDQ and CGESDD return the
           ! adjoint matrix of the right singular vectors.
           !DO i = 1, K
-          ! CALL DSCAL( N, ONE/RWORK(i), W(i,1), LDW )  ! BLAS CALL
-          ! ! W(i,1:N) = (ONE/RWORK(i)) * W(i,1:N)      ! INTRINSIC
+          ! CALL DSCAL( N, 1.0_WP/RWORK(i), W(i,1), LDW )  ! BLAS CALL
+          ! ! W(i,1:N) = (1.0_WP/RWORK(i)) * W(i,1:N)      ! INTRINSIC
           !END DO
-          DO i = 1, K
-              RWORK(N+i) = ONE/RWORK(i)
-          END DO
+          RWORK(N+1:N+K) = 1.0_WP/RWORK(1:K)
           DO j = 1, N
-             DO i = 1, K
-                 W(i,j) = CMPLX(RWORK(N+i),ZERO,KIND=WP)*W(i,j)
-             END DO
+              W(1:K,j) = REAL(RWORK(N+1:N+K),KIND=WP)*W(1:K,j)
           END DO
       END IF
 !
@@ -857,8 +844,8 @@
          ! Need A*U(:,1:K)=Y*V_k*inv(diag(WORK(1:K)))
          ! for computing the refined Ritz vectors
          ! (optionally, outside CGEDMD).
-          CALL CGEMM( 'N', T_OR_N, M, K, N, ZONE, Y, LDY, W, &
-                      LDW, ZZERO, Z, LDZ )                       ! BLAS CALL
+          CALL CGEMM( 'N', T_OR_N, M, K, N, (1.0_WP,0.0_WP), Y, LDY, W, &
+                      LDW, (0.0_WP,0.0_WP), Z, LDZ )                       ! BLAS CALL
           ! Z(1:M,1:K)=MATMUL(Y(1:M,1:N),TRANSPOSE(W(1:K,1:N)))  ! INTRINSIC, for T_OR_N=='T'
           ! Z(1:M,1:K)=MATMUL(Y(1:M,1:N),W(1:N,1:K))             ! INTRINSIC, for T_OR_N=='N'
           !
@@ -867,23 +854,23 @@
           ! this is needed for computing the residuals.
           ! This matrix is  returned in the array B and
           ! it can be used to compute refined Ritz vectors.
-          CALL CLACPY( 'A', M, K, Z, LDZ, B, LDB )   ! BLAS CALL
-          ! B(1:M,1:K) = Z(1:M,1:K)                  ! INTRINSIC
+!           CALL CLACPY( 'A', M, K, Z, LDZ, B, LDB )   ! BLAS CALL
+          B(1:M,1:K) = Z(1:M,1:K)                  ! INTRINSIC
 
-          CALL CGEMM( 'C', 'N', K, K, M, ZONE, X, LDX, Z, &
-                      LDZ, ZZERO, S, LDS )                       ! BLAS CALL
+          CALL CGEMM( 'C', 'N', K, K, M, (1.0_WP,0.0_WP), X, LDX, Z, &
+                      LDZ, (0.0_WP,0.0_WP), S, LDS )                       ! BLAS CALL
           ! S(1:K,1:K) = MATMUL(TANSPOSE(X(1:M,1:K)),Z(1:M,1:K)) ! INTRINSIC
           ! At this point S = U^H * A * U is the Rayleigh quotient.
       ELSE
         ! A * U(:,1:K) is not explicitly needed and the
         ! computation is organized differently. The Rayleigh
         ! quotient is computed more efficiently.
-        CALL CGEMM( 'C', 'N', K, N, M, ZONE, X, LDX, Y, LDY, &
-                   ZZERO, Z, LDZ )                                  ! BLAS CALL
+        CALL CGEMM( 'C', 'N', K, N, M, (1.0_WP,0.0_WP), X, LDX, Y, LDY, &
+                   (0.0_WP,0.0_WP), Z, LDZ )                                  ! BLAS CALL
         ! Z(1:K,1:N) = MATMUL( TRANSPOSE(X(1:M,1:K)), Y(1:M,1:N) )  ! INTRINSIC
         !
-        CALL CGEMM( 'N', T_OR_N, K, K, N, ZONE, Z, LDZ, W, &
-                    LDW, ZZERO, S, LDS )                        ! BLAS CALL
+        CALL CGEMM( 'N', T_OR_N, K, K, N, (1.0_WP,0.0_WP), Z, LDZ, W, &
+                    LDW, (0.0_WP,0.0_WP), S, LDS )                        ! BLAS CALL
         ! S(1:K,1:K) = MATMUL(Z(1:K,1:N),TRANSPOSE(W(1:K,1:N))) ! INTRINSIC, for T_OR_N=='T'
         ! S(1:K,1:K) = MATMUL(Z(1:K,1:N),(W(1:N,1:K)))          ! INTRINSIC, for T_OR_N=='N'
         ! At this point S = U^H * A * U is the Rayleigh quotient.
@@ -891,9 +878,11 @@
         ! Recall that V_k or V_k^H is stored in W.
         IF ( WNTRES .OR. WNTEX ) THEN
           IF ( LSAME(T_OR_N, 'N') ) THEN
-              CALL CLACPY( 'A', N, K, W, LDW, Z, LDZ )
+!               CALL CLACPY( 'A', N, K, W, LDW, Z, LDZ )
+              Z(1:N,1:K) = W(1:N,1:K)                  ! INTRINSIC
           ELSE
-              CALL CLACPY( 'A', K, N, W, LDW, Z, LDZ )
+!               CALL CLACPY( 'A', K, N, W, LDW, Z, LDZ )
+              Z(1:K,1:N) = W(1:K,1:N)                  ! INTRINSIC
           END IF
         END IF
       END IF
@@ -923,53 +912,54 @@
                 ! Here, if the refinement is requested, we have
                 ! A*U(:,1:K) already computed and stored in Z.
                 ! For the residuals, need Y = A * U(:,1;K) * W.
-                CALL CGEMM( 'N', 'N', M, K, K, ZONE, Z, LDZ, W, &
-                           LDW, ZZERO, Y, LDY )              ! BLAS CALL
+                CALL CGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), Z, LDZ, W, &
+                           LDW, (0.0_WP,0.0_WP), Y, LDY )              ! BLAS CALL
                 ! Y(1:M,1:K) = Z(1:M,1:K) * W(1:K,1:K)       ! INTRINSIC
                 ! This frees Z; Y contains A * U(:,1:K) * W.
               ELSE
                 ! Compute S = V_k * Sigma_k^(-1) * W, where
                 ! V_k * Sigma_k^(-1) (or its adjoint) is stored in Z
-                CALL CGEMM( T_OR_N, 'N', N, K, K, ZONE, Z, LDZ, &
-                           W, LDW, ZZERO, S, LDS)
+                CALL CGEMM( T_OR_N, 'N', N, K, K, (1.0_WP,0.0_WP), Z, LDZ, &
+                           W, LDW, (0.0_WP,0.0_WP), S, LDS)
                 ! Then, compute Z = Y * S =
                 ! = Y * V_k * Sigma_k^(-1) * W(1:K,1:K) =
                 ! = A * U(:,1:K) * W(1:K,1:K)
-                CALL CGEMM( 'N', 'N', M, K, N, ZONE, Y, LDY, S, &
-                           LDS, ZZERO, Z, LDZ)
+                CALL CGEMM( 'N', 'N', M, K, N, (1.0_WP,0.0_WP), Y, LDY, S, &
+                           LDS, (0.0_WP,0.0_WP), Z, LDZ)
                 ! Save a copy of Z into Y and free Z for holding
                 ! the Ritz vectors.
-                CALL CLACPY( 'A', M, K, Z, LDZ, Y, LDY )
-                IF ( WNTEX ) CALL CLACPY( 'A', M, K, Z, LDZ, B, LDB )
+!                 CALL CLACPY( 'A', M, K, Z, LDZ, Y, LDY )
+                Y(1:M,1:K) = Z(1:M,1:K)
+                IF ( WNTEX ) B(1:M,1:K) = Z(1:M,1:K) ! CALL CLACPY( 'A', M, K, Z, LDZ, B, LDB )
               END IF
           ELSE IF ( WNTEX ) THEN
               ! Compute S = V_k * Sigma_k^(-1) * W, where
                 ! V_k * Sigma_k^(-1) is stored in Z
-                CALL CGEMM( T_OR_N, 'N', N, K, K, ZONE, Z, LDZ, &
-                           W, LDW, ZZERO, S, LDS)
+                CALL CGEMM( T_OR_N, 'N', N, K, K, (1.0_WP,0.0_WP), Z, LDZ, &
+                           W, LDW, (0.0_WP,0.0_WP), S, LDS)
                 ! Then, compute Z = Y * S =
                 ! = Y * V_k * Sigma_k^(-1) * W(1:K,1:K) =
                 ! = A * U(:,1:K) * W(1:K,1:K)
-                CALL CGEMM( 'N', 'N', M, K, N, ZONE, Y, LDY, S, &
-                           LDS, ZZERO, B, LDB)
+                CALL CGEMM( 'N', 'N', M, K, N, (1.0_WP,0.0_WP), Y, LDY, S, &
+                           LDS, (0.0_WP,0.0_WP), B, LDB)
                 ! The above call replaces the following two calls
                 ! that were used in the developing-testing phase.
-                ! CALL CGEMM( 'N', 'N', M, K, N, ZONE, Y, LDY, S, &
-                !           LDS, ZZERO, Z, LDZ)
+                ! CALL CGEMM( 'N', 'N', M, K, N, (1.0_WP,0.0_WP), Y, LDY, S, &
+                !           LDS, (0.0_WP,0.0_WP), Z, LDZ)
                 ! Save a copy of Z into Y and free Z for holding
                 ! the Ritz vectors.
                 ! CALL CLACPY( 'A', M, K, Z, LDZ, B, LDB )
           END IF
 !
           ! Compute the Ritz vectors
-          IF ( WNTVEC ) CALL CGEMM( 'N', 'N', M, K, K, ZONE, X, LDX, W, LDW, &
-                       ZZERO, Z, LDZ )                          ! BLAS CALL
+          IF ( WNTVEC ) CALL CGEMM( 'N', 'N', M, K, K, (1.0_WP,0.0_WP), X, LDX, W, LDW, &
+                       (0.0_WP,0.0_WP), Z, LDZ )                          ! BLAS CALL
           ! Z(1:M,1:K) = MATMUL(X(1:M,1:K), W(1:K,1:K))         ! INTRINSIC
 !
           IF ( WNTRES ) THEN
              DO i = 1, K
-                CALL CAXPY( M, -EIGS(i), Z(1,i), 1, Y(1,i), 1 )       ! BLAS CALL
-                ! Y(1:M,i) = Y(1:M,i) - EIGS(i) * Z(1:M,i)            ! INTRINSIC
+!                 CALL CAXPY( M, -EIGS(i), Z(1,i), 1, Y(1,i), 1 )       ! BLAS CALL
+                Y(1:M,i) = Y(1:M,i) - EIGS(i) * Z(1:M,i)            ! INTRINSIC
                 RES(i) = SCNRM2( M, Y(1,i), 1)                        ! BLAS CALL
              END DO
           END IF
@@ -992,5 +982,3 @@
       RETURN
 !     ......
       END SUBROUTINE CGEDMD
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

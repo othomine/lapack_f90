@@ -135,14 +135,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D0 )
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D0 )
-   DOUBLE PRECISION   HALF
-   PARAMETER          ( HALF = 0.5D0 )
 !     ..
 !     .. Local Scalars ..
    DOUBLE PRECISION   ALPHA, TEMP
@@ -158,9 +150,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DLARNV, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, EXP, LOG
-!     ..
 !     .. Executable Statements ..
 !
 !     Decode and Test the input parameters. Initialize flags & seed.
@@ -169,8 +158,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Set INFO if an error
 !
@@ -180,7 +168,7 @@
             ( IRSIGN /= 0 .AND. IRSIGN /= 1 ) ) THEN
       INFO = -2
    ELSE IF( ( MODE /= -6 .AND. MODE /= 0 .AND. MODE /= 6 ) .AND. &
-            COND < ONE ) THEN
+            COND < 1.0D+0 ) THEN
       INFO = -3
    ELSE IF( ( MODE == 6 .OR. MODE == -6 ) .AND. &
             ( IDIST < 1 .OR. IDIST > 3 ) ) THEN
@@ -207,85 +195,70 @@
 !     Compute D according to COND and MODE
 !
    IF( MODE /= 0 ) THEN
-      GO TO ( 100, 130, 160, 190, 210, 230 )ABS( MODE )
+      SELECT CASE (ABS( MODE ))
 !
 !        One large D value:
 !
-  100    CONTINUE
-      DO I = 2, RANK
-         D( I ) = ONE / COND
-         ENDDO
-      DO I = RANK + 1, N
-         D( I ) = ZERO
-         ENDDO
-      D( 1 ) = ONE
-      GO TO 240
+       CASE (1)
+      D( 1 ) = 1.0D+0
+      D(2:RANK) = 1.0D+0 / COND
+      D(RANK+1:N) = 0.0D+0
 !
 !        One small D value:
 !
-  130    CONTINUE
-      DO I = 1, RANK - 1
-         D( I ) = ONE
-         ENDDO
-      DO I = RANK + 1, N
-         D( I ) = ZERO
-         ENDDO
-      D( RANK ) = ONE / COND
-      GO TO 240
+       CASE (2)
+        D(1:RANK-1) = 1.0D+0
+        D( RANK ) = 1.0D+0 / COND
+        D(RANK+1:N) = 0.0D+0
 !
 !        Exponentially distributed D values:
 !
-  160    CONTINUE
-      D( 1 ) = ONE
-      IF( N > 1 .AND. RANK > 1 ) THEN
-         ALPHA = COND**( -ONE / DBLE( RANK-1 ) )
-         DO I = 2, RANK
-            D( I ) = ALPHA**( I-1 )
-            ENDDO
-         DO I = RANK + 1, N
-            D( I ) = ZERO
-            ENDDO
-      END IF
-      GO TO 240
+       CASE (3)
+        D( 1 ) = 1.0D+0
+        IF( N > 1 .AND. RANK > 1 ) THEN
+           ALPHA = COND**( -1.0D+0 / DBLE( RANK-1 ) )
+           DO I = 2, RANK
+              D( I ) = ALPHA**( I-1 )
+           ENDDO
+           D(RANK+1:N) = 0.0D+0
+        END IF
 !
 !        Arithmetically distributed D values:
 !
-  190    CONTINUE
-      D( 1 ) = ONE
-      IF( N > 1 ) THEN
-         TEMP = ONE / COND
-         ALPHA = ( ONE-TEMP ) / DBLE( N-1 )
-         DO I = 2, N
-            D( I ) = DBLE( N-I )*ALPHA + TEMP
-            ENDDO
-      END IF
-      GO TO 240
+       CASE (4)
+        D( 1 ) = 1.0D+0
+        IF( N > 1 ) THEN
+           TEMP = 1.0D+0 / COND
+           ALPHA = ( 1.0D+0-TEMP ) / DBLE( N-1 )
+           DO I = 2, N
+              D( I ) = DBLE( N-I )*ALPHA + TEMP
+           ENDDO
+        END IF
 !
 !        Randomly distributed D values on ( 1/COND , 1):
 !
-  210    CONTINUE
-      ALPHA = LOG( ONE / COND )
-      DO I = 1, N
-         D( I ) = EXP( ALPHA*DLARAN( ISEED ) )
-         ENDDO
-      GO TO 240
+       CASE (5)
+        ALPHA = LOG( 1.0D+0 / COND )
+        DO I = 1, N
+           D( I ) = EXP( ALPHA*DLARAN( ISEED ) )
+        ENDDO
 !
 !        Randomly distributed D values from IDIST
 !
-  230    CONTINUE
+       CASE (6)
 #ifdef _TIMER
-      call system_clock(count_rate=nb_periods_sec,count=S1_time)
+        call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL DLARNV( IDIST, ISEED, N, D )
+        CALL DLARNV( IDIST, ISEED, N, D )
 #ifdef _TIMER
-      call system_clock(count_rate=nb_periods_sec,count=S2_time)
-      open(file='results.out', unit=10, position = 'append')
-      write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
-            real(S2_time-S1_time)/real(nb_periods_sec), ' s'
-      close(10)
+        call system_clock(count_rate=nb_periods_sec,count=S2_time)
+        open(file='results.out', unit=10, position = 'append')
+        write(10,'(A,F16.10,A)') 'Total time : DLARNV : ',&
+              real(S2_time-S1_time)/real(nb_periods_sec), ' s'
+        close(10)
 #endif
 !
-  240    CONTINUE
+      END SELECT
 !
 !        If MODE neither -6 nor 0 nor 6, and IRSIGN = 1, assign
 !        random signs to D
@@ -294,7 +267,7 @@
           IRSIGN == 1 ) THEN
          DO I = 1, N
             TEMP = DLARAN( ISEED )
-            IF( TEMP > HALF ) &
+            IF( TEMP > 0.5D+0 ) &
                D( I ) = -D( I )
             ENDDO
       END IF
@@ -316,6 +289,4 @@
 !     End of DLATM7
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

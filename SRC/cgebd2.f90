@@ -131,6 +131,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gebd2
 ! @precisions normal c -> s d z
@@ -201,11 +202,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I
@@ -213,9 +209,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLACGV, CLARF, CLARFG, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -246,7 +239,7 @@
          CALL CLARFG( M-I+1, ALPHA, A( MIN( I+1, M ), I ), 1, &
                       TAUQ( I ) )
          D( I ) = REAL( ALPHA )
-         A( I, I ) = ONE
+         A( I, I ) = 1.0E+0
 !
 !           Apply H(i)**H to A(i:m,i+1:n) from the left
 !
@@ -265,7 +258,7 @@
             CALL CLARFG( N-I, ALPHA, A( I, MIN( I+2, N ) ), &
                          LDA, TAUP( I ) )
             E( I ) = REAL( ALPHA )
-            A( I, I+1 ) = ONE
+            A( I, I+1 ) = 1.0E+0
 !
 !              Apply G(i) to A(i+1:m,i+1:n) from the right
 !
@@ -274,7 +267,7 @@
             CALL CLACGV( N-I, A( I, I+1 ), LDA )
             A( I, I+1 ) = E( I )
          ELSE
-            TAUP( I ) = ZERO
+            TAUP( I ) = 0.0E+0
          END IF
       ENDDO
    ELSE
@@ -290,7 +283,7 @@
          CALL CLARFG( N-I+1, ALPHA, A( I, MIN( I+1, N ) ), LDA, &
                       TAUP( I ) )
          D( I ) = REAL( ALPHA )
-         A( I, I ) = ONE
+         A( I, I ) = 1.0E+0
 !
 !           Apply G(i) to A(i+1:m,i:n) from the right
 !
@@ -309,7 +302,7 @@
             CALL CLARFG( M-I, ALPHA, A( MIN( I+2, M ), I ), 1, &
                          TAUQ( I ) )
             E( I ) = REAL( ALPHA )
-            A( I+1, I ) = ONE
+            A( I+1, I ) = 1.0E+0
 !
 !              Apply H(i)**H to A(i+1:m,i+1:n) from the left
 !
@@ -318,7 +311,7 @@
                         WORK )
             A( I+1, I ) = E( I )
          ELSE
-            TAUQ( I ) = ZERO
+            TAUQ( I ) = 0.0E+0
          END IF
       ENDDO
    END IF
@@ -327,4 +320,4 @@
 !     End of CGEBD2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

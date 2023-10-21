@@ -138,6 +138,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup geequb
 !
@@ -159,10 +160,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -175,9 +172,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, LOG, REAL, AIMAG
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -205,24 +199,22 @@
 !     Quick return if possible.
 !
    IF( M == 0 .OR. N == 0 ) THEN
-      ROWCND = ONE
-      COLCND = ONE
-      AMAX = ZERO
+      ROWCND = 1.0E+0
+      COLCND = 1.0E+0
+      AMAX = 0.0E+0
       RETURN
    END IF
 !
 !     Get machine constants.  Assume SMLNUM is a power of the radix.
 !
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RADIX = SLAMCH( 'B' )
    LOGRDX = LOG( RADIX )
 !
 !     Compute row scale factors.
 !
-   DO I = 1, M
-      R( I ) = ZERO
-   ENDDO
+   R(1:M) = 0.0E+0
 !
 !     Find the maximum element in each row.
 !
@@ -231,28 +223,20 @@
          R( I ) = MAX( R( I ), CABS1( A( I, J ) ) )
       ENDDO
    ENDDO
-   DO I = 1, M
-      IF( R( I ) > ZERO ) THEN
-         R( I ) = RADIX**INT( LOG(R( I ) ) / LOGRDX )
-      END IF
-   END DO
+   WHERE (R(1:M) > 0.0E+0) R(1:M) = RADIX**INT( LOG(R(1:M) ) / LOGRDX )
 !
 !     Find the maximum and minimum scale factors.
 !
-   RCMIN = BIGNUM
-   RCMAX = ZERO
-   DO I = 1, M
-      RCMAX = MAX( RCMAX, R( I ) )
-      RCMIN = MIN( RCMIN, R( I ) )
-   ENDDO
+   RCMIN = MINVAL(R(1:M))
+   RCMAX = MAX(0.0E+0,MAXVAL(R(1:M)))
    AMAX = RCMAX
 !
-   IF( RCMIN == ZERO ) THEN
+   IF( RCMIN == 0.0E+0 ) THEN
 !
 !        Find the first zero scale factor and return an error code.
 !
       DO I = 1, M
-         IF( R( I ) == ZERO ) THEN
+         IF( R( I ) == 0.0E+0 ) THEN
             INFO = I
             RETURN
          END IF
@@ -262,7 +246,7 @@
 !        Invert the scale factors.
 !
       DO I = 1, M
-         R( I ) = ONE / MIN( MAX( R( I ), SMLNUM ), BIGNUM )
+         R( I ) = 1.0E+0 / MIN( MAX( R( I ), SMLNUM ), BIGNUM )
       ENDDO
 !
 !        Compute ROWCND = min(R(I)) / max(R(I)).
@@ -272,9 +256,7 @@
 !
 !     Compute column scale factors.
 !
-   DO J = 1, N
-      C( J ) = ZERO
-   ENDDO
+   C(1:N) = 0.0E+0
 !
 !     Find the maximum element in each column,
 !     assuming the row scaling computed above.
@@ -283,37 +265,33 @@
       DO I = 1, M
          C( J ) = MAX( C( J ), CABS1( A( I, J ) )*R( I ) )
       ENDDO
-      IF( C( J ) > ZERO ) THEN
+      IF( C( J ) > 0.0E+0 ) THEN
          C( J ) = RADIX**INT( LOG( C( J ) ) / LOGRDX )
       END IF
    ENDDO
 !
 !     Find the maximum and minimum scale factors.
 !
-   RCMIN = BIGNUM
-   RCMAX = ZERO
-   DO J = 1, N
-      RCMIN = MIN( RCMIN, C( J ) )
-      RCMAX = MAX( RCMAX, C( J ) )
-      ENDDO
+   RCMIN = MINVAL(C(1:N))
+   RCMAX = MAX(0.0E+0,MAXVAL(C(1:N)))
 !
-   IF( RCMIN == ZERO ) THEN
+   IF( RCMIN == 0.0E+0 ) THEN
 !
 !        Find the first zero scale factor and return an error code.
 !
       DO J = 1, N
-         IF( C( J ) == ZERO ) THEN
+         IF( C( J ) == 0.0E+0 ) THEN
             INFO = M + J
             RETURN
          END IF
-         ENDDO
+      ENDDO
    ELSE
 !
 !        Invert the scale factors.
 !
       DO J = 1, N
-         C( J ) = ONE / MIN( MAX( C( J ), SMLNUM ), BIGNUM )
-         ENDDO
+         C( J ) = 1.0E+0 / MIN( MAX( C( J ), SMLNUM ), BIGNUM )
+      ENDDO
 !
 !        Compute COLCND = min(C(J)) / max(C(J)).
 !
@@ -325,4 +303,4 @@
 !     End of CGEEQUB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

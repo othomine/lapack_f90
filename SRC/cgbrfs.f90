@@ -196,6 +196,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbrfs
 !
@@ -224,14 +225,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -244,10 +237,7 @@
    INTEGER            ISAVE( 3 )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CGBMV, CGBTRS, CLACN2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, MIN, REAL
+   EXTERNAL           CGBMV, CGBTRS, CLACN2, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -295,8 +285,8 @@
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
       DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
+         FERR( J ) = 0.0E+0
+         BERR( J ) = 0.0E+0
       ENDDO
       RETURN
    END IF
@@ -322,7 +312,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -330,9 +320,9 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CGBMV( TRANS, N, N, KL, KU, -CONE, AB, LDAB, X( 1, J ), 1, &
-                  CONE, WORK, 1 )
+      WORK(1:N) = B(1:N,J)
+      CALL CGBMV( TRANS, N, N, KL, KU, -(1.0E+0,0.0E+0), AB, LDAB, X( 1, J ), 1, &
+                  (1.0E+0,0.0E+0), WORK, 1 )
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -359,7 +349,7 @@
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             KK = KU + 1 - K
             DO I = MAX( 1, K-KU ), MIN( N, K+KL )
                S = S + CABS1( AB( KK+I, K ) )*CABS1( X( I, J ) )
@@ -367,13 +357,12 @@
             RWORK( K ) = RWORK( K ) + S
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
          ELSE
-            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / &
-                ( RWORK( I )+SAFE1 ) )
+            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / ( RWORK( I )+SAFE1 ) )
          END IF
       ENDDO
       BERR( J ) = S
@@ -384,14 +373,13 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
-          COUNT <= ITMAX ) THEN
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, WORK, N, &
                       INFO )
-         CALL CAXPY( N, CONE, WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -438,16 +426,12 @@
 !
             CALL CGBTRS( TRANST, N, KL, KU, 1, AFB, LDAFB, IPIV, &
                          WORK, N, INFO )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
             CALL CGBTRS( TRANSN, N, KL, KU, 1, AFB, LDAFB, IPIV, &
                          WORK, N, INFO )
          END IF
@@ -456,12 +440,11 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
+      ENDDO
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
 !
@@ -470,4 +453,5 @@
 !     End of CGBRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

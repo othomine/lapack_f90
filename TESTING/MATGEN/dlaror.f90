@@ -161,9 +161,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TOOSML
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, &
-                      TOOSML = 1.0D-20 )
+   DOUBLE PRECISION   TOOSML
+   PARAMETER          ( TOOSML = 1.0D-20 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            IROW, ITYPE, IXFRM, J, JCOL, KBEG, NXFRM
@@ -180,14 +179,10 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEMV, DGER, DLASET, DSCAL, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, SIGN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
-   IF( N == 0 .OR. M == 0 ) &
-      RETURN
+   IF( N == 0 .OR. M == 0 ) RETURN
 !
    ITYPE = 0
    IF( LSAME( SIDE, 'L' ) ) THEN
@@ -236,7 +231,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL DLASET( 'Full', M, N, ZERO, ONE, A, LDA )
+      CALL DLASET( 'Full', M, N, 0.0D+0, 1.0D+0, A, LDA )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -251,9 +246,7 @@
 !     Compute rotation by computing Householder transformations
 !     H(2), H(3), ..., H(nhouse)
 !
-   DO J = 1, NXFRM
-      X( J ) = ZERO
-   ENDDO
+   X(1:NXFRM) = 0.0D+0
 !
    DO IXFRM = 2, NXFRM
       KBEG = NXFRM - IXFRM + 1
@@ -268,7 +261,7 @@
 !
       XNORM = DNRM2( IXFRM, X( KBEG ), 1 )
       XNORMS = SIGN( XNORM, X( KBEG ) )
-      X( KBEG+NXFRM ) = SIGN( ONE, -X( KBEG ) )
+      X( KBEG+NXFRM ) = SIGN( 1.0D+0, -X( KBEG ) )
       FACTOR = XNORMS*( XNORMS+X( KBEG ) )
       IF( ABS( FACTOR ) < TOOSML ) THEN
          INFO = 1
@@ -285,7 +278,7 @@
 #endif
          RETURN
       ELSE
-         FACTOR = ONE / FACTOR
+         FACTOR = 1.0D+0 / FACTOR
       END IF
       X( KBEG ) = X( KBEG ) + XNORMS
 !
@@ -298,8 +291,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL DGEMV( 'T', IXFRM, N, ONE, A( KBEG, 1 ), LDA, &
-                     X( KBEG ), 1, ZERO, X( 2*NXFRM+1 ), 1 )
+         CALL DGEMV( 'T', IXFRM, N, 1.0D+0, A( KBEG, 1 ), LDA, &
+                     X( KBEG ), 1, 0.0D+0, X( 2*NXFRM+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -329,8 +322,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL DGEMV( 'N', M, IXFRM, ONE, A( 1, KBEG ), LDA, &
-                     X( KBEG ), 1, ZERO, X( 2*NXFRM+1 ), 1 )
+         CALL DGEMV( 'N', M, IXFRM, 1.0D+0, A( 1, KBEG ), LDA, &
+                     X( KBEG ), 1, 0.0D+0, X( 2*NXFRM+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -354,7 +347,7 @@
       END IF
    ENDDO
 !
-   X( 2*NXFRM ) = SIGN( ONE, DLARND( 3, ISEED ) )
+   X( 2*NXFRM ) = SIGN( 1.0D+0, DLARND( 3, ISEED ) )
 !
 !     Scale the matrix A by D.
 !
@@ -394,6 +387,4 @@
 !     End of DLAROR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

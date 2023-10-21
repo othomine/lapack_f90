@@ -114,6 +114,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbtrf
 !
@@ -157,9 +158,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ) )
    INTEGER            NBMAX, LDWORK
    PARAMETER          ( NBMAX = 64, LDWORK = NBMAX+1 )
 !     ..
@@ -179,9 +177,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGBTF2, CGEMM, CGERU, CLASWP, CSCAL, &
                       CSWAP, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -211,8 +206,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Determine the block size for this environment
 !
@@ -235,17 +229,13 @@
 !        Zero the superdiagonal elements of the work array WORK13
 !
       DO J = 1, NB
-         DO I = 1, J - 1
-            WORK13( I, J ) = ZERO
-         ENDDO
+         WORK13(1:J-1,J) = (0.0E+0,0.0E+0)
       ENDDO
 !
 !        Zero the subdiagonal elements of the work array WORK31
 !
       DO J = 1, NB
-         DO I = J + 1, NB
-            WORK31( I, J ) = ZERO
-         ENDDO
+         WORK31(J+1:NB,J) = (0.0E+0,0.0E+0)
       ENDDO
 !
 !        Gaussian elimination with partial pivoting
@@ -253,9 +243,7 @@
 !        Set fill-in elements in columns KU+2 to KV to zero
 !
       DO J = KU + 2, MIN( KV, N )
-         DO I = KV - J + 2, KL
-            AB( I, J ) = ZERO
-         ENDDO
+         AB(KV-J+2:KL,J) = (0.0E+0,0.0E+0)
       ENDDO
 !
 !        JU is the index of the last column affected by the current
@@ -290,9 +278,7 @@
 !              Set fill-in elements in column JJ+KV to zero
 !
             IF( JJ+KV <= N ) THEN
-               DO I = 1, KL
-                  AB( I, JJ+KV ) = ZERO
-               ENDDO
+               AB(1:KL,JJ+KV) = (0.0E+0,0.0E+0)
             END IF
 !
 !              Find pivot and test for singularity. KM is the number of
@@ -301,7 +287,7 @@
             KM = MIN( KL, M-JJ )
             JP = ICAMAX( KM+1, AB( KV+1, JJ ), 1 )
             IPIV( JJ ) = JP + JJ - J
-            IF( AB( KV+JP, JJ ) /= ZERO ) THEN
+            IF( AB( KV+JP, JJ ) /= (0.0E+0,0.0E+0) ) THEN
                JU = MAX( JU, MIN( JJ+KU+JP-1, N ) )
                IF( JP /= 1 ) THEN
 !
@@ -325,8 +311,7 @@
 !
 !                 Compute multipliers
 !
-               CALL CSCAL( KM, ONE / AB( KV+1, JJ ), AB( KV+2, JJ ), &
-                           1 )
+               AB(KV+2:KV+1+KM,JJ) = AB(KV+2:KV+1+KM,JJ)/AB(KV+1,JJ)
 !
 !                 Update trailing submatrix within the band and within
 !                 the current block. JM is the index of the last column
@@ -334,7 +319,7 @@
 !
                JM = MIN( JU, J+JB-1 )
                IF( JM > JJ ) &
-                  CALL CGERU( KM, JM-JJ, -ONE, AB( KV+2, JJ ), 1, &
+                  CALL CGERU( KM, JM-JJ, -(1.0E+0,0.0E+0), AB( KV+2, JJ ), 1, &
                               AB( KV, JJ+1 ), LDAB-1, &
                               AB( KV+1, JJ+1 ), LDAB-1 )
             ELSE
@@ -342,16 +327,13 @@
 !                 If pivot is zero, set INFO to the index of the pivot
 !                 unless a zero pivot has already been found.
 !
-               IF( INFO == 0 ) &
-                  INFO = JJ
+               IF( INFO == 0 ) INFO = JJ
             END IF
 !
 !              Copy current column of A31 into the work array WORK31
 !
             NW = MIN( JJ-J+1, I3 )
-            IF( NW > 0 ) &
-               CALL CCOPY( NW, AB( KV+KL+1-JJ+J, JJ ), 1, &
-                           WORK31( 1, JJ-J+1 ), 1 )
+            IF( NW > 0 ) WORK31(1:NW,JJ-J+1) = AB(KV+KL-JJ+J+1:KV+KL-JJ+J+NW,JJ)
          ENDDO
          IF( J+JB <= N ) THEN
 !
@@ -368,9 +350,7 @@
 !
 !              Adjust the pivot indices.
 !
-            DO I = J, J + JB - 1
-               IPIV( I ) = IPIV( I ) + J - 1
-            ENDDO
+            IPIV(J:J+JB-1) = IPIV(J:J+JB-1) + J - 1
 !
 !              Apply the row interchanges to A13, A23, and A33
 !              columnwise.
@@ -385,8 +365,8 @@
                      AB( KV+1+II-JJ, JJ ) = AB( KV+1+IP-JJ, JJ )
                      AB( KV+1+IP-JJ, JJ ) = TEMP
                   END IF
-                  ENDDO
                ENDDO
+            ENDDO
 !
 !              Update the relevant part of the trailing submatrix
 !
@@ -395,7 +375,7 @@
 !                 Update A12
 !
                CALL CTRSM( 'Left', 'Lower', 'No transpose', 'Unit', &
-                           JB, J2, ONE, AB( KV+1, J ), LDAB-1, &
+                           JB, J2, (1.0E+0,0.0E+0), AB( KV+1, J ), LDAB-1, &
                            AB( KV+1-JB, J+JB ), LDAB-1 )
 !
                IF( I2 > 0 ) THEN
@@ -403,8 +383,8 @@
 !                    Update A22
 !
                   CALL CGEMM( 'No transpose', 'No transpose', I2, J2, &
-                              JB, -ONE, AB( KV+1+JB, J ), LDAB-1, &
-                              AB( KV+1-JB, J+JB ), LDAB-1, ONE, &
+                              JB, -(1.0E+0,0.0E+0), AB( KV+1+JB, J ), LDAB-1, &
+                              AB( KV+1-JB, J+JB ), LDAB-1, (1.0E+0,0.0E+0), &
                               AB( KV+1, J+JB ), LDAB-1 )
                END IF
 !
@@ -413,8 +393,8 @@
 !                    Update A32
 !
                   CALL CGEMM( 'No transpose', 'No transpose', I3, J2, &
-                              JB, -ONE, WORK31, LDWORK, &
-                              AB( KV+1-JB, J+JB ), LDAB-1, ONE, &
+                              JB, -(1.0E+0,0.0E+0), WORK31, LDWORK, &
+                              AB( KV+1-JB, J+JB ), LDAB-1, (1.0E+0,0.0E+0), &
                               AB( KV+KL+1-JB, J+JB ), LDAB-1 )
                END IF
             END IF
@@ -425,15 +405,13 @@
 !                 WORK13
 !
                DO JJ = 1, J3
-                  DO II = JJ, JB
-                     WORK13( II, JJ ) = AB( II-JJ+1, JJ+J+KV-1 )
-                     ENDDO
-                  ENDDO
+                  WORK13(JJ:JB,JJ) = AB(1:1-JJ+JB, JJ+J+KV-1 )
+               ENDDO
 !
 !                 Update A13 in the work array
 !
                CALL CTRSM( 'Left', 'Lower', 'No transpose', 'Unit', &
-                           JB, J3, ONE, AB( KV+1, J ), LDAB-1, &
+                           JB, J3, (1.0E+0,0.0E+0), AB( KV+1, J ), LDAB-1, &
                            WORK13, LDWORK )
 !
                IF( I2 > 0 ) THEN
@@ -441,8 +419,8 @@
 !                    Update A23
 !
                   CALL CGEMM( 'No transpose', 'No transpose', I2, J3, &
-                              JB, -ONE, AB( KV+1+JB, J ), LDAB-1, &
-                              WORK13, LDWORK, ONE, AB( 1+JB, J+KV ), &
+                              JB, -(1.0E+0,0.0E+0), AB( KV+1+JB, J ), LDAB-1, &
+                              WORK13, LDWORK, (1.0E+0,0.0E+0), AB( 1+JB, J+KV ), &
                               LDAB-1 )
                END IF
 !
@@ -451,25 +429,21 @@
 !                    Update A33
 !
                   CALL CGEMM( 'No transpose', 'No transpose', I3, J3, &
-                              JB, -ONE, WORK31, LDWORK, WORK13, &
-                              LDWORK, ONE, AB( 1+KL, J+KV ), LDAB-1 )
+                              JB, -(1.0E+0,0.0E+0), WORK31, LDWORK, WORK13, &
+                              LDWORK, (1.0E+0,0.0E+0), AB( 1+KL, J+KV ), LDAB-1 )
                END IF
 !
 !                 Copy the lower triangle of A13 back into place
 !
                DO JJ = 1, J3
-                  DO II = JJ, JB
-                     AB( II-JJ+1, JJ+J+KV-1 ) = WORK13( II, JJ )
-                     ENDDO
-                  ENDDO
+                  AB(1-JJ+JJ:1-JJ+JB,JJ+J+KV-1) = WORK13(JJ:JB,JJ)
+               ENDDO
             END IF
          ELSE
 !
 !              Adjust the pivot indices.
 !
-            DO I = J, J + JB - 1
-               IPIV( I ) = IPIV( I ) + J - 1
-               ENDDO
+            IPIV(J:J+JB-1) = IPIV(J:J+JB-1) + J - 1
          END IF
 !
 !           Partially undo the interchanges in the current block to
@@ -500,11 +474,9 @@
 !              Copy the current column of A31 back into place
 !
             NW = MIN( I3, JJ-J+1 )
-            IF( NW > 0 ) &
-               CALL CCOPY( NW, WORK31( 1, JJ-J+1 ), 1, &
-                           AB( KV+KL+1-JJ+J, JJ ), 1 )
-            ENDDO
+            IF( NW > 0 ) AB(KV+KL-JJ+J+1:KV+KL-JJ+J+NW,JJ) = WORK31(1:NW,JJ-J+1)
          ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -512,4 +484,4 @@
 !     End of CGBTRF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

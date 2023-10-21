@@ -229,6 +229,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup geesx
 !
@@ -257,10 +258,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SCALEA, WANTSB, WANTSE, WANTSN, WANTST, &
@@ -281,9 +278,6 @@
    INTEGER            ILAENV
    REAL               CLANGE, SLAMCH
    EXTERNAL           LSAME, ILAENV, CLANGE, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -347,8 +341,7 @@
             MAXWRK = MAX( MAXWRK, HSWORK )
          END IF
          LWRK = MAXWRK
-         IF( .NOT.WANTSN ) &
-            LWRK = MAX( LWRK, ( N*N )/2 )
+         IF( .NOT.WANTSN ) LWRK = MAX( LWRK, ( N*N )/2 )
       END IF
       WORK( 1 ) = LWRK
 !
@@ -375,23 +368,22 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = CLANGE( 'M', N, N, A, LDA, DUM )
    SCALEA = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = SMLNUM
    ELSE IF( ANRM > BIGNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = BIGNUM
    END IF
-   IF( SCALEA ) &
-      CALL CLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+   IF( SCALEA ) CALL CLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
 !
 !
 !     Permute the matrix to make it more nearly triangular
@@ -433,14 +425,12 @@
    IWRK = ITAU
    CALL CHSEQR( 'S', JOBVS, N, ILO, IHI, A, LDA, W, VS, LDVS, &
                 WORK( IWRK ), LWORK-IWRK+1, IEVAL )
-   IF( IEVAL > 0 ) &
-      INFO = IEVAL
+   IF( IEVAL > 0 ) INFO = IEVAL
 !
 !     Sort eigenvalues if desired
 !
    IF( WANTST .AND. INFO == 0 ) THEN
-      IF( SCALEA ) &
-         CALL CLASCL( 'G', 0, 0, CSCALE, ANRM, N, 1, W, N, IERR )
+      IF( SCALEA ) CALL CLASCL( 'G', 0, 0, CSCALE, ANRM, N, 1, W, N, IERR )
       DO I = 1, N
          BWORK( I ) = SELECT( W( I ) )
       ENDDO
@@ -454,8 +444,7 @@
       CALL CTRSEN( SENSE, JOBVS, BWORK, N, A, LDA, VS, LDVS, W, SDIM, &
                    RCONDE, RCONDV, WORK( IWRK ), LWORK-IWRK+1, &
                    ICOND )
-      IF( .NOT.WANTSN ) &
-         MAXWRK = MAX( MAXWRK, 2*SDIM*( N-SDIM ) )
+      IF( .NOT.WANTSN ) MAXWRK = MAX( MAXWRK, 2*SDIM*( N-SDIM ) )
       IF( ICOND == -14 ) THEN
 !
 !           Not enough complex workspace
@@ -493,4 +482,4 @@
 !     End of CGEESX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

@@ -421,12 +421,6 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !               flag is set with INFO=4.
 !.............................................................
 !.............................................................
-!     Parameters
-!     ~~~~~~~~~~
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
-!     COMPLEX(KIND=WP), PARAMETER ::  ZONE = ( 1.0_WP, 0.0_WP )
-      COMPLEX(KIND=WP), PARAMETER :: ZZERO = ( 0.0_WP, 0.0_WP )
 !
 !     Local scalars
 !     ~~~~~~~~~~~~~
@@ -452,10 +446,6 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     External subroutines
 !     ~~~~~~~~~~~~~~~~~~~~
       EXTERNAL      CGEDMD
-
-!     Intrinsic functions
-!     ~~~~~~~~~~~~~~~~~~~
-      INTRINSIC      MAX, MIN, INT
  !..........................................................
  !
  !    Test the input arguments
@@ -505,7 +495,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
       ELSE IF ( .NOT. (( NRNK == -2).OR.(NRNK == -1).OR.    &
                        ((NRNK >= 1).AND.(NRNK <=N ))) )  THEN
           INFO = -16
-      ELSE IF ( ( TOL < ZERO ) .OR. ( TOL >= ONE ) ) THEN
+      ELSE IF ( ( TOL < 0.0_WP ) .OR. ( TOL >= 1.0_WP ) ) THEN
           INFO = -17
       ELSE IF ( LDZ < M ) THEN
           INFO = -21
@@ -617,11 +607,11 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     orthogonal basis computed in the QR factorization.
 !     X corresponds to the leading N-1 and Y to the trailing
 !     N-1 snapshots.
-      CALL CLASET( 'L', MINMN, N-1, ZZERO,  ZZERO, X, LDX )
+      CALL CLASET( 'L', MINMN, N-1, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), X, LDX )
       CALL CLACPY( 'U', MINMN, N-1, F,      LDF, X, LDX )
       CALL CLACPY( 'A', MINMN, N-1, F(1,2), LDF, Y, LDY )
       IF ( M >= 3 ) THEN
-          CALL CLASET( 'L', MINMN-2, N-2, ZZERO,  ZZERO, &
+          CALL CLASET( 'L', MINMN-2, N-2, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), &
                        Y(3,1), LDY )
       END IF
 !
@@ -643,8 +633,8 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     formed or returned in factored form.
       IF ( WNTVEC ) THEN
         ! Compute the eigenvectors explicitly.
-        IF ( M > MINMN ) CALL CLASET( 'A', M-MINMN, K, ZZERO, &
-                                     ZZERO, Z(MINMN+1,1), LDZ )
+        IF ( M > MINMN ) CALL CLASET( 'A', M-MINMN, K, (0.0_WP,0.0_WP), &
+                                     (0.0_WP,0.0_WP), Z(MINMN+1,1), LDZ )
         CALL CUNMQR( 'L','N', M, K, MINMN, F, LDF, ZWORK, Z,  &
              LDZ, ZWORK(MINMN+1), LZWORK-MINMN, INFO1 )
       ELSE IF ( WNTVCF ) THEN
@@ -654,8 +644,9 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
         !   the SVD/POD_basis returned by CGEDMD in X) and the
         !   second factor (the eigenvectors of the Rayleigh
         !   quotient) is in the array V, as returned by CGEDMD.
-        CALL CLACPY( 'A', N, K, X, LDX, Z, LDZ )
-        IF ( M > N ) CALL CLASET( 'A', M-N, K, ZZERO, ZZERO, &
+        Z(1:N,1:K) = X(1:N,1:K)
+!         CALL CLACPY( 'A', N, K, X, LDX, Z, LDZ )
+        IF ( M > N ) CALL CLASET( 'A', M-N, K, (0.0_WP,0.0_WP), (0.0_WP,0.0_WP), &
                                  Z(N+1,1), LDZ )
         CALL CUNMQR( 'L','N', M, K, MINMN, F, LDF, ZWORK, Z, &
                     LDZ, ZWORK(MINMN+1), LZWORK-MINMN, INFO1 )
@@ -670,7 +661,7 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     followed by a streaming DMD that is implemented in a
 !     QR compressed form.
       IF ( WNTTRF ) THEN ! Return the upper triangular R in Y
-         CALL CLASET( 'A', MINMN, N, ZZERO,  ZZERO, Y, LDY )
+         CALL CLASET( 'A', MINMN, N, (0.0_WP,0.0_WP),  (0.0_WP,0.0_WP), Y, LDY )
          CALL CLACPY( 'U', MINMN, N, F, LDF,        Y, LDY )
       END IF
 !
@@ -686,5 +677,3 @@ SUBROUTINE CGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
       RETURN
 !
       END SUBROUTINE CGEDMDQ
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

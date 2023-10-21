@@ -119,6 +119,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gehrd
 !
@@ -182,9 +183,6 @@
    INTEGER            NBMAX, LDT, TSIZE
    PARAMETER          ( NBMAX = 64, LDT = NBMAX+1, &
                         TSIZE = LDT*NBMAX )
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ), &
-                        ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -193,11 +191,8 @@
    COMPLEX            EI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CGEHD2, CGEMM, CLAHR2, CLARFB, CTRMM, &
+   EXTERNAL           CGEHD2, CGEMM, CLAHR2, CLARFB, CTRMM, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
@@ -239,11 +234,9 @@
 !
 !     Set elements 1:ILO-1 and IHI:N-1 of TAU to zero
 !
-   DO I = 1, ILO - 1
-      TAU( I ) = ZERO
-   ENDDO
+   TAU(1:ILO-1) = (0.0E+0,0.0E+0)
    DO I = MAX( 1, IHI ), N - 1
-      TAU( I ) = ZERO
+      TAU( I ) = (0.0E+0,0.0E+0)
    ENDDO
 !
 !     Quick return if possible
@@ -312,10 +305,10 @@
 !           to 1
 !
          EI = A( I+IB, I+IB-1 )
-         A( I+IB, I+IB-1 ) = ONE
+         A( I+IB, I+IB-1 ) = (1.0E+0,0.0E+0)
          CALL CGEMM( 'No transpose', 'Conjugate transpose', &
                      IHI, IHI-I-IB+1, &
-                     IB, -ONE, WORK, LDWORK, A( I+IB, I ), LDA, ONE, &
+                     IB, -(1.0E+0,0.0E+0), WORK, LDWORK, A( I+IB, I ), LDA, (1.0E+0,0.0E+0), &
                      A( 1, I+IB ), LDA )
          A( I+IB, I+IB-1 ) = EI
 !
@@ -324,10 +317,9 @@
 !
          CALL CTRMM( 'Right', 'Lower', 'Conjugate transpose', &
                      'Unit', I, IB-1, &
-                     ONE, A( I+1, I ), LDA, WORK, LDWORK )
+                     (1.0E+0,0.0E+0), A( I+1, I ), LDA, WORK, LDWORK )
          DO J = 0, IB-2
-            CALL CAXPY( I, -ONE, WORK( LDWORK*J+1 ), 1, &
-                        A( 1, I+J+1 ), 1 )
+            A(1:I,I+J+1) = A(1:I,I+J+1) - WORK(LDWORK*J+1:LDWORK*J+I)
          ENDDO
 !
 !           Apply the block reflector H to A(i+1:ihi,i+ib:n) from the
@@ -351,4 +343,4 @@
 !     End of CGEHRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

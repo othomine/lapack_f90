@@ -138,6 +138,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbcon
 !
@@ -161,10 +162,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LNOTI, ONENRM
@@ -185,9 +182,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CLACN2, CLATBS, CSRSCL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MIN, REAL
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -211,7 +205,7 @@
       INFO = -4
    ELSE IF( LDAB < 2*KL+KU+1 ) THEN
       INFO = -6
-   ELSE IF( ANORM < ZERO ) THEN
+   ELSE IF( ANORM < 0.0E+0 ) THEN
       INFO = -8
    END IF
    IF( INFO /= 0 ) THEN
@@ -221,11 +215,11 @@
 !
 !     Quick return if possible
 !
-   RCOND = ZERO
+   RCOND = 0.0E+0
    IF( N == 0 ) THEN
-      RCOND = ONE
+      RCOND = 1.0E+0
       RETURN
-   ELSE IF( ANORM == ZERO ) THEN
+   ELSE IF( ANORM == 0.0E+0 ) THEN
       RETURN
    END IF
 !
@@ -233,7 +227,7 @@
 !
 !     Estimate the norm of inv(A).
 !
-   AINVNM = ZERO
+   AINVNM = 0.0E+0
    NORMIN = 'N'
    IF( ONENRM ) THEN
       KASE1 = 1
@@ -280,8 +274,7 @@
          IF( LNOTI ) THEN
             DO J = N - 1, 1, -1
                LM = MIN( KL, N-J )
-               WORK( J ) = WORK( J ) - CDOTC( LM, AB( KD+1, J ), 1, &
-                           WORK( J+1 ), 1 )
+               WORK( J ) = WORK( J ) - CDOTC( LM, AB( KD+1, J ), 1, WORK( J+1 ), 1 )
                JP = IPIV( J )
                IF( JP /= J ) THEN
                   T = WORK( JP )
@@ -295,10 +288,9 @@
 !        Divide X by 1/SCALE if doing so will not cause overflow.
 !
       NORMIN = 'Y'
-      IF( SCALE /= ONE ) THEN
+      IF( SCALE /= 1.0E+0 ) THEN
          IX = ICAMAX( N, WORK, 1 )
-         IF( SCALE < CABS1( WORK( IX ) )*SMLNUM .OR. SCALE == ZERO ) &
-            GO TO 40
+         IF( SCALE < CABS1( WORK( IX ) )*SMLNUM .OR. SCALE == 0.0E+0 ) RETURN
          CALL CSRSCL( N, SCALE, WORK, 1 )
       END IF
       GO TO 10
@@ -306,13 +298,11 @@
 !
 !     Compute the estimate of the reciprocal condition number.
 !
-   IF( AINVNM /= ZERO ) &
-      RCOND = ( ONE / AINVNM ) / ANORM
+   IF( AINVNM /= 0.0E+0 ) RCOND = ( 1.0E+0 / AINVNM ) / ANORM
 !
-40 CONTINUE
    RETURN
 !
 !     End of CGBCON
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

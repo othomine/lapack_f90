@@ -115,12 +115,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX*16         ZERO, ONE, HALF
-   PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ), &
-                      ONE = ( 1.0D+0, 0.0D+0 ), &
-                      HALF = ( 0.5D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, II, J, JJ
@@ -138,9 +132,6 @@
    DOUBLE PRECISION   DZNRM2
    COMPLEX*16         ZDOTC
    EXTERNAL           DZNRM2, ZDOTC
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -172,13 +163,9 @@
 !     initialize lower triangle of A to diagonal matrix
 !
    DO J = 1, N
-      DO I = J + 1, N
-         A( I, J ) = ZERO
-      ENDDO
+      A(J+1:N, J ) = (0.0D+0,0.0D+0)
    ENDDO
-   DO I = 1, N
-      A( I, I ) = D( I )
-   ENDDO
+   FORALL (I = 1:N) A( I, I ) = D( I )
 !
 !     Generate lower triangle of symmetric matrix
 !
@@ -199,14 +186,14 @@
 #endif
       WN = DZNRM2( N-I+1, WORK, 1 )
       WA = ( WN / ABS( WORK( 1 ) ) )*WORK( 1 )
-      IF( WN == ZERO ) THEN
-         TAU = ZERO
+      IF( WN == (0.0D+0,0.0D+0) ) THEN
+         TAU = (0.0D+0,0.0D+0)
       ELSE
          WB = WORK( 1 ) + WA
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZSCAL( N-I, ONE / WB, WORK( 2 ), 1 )
+         CALL ZSCAL( N-I, (1.0D+0,0.0D+0) / WB, WORK( 2 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -214,7 +201,7 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         WORK( 1 ) = ONE
+         WORK( 1 ) = (1.0D+0,0.0D+0)
          TAU = DBLE( WB / WA )
       END IF
 !
@@ -237,7 +224,7 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL ZSYMV( 'Lower', N-I+1, TAU, A( I, I ), LDA, WORK, 1, ZERO, &
+      CALL ZSYMV( 'Lower', N-I+1, TAU, A( I, I ), LDA, WORK, 1, (0.0D+0,0.0D+0), &
                   WORK( N+1 ), 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -260,7 +247,7 @@
 !
 !        compute  v := y - 1/2 * tau * ( u, y ) * u
 !
-      ALPHA = -HALF*TAU*ZDOTC( N-I+1, WORK, 1, WORK( N+1 ), 1 )
+      ALPHA = -(0.5D+0,0.0D+0)*TAU*ZDOTC( N-I+1, WORK, 1, WORK( N+1 ), 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
@@ -275,15 +262,13 @@
 !
 !        apply the transformation as a rank-2 update to A(i:n,i:n)
 !
-!        CALL ZSYR2( 'Lower', N-I+1, -ONE, WORK, 1, WORK( N+1 ), 1,
+!        CALL ZSYR2( 'Lower', N-I+1, -(1.0D+0,0.0D+0), WORK, 1, WORK( N+1 ), 1,
 !        $               A( I, I ), LDA )
 !
       DO JJ = I, N
-         DO II = JJ, N
-            A( II, JJ ) = A( II, JJ ) - &
-                          WORK( II-I+1 )*WORK( N+JJ-I+1 ) - &
-                          WORK( N+II-I+1 )*WORK( JJ-I+1 )
-         ENDDO
+         A(JJ:N, JJ ) = A(JJ:N, JJ ) - &
+                       WORK( 1-I+JJ:1-I+N )*WORK( N+JJ-I+1 ) - &
+                       WORK( N-I+1+JJ:2*N-I+1 )*WORK( JJ-I+1 )
       ENDDO
    ENDDO
 !
@@ -295,14 +280,14 @@
 !
       WN = DZNRM2( N-K-I+1, A( K+I, I ), 1 )
       WA = ( WN / ABS( A( K+I, I ) ) )*A( K+I, I )
-      IF( WN == ZERO ) THEN
-         TAU = ZERO
+      IF( WN == (0.0D+0,0.0D+0) ) THEN
+         TAU = (0.0D+0,0.0D+0)
       ELSE
          WB = A( K+I, I ) + WA
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL ZSCAL( N-K-I, ONE / WB, A( K+I+1, I ), 1 )
+         CALL ZSCAL( N-K-I, (1.0D+0,0.0D+0) / WB, A( K+I+1, I ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -310,7 +295,7 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         A( K+I, I ) = ONE
+         A( K+I, I ) = (1.0D+0,0.0D+0)
          TAU = DBLE( WB / WA )
       END IF
 !
@@ -319,8 +304,8 @@
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-      CALL ZGEMV( 'Conjugate transpose', N-K-I+1, K-1, ONE, &
-                  A( K+I, I+1 ), LDA, A( K+I, I ), 1, ZERO, WORK, 1 )
+      CALL ZGEMV( 'Conjugate transpose', N-K-I+1, K-1, (1.0D+0,0.0D+0), &
+                  A( K+I, I+1 ), LDA, A( K+I, I ), 1, (0.0D+0,0.0D+0), WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -360,7 +345,7 @@
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
       CALL ZSYMV( 'Lower', N-K-I+1, TAU, A( K+I, K+I ), LDA, &
-                  A( K+I, I ), 1, ZERO, WORK, 1 )
+                  A( K+I, I ), 1, (0.0D+0,0.0D+0), WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S2_time)
       open(file='results.out', unit=10, position = 'append')
@@ -382,7 +367,7 @@
 !
 !        compute  v := y - 1/2 * tau * ( u, y ) * u
 !
-      ALPHA = -HALF*TAU*ZDOTC( N-K-I+1, A( K+I, I ), 1, WORK, 1 )
+      ALPHA = -(0.5D+0,0.0D+0)*TAU*ZDOTC( N-K-I+1, A( K+I, I ), 1, WORK, 1 )
 #ifdef _TIMER
       call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
@@ -397,34 +382,26 @@
 !
 !        apply symmetric rank-2 update to A(k+i:n,k+i:n)
 !
-!        CALL ZSYR2( 'Lower', N-K-I+1, -ONE, A( K+I, I ), 1, WORK, 1,
+!        CALL ZSYR2( 'Lower', N-K-I+1, -(1.0D+0,0.0D+0), A( K+I, I ), 1, WORK, 1,
 !        $               A( K+I, K+I ), LDA )
 !
       DO JJ = K + I, N
-         DO II = JJ, N
-            A( II, JJ ) = A( II, JJ ) - A( II, I )*WORK( JJ-K-I+1 ) - &
-                          WORK( II-K-I+1 )*A( JJ, I )
-         ENDDO
+         A(JJ:N, JJ ) = A(JJ:N, JJ ) - A(JJ:N, I )*WORK( JJ-K-I+1 ) - &
+                       WORK( 1-K-I+JJ:1-K-I+N )*A( JJ, I )
       ENDDO
 !
       A( K+I, I ) = -WA
-      DO J = K + I + 1, N
-         A( J, I ) = ZERO
-      ENDDO
-      ENDDO
+      A(K+I+1:N, I ) = (0.0D+0,0.0D+0)
+   ENDDO
 !
 !     Store full symmetric matrix
 !
    DO J = 1, N
-      DO I = J + 1, N
-         A( J, I ) = A( I, J )
-         ENDDO
-      ENDDO
+      A( J,J+1:N) = A(J+1:N, J )
+   ENDDO
    RETURN
 !
 !     End of ZLAGSY
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

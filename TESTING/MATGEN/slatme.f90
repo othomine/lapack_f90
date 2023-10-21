@@ -347,14 +347,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E0 )
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E0 )
-   REAL               HALF
-   PARAMETER          ( HALF = 1.0E0 / 2.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BADEI, BADS, USEEI
@@ -377,9 +369,6 @@
    EXTERNAL           SCOPY, SGEMV, SGER, SLARFG, SLARGE, SLARNV, &
                       SLATM1, SLASET, SSCAL, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MOD
-!     ..
 !     .. Executable Statements ..
 !
 !     1)      Decode and Test the input parameters.
@@ -389,8 +378,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Decode DIST
 !
@@ -459,12 +447,7 @@
 !     Check DS, if MODES=0 and ISIM=1
 !
    BADS = .FALSE.
-   IF( MODES == 0 .AND. ISIM == 1 ) THEN
-      DO J = 1, N
-         IF( DS( J ) == ZERO ) &
-            BADS = .TRUE.
-      ENDDO
-   END IF
+   IF( MODES == 0 .AND. ISIM == 1 ) BADS = ANY(DS(1:N) == 0.0E+0 )
 !
 !     Set INFO if an error
 !
@@ -474,7 +457,7 @@
       INFO = -2
    ELSE IF( ABS( MODE ) > 6 ) THEN
       INFO = -5
-   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < ONE ) &
+   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < 1.0E+0 ) &
              THEN
       INFO = -6
    ELSE IF( BADEI ) THEN
@@ -489,7 +472,7 @@
       INFO = -12
    ELSE IF( ISIM == 1 .AND. ABS( MODES ) > 5 ) THEN
       INFO = -13
-   ELSE IF( ISIM == 1 .AND. MODES /= 0 .AND. CONDS < ONE ) THEN
+   ELSE IF( ISIM == 1 .AND. MODES /= 0 .AND. CONDS < 1.0E+0 ) THEN
       INFO = -14
    ELSE IF( KL < 1 ) THEN
       INFO = -15
@@ -516,12 +499,9 @@
 !
 !     Initialize random number generator
 !
-   DO I = 1, 4
-      ISEED( I ) = MOD( ABS( ISEED( I ) ), 4096 )
-   ENDDO
+   ISEED(1:4) = MOD( ABS( ISEED(1:4) ), 4096 )
 !
-   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) &
-      ISEED( 4 ) = ISEED( 4 ) + 1
+   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) ISEED( 4 ) = ISEED( 4 ) + 1
 !
 !     2)      Set up diagonal of A
 !
@@ -536,18 +516,15 @@
 !
 !        Scale by DMAX
 !
-      TEMP = ABS( D( 1 ) )
-      DO I = 2, N
-         TEMP = MAX( TEMP, ABS( D( I ) ) )
-      ENDDO
+      TEMP = MAXVAL(ABS( D(1:N) ) )
 !
-      IF( TEMP > ZERO ) THEN
+      IF( TEMP > 0.0E+0 ) THEN
          ALPHA = DMAX / TEMP
-      ELSE IF( DMAX /= ZERO ) THEN
+      ELSE IF( DMAX /= 0.0E+0 ) THEN
          INFO = 2
          RETURN
       ELSE
-         ALPHA = ZERO
+         ALPHA = 0.0E+0
       END IF
 !
 #ifdef _TIMER
@@ -567,7 +544,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL SLASET( 'Full', N, N, ZERO, ZERO, A, LDA )
+   CALL SLASET( 'Full', N, N, 0.0E+0, 0.0E+0, A, LDA )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -603,7 +580,7 @@
    ELSE IF( ABS( MODE ) == 5 ) THEN
 !
       DO J = 2, N, 2
-         IF( SLARAN( ISEED ) > HALF ) THEN
+         IF( SLARAN( ISEED ) > 0.5E+0 ) THEN
             A( J-1, J ) = A( J, J )
             A( J, J-1 ) = -A( J, J )
             A( J, J ) = A( J-1, J-1 )
@@ -616,7 +593,7 @@
 !
    IF( IUPPER /= 0 ) THEN
       DO JC = 2, N
-         IF( A( JC-1, JC ) /= ZERO ) THEN
+         IF( A( JC-1, JC ) /= 0.0E+0 ) THEN
             JR = JC - 2
          ELSE
             JR = JC - 1
@@ -675,11 +652,11 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         IF( DS( J ) /= ZERO ) THEN
+         IF( DS( J ) /= 0.0E+0 ) THEN
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL SSCAL( N, ONE / DS( J ), A( 1, J ), 1 )
+            CALL SSCAL( N, 1.0E+0 / DS( J ), A( 1, J ), 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
             open(file='results.out', unit=10, position = 'append')
@@ -736,13 +713,13 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         WORK( 1 ) = ONE
+         WORK( 1 ) = 1.0E+0
 !
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'T', IROWS, ICOLS, ONE, A( JCR, IC+1 ), LDA, &
-                     WORK, 1, ZERO, WORK( IROWS+1 ), 1 )
+         CALL SGEMV( 'T', IROWS, ICOLS, 1.0E+0, A( JCR, IC+1 ), LDA, &
+                     WORK, 1, 0.0E+0, WORK( IROWS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -766,8 +743,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'N', N, IROWS, ONE, A( 1, JCR ), LDA, WORK, 1, &
-                     ZERO, WORK( IROWS+1 ), 1 )
+         CALL SGEMV( 'N', N, IROWS, 1.0E+0, A( 1, JCR ), LDA, WORK, 1, &
+                     0.0E+0, WORK( IROWS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -792,7 +769,7 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SLASET( 'Full', IROWS-1, 1, ZERO, ZERO, A( JCR+1, IC ), &
+         CALL SLASET( 'Full', IROWS-1, 1, 0.0E+0, 0.0E+0, A( JCR+1, IC ), &
                       LDA )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -834,13 +811,13 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         WORK( 1 ) = ONE
+         WORK( 1 ) = 1.0E+0
 !
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'N', IROWS, ICOLS, ONE, A( IR+1, JCR ), LDA, &
-                     WORK, 1, ZERO, WORK( ICOLS+1 ), 1 )
+         CALL SGEMV( 'N', IROWS, ICOLS, 1.0E+0, A( IR+1, JCR ), LDA, &
+                     WORK, 1, 0.0E+0, WORK( ICOLS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -864,8 +841,8 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SGEMV( 'C', ICOLS, N, ONE, A( JCR, 1 ), LDA, WORK, 1, &
-                     ZERO, WORK( ICOLS+1 ), 1 )
+         CALL SGEMV( 'C', ICOLS, N, 1.0E+0, A( JCR, 1 ), LDA, WORK, 1, &
+                     0.0E+0, WORK( ICOLS+1 ), 1 )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
          open(file='results.out', unit=10, position = 'append')
@@ -890,7 +867,7 @@
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-         CALL SLASET( 'Full', 1, ICOLS-1, ZERO, ZERO, A( IR, JCR+1 ), &
+         CALL SLASET( 'Full', 1, ICOLS-1, 0.0E+0, 0.0E+0, A( IR, JCR+1 ), &
                       LDA )
 #ifdef _TIMER
          call system_clock(count_rate=nb_periods_sec,count=S2_time)
@@ -899,14 +876,14 @@
                real(S2_time-S1_time)/real(nb_periods_sec), ' s'
          close(10)
 #endif
-         ENDDO
+      ENDDO
    END IF
 !
 !     Scale the matrix to have norm ANORM
 !
-   IF( ANORM >= ZERO ) THEN
+   IF( ANORM >= 0.0E+0 ) THEN
       TEMP = SLANGE( 'M', N, N, A, LDA, TEMPA )
-      IF( TEMP > ZERO ) THEN
+      IF( TEMP > 0.0E+0 ) THEN
          ALPHA = ANORM / TEMP
          DO J = 1, N
 #ifdef _TIMER
@@ -920,7 +897,7 @@
                   real(S2_time-S1_time)/real(nb_periods_sec), ' s'
             close(10)
 #endif
-            ENDDO
+         ENDDO
       END IF
    END IF
 !
@@ -929,6 +906,4 @@
 !     End of SLATME
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

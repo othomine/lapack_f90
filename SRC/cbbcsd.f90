@@ -321,6 +321,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup bbcsd
 !
@@ -351,15 +352,12 @@
 !     .. Parameters ..
    INTEGER            MAXITR
    PARAMETER          ( MAXITR = 6 )
-   REAL               HUNDRED, MEIGHTH, ONE, TEN, ZERO
-   PARAMETER          ( HUNDRED = 100.0E0, MEIGHTH = -0.125E0, &
-                        ONE = 1.0E0, TEN = 10.0E0, ZERO = 0.0E0 )
-   COMPLEX            NEGONECOMPLEX
-   PARAMETER          ( NEGONECOMPLEX = (-1.0E0,0.0E0) )
    REAL               PIOVER2
    PARAMETER ( PIOVER2 = 1.57079632679489661923132169163975144210E0 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            U1_TMP(LDU1), U2_TMP(LDU2), V1T_TMP(LDV1T), V2T_TMP(LDV2T), &
+                      U1T_TMP(P), U2T_TMP(M), V1TT_TMP(Q)
    LOGICAL            COLMAJOR, LQUERY, RESTART11, RESTART12, &
                       RESTART21, RESTART22, WANTU1, WANTU2, WANTV1T, &
                       WANTV2T
@@ -369,19 +367,16 @@
    REAL               B11BULGE, B12BULGE, B21BULGE, B22BULGE, DUMMY, &
                       EPS, MU, NU, R, SIGMA11, SIGMA21, &
                       TEMP, THETAMAX, THETAMIN, THRESH, TOL, TOLMUL, &
-                      UNFL, X1, X2, Y1, Y2
+                      UNFL, X1, X2, Y1, Y2, COSIX, COSIP1X, SINIX, SINIP1X, SINPHIX, COSPHIX
+
 !
 !     .. External Subroutines ..
-   EXTERNAL           CLASR, CSCAL, CSWAP, SLARTGP, SLARTGS, SLAS2, &
-                      XERBLA
+   EXTERNAL           CLASR, SLARTGP, SLARTGS, SLAS2, XERBLA
 !     ..
 !     .. External Functions ..
    REAL               SLAMCH
    LOGICAL            LSAME
    EXTERNAL           LSAME, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, ATAN2, COS, MAX, MIN, SIN, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -451,39 +446,35 @@
 !
    EPS = SLAMCH( 'Epsilon' )
    UNFL = SLAMCH( 'Safe minimum' )
-   TOLMUL = MAX( TEN, MIN( HUNDRED, EPS**MEIGHTH ) )
+   TOLMUL = MAX( 10.0E+0, MIN( 100.0E+0, EPS**-0.125E+0 ) )
    TOL = TOLMUL*EPS
    THRESH = MAX( TOL, MAXITR*Q*Q*UNFL )
 !
 !     Test for negligible sines or cosines
 !
-   DO I = 1, Q
-      IF( THETA(I)  <  THRESH ) THEN
-         THETA(I) = ZERO
-      ELSE IF( THETA(I)  >  PIOVER2-THRESH ) THEN
-         THETA(I) = PIOVER2
-      END IF
-   END DO
-   DO I = 1, Q-1
-      IF( PHI(I)  <  THRESH ) THEN
-         PHI(I) = ZERO
-      ELSE IF( PHI(I)  >  PIOVER2-THRESH ) THEN
-         PHI(I) = PIOVER2
-      END IF
-   END DO
+   WHERE ( THETA(1:Q)  <  THRESH )
+      THETA(1:Q) = 0.0E+0
+   ELSEWHERE ( THETA(1:Q)  >  PIOVER2-THRESH )
+         THETA(1:Q) = PIOVER2
+   ENDWHERE
+   WHERE ( PHI(1:Q-1)  <  THRESH )
+      PHI(1:Q-1) = 0.0E+0
+   ELSEWHERE ( PHI(1:Q-1)  >  PIOVER2-THRESH )
+         PHI(1:Q-1) = PIOVER2
+   ENDWHERE
 !
 !     Initial deflation
 !
    IMAX = Q
    DO WHILE( IMAX  >  1 )
-      IF( PHI(IMAX-1)  /=  ZERO ) THEN
+      IF( PHI(IMAX-1)  /=  0.0E+0 ) THEN
          EXIT
       END IF
       IMAX = IMAX - 1
    END DO
    IMIN = IMAX - 1
    IF  ( IMIN  >  1 ) THEN
-      DO WHILE( PHI(IMIN-1)  /=  ZERO )
+      DO WHILE( PHI(IMIN-1)  /=  0.0E+0 )
          IMIN = IMIN - 1
          IF  ( IMIN  <=  1 ) EXIT
       END DO
@@ -503,14 +494,20 @@
       B11D(IMIN) = COS( THETA(IMIN) )
       B21D(IMIN) = -SIN( THETA(IMIN) )
       DO I = IMIN, IMAX - 1
-         B11E(I) = -SIN( THETA(I) ) * SIN( PHI(I) )
-         B11D(I+1) = COS( THETA(I+1) ) * COS( PHI(I) )
-         B12D(I) = SIN( THETA(I) ) * COS( PHI(I) )
-         B12E(I) = COS( THETA(I+1) ) * SIN( PHI(I) )
-         B21E(I) = -COS( THETA(I) ) * SIN( PHI(I) )
-         B21D(I+1) = -SIN( THETA(I+1) ) * COS( PHI(I) )
-         B22D(I) = COS( THETA(I) ) * COS( PHI(I) )
-         B22E(I) = -SIN( THETA(I+1) ) * SIN( PHI(I) )
+         COSIX = COS( THETA(I) )
+         COSIP1X = COS( THETA(I+1) )
+         SINIX = SIN( THETA(I) )
+         SINIP1X = SIN( THETA(I+1) )
+         SINPHIX = SIN( PHI(I) )
+         COSPHIX = COS( PHI(I) )
+         B11E(I) = -SINIX * SINPHIX
+         B11D(I+1) = COSIP1X * COSPHIX
+         B12D(I) = SINIX * COSPHIX
+         B12E(I) = COSIP1X * SINPHIX
+         B21E(I) = -COSIX * SINPHIX
+         B21D(I+1) = -SINIP1X * COSPHIX
+         B22D(I) = COSIX * COSPHIX
+         B22E(I) = -SINIP1X * SINPHIX
       END DO
       B12D(IMAX) = SIN( THETA(IMAX) )
       B22D(IMAX) = COS( THETA(IMAX) )
@@ -518,11 +515,7 @@
 !        Abort if not converging; otherwise, increment ITER
 !
       IF( ITER  >  MAXIT ) THEN
-         INFO = 0
-         DO I = 1, Q
-            IF( PHI(I)  /=  ZERO ) &
-               INFO = INFO + 1
-         END DO
+         INFO = COUNT(PHI(1:Q)  /=  0.0E+0)
          RETURN
       END IF
 !
@@ -530,53 +523,45 @@
 !
 !        Compute shifts
 !
-      THETAMAX = THETA(IMIN)
-      THETAMIN = THETA(IMIN)
-      DO I = IMIN+1, IMAX
-         IF( THETA(I) > THETAMAX ) &
-            THETAMAX = THETA(I)
-         IF( THETA(I) < THETAMIN ) &
-            THETAMIN = THETA(I)
-      END DO
+      THETAMAX = MAXVAL(THETA(IMIN:IMAX))
+      THETAMIN = MINVAL(THETA(IMIN:IMAX))
 !
       IF( THETAMAX  >  PIOVER2 - THRESH ) THEN
 !
 !           Zero on diagonals of B11 and B22; induce deflation with a
 !           zero shift
 !
-         MU = ZERO
-         NU = ONE
+         MU = 0.0E+0
+         NU = 1.0E+0
 !
       ELSE IF( THETAMIN  <  THRESH ) THEN
 !
 !           Zero on diagonals of B12 and B22; induce deflation with a
 !           zero shift
 !
-         MU = ONE
-         NU = ZERO
+         MU = 1.0E+0
+         NU = 0.0E+0
 !
       ELSE
 !
 !           Compute shifts for B11 and B21 and use the lesser
 !
-         CALL SLAS2( B11D(IMAX-1), B11E(IMAX-1), B11D(IMAX), SIGMA11, &
-                     DUMMY )
-         CALL SLAS2( B21D(IMAX-1), B21E(IMAX-1), B21D(IMAX), SIGMA21, &
-                     DUMMY )
+         CALL SLAS2( B11D(IMAX-1), B11E(IMAX-1), B11D(IMAX), SIGMA11, DUMMY )
+         CALL SLAS2( B21D(IMAX-1), B21E(IMAX-1), B21D(IMAX), SIGMA21, DUMMY )
 !
          IF( SIGMA11  <=  SIGMA21 ) THEN
             MU = SIGMA11
-            NU = SQRT( ONE - MU**2 )
+            NU = SQRT( 1.0E+0 - MU**2 )
             IF( MU  <  THRESH ) THEN
-               MU = ZERO
-               NU = ONE
+               MU = 0.0E+0
+               NU = 1.0E+0
             END IF
          ELSE
             NU = SIGMA21
             MU = SQRT( 1.0 - NU**2 )
             IF( NU  <  THRESH ) THEN
-               MU = ONE
-               NU = ZERO
+               MU = 1.0E+0
+               NU = 0.0E+0
             END IF
          END IF
       END IF
@@ -677,10 +662,12 @@
 !
 !           Compute PHI(I-1)
 !
-         X1 = SIN(THETA(I-1))*B11E(I-1) + COS(THETA(I-1))*B21E(I-1)
-         X2 = SIN(THETA(I-1))*B11BULGE + COS(THETA(I-1))*B21BULGE
-         Y1 = SIN(THETA(I-1))*B12D(I-1) + COS(THETA(I-1))*B22D(I-1)
-         Y2 = SIN(THETA(I-1))*B12BULGE + COS(THETA(I-1))*B22BULGE
+         COSIX = COS(THETA(I-1))
+         SINIX = SIN(THETA(I-1))
+         X1 = SINIX*B11E(I-1) + COSIX*B21E(I-1)
+         X2 = SINIX*B11BULGE + COSIX*B21BULGE
+         Y1 = SINIX*B12D(I-1) + COSIX*B22D(I-1)
+         Y2 = SINIX*B12BULGE + COSIX*B22BULGE
 !
          PHI(I-1) = ATAN2( SQRT(X1**2+X2**2), SQRT(Y1**2+Y2**2) )
 !
@@ -760,10 +747,12 @@
 !
 !           Compute THETA(I)
 !
-         X1 = COS(PHI(I-1))*B11D(I) + SIN(PHI(I-1))*B12E(I-1)
-         X2 = COS(PHI(I-1))*B11BULGE + SIN(PHI(I-1))*B12BULGE
-         Y1 = COS(PHI(I-1))*B21D(I) + SIN(PHI(I-1))*B22E(I-1)
-         Y2 = COS(PHI(I-1))*B21BULGE + SIN(PHI(I-1))*B22BULGE
+         COSIX = COS(PHI(I-1))
+         SINIX = SIN(PHI(I-1))
+         X1 = COSIX*B11D(I) + SINIX*B12E(I-1)
+         X2 = COSIX*B11BULGE + SINIX*B12BULGE
+         Y1 = COSIX*B21D(I) + SINIX*B22E(I-1)
+         Y2 = COSIX*B21BULGE + SINIX*B22BULGE
 !
          THETA(I) = ATAN2( SQRT(Y1**2+Y2**2), SQRT(X1**2+X2**2) )
 !
@@ -847,11 +836,13 @@
 !
 !        Compute PHI(IMAX-1)
 !
-      X1 = SIN(THETA(IMAX-1))*B11E(IMAX-1) + &
-           COS(THETA(IMAX-1))*B21E(IMAX-1)
-      Y1 = SIN(THETA(IMAX-1))*B12D(IMAX-1) + &
-           COS(THETA(IMAX-1))*B22D(IMAX-1)
-      Y2 = SIN(THETA(IMAX-1))*B12BULGE + COS(THETA(IMAX-1))*B22BULGE
+      COSIX = COS(THETA(IMAX-1))
+      SINIX = SIN(THETA(IMAX-1))
+      X1 = SINIX*B11E(IMAX-1) + &
+           COSIX*B21E(IMAX-1)
+      Y1 = SINIX*B12D(IMAX-1) + &
+           COSIX*B22D(IMAX-1)
+      Y2 = SINIX*B12BULGE + COSIX*B22BULGE
 !
       PHI(IMAX-1) = ATAN2( ABS(X1), SQRT(Y1**2+Y2**2) )
 !
@@ -946,19 +937,19 @@
          B21D(IMAX) = -B21D(IMAX)
          IF( WANTV1T ) THEN
             IF( COLMAJOR ) THEN
-               CALL CSCAL( Q, NEGONECOMPLEX, V1T(IMAX,1), LDV1T )
+               V1T(IMAX,1:Q) = -V1T(IMAX,1:Q)
             ELSE
-               CALL CSCAL( Q, NEGONECOMPLEX, V1T(1,IMAX), 1 )
+               V1T(1:Q,IMAX) = -V1T(1:Q,IMAX)
             END IF
          END IF
       END IF
 !
 !        Compute THETA(IMAX)
 !
-      X1 = COS(PHI(IMAX-1))*B11D(IMAX) + &
-           SIN(PHI(IMAX-1))*B12E(IMAX-1)
-      Y1 = COS(PHI(IMAX-1))*B21D(IMAX) + &
-           SIN(PHI(IMAX-1))*B22E(IMAX-1)
+      COSIX = COS(PHI(IMAX-1))
+      SINIX = SIN(PHI(IMAX-1))
+      X1 = COSIX*B11D(IMAX) + SINIX*B12E(IMAX-1)
+      Y1 = COSIX*B21D(IMAX) + SINIX*B22E(IMAX-1)
 !
       THETA(IMAX) = ATAN2( ABS(Y1), ABS(X1) )
 !
@@ -969,9 +960,9 @@
          B12D(IMAX) = -B12D(IMAX)
          IF( WANTU1 ) THEN
             IF( COLMAJOR ) THEN
-               CALL CSCAL( P, NEGONECOMPLEX, U1(1,IMAX), 1 )
+               U1(1:P,IMAX) = - U1(1:P,IMAX)
             ELSE
-               CALL CSCAL( P, NEGONECOMPLEX, U1(IMAX,1), LDU1 )
+               U1(IMAX,1:P) = - U1(IMAX,1:P)
             END IF
          END IF
       END IF
@@ -979,9 +970,9 @@
          B22D(IMAX) = -B22D(IMAX)
          IF( WANTU2 ) THEN
             IF( COLMAJOR ) THEN
-               CALL CSCAL( M-P, NEGONECOMPLEX, U2(1,IMAX), 1 )
+               U2(1:M-P,IMAX) = - U2(1:M-P,IMAX)
             ELSE
-               CALL CSCAL( M-P, NEGONECOMPLEX, U2(IMAX,1), LDU2 )
+               U2(IMAX,1:M-P) = - U2(IMAX,1:M-P)
             END IF
          END IF
       END IF
@@ -991,9 +982,9 @@
       IF( B12D(IMAX)+B22D(IMAX)  <  0 ) THEN
          IF( WANTV2T ) THEN
             IF( COLMAJOR ) THEN
-               CALL CSCAL( M-Q, NEGONECOMPLEX, V2T(IMAX,1), LDV2T )
+               V2T(IMAX,1:M-Q) = - V2T(IMAX,1:M-Q)
             ELSE
-               CALL CSCAL( M-Q, NEGONECOMPLEX, V2T(1,IMAX), 1 )
+               V2T(1:M-Q,IMAX) = - V2T(1:M-Q,IMAX)
             END IF
          END IF
       END IF
@@ -1002,14 +993,14 @@
 !
       DO I = IMIN, IMAX
          IF( THETA(I)  <  THRESH ) THEN
-            THETA(I) = ZERO
+            THETA(I) = 0.0E+0
          ELSE IF( THETA(I)  >  PIOVER2-THRESH ) THEN
             THETA(I) = PIOVER2
          END IF
       END DO
       DO I = IMIN, IMAX-1
          IF( PHI(I)  <  THRESH ) THEN
-            PHI(I) = ZERO
+            PHI(I) = 0.0E+0
          ELSE IF( PHI(I)  >  PIOVER2-THRESH ) THEN
             PHI(I) = PIOVER2
          END IF
@@ -1018,7 +1009,7 @@
 !        Deflate
 !
       IF (IMAX  >  1) THEN
-         DO WHILE( PHI(IMAX-1)  ==  ZERO )
+         DO WHILE( PHI(IMAX-1)  ==  0.0E+0 )
             IMAX = IMAX - 1
             IF (IMAX  <=  1) EXIT
          END DO
@@ -1026,7 +1017,7 @@
       IF( IMIN  >  IMAX - 1 ) &
          IMIN = IMAX - 1
       IF (IMIN  >  1) THEN
-         DO WHILE (PHI(IMIN-1)  /=  ZERO)
+         DO WHILE (PHI(IMIN-1)  /=  0.0E+0)
              IMIN = IMIN - 1
              IF (IMIN  <=  1) EXIT
          END DO
@@ -1053,24 +1044,47 @@
          THETA(MINI) = THETA(I)
          THETA(I) = THETAMIN
          IF( COLMAJOR ) THEN
-            IF( WANTU1 ) &
-               CALL CSWAP( P, U1(1,I), 1, U1(1,MINI), 1 )
-            IF( WANTU2 ) &
-               CALL CSWAP( M-P, U2(1,I), 1, U2(1,MINI), 1 )
-            IF( WANTV1T ) &
-               CALL CSWAP( Q, V1T(I,1), LDV1T, V1T(MINI,1), LDV1T )
-            IF( WANTV2T ) &
-               CALL CSWAP( M-Q, V2T(I,1), LDV2T, V2T(MINI,1), &
-                  LDV2T )
+            IF( WANTU1 ) THEN
+               U1_TMP(1:P) = U1(1:P,I)
+               U1(1:P,I) = U1(1:P,MINI)
+               U1(1:P,MINI) = U1_TMP(1:P)
+            ENDIF
+            IF( WANTU2 ) THEN
+               U2_TMP(1:M-P) = U2(1:M-P,I)
+               U2(1:M-P,I) = U2(1:M-P,MINI)
+               U2(1:M-P,MINI) = U2_TMP(1:M-P)
+            ENDIF
+            IF( WANTV1T ) THEN
+               V1TT_TMP(1:Q) = V1T(I,1:Q)
+               V1T(I,1:Q) = V1T(MINI,1:Q)
+               V1T(MINI,1:Q) = V1TT_TMP(1:Q)
+            ENDIF
+            IF( WANTV2T ) THEN
+               U2T_TMP(1:M-Q) = V2T(I,1:M-Q)
+               V2T(I,1:M-Q) = V2T(MINI,1:M-Q)
+               V2T(MINI,1:M-Q) = U2T_TMP(1:M-Q)
+            ENDIF
          ELSE
-            IF( WANTU1 ) &
-               CALL CSWAP( P, U1(I,1), LDU1, U1(MINI,1), LDU1 )
-            IF( WANTU2 ) &
-               CALL CSWAP( M-P, U2(I,1), LDU2, U2(MINI,1), LDU2 )
-            IF( WANTV1T ) &
-               CALL CSWAP( Q, V1T(1,I), 1, V1T(1,MINI), 1 )
-            IF( WANTV2T ) &
-               CALL CSWAP( M-Q, V2T(1,I), 1, V2T(1,MINI), 1 )
+            IF( WANTU1 ) THEN
+               U1T_TMP(1:P) = U1(I,1:P)
+               U1(I,1:P) = U1(MINI,1:P)
+               U1(MINI,1:P) = U1T_TMP(1:P)
+            ENDIF
+            IF( WANTU2 ) THEN
+               U2T_TMP(1:M-P) = U2(I,1:M-P)
+               U2(I,1:M-P) = U2(MINI,1:M-P)
+               U2(MINI,1:M-P) = U2T_TMP(1:M-P)
+            ENDIF
+            IF( WANTV1T ) THEN
+               V1T_TMP(1:Q) = V1T(1:Q,I)
+               V1T(1:Q,I) = V1T(1:Q,MINI)
+               V1T(1:Q,MINI) = V1T_TMP(1:Q)
+            ENDIF
+            IF( WANTV2T ) THEN
+               V2T_TMP(1:M-Q) = V2T(1:M-Q,I)
+               V2T(1:M-Q,I) = V2T(1:M-Q,MINI)
+               V2T(1:M-Q,MINI) = V2T_TMP(1:M-Q)
+            ENDIF
          END IF
       END IF
 !
@@ -1082,4 +1096,5 @@
 !
    END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

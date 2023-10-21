@@ -122,6 +122,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gebal
 !
@@ -179,14 +180,13 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    REAL               SCLFAC
    PARAMETER          ( SCLFAC = 2.0E+0 )
    REAL               FACTOR
    PARAMETER          ( FACTOR = 0.95E+0 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            A_TMP( N )
    LOGICAL            NOCONV, CANSWAP
    INTEGER            I, ICA, IRA, J, K, L
    REAL               C, CA, F, G, R, RA, S, SFMAX1, SFMAX2, SFMIN1, &
@@ -199,10 +199,7 @@
    EXTERNAL           SISNAN, LSAME, ICAMAX, SLAMCH, SCNRM2
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           XERBLA, CSSCAL, CSWAP
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, AIMAG, MAX, MIN
+   EXTERNAL           XERBLA
 !
 !     Test the input parameters
 !
@@ -229,9 +226,7 @@
    END IF
 !
    IF( LSAME( JOB, 'N' ) ) THEN
-      DO I = 1, N
-         SCALE( I ) = ONE
-      END DO
+      SCALE(1:N) = 1.0E+0
       ILO = 1
       IHI = N
       RETURN
@@ -255,8 +250,8 @@
          DO I = L, 1, -1
             CANSWAP = .TRUE.
             DO J = 1, L
-               IF( I /= J .AND. ( REAL( A( I, J ) ) /= ZERO .OR. &
-                   AIMAG( A( I, J ) ) /= ZERO ) ) THEN
+               IF( I /= J .AND. ( REAL( A( I, J ) ) /= 0.0E+0 .OR. &
+                   AIMAG( A( I, J ) ) /= 0.0E+0 ) ) THEN
                   CANSWAP = .FALSE.
                   EXIT
                END IF
@@ -265,8 +260,12 @@
             IF( CANSWAP ) THEN
                SCALE( L ) = I
                IF( I /= L ) THEN
-                  CALL CSWAP( L, A( 1, I ), 1, A( 1, L ), 1 )
-                  CALL CSWAP( N-K+1, A( I, K ), LDA, A( L, K ), LDA )
+                  A_TMP(1:L) = A(1:L,I)
+                  A(1:L,I) = A(1:L,L)
+                  A(1:L,L) = A_TMP(1:L)
+                  A_TMP(1:N-K+1) = A(I,K:N)
+                  A(I,K:N) = A(L,K:N)
+                  A(L,K:N) = A_TMP(1:N-K+1)
                END IF
                NOCONV = .TRUE.
 !
@@ -291,8 +290,8 @@
          DO J = K, L
             CANSWAP = .TRUE.
             DO I = K, L
-               IF( I /= J .AND. ( REAL( A( I, J ) ) /= ZERO .OR. &
-                   AIMAG( A( I, J ) ) /= ZERO ) ) THEN
+               IF( I /= J .AND. ( REAL( A( I, J ) ) /= 0.0E+0 .OR. &
+                   AIMAG( A( I, J ) ) /= 0.0E+0 ) ) THEN
                   CANSWAP = .FALSE.
                   EXIT
                END IF
@@ -301,8 +300,12 @@
             IF( CANSWAP ) THEN
                SCALE( K ) = J
                IF( J /= K ) THEN
-                  CALL CSWAP( L, A( 1, J ), 1, A( 1, K ), 1 )
-                  CALL CSWAP( N-K+1, A( J, K ), LDA, A( K, K ), LDA )
+                  A_TMP(1:L) = A(1:L,J)
+                  A(1:L,J) = A(1:L,K)
+                  A(1:L,K) = A_TMP(1:L)
+                  A_TMP(1:N-K+1) = A(J,K:N)
+                  A(J,K:N) = A(K,K:N)
+                  A(K,K:N) = A_TMP(1:N-K+1)
                END IF
                NOCONV = .TRUE.
 !
@@ -316,9 +319,7 @@
 !
 !     Initialize SCALE for non-permuted submatrix.
 !
-   DO I = K, L
-      SCALE( I ) = ONE
-   END DO
+   SCALE(K:L) = 1.0E+0
 !
 !     If we only had to permute, we are done.
 !
@@ -333,9 +334,9 @@
 !     Iterative loop for norm reduction.
 !
    SFMIN1 = SLAMCH( 'S' ) / SLAMCH( 'P' )
-   SFMAX1 = ONE / SFMIN1
+   SFMAX1 = 1.0E+0 / SFMIN1
    SFMIN2 = SFMIN1*SCLFAC
-   SFMAX2 = ONE / SFMIN2
+   SFMAX2 = 1.0E+0 / SFMIN2
 !
    NOCONV = .TRUE.
    DO WHILE( NOCONV )
@@ -352,7 +353,7 @@
 !
 !           Guard against zero C or R due to underflow.
 !
-         IF( C == ZERO .OR. R == ZERO ) CYCLE
+         IF( C == 0.0E+0 .OR. R == 0.0E+0 ) CYCLE
 !
 !           Exit if NaN to avoid infinite loop
 !
@@ -363,7 +364,7 @@
          END IF
 !
          G = R / SCLFAC
-         F = ONE
+         F = 1.0E+0
          S = C + R
 !
          DO WHILE( C < G .AND. MAX( F, C, CA ) < SFMAX2 .AND. &
@@ -391,18 +392,18 @@
 !           Now balance.
 !
          IF( ( C+R ) >= FACTOR*S ) CYCLE
-         IF( F < ONE .AND. SCALE( I ) < ONE ) THEN
+         IF( F < 1.0E+0 .AND. SCALE( I ) < 1.0E+0 ) THEN
             IF( F*SCALE( I ) <= SFMIN1 ) CYCLE
          END IF
-         IF( F > ONE .AND. SCALE( I ) > ONE ) THEN
+         IF( F > 1.0E+0 .AND. SCALE( I ) > 1.0E+0 ) THEN
             IF( SCALE( I ) >= SFMAX1 / F ) CYCLE
          END IF
-         G = ONE / F
+         G = 1.0E+0 / F
          SCALE( I ) = SCALE( I )*F
          NOCONV = .TRUE.
 !
-         CALL CSSCAL( N-K+1, G, A( I, K ), LDA )
-         CALL CSSCAL( L, F, A( 1, I ), 1 )
+         A(I,K:N) = G*A(I,K:N)
+         A(1:L,I) = F*A(1:L,I)
 !
       END DO
 !
@@ -416,4 +417,4 @@
 !     End of CGEBAL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

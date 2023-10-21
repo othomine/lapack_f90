@@ -349,12 +349,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
    REAL               TWOPI
    PARAMETER  ( TWOPI = 6.28318530717958647692528676655900576839E+0 )
 !     ..
@@ -381,10 +375,6 @@
    EXTERNAL           CLAGGE, CLAGHE, CLAGSY, CLAROT, CLARTG, CLASET, &
                       SLATM1, SSCAL, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, CONJG, COS, MAX, MIN, MOD, REAL, &
-                      SIN
-!     ..
 !     .. Executable Statements ..
 !
 !     1)      Decode and Test the input parameters.
@@ -394,8 +384,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Decode DIST
 !
@@ -479,16 +468,12 @@
 !     Use Givens rotation method if bandwidth small enough,
 !     or if LDA is too small to store the matrix unpacked.
 !
-   GIVENS = .FALSE.
    IF( ISYM == 1 ) THEN
-      IF( REAL( LLB+UUB ) < 0.3*REAL( MAX( 1, MR+NC ) ) ) &
-         GIVENS = .TRUE.
+      GIVENS = ( REAL( LLB+UUB ) < 0.3*REAL( MAX( 1, MR+NC ) ) )
    ELSE
-      IF( 2*LLB < M ) &
-         GIVENS = .TRUE.
+      GIVENS = ( 2*LLB < M )
    END IF
-   IF( LDA < M .AND. LDA >= MINLDA ) &
-      GIVENS = .TRUE.
+   IF( LDA < M .AND. LDA >= MINLDA ) GIVENS = .TRUE.
 !
 !     Set INFO if an error
 !
@@ -504,7 +489,7 @@
       INFO = -5
    ELSE IF( ABS( MODE ) > 6 ) THEN
       INFO = -7
-   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < ONE ) &
+   ELSE IF( ( MODE /= 0 .AND. ABS( MODE ) /= 6 ) .AND. COND < 1.0E+0 ) &
              THEN
       INFO = -8
    ELSE IF( KL < 0 ) THEN
@@ -537,12 +522,9 @@
 !
 !     Initialize random number generator
 !
-   DO I = 1, 4
-      ISEED( I ) = MOD( ABS( ISEED( I ) ), 4096 )
-   ENDDO
+   ISEED(1:4) = MOD( ABS( ISEED(1:4) ), 4096 )
 !
-   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) &
-      ISEED( 4 ) = ISEED( 4 ) + 1
+   IF( MOD( ISEED( 4 ), 2 ) /= 1 ) ISEED( 4 ) = ISEED( 4 ) + 1
 !
 !     2)      Set up D  if indicated.
 !
@@ -557,22 +539,15 @@
 !     Choose Top-Down if D is (apparently) increasing,
 !     Bottom-Up if D is (apparently) decreasing.
 !
-   IF( ABS( D( 1 ) ) <= ABS( D( MNMIN ) ) ) THEN
-      TOPDWN = .TRUE.
-   ELSE
-      TOPDWN = .FALSE.
-   END IF
+   TOPDWN = ( ABS( D( 1 ) ) <= ABS( D( MNMIN ) ) )
 !
    IF( MODE /= 0 .AND. ABS( MODE ) /= 6 ) THEN
 !
 !        Scale by DMAX
 !
-      TEMP = ABS( D( 1 ) )
-      DO I = 2, MNMIN
-         TEMP = MAX( TEMP, ABS( D( I ) ) )
-      ENDDO
+      TEMP = MAXVAL(ABS( D(1:MNMIN) ) )
 !
-      IF( TEMP > ZERO ) THEN
+      IF( TEMP > 0.0E+0 ) THEN
          ALPHA = DMAX / TEMP
       ELSE
          INFO = 2
@@ -596,7 +571,7 @@
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-   CALL CLASET( 'Full', LDA, N, CZERO, CZERO, A, LDA )
+   CALL CLASET( 'Full', LDA, N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), A, LDA )
 #ifdef _TIMER
    call system_clock(count_rate=nb_periods_sec,count=S2_time)
    open(file='results.out', unit=10, position = 'append')
@@ -642,8 +617,7 @@
          A( ( 1-ISKEW )*J+IOFFST, J ) = CMPLX( D( J ) )
       ENDDO
 !
-      IF( IPACK <= 2 .OR. IPACK >= 5 ) &
-         IPACKG = IPACK
+      IF( IPACK <= 2 .OR. IPACK >= 5 ) IPACKG = IPACK
 !
    ELSE IF( GIVENS ) THEN
 !
@@ -674,7 +648,7 @@
 !                 Last column actually rotated is MIN( M+JKU, N )
 !
                DO JR = 1, MIN( M+JKU, N ) + JKL - 1
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
                   S = SIN( ANGLE )*CLARND( 5, ISEED )
@@ -710,7 +684,7 @@
                      END IF
                      IROW = MAX( 1, JCH-JKU )
                      IL = IR + 2 - IROW
-                     CTEMP = CZERO
+                     CTEMP = (0.0E+0,0.0E+0)
                      ILTEMP = JCH > JKU
                      CALL CLAROT( .FALSE., ILTEMP, .TRUE., IL, C, S, &
                                   A( IROW-ISKEW*IC+IOFFST, IC ), &
@@ -734,7 +708,7 @@
 !
                         ICOL = MAX( 1, JCH-JKU-JKL )
                         IL = IC + 2 - ICOL
-                        EXTRA = CZERO
+                        EXTRA = (0.0E+0,0.0E+0)
                         CALL CLAROT( .TRUE., JCH > JKU+JKL, .TRUE., &
                                      IL, C, S, A( IROW-ISKEW*ICOL+ &
                                      IOFFST, ICOL ), ILDA, EXTRA, &
@@ -752,7 +726,7 @@
 !                 Transform from bandwidth JKL-1, JKU to JKL, JKU
 !
                DO JC = 1, MIN( N+JKL, M ) + JKU - 1
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
                   S = SIN( ANGLE )*CLARND( 5, ISEED )
@@ -788,7 +762,7 @@
                      END IF
                      ICOL = MAX( 1, JCH-JKL )
                      IL = IC + 2 - ICOL
-                     CTEMP = CZERO
+                     CTEMP = (0.0E+0,0.0E+0)
                      ILTEMP = JCH > JKL
                      CALL CLAROT( .TRUE., ILTEMP, .TRUE., IL, C, S, &
                                   A( IR-ISKEW*ICOL+IOFFST, ICOL ), &
@@ -812,7 +786,7 @@
                         S = CONJG( -S*DUMMY )
                         IROW = MAX( 1, JCH-JKL-JKU )
                         IL = IR + 2 - IROW
-                        EXTRA = CZERO
+                        EXTRA = (0.0E+0,0.0E+0)
                         CALL CLAROT( .FALSE., JCH > JKL+JKU, .TRUE., &
                                      IL, C, S, A( IROW-ISKEW*ICOL+ &
                                      IOFFST, ICOL ), ILDA, EXTRA, &
@@ -822,7 +796,7 @@
                      END IF
                   ENDDO
                ENDDO
-               ENDDO
+            ENDDO
 !
          ELSE
 !
@@ -838,7 +812,7 @@
 !
                IENDCH = MIN( M, N+JKL ) - 1
                DO JC = MIN( M+JKU, N ) - 1, 1 - JKL, -1
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
                   S = SIN( ANGLE )*CLARND( 5, ISEED )
@@ -875,7 +849,7 @@
                      IC = MAX( 1, IC )
                      ICOL = MIN( N-1, JCH+JKU )
                      ILTEMP = JCH + JKU < N
-                     CTEMP = CZERO
+                     CTEMP = (0.0E+0,0.0E+0)
                      CALL CLAROT( .TRUE., ILEXTR, ILTEMP, ICOL+2-IC, &
                                   C, S, A( JCH-ISKEW*IC+IOFFST, IC ), &
                                   ILDA, EXTRA, CTEMP )
@@ -896,16 +870,16 @@
                         C = REALC*DUMMY
                         S = S*DUMMY
                         IL = MIN( IENDCH, JCH+JKL+JKU ) + 2 - JCH
-                        EXTRA = CZERO
+                        EXTRA = (0.0E+0,0.0E+0)
                         CALL CLAROT( .FALSE., .TRUE., &
                                      JCH+JKL+JKU <= IENDCH, IL, C, S, &
                                      A( JCH-ISKEW*ICOL+IOFFST, &
                                      ICOL ), ILDA, CTEMP, EXTRA )
                         IC = ICOL
                      END IF
-                     ENDDO
                   ENDDO
                ENDDO
+            ENDDO
 !
             JKU = UUB
             DO JKL = 1, LLB
@@ -917,7 +891,7 @@
 !
                IENDCH = MIN( N, M+JKU ) - 1
                DO JR = MIN( N+JKL, M ) - 1, 1 - JKU, -1
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
                   S = SIN( ANGLE )*CLARND( 5, ISEED )
@@ -954,7 +928,7 @@
                      IR = MAX( 1, IR )
                      IROW = MIN( M-1, JCH+JKL )
                      ILTEMP = JCH + JKL < M
-                     CTEMP = CZERO
+                     CTEMP = (0.0E+0,0.0E+0)
                      CALL CLAROT( .FALSE., ILEXTR, ILTEMP, IROW+2-IR, &
                                   C, S, A( IR-ISKEW*JCH+IOFFST, &
                                   JCH ), ILDA, EXTRA, CTEMP )
@@ -975,16 +949,16 @@
                         C = REALC*DUMMY
                         S = S*DUMMY
                         IL = MIN( IENDCH, JCH+JKL+JKU ) + 2 - JCH
-                        EXTRA = CZERO
+                        EXTRA = (0.0E+0,0.0E+0)
                         CALL CLAROT( .TRUE., .TRUE., &
                                      JCH+JKL+JKU <= IENDCH, IL, C, S, &
                                      A( IROW-ISKEW*JCH+IOFFST, JCH ), &
                                      ILDA, CTEMP, EXTRA )
                         IR = IROW
                      END IF
-                     ENDDO
                   ENDDO
                ENDDO
+            ENDDO
 !
          END IF
 !
@@ -1009,13 +983,13 @@
 !
             DO J = 1, MNMIN
                A( ( 1-ISKEW )*J+IOFFG, J ) = CMPLX( D( J ) )
-               ENDDO
+            ENDDO
 !
             DO K = 1, UUB
                DO JC = 1, N - 1
                   IROW = MAX( 1, JC-K )
                   IL = MIN( JC+1, K+2 )
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   CTEMP = A( JC-ISKEW*( JC+1 )+IOFFG, JC+1 )
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
@@ -1069,14 +1043,14 @@
                                   ILDA, CTEMP, EXTRA )
                      IROW = MAX( 1, JCH-K )
                      IL = MIN( JCH+1, K+2 )
-                     EXTRA = CZERO
+                     EXTRA = (0.0E+0,0.0E+0)
                      CALL CLAROT( .FALSE., JCH > K, .TRUE., IL, CT, &
                                   ST, A( IROW-ISKEW*JCH+IOFFG, JCH ), &
                                   ILDA, EXTRA, CTEMP )
                      ICOL = JCH
-                     ENDDO
                   ENDDO
                ENDDO
+            ENDDO
 !
 !              If we need lower triangle, copy from upper. Note that
 !              the order of copying is chosen to work for 'q' -> 'b'
@@ -1087,20 +1061,18 @@
                   IF( CSYM ) THEN
                      DO JR = JC, MIN( N, JC+UUB )
                         A( JR+IROW, JC ) = A( JC-ISKEW*JR+IOFFG, JR )
-                        ENDDO
+                     ENDDO
                   ELSE
                      DO JR = JC, MIN( N, JC+UUB )
                         A( JR+IROW, JC ) = CONJG( A( JC-ISKEW*JR+ &
                                            IOFFG, JR ) )
-                        ENDDO
+                     ENDDO
                   END IF
-                  ENDDO
+               ENDDO
                IF( IPACK == 5 ) THEN
                   DO JC = N - UUB + 1, N
-                     DO JR = N + 2 - JC, UUB + 1
-                        A( JR, JC ) = CZERO
-                        ENDDO
-                     ENDDO
+                     A(N+2-JC:UUB+1, JC ) = (0.0E+0,0.0E+0)
+                  ENDDO
                END IF
                IF( IPACKG == 6 ) THEN
                   IPACKG = IPACK
@@ -1114,20 +1086,19 @@
 !
             IF( IPACK >= 5 ) THEN
                IPACKG = 5
-               IF( IPACK == 6 ) &
-                  IOFFG = 1
+               IF( IPACK == 6 ) IOFFG = 1
             ELSE
                IPACKG = 2
             END IF
 !
             DO J = 1, MNMIN
                A( ( 1-ISKEW )*J+IOFFG, J ) = CMPLX( D( J ) )
-               ENDDO
+            ENDDO
 !
             DO K = 1, UUB
                DO JC = N - 1, 1, -1
                   IL = MIN( N+1-JC, K+2 )
-                  EXTRA = CZERO
+                  EXTRA = (0.0E+0,0.0E+0)
                   CTEMP = A( 1+( 1-ISKEW )*JC+IOFFG, JC )
                   ANGLE = TWOPI*SLARND( 1, ISEED )
                   C = COS( ANGLE )*CLARND( 5, ISEED )
@@ -1180,14 +1151,14 @@
                                   A( JCH-ISKEW*ICOL+IOFFG, ICOL ), &
                                   ILDA, EXTRA, CTEMP )
                      IL = MIN( N+1-JCH, K+2 )
-                     EXTRA = CZERO
+                     EXTRA = (0.0E+0,0.0E+0)
                      CALL CLAROT( .FALSE., .TRUE., N-JCH > K, IL, &
                                   CT, ST, A( ( 1-ISKEW )*JCH+IOFFG, &
                                   JCH ), ILDA, CTEMP, EXTRA )
                      ICOL = JCH
-                     ENDDO
                   ENDDO
                ENDDO
+            ENDDO
 !
 !              If we need upper triangle, copy from lower. Note that
 !              the order of copying is chosen to work for 'b' -> 'q'
@@ -1198,20 +1169,18 @@
                   IF( CSYM ) THEN
                      DO JR = JC, MAX( 1, JC-UUB ), -1
                         A( JR+IROW, JC ) = A( JC-ISKEW*JR+IOFFG, JR )
-                        ENDDO
+                     ENDDO
                   ELSE
                      DO JR = JC, MAX( 1, JC-UUB ), -1
                         A( JR+IROW, JC ) = CONJG( A( JC-ISKEW*JR+ &
                                            IOFFG, JR ) )
-                        ENDDO
+                     ENDDO
                   END IF
-                  ENDDO
+               ENDDO
                IF( IPACK == 6 ) THEN
                   DO JC = 1, UUB
-                     DO JR = 1, UUB + 1 - JC
-                        A( JR, JC ) = CZERO
-                        ENDDO
-                     ENDDO
+                     A(1:UUB+1-JC, JC ) = (0.0E+0,0.0E+0)
+                  ENDDO
                END IF
                IF( IPACKG == 5 ) THEN
                   IPACKG = IPACK
@@ -1227,7 +1196,7 @@
             DO JC = 1, N
                IROW = IOFFST + ( 1-ISKEW )*JC
                A( IROW, JC ) = CMPLX( REAL( A( IROW, JC ) ) )
-               ENDDO
+            ENDDO
          END IF
 !
       END IF
@@ -1273,20 +1242,16 @@
 !           'U' -- Upper triangular, not packed
 !
          DO J = 1, M
-            DO I = J + 1, M
-               A( I, J ) = CZERO
-               ENDDO
-            ENDDO
+            A(J+1:M, J ) = (0.0E+0,0.0E+0)
+         ENDDO
 !
       ELSE IF( IPACK == 2 ) THEN
 !
 !           'L' -- Lower triangular, not packed
 !
          DO J = 2, M
-            DO I = 1, J - 1
-               A( I, J ) = CZERO
-               ENDDO
-            ENDDO
+            A(1:J-1, J ) = (0.0E+0,0.0E+0)
+         ENDDO
 !
       ELSE IF( IPACK == 3 ) THEN
 !
@@ -1302,8 +1267,8 @@
                   ICOL = ICOL + 1
                END IF
                A( IROW, ICOL ) = A( I, J )
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 4 ) THEN
 !
@@ -1319,8 +1284,8 @@
                   ICOL = ICOL + 1
                END IF
                A( IROW, ICOL ) = A( I, J )
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK >= 5 ) THEN
 !
@@ -1328,22 +1293,20 @@
 !           'Q' -- The upper triangle is packed as a band matrix.
 !           'Z' -- The whole matrix is packed as a band matrix.
 !
-         IF( IPACK == 5 ) &
-            UUB = 0
-         IF( IPACK == 6 ) &
-            LLB = 0
+         IF( IPACK == 5 ) UUB = 0
+         IF( IPACK == 6 ) LLB = 0
 !
          DO J = 1, UUB
             DO I = MIN( J+LLB, M ), 1, -1
                A( I-J+UUB+1, J ) = A( I, J )
-               ENDDO
             ENDDO
+         ENDDO
 !
          DO J = UUB + 2, N
             DO I = J - UUB, MIN( J+LLB, M )
                A( I-J+UUB+1, J ) = A( I, J )
-               ENDDO
             ENDDO
+         ENDDO
       END IF
 !
 !        If packed, zero out extraneous elements.
@@ -1354,10 +1317,10 @@
       IF( IPACK == 3 .OR. IPACK == 4 ) THEN
          DO JC = ICOL, M
             DO JR = IROW + 1, LDA
-               A( JR, JC ) = CZERO
-               ENDDO
-            IROW = 0
+               A( JR, JC ) = (0.0E+0,0.0E+0)
             ENDDO
+            IROW = 0
+         ENDDO
 !
       ELSE IF( IPACK >= 5 ) THEN
 !
@@ -1371,12 +1334,12 @@
          IR2 = UUB + M + 2
          DO JC = 1, N
             DO JR = 1, UUB + 1 - JC
-               A( JR, JC ) = CZERO
-               ENDDO
-            DO JR = MAX( 1, MIN( IR1, IR2-JC ) ), LDA
-               A( JR, JC ) = CZERO
-               ENDDO
+               A( JR, JC ) = (0.0E+0,0.0E+0)
             ENDDO
+            DO JR = MAX( 1, MIN( IR1, IR2-JC ) ), LDA
+               A( JR, JC ) = (0.0E+0,0.0E+0)
+            ENDDO
+         ENDDO
       END IF
    END IF
 !
@@ -1385,6 +1348,4 @@
 !     End of CLATMS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

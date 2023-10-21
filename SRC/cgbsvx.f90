@@ -360,6 +360,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbsvx
 !
@@ -389,10 +390,6 @@
 !  Moved setting of INFO = N+1 so INFO does not subsequently get
 !  overwritten.  Sven, 17 Mar 05.
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COLEQU, EQUIL, NOFACT, NOTRAN, ROWEQU
@@ -407,11 +404,7 @@
    EXTERNAL           LSAME, CLANGB, CLANTB, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGBCON, CGBEQU, CGBRFS, CGBTRF, CGBTRS, &
-                      CLACPY, CLAQGB, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
+   EXTERNAL           CCOPY, CGBCON, CGBEQU, CGBRFS, CGBTRF, CGBTRS, CLAQGB, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -427,7 +420,7 @@
       ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
       COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       SMLNUM = SLAMCH( 'Safe minimum' )
-      BIGNUM = ONE / SMLNUM
+      BIGNUM = 1.0E+0 / SMLNUM
    END IF
 !
 !     Test the input parameters.
@@ -455,33 +448,25 @@
       INFO = -12
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAX(0.0E+0, MAXVAL(R(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -13
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0E+0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAX(0.0E+0, MAXVAL(C(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -14
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0E+0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -502,14 +487,12 @@
 !
 !        Compute row and column scalings to equilibrate the matrix A.
 !
-      CALL CGBEQU( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, &
-                   AMAX, INFEQU )
+      CALL CGBEQU( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, AMAX, INFEQU )
       IF( INFEQU == 0 ) THEN
 !
 !           Equilibrate the matrix.
 !
-         CALL CLAQGB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, &
-                      AMAX, EQUED )
+         CALL CLAQGB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, AMAX, EQUED )
          ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
          COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       END IF
@@ -520,16 +503,12 @@
    IF( NOTRAN ) THEN
       IF( ROWEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               B( I, J ) = R( I )*B( I, J )
-            ENDDO
+            B(1:N,J) = R(1:N)*B(1:N,J)
          ENDDO
       END IF
    ELSE IF( COLEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = C( I )*B( I, J )
-         ENDDO
+         B(1:N, J ) = C(1:N)*B(1:N,J)
       ENDDO
    END IF
 !
@@ -553,7 +532,7 @@
 !           Compute the reciprocal pivot growth factor of the
 !           leading rank-deficient INFO columns of A.
 !
-         ANORM = ZERO
+         ANORM = 0.0E+0
          DO J = 1, INFO
             DO I = MAX( KU+2-J, 1 ), MIN( N+KU+1-J, KL+KU+1 )
                ANORM = MAX( ANORM, ABS( AB( I, J ) ) )
@@ -562,13 +541,13 @@
          RPVGRW = CLANTB( 'M', 'U', 'N', INFO, MIN( INFO-1, KL+KU ), &
                           AFB( MAX( 1, KL+KU+2-INFO ), 1 ), LDAFB, &
                           RWORK )
-         IF( RPVGRW == ZERO ) THEN
-            RPVGRW = ONE
+         IF( RPVGRW == 0.0E+0 ) THEN
+            RPVGRW = 1.0E+0
          ELSE
             RPVGRW = ANORM / RPVGRW
          END IF
          RWORK( 1 ) = RPVGRW
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -583,8 +562,8 @@
    END IF
    ANORM = CLANGB( NORM, N, KL, KU, AB, LDAB, RWORK )
    RPVGRW = CLANTB( 'M', 'U', 'N', N, KL+KU, AFB, LDAFB, RWORK )
-   IF( RPVGRW == ZERO ) THEN
-      RPVGRW = ONE
+   IF( RPVGRW == 0.0E+0 ) THEN
+      RPVGRW = 1.0E+0
    ELSE
       RPVGRW = CLANGB( 'M', N, KL, KU, AB, LDAB, RWORK ) / RPVGRW
    END IF
@@ -596,7 +575,7 @@
 !
 !     Compute the solution matrix X.
 !
-   CALL CLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL CGBTRS( TRANS, N, KL, KU, NRHS, AFB, LDAFB, IPIV, X, LDX, &
                 INFO )
 !
@@ -612,29 +591,20 @@
    IF( NOTRAN ) THEN
       IF( COLEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               X( I, J ) = C( I )*X( I, J )
-               ENDDO
-            ENDDO
-         DO J = 1, NRHS
-            FERR( J ) = FERR( J ) / COLCND
-            ENDDO
+            X(1:N,J) = C(1:N)*X(1:N,J)
+         ENDDO
+         FERR(1:NRHS) = FERR(1:NRHS) / COLCND
       END IF
    ELSE IF( ROWEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            X( I, J ) = R( I )*X( I, J )
-            ENDDO
-         ENDDO
-      DO J = 1, NRHS
-         FERR( J ) = FERR( J ) / ROWCND
-         ENDDO
+         X(1:N,J) = R(1:N)*X(1:N,J)
+      ENDDO
+      FERR(1:NRHS) = FERR(1:NRHS) / ROWCND
    END IF
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < SLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < SLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    RWORK( 1 ) = RPVGRW
    RETURN
@@ -642,4 +612,4 @@
 !     End of CGBSVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+

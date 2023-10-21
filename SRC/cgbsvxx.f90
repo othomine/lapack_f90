@@ -551,6 +551,7 @@
 !> \author Univ. of California Berkeley
 !> \author Univ. of Colorado Denver
 !> \author NAG Ltd.
+!> \author Olivier Thomine [F90 conversion, profiling & optimization]
 !
 !> \ingroup gbsvxx
 !
@@ -583,8 +584,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            FINAL_NRM_ERR_I, FINAL_CMP_ERR_I, BERR_I
    INTEGER            RCOND_I, NRM_RCOND_I, NRM_ERR_I, CMP_RCOND_I
    INTEGER            CMP_ERR_I, PIV_GROWTH_I
@@ -606,11 +605,8 @@
    REAL               SLAMCH, CLA_GBRPVGRW
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGBEQUB, CGBTRF, CGBTRS, CLACPY, CLAQGB, &
+   EXTERNAL           CGBEQUB, CGBTRF, CGBTRS, CLAQGB, &
                       XERBLA, CLASCL2, CGBRFSX
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -619,7 +615,7 @@
    EQUIL = LSAME( FACT, 'E' )
    NOTRAN = LSAME( TRANS, 'N' )
    SMLNUM = SLAMCH( 'Safe minimum' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    IF( NOFACT .OR. EQUIL ) THEN
       EQUED = 'N'
       ROWEQU = .FALSE.
@@ -633,7 +629,7 @@
 !     factorization fails, make everything look horrible.  Only the
 !     pivot growth is set here, the rest is initialized in CGBRFSX.
 !
-   RPVGRW = ZERO
+   RPVGRW = 0.0E+0
 !
 !     Test the input parameters.  PARAMS is not tested until CGERFSX.
 !
@@ -660,33 +656,25 @@
       INFO = -12
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-            ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAX(0.0E+0, MAXVAL(R(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -13
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0E+0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-            ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAX(0.0E+0, MAXVAL(C(1:N)))
+         IF( RCMIN <= 0.0E+0 ) THEN
             INFO = -14
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0E+0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -722,14 +710,10 @@
 !     If the scaling factors are not applied, set them to 1.0.
 !
       IF ( .NOT.ROWEQU ) THEN
-         DO J = 1, N
-            R( J ) = 1.0
-         END DO
+         R(1:N) = 1.0
       END IF
       IF ( .NOT.COLEQU ) THEN
-         DO J = 1, N
-            C( J ) = 1.0
-         END DO
+         C(1:N) = 1.0
       END IF
    END IF
 !
@@ -745,11 +729,7 @@
 !
 !        Compute the LU factorization of A.
 !
-      DO , J = 1, N
-         DO , I = KL+1, 2*KL+KU+1
-            AFB( I, J ) = AB( I-KL, J )
-            ENDDO
-         ENDDO
+      AFB(KL+1:2*KL+KU+1,1:N) = AB(1:KL+KU+1,1:N)
       CALL CGBTRF( N, N, KL, KU, AFB, LDAFB, IPIV, INFO )
 !
 !        Return if INFO is non-zero.
@@ -772,9 +752,8 @@
 !
 !     Compute the solution matrix X.
 !
-   CALL CLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
-   CALL CGBTRS( TRANS, N, KL, KU, NRHS, AFB, LDAFB, IPIV, X, LDX, &
-        INFO )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
+   CALL CGBTRS( TRANS, N, KL, KU, NRHS, AFB, LDAFB, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solution and
 !     compute error bounds and backward error estimates for it.
@@ -798,4 +777,5 @@
 !     End of CGBSVXX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+

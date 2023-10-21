@@ -505,16 +505,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D0 )
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D0 )
-   COMPLEX*16         CONE
-   PARAMETER          ( CONE = ( 1.0D0, 0.0D0 ) )
-   COMPLEX*16         CZERO
-   PARAMETER          ( CZERO = ( 0.0D0, 0.0D0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BADPVT, DZERO, FULBND
@@ -540,9 +530,6 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, ZDSCAL, ZLATM1
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, DCONJG, MAX, MIN, MOD
-!     ..
 !     .. Executable Statements ..
 !
 !     1)      Decode and Test the input parameters.
@@ -552,8 +539,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Decode DIST
 !
@@ -664,22 +650,12 @@
 !     If inv(DL) is used, check to see if DL has a zero entry.
 !
    DZERO = .FALSE.
-   IF( IGRADE == 4 .AND. MODEL == 0 ) THEN
-      DO I = 1, M
-         IF( DL( I ) == CZERO ) &
-            DZERO = .TRUE.
-      ENDDO
-   END IF
+   IF( IGRADE == 4 .AND. MODEL == 0 ) DZERO = ANY( DL(1:M) == (0.0D+0,0.0D+0) )
 !
 !     Check values in IPIVOT
 !
    BADPVT = .FALSE.
-   IF( IPVTNG > 0 ) THEN
-      DO J = 1, NPVTS
-         IF( IPIVOT( J ) <= 0 .OR. IPIVOT( J ) > NPVTS ) &
-            BADPVT = .TRUE.
-      ENDDO
-   END IF
+   IF( IPVTNG > 0 ) BADPVT = ANY( IPIVOT(1:NPVTS) <= 0 .OR. IPIVOT(1:NPVTS) > NPVTS )
 !
 !     Set INFO if an error
 !
@@ -696,7 +672,7 @@
    ELSE IF( MODE < -6 .OR. MODE > 6 ) THEN
       INFO = -7
    ELSE IF( ( MODE /= -6 .AND. MODE /= 0 .AND. MODE /= 6 ) .AND. &
-            COND < ONE ) THEN
+            COND < 1.0D+0 ) THEN
       INFO = -8
    ELSE IF( ( MODE /= -6 .AND. MODE /= 0 .AND. MODE /= 6 ) .AND. &
             IRSIGN == -1 ) THEN
@@ -716,14 +692,14 @@
    ELSE IF( ( IGRADE == 1 .OR. IGRADE == 3 .OR. IGRADE == 4 .OR. &
             IGRADE == 5 .OR. IGRADE == 6 ) .AND. &
             ( MODEL /= -6 .AND. MODEL /= 0 .AND. MODEL /= 6 ) .AND. &
-            CONDL < ONE ) THEN
+            CONDL < 1.0D+0 ) THEN
       INFO = -14
    ELSE IF( ( IGRADE == 2 .OR. IGRADE == 3 ) .AND. &
             ( MODER < -6 .OR. MODER > 6 ) ) THEN
       INFO = -16
    ELSE IF( ( IGRADE == 2 .OR. IGRADE == 3 ) .AND. &
             ( MODER /= -6 .AND. MODER /= 0 .AND. MODER /= 6 ) .AND. &
-            CONDR < ONE ) THEN
+            CONDR < 1.0D+0 ) THEN
       INFO = -17
    ELSE IF( IPVTNG == -1 .OR. ( IPVTNG == 3 .AND. M /= N ) .OR. &
             ( ( IPVTNG == 1 .OR. IPVTNG == 2 ) .AND. ( ISYM == 0 .OR. &
@@ -736,7 +712,7 @@
    ELSE IF( KU < 0 .OR. ( ( ISYM == 0 .OR. ISYM == 2 ) .AND. KL /= &
             KU ) ) THEN
       INFO = -21
-   ELSE IF( SPARSE < ZERO .OR. SPARSE > ONE ) THEN
+   ELSE IF( SPARSE < 0.0D+0 .OR. SPARSE > 1.0D+0 ) THEN
       INFO = -22
    ELSE IF( IPACK == -1 .OR. ( ( IPACK == 1 .OR. IPACK == 2 .OR. &
             IPACK == 5 .OR. IPACK == 6 ) .AND. ISYM == 1 ) .OR. &
@@ -769,15 +745,11 @@
 !
 !     Decide if we can pivot consistently
 !
-   FULBND = .FALSE.
-   IF( KUU == N-1 .AND. KLL == M-1 ) &
-      FULBND = .TRUE.
+   FULBND = ( KUU == N-1 .AND. KLL == M-1 )
 !
 !     Initialize random number generator
 !
-   DO I = 1, 4
-      ISEED( I ) = MOD( ABS( ISEED( I ) ), 4096 )
-   ENDDO
+   ISEED(1:4) = MOD( ABS( ISEED(1:4) ), 4096 )
 !
    ISEED( 4 ) = 2*( ISEED( 4 ) / 2 ) + 1
 !
@@ -794,22 +766,17 @@
 !
 !        Scale by DMAX
 !
-      TEMP = ABS( D( 1 ) )
-      DO I = 2, MNMIN
-         TEMP = MAX( TEMP, ABS( D( I ) ) )
-      ENDDO
-      IF( TEMP == ZERO .AND. DMAX /= CZERO ) THEN
+      TEMP = MAXVAL(ABS( D(1:MNMIN) ) )
+      IF( TEMP == 0.0D+0 .AND. DMAX /= (0.0D+0,0.0D+0) ) THEN
          INFO = 2
          RETURN
       END IF
-      IF( TEMP /= ZERO ) THEN
+      IF( TEMP /= 0.0D+0 ) THEN
          CALPHA = DMAX / TEMP
       ELSE
-         CALPHA = CONE
+         CALPHA = (1.0D+0,0.0D+0)
       END IF
-      DO I = 1, MNMIN
-         D( I ) = CALPHA*D( I )
-      ENDDO
+      D(1:MNMIN) = CALPHA*D(1:MNMIN)
 !
    END IF
 !
@@ -893,8 +860,8 @@
                           IDIST, ISEED, D, IGRADE, DL, DR, IPVTNG, &
                           IWORK, SPARSE )
                   A( ISUB, JSUB ) = CTEMP
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( ISYM == 2 ) THEN
             DO J = 1, N
                DO I = 1, J
@@ -903,8 +870,8 @@
                           IWORK, SPARSE )
                   A( ISUB, JSUB ) = CTEMP
                   A( JSUB, ISUB ) = CTEMP
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
       ELSE IF( IPACK == 1 ) THEN
@@ -922,9 +889,9 @@
                   A( MNSUB, MXSUB ) = CTEMP
                END IF
                IF( MNSUB /= MXSUB ) &
-                  A( MXSUB, MNSUB ) = CZERO
-               ENDDO
+                  A( MXSUB, MNSUB ) = (0.0D+0,0.0D+0)
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 2 ) THEN
 !
@@ -940,10 +907,9 @@
                ELSE
                   A( MXSUB, MNSUB ) = CTEMP
                END IF
-               IF( MNSUB /= MXSUB ) &
-                  A( MNSUB, MXSUB ) = CZERO
-               ENDDO
+               IF( MNSUB /= MXSUB ) A( MNSUB, MXSUB ) = (0.0D+0,0.0D+0)
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 3 ) THEN
 !
@@ -970,8 +936,8 @@
                ELSE
                   A( IISUB, JJSUB ) = CTEMP
                END IF
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 4 ) THEN
 !
@@ -1002,15 +968,15 @@
                ELSE
                   A( IISUB, JJSUB ) = CTEMP
                END IF
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 5 ) THEN
 !
          DO J = 1, N
             DO I = J - KUU, J
                IF( I < 1 ) THEN
-                  A( J-I+1, I+N ) = CZERO
+                  A( J-I+1, I+N ) = (0.0D+0,0.0D+0)
                ELSE
                   CTEMP = ZLATM3( M, N, I, J, ISUB, JSUB, KL, KU, &
                           IDIST, ISEED, D, IGRADE, DL, DR, IPVTNG, &
@@ -1023,8 +989,8 @@
                      A( MXSUB-MNSUB+1, MNSUB ) = CTEMP
                   END IF
                END IF
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 6 ) THEN
 !
@@ -1040,8 +1006,8 @@
                ELSE
                   A( MNSUB-MXSUB+KUU+1, MXSUB ) = CTEMP
                END IF
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 7 ) THEN
 !
@@ -1054,7 +1020,7 @@
                   MNSUB = MIN( ISUB, JSUB )
                   MXSUB = MAX( ISUB, JSUB )
                   IF( I < 1 ) &
-                     A( J-I+1+KUU, I+N ) = CZERO
+                     A( J-I+1+KUU, I+N ) = (0.0D+0,0.0D+0)
                   IF( MXSUB == ISUB .AND. ISYM == 0 ) THEN
                      A( MNSUB-MXSUB+KUU+1, MXSUB ) = DCONJG( CTEMP )
                   ELSE
@@ -1068,8 +1034,8 @@
                         A( MXSUB-MNSUB+1+KUU, MNSUB ) = CTEMP
                      END IF
                   END IF
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( ISYM == 1 ) THEN
             DO J = 1, N
                DO I = J - KUU, J + KLL
@@ -1077,8 +1043,8 @@
                           IDIST, ISEED, D, IGRADE, DL, DR, IPVTNG, &
                           IWORK, SPARSE )
                   A( ISUB-JSUB+KUU+1, JSUB ) = CTEMP
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
       END IF
@@ -1095,16 +1061,16 @@
                               ISEED, D, IGRADE, DL, DR, IPVTNG, &
                               IWORK, SPARSE )
                   A( J, I ) = DCONJG( A( I, J ) )
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( ISYM == 1 ) THEN
             DO J = 1, N
                DO I = 1, M
                   A( I, J ) = ZLATM2( M, N, I, J, KL, KU, IDIST, &
                               ISEED, D, IGRADE, DL, DR, IPVTNG, &
                               IWORK, SPARSE )
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( ISYM == 2 ) THEN
             DO J = 1, N
                DO I = 1, J
@@ -1112,8 +1078,8 @@
                               ISEED, D, IGRADE, DL, DR, IPVTNG, &
                               IWORK, SPARSE )
                   A( J, I ) = A( I, J )
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
       ELSE IF( IPACK == 1 ) THEN
@@ -1122,10 +1088,9 @@
             DO I = 1, J
                A( I, J ) = ZLATM2( M, N, I, J, KL, KU, IDIST, ISEED, &
                            D, IGRADE, DL, DR, IPVTNG, IWORK, SPARSE )
-               IF( I /= J ) &
-                  A( J, I ) = CZERO
-               ENDDO
+               IF( I /= J ) A( J, I ) = (0.0D+0,0.0D+0)
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 2 ) THEN
 !
@@ -1140,10 +1105,9 @@
                               ISEED, D, IGRADE, DL, DR, IPVTNG, &
                               IWORK, SPARSE )
                END IF
-               IF( I /= J ) &
-                  A( I, J ) = CZERO
-               ENDDO
+               IF( I /= J ) A( I, J ) = (0.0D+0,0.0D+0)
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 3 ) THEN
 !
@@ -1159,8 +1123,8 @@
                A( ISUB, JSUB ) = ZLATM2( M, N, I, J, KL, KU, IDIST, &
                                  ISEED, D, IGRADE, DL, DR, IPVTNG, &
                                  IWORK, SPARSE )
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 4 ) THEN
 !
@@ -1187,8 +1151,8 @@
                                     IPVTNG, IWORK, SPARSE )
                   IF( ISYM == 0 ) &
                      A( ISUB, JSUB ) = DCONJG( A( ISUB, JSUB ) )
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
             ISUB = 0
             JSUB = 1
@@ -1202,8 +1166,8 @@
                   A( ISUB, JSUB ) = ZLATM2( M, N, I, J, KL, KU, &
                                     IDIST, ISEED, D, IGRADE, DL, DR, &
                                     IPVTNG, IWORK, SPARSE )
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
       ELSE IF( IPACK == 5 ) THEN
@@ -1211,7 +1175,7 @@
          DO J = 1, N
             DO I = J - KUU, J
                IF( I < 1 ) THEN
-                  A( J-I+1, I+N ) = CZERO
+                  A( J-I+1, I+N ) = (0.0D+0,0.0D+0)
                ELSE
                   IF( ISYM == 0 ) THEN
                      A( J-I+1, I ) = DCONJG( ZLATM2( M, N, I, J, KL, &
@@ -1223,8 +1187,8 @@
                                      IPVTNG, IWORK, SPARSE )
                   END IF
                END IF
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 6 ) THEN
 !
@@ -1233,8 +1197,8 @@
                A( I-J+KUU+1, J ) = ZLATM2( M, N, I, J, KL, KU, IDIST, &
                                    ISEED, D, IGRADE, DL, DR, IPVTNG, &
                                    IWORK, SPARSE )
-               ENDDO
             ENDDO
+         ENDDO
 !
       ELSE IF( IPACK == 7 ) THEN
 !
@@ -1245,7 +1209,7 @@
                                       IDIST, ISEED, D, IGRADE, DL, &
                                       DR, IPVTNG, IWORK, SPARSE )
                   IF( I < 1 ) &
-                     A( J-I+1+KUU, I+N ) = CZERO
+                     A( J-I+1+KUU, I+N ) = (0.0D+0,0.0D+0)
                   IF( I >= 1 .AND. I /= J ) THEN
                      IF( ISYM == 0 ) THEN
                         A( J-I+1+KUU, I ) = DCONJG( A( I-J+KUU+1, &
@@ -1254,16 +1218,16 @@
                         A( J-I+1+KUU, I ) = A( I-J+KUU+1, J )
                      END IF
                   END IF
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( ISYM == 1 ) THEN
             DO J = 1, N
                DO I = J - KUU, J + KLL
                   A( I-J+KUU+1, J ) = ZLATM2( M, N, I, J, KL, KU, &
                                       IDIST, ISEED, D, IGRADE, DL, &
                                       DR, IPVTNG, IWORK, SPARSE )
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
       END IF
@@ -1290,17 +1254,17 @@
       ONORM = ZLANGB( 'M', N, KLL, KUU, A, LDA, TEMPA )
    END IF
 !
-   IF( ANORM >= ZERO ) THEN
+   IF( ANORM >= 0.0D+0 ) THEN
 !
-      IF( ANORM > ZERO .AND. ONORM == ZERO ) THEN
+      IF( ANORM > 0.0D+0 .AND. ONORM == 0.0D+0 ) THEN
 !
 !           Desired scaling impossible
 !
          INFO = 5
          RETURN
 !
-      ELSE IF( ( ANORM > ONE .AND. ONORM < ONE ) .OR. &
-               ( ANORM < ONE .AND. ONORM > ONE ) ) THEN
+      ELSE IF( ( ANORM > 1.0D+0 .AND. ONORM < 1.0D+0 ) .OR. &
+               ( ANORM < 1.0D+0 .AND. ONORM > 1.0D+0 ) ) THEN
 !
 !           Scale carefully to avoid over / underflow
 !
@@ -1309,7 +1273,7 @@
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL ZDSCAL( M, ONE / ONORM, A( 1, J ), 1 )
+               CALL ZDSCAL( M, 1.0D+0 / ONORM, A( 1, J ), 1 )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -1335,7 +1299,7 @@
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-            CALL ZDSCAL( N*( N+1 ) / 2, ONE / ONORM, A, 1 )
+            CALL ZDSCAL( N*( N+1 ) / 2, 1.0D+0 / ONORM, A, 1 )
 #ifdef _TIMER
             call system_clock(count_rate=nb_periods_sec,count=S2_time)
             open(file='results.out', unit=10, position = 'append')
@@ -1361,7 +1325,7 @@
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S1_time)
 #endif
-               CALL ZDSCAL( KLL+KUU+1, ONE / ONORM, A( 1, J ), 1 )
+               CALL ZDSCAL( KLL+KUU+1, 1.0D+0 / ONORM, A( 1, J ), 1 )
 #ifdef _TIMER
                call system_clock(count_rate=nb_periods_sec,count=S2_time)
                open(file='results.out', unit=10, position = 'append')
@@ -1380,7 +1344,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               ENDDO
+            ENDDO
 !
          END IF
 !
@@ -1401,7 +1365,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               ENDDO
+            ENDDO
 !
          ELSE IF( IPACK == 3 .OR. IPACK == 4 ) THEN
 !
@@ -1431,7 +1395,7 @@
                      real(S2_time-S1_time)/real(nb_periods_sec), ' s'
                close(10)
 #endif
-               ENDDO
+            ENDDO
          END IF
 !
       END IF
@@ -1441,6 +1405,4 @@
 !     End of ZLATMR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 

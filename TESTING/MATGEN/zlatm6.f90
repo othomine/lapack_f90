@@ -188,13 +188,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   RONE, TWO, THREE
-   PARAMETER          ( RONE = 1.0D+0, TWO = 2.0D+0, THREE = 3.0D+0 )
-   COMPLEX*16         ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ), &
-                      ONE = ( 1.0D+0, 0.0D+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J
@@ -206,9 +199,6 @@
    DOUBLE PRECISION   RWORK( 50 )
    COMPLEX*16         WORK( 26 ), Z( 8, 8 )
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CDABS, DBLE, DCMPLX, DCONJG, SQRT
-!     ..
 !     .. External Subroutines ..
    EXTERNAL           ZGESVD, ZLACPY, ZLAKF2
 !     ..
@@ -217,24 +207,16 @@
 !     Generate test problem ...
 !     (Da, Db) ...
 !
-   DO I = 1, N
-      DO J = 1, N
-!
-         IF( I == J ) THEN
-            A( I, I ) = DCMPLX( I ) + ALPHA
-            B( I, I ) = ONE
-         ELSE
-            A( I, J ) = ZERO
-            B( I, J ) = ZERO
-         END IF
-!
-      ENDDO
-   ENDDO
+   A(1:N,1:N) = (0.0D+0,0.0D+0)
+   B(1:N,1:N) = (0.0D+0,0.0D+0)
+   FORALL (I=1:N) A( I, I ) = DCMPLX( I ) + ALPHA
+   FORALL (I=1:N) B( I, I ) = (1.0E+0,0.0E+0)
+
    IF( TYPE == 2 ) THEN
-      A( 1, 1 ) = DCMPLX( RONE, RONE )
+      A( 1, 1 ) = DCMPLX( 1.0D+0, 1.0D+0 )
       A( 2, 2 ) = DCONJG( A( 1, 1 ) )
-      A( 3, 3 ) = ONE
-      A( 4, 4 ) = DCMPLX( DBLE( ONE+ALPHA ), DBLE( ONE+BETA ) )
+      A( 3, 3 ) = (1.0D+0,0.0D+0)
+      A( 4, 4 ) = DCMPLX( DBLE( (1.0D+0,0.0D+0)+ALPHA ), DBLE( (1.0D+0,0.0D+0)+BETA ) )
       A( 5, 5 ) = DCONJG( A( 4, 4 ) )
    END IF
 !
@@ -293,16 +275,16 @@
 !
 !     Compute condition numbers
 !
-   S( 1 ) = RONE / SQRT( ( RONE+THREE*CDABS( WY )*CDABS( WY ) ) / &
-            ( RONE+CDABS( A( 1, 1 ) )*CDABS( A( 1, 1 ) ) ) )
-   S( 2 ) = RONE / SQRT( ( RONE+THREE*CDABS( WY )*CDABS( WY ) ) / &
-            ( RONE+CDABS( A( 2, 2 ) )*CDABS( A( 2, 2 ) ) ) )
-   S( 3 ) = RONE / SQRT( ( RONE+TWO*CDABS( WX )*CDABS( WX ) ) / &
-            ( RONE+CDABS( A( 3, 3 ) )*CDABS( A( 3, 3 ) ) ) )
-   S( 4 ) = RONE / SQRT( ( RONE+TWO*CDABS( WX )*CDABS( WX ) ) / &
-            ( RONE+CDABS( A( 4, 4 ) )*CDABS( A( 4, 4 ) ) ) )
-   S( 5 ) = RONE / SQRT( ( RONE+TWO*CDABS( WX )*CDABS( WX ) ) / &
-            ( RONE+CDABS( A( 5, 5 ) )*CDABS( A( 5, 5 ) ) ) )
+   S( 1 ) = 1.0D+0 / SQRT( ( 1.0D+0+3.0D+0*CDABS( WY )*CDABS( WY ) ) / &
+            ( 1.0D+0+CDABS( A( 1, 1 ) )*CDABS( A( 1, 1 ) ) ) )
+   S( 2 ) = 1.0D+0 / SQRT( ( 1.0D+0+3.0D+0*CDABS( WY )*CDABS( WY ) ) / &
+            ( 1.0D+0+CDABS( A( 2, 2 ) )*CDABS( A( 2, 2 ) ) ) )
+   S( 3 ) = 1.0D+0 / SQRT( ( 1.0D+0+2.0D+0*CDABS( WX )*CDABS( WX ) ) / &
+            ( 1.0D+0+CDABS( A( 3, 3 ) )*CDABS( A( 3, 3 ) ) ) )
+   S( 4 ) = 1.0D+0 / SQRT( ( 1.0D+0+2.0D+0*CDABS( WX )*CDABS( WX ) ) / &
+            ( 1.0D+0+CDABS( A( 4, 4 ) )*CDABS( A( 4, 4 ) ) ) )
+   S( 5 ) = 1.0D+0 / SQRT( ( 1.0D+0+2.0D+0*CDABS( WX )*CDABS( WX ) ) / &
+            ( 1.0D+0+CDABS( A( 5, 5 ) )*CDABS( A( 5, 5 ) ) ) )
 !
    CALL ZLAKF2( 1, 4, A, LDA, A( 2, 2 ), B, B( 2, 2 ), Z, 8 )
 #ifdef _TIMER
@@ -339,6 +321,4 @@
 !     End of ZLATM6
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
 
