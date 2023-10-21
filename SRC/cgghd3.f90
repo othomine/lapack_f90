@@ -247,11 +247,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE, CZERO
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ), &
-                        CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BLK22, INITQ, INITZ, LQUERY, WANTQ, WANTZ
@@ -271,9 +266,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGGHRD, CLARTG, CLASET, CUNM22, CROT, CGEMM, &
                       CGEMV, CTRMV, CLACPY, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, CMPLX, CONJG, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -320,20 +312,20 @@
 !     Initialize Q and Z if desired.
 !
    IF( INITQ ) &
-      CALL CLASET( 'All', N, N, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'All', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
    IF( INITZ ) &
-      CALL CLASET( 'All', N, N, CZERO, CONE, Z, LDZ )
+      CALL CLASET( 'All', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDZ )
 !
 !     Zero out lower triangle of B.
 !
    IF( N > 1 ) &
-      CALL CLASET( 'Lower', N-1, N-1, CZERO, CZERO, B(2, 1), LDB )
+      CALL CLASET( 'Lower', N-1, N-1, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), B(2, 1), LDB )
 !
 !     Quick return if possible
 !
    NH = IHI - ILO + 1
    IF( NH <= 1 ) THEN
-      WORK( 1 ) = CONE
+      WORK( 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -389,10 +381,10 @@
 !
          N2NB = ( IHI-JCOL-1 ) / NNB - 1
          NBLST = IHI - JCOL - N2NB*NNB
-         CALL CLASET( 'All', NBLST, NBLST, CZERO, CONE, WORK, NBLST )
+         CALL CLASET( 'All', NBLST, NBLST, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, NBLST )
          PW = NBLST * NBLST + 1
          DO I = 1, N2NB
-            CALL CLASET( 'All', 2*NNB, 2*NNB, CZERO, CONE, &
+            CALL CLASET( 'All', 2*NNB, 2*NNB, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                          WORK( PW ), 2*NNB )
             PW = PW + 4*NNB*NNB
          END DO
@@ -477,7 +469,7 @@
                   TEMP = B( JJ+1, JJ+1 )
                   CALL CLARTG( TEMP, B( JJ+1, JJ ), C, S, &
                                B( JJ+1, JJ+1 ) )
-                  B( JJ+1, JJ ) = CZERO
+                  B( JJ+1, JJ ) = (0.0E+0,0.0E+0)
                   CALL CROT( JJ-TOP, B( TOP+1, JJ+1 ), 1, &
                              B( TOP+1, JJ ), 1, C, S )
                   A( JJ+1, J ) = CMPLX( C )
@@ -535,8 +527,8 @@
 !                 triangular.
 !
                JROW = IHI - NBLST + 1
-               CALL CGEMV( 'Conjugate', NBLST, LEN, CONE, WORK, &
-                           NBLST, A( JROW, J+1 ), 1, CZERO, &
+               CALL CGEMV( 'Conjugate', NBLST, LEN, (1.0E+0,0.0E+0), WORK, &
+                           NBLST, A( JROW, J+1 ), 1, (0.0E+0,0.0E+0), &
                            WORK( PW ), 1 )
                PPW = PW + LEN
                DO I = JROW, JROW+NBLST-LEN-1
@@ -546,9 +538,9 @@
                CALL CTRMV( 'Lower', 'Conjugate', 'Non-unit', &
                            NBLST-LEN, WORK( LEN*NBLST + 1 ), NBLST, &
                            WORK( PW+LEN ), 1 )
-               CALL CGEMV( 'Conjugate', LEN, NBLST-LEN, CONE, &
+               CALL CGEMV( 'Conjugate', LEN, NBLST-LEN, (1.0E+0,0.0E+0), &
                            WORK( (LEN+1)*NBLST - LEN + 1 ), NBLST, &
-                           A( JROW+NBLST-LEN, J+1 ), 1, CONE, &
+                           A( JROW+NBLST-LEN, J+1 ), 1, (1.0E+0,0.0E+0), &
                            WORK( PW+LEN ), 1 )
                PPW = PW
                DO I = JROW, JROW+NBLST-1
@@ -588,12 +580,12 @@
                   CALL CTRMV( 'Lower', 'Conjugate', 'Non-unit', NNB, &
                               WORK( PPWO + 2*LEN*NNB ), &
                               2*NNB, WORK( PW + LEN ), 1 )
-                  CALL CGEMV( 'Conjugate', NNB, LEN, CONE, &
+                  CALL CGEMV( 'Conjugate', NNB, LEN, (1.0E+0,0.0E+0), &
                               WORK( PPWO ), 2*NNB, A( JROW, J+1 ), 1, &
-                              CONE, WORK( PW ), 1 )
-                  CALL CGEMV( 'Conjugate', LEN, NNB, CONE, &
+                              (1.0E+0,0.0E+0), WORK( PW ), 1 )
+                  CALL CGEMV( 'Conjugate', LEN, NNB, (1.0E+0,0.0E+0), &
                               WORK( PPWO + 2*LEN*NNB + NNB ), 2*NNB, &
-                              A( JROW+NNB, J+1 ), 1, CONE, &
+                              A( JROW+NNB, J+1 ), 1, (1.0E+0,0.0E+0), &
                               WORK( PW+LEN ), 1 )
                   PPW = PW
                   DO I = JROW, JROW+LEN+NNB-1
@@ -610,8 +602,8 @@
          COLA = N - JCOL - NNB + 1
          J = IHI - NBLST + 1
          CALL CGEMM( 'Conjugate', 'No Transpose', NBLST, &
-                     COLA, NBLST, CONE, WORK, NBLST, &
-                     A( J, JCOL+NNB ), LDA, CZERO, WORK( PW ), &
+                     COLA, NBLST, (1.0E+0,0.0E+0), WORK, NBLST, &
+                     A( J, JCOL+NNB ), LDA, (0.0E+0,0.0E+0), WORK( PW ), &
                      NBLST )
          CALL CLACPY( 'All', NBLST, COLA, WORK( PW ), NBLST, &
                       A( J, JCOL+NNB ), LDA )
@@ -638,8 +630,8 @@
 !                 Ignore the structure of U.
 !
                CALL CGEMM( 'Conjugate', 'No Transpose', 2*NNB, &
-                           COLA, 2*NNB, CONE, WORK( PPWO ), 2*NNB, &
-                           A( J, JCOL+NNB ), LDA, CZERO, WORK( PW ), &
+                           COLA, 2*NNB, (1.0E+0,0.0E+0), WORK( PPWO ), 2*NNB, &
+                           A( J, JCOL+NNB ), LDA, (0.0E+0,0.0E+0), WORK( PW ), &
                            2*NNB )
                CALL CLACPY( 'All', 2*NNB, COLA, WORK( PW ), 2*NNB, &
                             A( J, JCOL+NNB ), LDA )
@@ -659,8 +651,8 @@
                NH = N
             END IF
             CALL CGEMM( 'No Transpose', 'No Transpose', NH, &
-                        NBLST, NBLST, CONE, Q( TOPQ, J ), LDQ, &
-                        WORK, NBLST, CZERO, WORK( PW ), NH )
+                        NBLST, NBLST, (1.0E+0,0.0E+0), Q( TOPQ, J ), LDQ, &
+                        WORK, NBLST, (0.0E+0,0.0E+0), WORK( PW ), NH )
             CALL CLACPY( 'All', NH, NBLST, WORK( PW ), NH, &
                          Q( TOPQ, J ), LDQ )
             PPWO = NBLST*NBLST + 1
@@ -683,8 +675,8 @@
 !                    Ignore the structure of U.
 !
                   CALL CGEMM( 'No Transpose', 'No Transpose', NH, &
-                              2*NNB, 2*NNB, CONE, Q( TOPQ, J ), LDQ, &
-                              WORK( PPWO ), 2*NNB, CZERO, WORK( PW ), &
+                              2*NNB, 2*NNB, (1.0E+0,0.0E+0), Q( TOPQ, J ), LDQ, &
+                              WORK( PPWO ), 2*NNB, (0.0E+0,0.0E+0), WORK( PW ), &
                               NH )
                   CALL CLACPY( 'All', NH, 2*NNB, WORK( PW ), NH, &
                                Q( TOPQ, J ), LDQ )
@@ -700,11 +692,11 @@
 !              Initialize small unitary factors that will hold the
 !              accumulated Givens rotations in workspace.
 !
-            CALL CLASET( 'All', NBLST, NBLST, CZERO, CONE, WORK, &
+            CALL CLASET( 'All', NBLST, NBLST, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, &
                          NBLST )
             PW = NBLST * NBLST + 1
             DO I = 1, N2NB
-               CALL CLASET( 'All', 2*NNB, 2*NNB, CZERO, CONE, &
+               CALL CLASET( 'All', 2*NNB, 2*NNB, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                             WORK( PW ), 2*NNB )
                PW = PW + 4*NNB*NNB
             END DO
@@ -717,9 +709,9 @@
                JROW = J + N2NB*NNB + 2
                DO I = IHI, JROW, -1
                   CTEMP = A( I, J )
-                  A( I, J ) = CZERO
+                  A( I, J ) = (0.0E+0,0.0E+0)
                   S = B( I, J )
-                  B( I, J ) = CZERO
+                  B( I, J ) = (0.0E+0,0.0E+0)
                   DO JJ = PPW, PPW+LEN-1
                      TEMP = WORK( JJ + NBLST )
                      WORK( JJ + NBLST ) = CTEMP*TEMP - &
@@ -737,9 +729,9 @@
                   LEN  = 2 + J - JCOL
                   DO I = JROW+NNB-1, JROW, -1
                      CTEMP = A( I, J )
-                     A( I, J ) = CZERO
+                     A( I, J ) = (0.0E+0,0.0E+0)
                      S = B( I, J )
-                     B( I, J ) = CZERO
+                     B( I, J ) = (0.0E+0,0.0E+0)
                      DO JJ = PPW, PPW+LEN-1
                         TEMP = WORK( JJ + 2*NNB )
                         WORK( JJ + 2*NNB ) = CTEMP*TEMP - &
@@ -754,9 +746,9 @@
             END DO
          ELSE
 !
-            CALL CLASET( 'Lower', IHI - JCOL - 1, NNB, CZERO, CZERO, &
+            CALL CLASET( 'Lower', IHI - JCOL - 1, NNB, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          A( JCOL + 2, JCOL ), LDA )
-            CALL CLASET( 'Lower', IHI - JCOL - 1, NNB, CZERO, CZERO, &
+            CALL CLASET( 'Lower', IHI - JCOL - 1, NNB, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          B( JCOL + 2, JCOL ), LDB )
          END IF
 !
@@ -765,8 +757,8 @@
          IF ( TOP > 0 ) THEN
             J = IHI - NBLST + 1
             CALL CGEMM( 'No Transpose', 'No Transpose', TOP, &
-                        NBLST, NBLST, CONE, A( 1, J ), LDA, &
-                        WORK, NBLST, CZERO, WORK( PW ), TOP )
+                        NBLST, NBLST, (1.0E+0,0.0E+0), A( 1, J ), LDA, &
+                        WORK, NBLST, (0.0E+0,0.0E+0), WORK( PW ), TOP )
             CALL CLACPY( 'All', TOP, NBLST, WORK( PW ), TOP, &
                          A( 1, J ), LDA )
             PPWO = NBLST*NBLST + 1
@@ -785,8 +777,8 @@
 !                    Ignore the structure of U.
 !
                   CALL CGEMM( 'No Transpose', 'No Transpose', TOP, &
-                              2*NNB, 2*NNB, CONE, A( 1, J ), LDA, &
-                              WORK( PPWO ), 2*NNB, CZERO, &
+                              2*NNB, 2*NNB, (1.0E+0,0.0E+0), A( 1, J ), LDA, &
+                              WORK( PPWO ), 2*NNB, (0.0E+0,0.0E+0), &
                               WORK( PW ), TOP )
                   CALL CLACPY( 'All', TOP, 2*NNB, WORK( PW ), TOP, &
                                A( 1, J ), LDA )
@@ -796,8 +788,8 @@
 !
             J = IHI - NBLST + 1
             CALL CGEMM( 'No Transpose', 'No Transpose', TOP, &
-                        NBLST, NBLST, CONE, B( 1, J ), LDB, &
-                        WORK, NBLST, CZERO, WORK( PW ), TOP )
+                        NBLST, NBLST, (1.0E+0,0.0E+0), B( 1, J ), LDB, &
+                        WORK, NBLST, (0.0E+0,0.0E+0), WORK( PW ), TOP )
             CALL CLACPY( 'All', TOP, NBLST, WORK( PW ), TOP, &
                          B( 1, J ), LDB )
             PPWO = NBLST*NBLST + 1
@@ -816,8 +808,8 @@
 !                    Ignore the structure of U.
 !
                   CALL CGEMM( 'No Transpose', 'No Transpose', TOP, &
-                              2*NNB, 2*NNB, CONE, B( 1, J ), LDB, &
-                              WORK( PPWO ), 2*NNB, CZERO, &
+                              2*NNB, 2*NNB, (1.0E+0,0.0E+0), B( 1, J ), LDB, &
+                              WORK( PPWO ), 2*NNB, (0.0E+0,0.0E+0), &
                               WORK( PW ), TOP )
                   CALL CLACPY( 'All', TOP, 2*NNB, WORK( PW ), TOP, &
                                B( 1, J ), LDB )
@@ -838,8 +830,8 @@
                NH = N
             END IF
             CALL CGEMM( 'No Transpose', 'No Transpose', NH, &
-                        NBLST, NBLST, CONE, Z( TOPQ, J ), LDZ, &
-                        WORK, NBLST, CZERO, WORK( PW ), NH )
+                        NBLST, NBLST, (1.0E+0,0.0E+0), Z( TOPQ, J ), LDZ, &
+                        WORK, NBLST, (0.0E+0,0.0E+0), WORK( PW ), NH )
             CALL CLACPY( 'All', NH, NBLST, WORK( PW ), NH, &
                          Z( TOPQ, J ), LDZ )
             PPWO = NBLST*NBLST + 1
@@ -862,8 +854,8 @@
 !                    Ignore the structure of U.
 !
                   CALL CGEMM( 'No Transpose', 'No Transpose', NH, &
-                              2*NNB, 2*NNB, CONE, Z( TOPQ, J ), LDZ, &
-                              WORK( PPWO ), 2*NNB, CZERO, WORK( PW ), &
+                              2*NNB, 2*NNB, (1.0E+0,0.0E+0), Z( TOPQ, J ), LDZ, &
+                              WORK( PPWO ), 2*NNB, (0.0E+0,0.0E+0), WORK( PW ), &
                               NH )
                   CALL CLACPY( 'All', NH, 2*NNB, WORK( PW ), NH, &
                                Z( TOPQ, J ), LDZ )
@@ -880,10 +872,8 @@
    COMPQ2 = COMPQ
    COMPZ2 = COMPZ
    IF ( JCOL /= ILO ) THEN
-      IF ( WANTQ ) &
-         COMPQ2 = 'V'
-      IF ( WANTZ ) &
-         COMPZ2 = 'V'
+      IF ( WANTQ ) COMPQ2 = 'V'
+      IF ( WANTZ ) COMPZ2 = 'V'
    END IF
 !
    IF ( JCOL < IHI ) &
@@ -896,5 +886,3 @@
 !     End of CGGHD3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

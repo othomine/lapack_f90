@@ -352,13 +352,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            CURSL, ILASCL, ILBSCL, ILVSL, ILVSR, LASTSL, &
@@ -381,9 +374,6 @@
    INTEGER            ILAENV
    REAL               CLANGE, SLAMCH
    EXTERNAL           LSAME, ILAENV, CLANGE, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -509,15 +499,15 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = CLANGE( 'M', N, N, A, LDA, RWORK )
    ILASCL = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       ANRMTO = SMLNUM
       ILASCL = .TRUE.
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -531,7 +521,7 @@
 !
    BNRM = CLANGE( 'M', N, N, B, LDB, RWORK )
    ILBSCL = .FALSE.
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
       BNRMTO = SMLNUM
       ILBSCL = .TRUE.
    ELSE IF( BNRM > BIGNUM ) THEN
@@ -571,7 +561,7 @@
 !     (Complex Workspace: need N, prefer N*NB)
 !
    IF( ILVSL ) THEN
-      CALL CLASET( 'Full', N, N, CZERO, CONE, VSL, LDVSL )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VSL, LDVSL )
       IF( IROWS > 1 ) THEN
          CALL CLACPY( 'L', IROWS-1, IROWS-1, B( ILO+1, ILO ), LDB, &
                       VSL( ILO+1, ILO ), LDVSL )
@@ -583,7 +573,7 @@
 !     Initialize VSR
 !
    IF( ILVSR ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, VSR, LDVSR )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VSR, LDVSR )
 !
 !     Reduce to generalized Hessenberg form
 !     (Workspace: none needed)
@@ -693,10 +683,8 @@
       SDIM = 0
       DO I = 1, N
          CURSL = SELCTG( ALPHA( I ), BETA( I ) )
-         IF( CURSL ) &
-            SDIM = SDIM + 1
-         IF( CURSL .AND. .NOT.LASTSL ) &
-            INFO = N + 2
+         IF( CURSL ) SDIM = SDIM + 1
+         IF( CURSL .AND. .NOT.LASTSL ) INFO = N + 2
          LASTSL = CURSL
       ENDDO
 !
@@ -712,5 +700,3 @@
 !     End of CGGESX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

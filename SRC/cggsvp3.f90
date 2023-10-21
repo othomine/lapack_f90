@@ -297,11 +297,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            FORWRD, WANTQ, WANTU, WANTV, LQUERY
@@ -314,9 +309,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGEQP3, CGEQR2, CGERQ2, CLACPY, CLAPMT, &
                       CLASET, CUNG2R, CUNM2R, CUNMR2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -363,14 +355,10 @@
    IF( INFO == 0 ) THEN
       CALL CGEQP3( P, N, B, LDB, IWORK, TAU, WORK, -1, RWORK, INFO )
       LWKOPT = INT( WORK ( 1 ) )
-      IF( WANTV ) THEN
-         LWKOPT = MAX( LWKOPT, P )
-      END IF
+      IF( WANTV ) LWKOPT = MAX( LWKOPT, P )
       LWKOPT = MAX( LWKOPT, MIN( N, P ) )
       LWKOPT = MAX( LWKOPT, M )
-      IF( WANTQ ) THEN
-         LWKOPT = MAX( LWKOPT, N )
-      END IF
+      IF( WANTQ ) LWKOPT = MAX( LWKOPT, N )
       CALL CGEQP3( M, N, A, LDA, IWORK, TAU, WORK, -1, RWORK, INFO )
       LWKOPT = MAX( LWKOPT, INT( WORK ( 1 ) ) )
       LWKOPT = MAX( 1, LWKOPT )
@@ -381,16 +369,12 @@
       CALL XERBLA( 'CGGSVP3', -INFO )
       RETURN
    END IF
-   IF( LQUERY ) THEN
-      RETURN
-   ENDIF
+   IF( LQUERY ) RETURN
 !
 !     QR with column pivoting of B: B*P = V*( S11 S12 )
 !                                           (  0   0  )
 !
-   DO I = 1, N
-      IWORK( I ) = 0
-   ENDDO
+   IWORK(1:N) = 0
    CALL CGEQP3( P, N, B, LDB, IWORK, TAU, WORK, LWORK, RWORK, INFO )
 !
 !     Update A := A*P
@@ -401,36 +385,30 @@
 !
    L = 0
    DO I = 1, MIN( P, N )
-      IF( ABS( B( I, I ) ) > TOLB ) &
-         L = L + 1
+      IF( ABS( B( I, I ) ) > TOLB ) L = L + 1
    ENDDO
 !
    IF( WANTV ) THEN
 !
 !        Copy the details of V, and form V.
 !
-      CALL CLASET( 'Full', P, P, CZERO, CZERO, V, LDV )
-      IF( P > 1 ) &
-         CALL CLACPY( 'Lower', P-1, N, B( 2, 1 ), LDB, V( 2, 1 ), &
-                      LDV )
+      V(1:P,1:P) = (0.0E+0,0.0E+0)
+      IF( P > 1 ) CALL CLACPY( 'Lower', P-1, N, B( 2, 1 ), LDB, V( 2, 1 ), LDV )
       CALL CUNG2R( P, P, MIN( P, N ), V, LDV, TAU, WORK, INFO )
    END IF
 !
 !     Clean up B
 !
    DO J = 1, L - 1
-      DO I = J + 1, L
-         B( I, J ) = CZERO
-      ENDDO
+      B(J+1:L,J) = (0.0E+0,0.0E+0)
    ENDDO
-   IF( P > L ) &
-      CALL CLASET( 'Full', P-L, N, CZERO, CZERO, B( L+1, 1 ), LDB )
+   IF( P > L ) B(L+1:P,1:N) = (0.0E+0,0.0E+0)
 !
    IF( WANTQ ) THEN
 !
 !        Set Q = I and Update Q := Q*P
 !
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
       CALL CLAPMT( FORWRD, N, N, Q, LDQ, IWORK )
    END IF
 !
@@ -454,11 +432,9 @@
 !
 !        Clean up B
 !
-      CALL CLASET( 'Full', L, N-L, CZERO, CZERO, B, LDB )
+      B(1:L,1:N-L) = (0.0E+0,0.0E+0)
       DO J = N - L + 1, N
-         DO I = J - N + L + 1, L
-            B( I, J ) = CZERO
-         ENDDO
+         B(J-N+L+1:L,J) = (0.0E+0,0.0E+0)
       ENDDO
 !
    END IF
@@ -471,18 +447,14 @@
 !              A11 = U*(  0  T12 )*P1**H
 !                      (  0   0  )
 !
-   DO I = 1, N - L
-      IWORK( I ) = 0
-   ENDDO
-   CALL CGEQP3( M, N-L, A, LDA, IWORK, TAU, WORK, LWORK, RWORK, &
-                INFO )
+   IWORK(1:N-L) = 0
+   CALL CGEQP3( M, N-L, A, LDA, IWORK, TAU, WORK, LWORK, RWORK, INFO )
 !
 !     Determine the effective rank of A11
 !
    K = 0
    DO I = 1, MIN( M, N-L )
-      IF( ABS( A( I, I ) ) > TOLA ) &
-         K = K + 1
+      IF( ABS( A( I, I ) ) > TOLA ) K = K + 1
    ENDDO
 !
 !     Update A12 := U**H*A12, where A12 = A( 1:M, N-L+1:N )
@@ -494,10 +466,9 @@
 !
 !        Copy the details of U, and form U
 !
-      CALL CLASET( 'Full', M, M, CZERO, CZERO, U, LDU )
+      U(1:M,1:M) = (0.0E+0,0.0E+0)
       IF( M > 1 ) &
-         CALL CLACPY( 'Lower', M-1, N-L, A( 2, 1 ), LDA, U( 2, 1 ), &
-                      LDU )
+         CALL CLACPY( 'Lower', M-1, N-L, A( 2, 1 ), LDA, U( 2, 1 ), LDU )
       CALL CUNG2R( M, M, MIN( M, N-L ), U, LDU, TAU, WORK, INFO )
    END IF
 !
@@ -512,12 +483,9 @@
 !     A(1:K, 1:K) = 0, and A( K+1:M, 1:N-L ) = 0.
 !
    DO J = 1, K - 1
-      DO I = J + 1, K
-         A( I, J ) = CZERO
-      ENDDO
-      ENDDO
-   IF( M > K ) &
-      CALL CLASET( 'Full', M-K, N-L, CZERO, CZERO, A( K+1, 1 ), LDA )
+      A(J+1:K,J) = (0.0E+0,0.0E+0)
+   ENDDO
+   IF( M > K ) A(K+1:M,1:N-L) = (0.0E+0,0.0E+0)
 !
    IF( N-L > K ) THEN
 !
@@ -535,12 +503,10 @@
 !
 !        Clean up A
 !
-      CALL CLASET( 'Full', K, N-L-K, CZERO, CZERO, A, LDA )
+      A(1:K,1:N-L-K) = (0.0E+0,0.0E+0)
       DO J = N - L - K + 1, N - L
-         DO I = J - N + L + K + 1, K
-            A( I, J ) = CZERO
-            ENDDO
-         ENDDO
+         A(J-N+L+K+1:K,J) = (0.0E+0,0.0E+0)
+      ENDDO
 !
    END IF
 !
@@ -562,10 +528,8 @@
 !        Clean up
 !
       DO J = N - L + 1, N
-         DO I = J - N + K + L + 1, M
-            A( I, J ) = CZERO
-            ENDDO
-         ENDDO
+         A(J-N+K+L+1:M, J ) = (0.0E+0,0.0E+0)
+      ENDDO
 !
    END IF
 !
@@ -575,5 +539,3 @@
 !     End of CGGSVP3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

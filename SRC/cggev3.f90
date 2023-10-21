@@ -231,13 +231,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILASCL, ILBSCL, ILV, ILVL, ILVR, LQUERY
@@ -260,9 +253,6 @@
    LOGICAL            LSAME
    REAL               CLANGE, SLAMCH
    EXTERNAL           LSAME, CLANGE, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL, SQRT
 !     ..
 !     .. Statement Functions ..
    REAL               ABS1
@@ -360,22 +350,21 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = SLAMCH( 'E' )*SLAMCH( 'B' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = CLANGE( 'M', N, N, A, LDA, RWORK )
    ILASCL = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < SMLNUM ) THEN
       ANRMTO = SMLNUM
       ILASCL = .TRUE.
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -389,7 +378,7 @@
 !
    BNRM = CLANGE( 'M', N, N, B, LDB, RWORK )
    ILBSCL = .FALSE.
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0E+0 .AND. BNRM < SMLNUM ) THEN
       BNRMTO = SMLNUM
       ILBSCL = .TRUE.
    ELSE IF( BNRM > BIGNUM ) THEN
@@ -429,7 +418,7 @@
 !     Initialize VL
 !
    IF( ILVL ) THEN
-      CALL CLASET( 'Full', N, N, CZERO, CONE, VL, LDVL )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VL, LDVL )
       IF( IROWS > 1 ) THEN
          CALL CLACPY( 'L', IROWS-1, IROWS-1, B( ILO+1, ILO ), LDB, &
                       VL( ILO+1, ILO ), LDVL )
@@ -441,7 +430,7 @@
 !     Initialize VR
 !
    IF( ILVR ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, VR, LDVR )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), VR, LDVR )
 !
 !     Reduce to generalized Hessenberg form
 !
@@ -508,34 +497,22 @@
          CALL CGGBAK( 'P', 'L', N, ILO, IHI, RWORK( ILEFT ), &
                       RWORK( IRIGHT ), N, VL, LDVL, IERR )
          DO JC = 1, N
-            TEMP = ZERO
+            TEMP = 0.0E+0
             DO JR = 1, N
                TEMP = MAX( TEMP, ABS1( VL( JR, JC ) ) )
             ENDDO
-            IF( TEMP < SMLNUM ) &
-               GO TO 30
-            TEMP = ONE / TEMP
-            DO JR = 1, N
-               VL( JR, JC ) = VL( JR, JC )*TEMP
-            ENDDO
-30       CONTINUE
+            IF( TEMP >= SMLNUM ) VL(1:N,JC) = VL(1:N,JC)/TEMP
          ENDDO
       END IF
       IF( ILVR ) THEN
          CALL CGGBAK( 'P', 'R', N, ILO, IHI, RWORK( ILEFT ), &
                       RWORK( IRIGHT ), N, VR, LDVR, IERR )
          DO JC = 1, N
-            TEMP = ZERO
+            TEMP = 0.0E+0
             DO JR = 1, N
                TEMP = MAX( TEMP, ABS1( VR( JR, JC ) ) )
             ENDDO
-            IF( TEMP < SMLNUM ) &
-               GO TO 60
-            TEMP = ONE / TEMP
-            DO JR = 1, N
-               VR( JR, JC ) = VR( JR, JC )*TEMP
-            ENDDO
-60       CONTINUE
+            IF( TEMP >= SMLNUM ) VR(1:N,JC) = VR(1:N,JC)/TEMP
          ENDDO
       END IF
    END IF
@@ -556,5 +533,3 @@
 !     End of CGGEV3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

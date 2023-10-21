@@ -217,11 +217,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE, CZERO
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ), &
-                      CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILQ, ILZ
@@ -235,9 +230,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLARTG, CLASET, CROT, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -301,9 +293,9 @@
 !     Initialize Q and Z if desired.
 !
    IF( ICOMPQ == 3 ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
    IF( ICOMPZ == 3 ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Z, LDZ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDZ )
 !
 !     Quick return if possible
 !
@@ -313,9 +305,7 @@
 !     Zero out lower triangle of B
 !
    DO JCOL = 1, N - 1
-      DO JROW = JCOL + 1, N
-         B( JROW, JCOL ) = CZERO
-      ENDDO
+      B(JCOL+1:N,JCOL) = (0.0E+0,0.0E+0)
    ENDDO
 !
 !     Reduce A and B
@@ -329,7 +319,7 @@
          CTEMP = A( JROW-1, JCOL )
          CALL CLARTG( CTEMP, A( JROW, JCOL ), C, S, &
                       A( JROW-1, JCOL ) )
-         A( JROW, JCOL ) = CZERO
+         A( JROW, JCOL ) = (0.0E+0,0.0E+0)
          CALL CROT( N-JCOL, A( JROW-1, JCOL+1 ), LDA, &
                     A( JROW, JCOL+1 ), LDA, C, S )
          CALL CROT( N+2-JROW, B( JROW-1, JROW-1 ), LDB, &
@@ -343,7 +333,7 @@
          CTEMP = B( JROW, JROW )
          CALL CLARTG( CTEMP, B( JROW, JROW-1 ), C, S, &
                       B( JROW, JROW ) )
-         B( JROW, JROW-1 ) = CZERO
+         B( JROW, JROW-1 ) = (0.0E+0,0.0E+0)
          CALL CROT( IHI, A( 1, JROW ), 1, A( 1, JROW-1 ), 1, C, S )
          CALL CROT( JROW-1, B( 1, JROW ), 1, B( 1, JROW-1 ), 1, C, &
                     S )
@@ -357,5 +347,3 @@
 !     End of CGGHRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

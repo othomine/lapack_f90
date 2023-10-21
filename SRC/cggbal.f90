@@ -192,12 +192,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, HALF, ONE
-   PARAMETER          ( ZERO = 0.0E+0, HALF = 0.5E+0, ONE = 1.0E+0 )
-   REAL               THREE, SCLFAC
-   PARAMETER          ( THREE = 3.0E+0, SCLFAC = 1.0E+1 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
+   REAL               SCLFAC
+   PARAMETER          ( SCLFAC = 1.0E+1 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, ICAB, IFLOW, IP1, IR, IRAB, IT, J, JC, JP1, &
@@ -205,8 +201,8 @@
                       M, NR, NRP2
    REAL               ALPHA, BASL, BETA, CAB, CMAX, COEF, COEF2, &
                       COEF5, COR, EW, EWC, GAMMA, PGAMMA, RAB, SFMAX, &
-                      SFMIN, SUM, T, TA, TB, TC
-   COMPLEX            CDUM
+                      SFMIN, SUMS, T, TA, TB, TC
+   COMPLEX            CDUM, AT_TMP( N ), A_TMP( N )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -215,10 +211,7 @@
    EXTERNAL           LSAME, ICAMAX, SDOT, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSSCAL, CSWAP, SAXPY, SSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, INT, LOG10, MAX, MIN, REAL, SIGN
+   EXTERNAL           XERBLA
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -257,8 +250,8 @@
    IF( N == 1 ) THEN
       ILO = 1
       IHI = N
-      LSCALE( 1 ) = ONE
-      RSCALE( 1 ) = ONE
+      LSCALE( 1 ) = 1.0E+0
+      RSCALE( 1 ) = 1.0E+0
       RETURN
    END IF
 !
@@ -266,16 +259,15 @@
       ILO = 1
       IHI = N
       DO I = 1, N
-         LSCALE( I ) = ONE
-         RSCALE( I ) = ONE
+         LSCALE( I ) = 1.0E+0
+         RSCALE( I ) = 1.0E+0
       ENDDO
       RETURN
    END IF
 !
    K = 1
    L = N
-   IF( LSAME( JOB, 'S' ) ) &
-      GO TO 190
+   IF( LSAME( JOB, 'S' ) ) GO TO 190
 !
    GO TO 30
 !
@@ -285,11 +277,10 @@
 !
 20 CONTINUE
    L = LM1
-   IF( L /= 1 ) &
-      GO TO 30
+   IF( L /= 1 ) GO TO 30
 !
-   RSCALE( 1 ) = ONE
-   LSCALE( 1 ) = ONE
+   RSCALE( 1 ) = 1.0E+0
+   LSCALE( 1 ) = 1.0E+0
    GO TO 190
 !
 30 CONTINUE
@@ -297,17 +288,14 @@
    DO I = L, 1, -1
       DO J = 1, LM1
          JP1 = J + 1
-         IF( A( I, J ) /= CZERO .OR. B( I, J ) /= CZERO ) &
+         IF( A( I, J ) /= (0.0E+0,0.0E+0) .OR. B( I, J ) /= (0.0E+0,0.0E+0) ) &
             GO TO 50
       ENDDO
       J = L
       GO TO 70
 !
 50    CONTINUE
-      DO J = JP1, L
-         IF( A( I, J ) /= CZERO .OR. B( I, J ) /= CZERO ) &
-            GO TO 80
-      ENDDO
+      IF (ANY(A(I,JP1:L) /= (0.0E+0,0.0E+0) .OR. B(I,JP1:L) /= (0.0E+0,0.0E+0))) GO TO 80
       J = JP1 - 1
 !
 70    CONTINUE
@@ -327,14 +315,14 @@
    DO J = K, L
       DO I = K, LM1
          IP1 = I + 1
-         IF( A( I, J ) /= CZERO .OR. B( I, J ) /= CZERO ) &
+         IF( A( I, J ) /= (0.0E+0,0.0E+0) .OR. B( I, J ) /= (0.0E+0,0.0E+0) ) &
             GO TO 120
          ENDDO
       I = L
       GO TO 140
   120    CONTINUE
       DO I = IP1, L
-         IF( A( I, J ) /= CZERO .OR. B( I, J ) /= CZERO ) &
+         IF( A( I, J ) /= (0.0E+0,0.0E+0) .OR. B( I, J ) /= (0.0E+0,0.0E+0) ) &
             GO TO 150
          ENDDO
       I = IP1 - 1
@@ -350,19 +338,25 @@
 !
   160 CONTINUE
    LSCALE( M ) = I
-   IF( I == M ) &
-      GO TO 170
-   CALL CSWAP( N-K+1, A( I, K ), LDA, A( M, K ), LDA )
-   CALL CSWAP( N-K+1, B( I, K ), LDB, B( M, K ), LDB )
+   IF( I == M ) GO TO 170
+   AT_TMP(1:N-K+1) = A(I,K:N)
+   A(I,K:N) = A(M,K:N)
+   A(M,K:N) = AT_TMP(1:N-K+1)
+   AT_TMP(1:N-K+1) = B(I,K:N)
+   B(I,K:N) = B(M,K:N)
+   B(M,K:N) = AT_TMP(1:N-K+1)
 !
 !     Permute columns M and J
 !
   170 CONTINUE
    RSCALE( M ) = J
-   IF( J == M ) &
-      GO TO 180
-   CALL CSWAP( L, A( 1, J ), 1, A( 1, M ), 1 )
-   CALL CSWAP( L, B( 1, J ), 1, B( 1, M ), 1 )
+   IF( J == M ) GO TO 180
+   A_TMP(1:L) = A(1:L,J)
+   A(1:L,J) = A(1:L,M)
+   A(1:L,M) = A_TMP(1:L)
+   A_TMP(1:L) = B(1:L,J)
+   B(1:L,J) = B(1:L,M)
+   B(1:L,M) = A_TMP(1:L)
 !
   180 CONTINUE
    GO TO ( 20, 90 )IFLOW
@@ -373,204 +367,184 @@
 !
    IF( LSAME( JOB, 'P' ) ) THEN
       DO I = ILO, IHI
-         LSCALE( I ) = ONE
-         RSCALE( I ) = ONE
-         ENDDO
+         LSCALE( I ) = 1.0E+0
+         RSCALE( I ) = 1.0E+0
+      ENDDO
       RETURN
    END IF
 !
-   IF( ILO == IHI ) &
-      RETURN
+   IF( ILO == IHI ) RETURN
 !
 !     Balance the submatrix in rows ILO to IHI.
 !
    NR = IHI - ILO + 1
    DO I = ILO, IHI
-      RSCALE( I ) = ZERO
-      LSCALE( I ) = ZERO
+      RSCALE( I ) = 0.0E+0
+      LSCALE( I ) = 0.0E+0
 !
-      WORK( I ) = ZERO
-      WORK( I+N ) = ZERO
-      WORK( I+2*N ) = ZERO
-      WORK( I+3*N ) = ZERO
-      WORK( I+4*N ) = ZERO
-      WORK( I+5*N ) = ZERO
-      ENDDO
+      WORK( I ) = 0.0E+0
+      WORK( I+N ) = 0.0E+0
+      WORK( I+2*N ) = 0.0E+0
+      WORK( I+3*N ) = 0.0E+0
+      WORK( I+4*N ) = 0.0E+0
+      WORK( I+5*N ) = 0.0E+0
+   ENDDO
 !
 !     Compute right side vector in resulting linear equations
 !
    BASL = LOG10( SCLFAC )
    DO I = ILO, IHI
       DO J = ILO, IHI
-         IF( A( I, J ) == CZERO ) THEN
-            TA = ZERO
-            GO TO 210
+         IF( A( I, J ) == (0.0E+0,0.0E+0) ) THEN
+            TA = 0.0E+0
+         ELSE
+            TA = LOG10( CABS1( A( I, J ) ) ) / BASL
          END IF
-         TA = LOG10( CABS1( A( I, J ) ) ) / BASL
 !
-  210       CONTINUE
-         IF( B( I, J ) == CZERO ) THEN
-            TB = ZERO
-            GO TO 220
+         IF( B( I, J ) == (0.0E+0,0.0E+0) ) THEN
+            TB = 0.0E+0
+         ELSE
+            TB = LOG10( CABS1( B( I, J ) ) ) / BASL
          END IF
-         TB = LOG10( CABS1( B( I, J ) ) ) / BASL
 !
-  220       CONTINUE
          WORK( I+4*N ) = WORK( I+4*N ) - TA - TB
          WORK( J+5*N ) = WORK( J+5*N ) - TA - TB
-         ENDDO
       ENDDO
+   ENDDO
 !
-   COEF = ONE / REAL( 2*NR )
+   COEF = 1.0E+0 / REAL( 2*NR )
    COEF2 = COEF*COEF
-   COEF5 = HALF*COEF2
+   COEF5 = 0.5E+0*COEF2
    NRP2 = NR + 2
-   BETA = ZERO
+   BETA = 0.0E+0
    IT = 1
 !
 !     Start generalized conjugate gradient iteration
 !
   250 CONTINUE
 !
-   GAMMA = SDOT( NR, WORK( ILO+4*N ), 1, WORK( ILO+4*N ), 1 ) + &
-           SDOT( NR, WORK( ILO+5*N ), 1, WORK( ILO+5*N ), 1 )
+
+   GAMMA = SUM(WORK(ILO+4*N:ILO+4*N+NR-1)**2) + SUM(WORK(ILO+5*N:ILO+5*N+NR-1)**2)
 !
-   EW = ZERO
-   EWC = ZERO
-   DO I = ILO, IHI
-      EW = EW + WORK( I+4*N )
-      EWC = EWC + WORK( I+5*N )
-      ENDDO
+   EW = SUM(WORK(ILO:IHI+4*N ))
+   EWC = SUM(WORK(ILO:IHI+5*N ))
 !
    GAMMA = COEF*GAMMA - COEF2*( EW**2+EWC**2 ) - COEF5*( EW-EWC )**2
-   IF( GAMMA == ZERO ) &
-      GO TO 350
-   IF( IT /= 1 ) &
-      BETA = GAMMA / PGAMMA
-   T = COEF5*( EWC-THREE*EW )
-   TC = COEF5*( EW-THREE*EWC )
+   IF( GAMMA == 0.0E+0 ) GO TO 350
+   IF( IT /= 1 ) BETA = GAMMA / PGAMMA
+   T = COEF5*( EWC-3.0E+0*EW )
+   TC = COEF5*( EW-3.0E+0*EWC )
 !
-   CALL SSCAL( NR, BETA, WORK( ILO ), 1 )
-   CALL SSCAL( NR, BETA, WORK( ILO+N ), 1 )
+   WORK(ILO:ILO+NR-1) = BETA*WORK(ILO:ILO+NR-1)
+   WORK(ILO+N:ILO+N+NR-1) = BETA*WORK(ILO+N:ILO+N+NR-1)
 !
-   CALL SAXPY( NR, COEF, WORK( ILO+4*N ), 1, WORK( ILO+N ), 1 )
-   CALL SAXPY( NR, COEF, WORK( ILO+5*N ), 1, WORK( ILO ), 1 )
+   WORK(ILO+N:ILO+N+NR-1) = WORK(ILO+N:ILO+N+NR-1) + COEF * WORK(ILO+4*N:ILO+4*N+NR-1)
+   WORK(ILO:ILO+NR-1) = WORK(ILO:ILO+NR-1) + COEF * WORK(ILO+5*N:ILO+5*N+NR-1)
 !
-   DO I = ILO, IHI
-      WORK( I ) = WORK( I ) + TC
-      WORK( I+N ) = WORK( I+N ) + T
-      ENDDO
+   WORK(ILO:IHI) = WORK(ILO:IHI) + TC
+   WORK(ILO+N:IHI+N) = WORK(ILO+N:IHI+N) + T
 !
 !     Apply matrix to vector
 !
    DO I = ILO, IHI
       KOUNT = 0
-      SUM = ZERO
+      SUMS = 0.0E+0
       DO J = ILO, IHI
-         IF( A( I, J ) == CZERO ) &
-            GO TO 280
-         KOUNT = KOUNT + 1
-         SUM = SUM + WORK( J )
-  280       CONTINUE
-         IF( B( I, J ) == CZERO ) &
-            GO TO 290
-         KOUNT = KOUNT + 1
-         SUM = SUM + WORK( J )
-  290    CONTINUE
-         ENDDO
-      WORK( I+2*N ) = REAL( KOUNT )*WORK( I+N ) + SUM
+         IF( A( I, J ) /= (0.0E+0,0.0E+0) ) THEN
+            KOUNT = KOUNT + 1
+            SUMS = SUMS + WORK( J )
+         ENDIF
+         IF( B( I, J ) /= (0.0E+0,0.0E+0) ) THEN
+            KOUNT = KOUNT + 1
+            SUMS = SUMS + WORK( J )
+         ENDIF
       ENDDO
+      WORK( I+2*N ) = REAL( KOUNT )*WORK( I+N ) + SUMS
+   ENDDO
 !
    DO J = ILO, IHI
       KOUNT = 0
-      SUM = ZERO
+      SUMS = 0.0E+0
       DO I = ILO, IHI
-         IF( A( I, J ) == CZERO ) &
-            GO TO 310
-         KOUNT = KOUNT + 1
-         SUM = SUM + WORK( I+N )
-  310       CONTINUE
-         IF( B( I, J ) == CZERO ) &
-            GO TO 320
-         KOUNT = KOUNT + 1
-         SUM = SUM + WORK( I+N )
-  320    CONTINUE
-         ENDDO
-      WORK( J+3*N ) = REAL( KOUNT )*WORK( J ) + SUM
+         IF( A( I, J ) /= (0.0E+0,0.0E+0) ) THEN
+            KOUNT = KOUNT + 1
+            SUMS = SUMS + WORK( I+N )
+         ENDIF
+         IF( B( I, J ) /= (0.0E+0,0.0E+0) ) THEN
+            KOUNT = KOUNT + 1
+            SUMS = SUMS + WORK( I+N )
+         ENDIF
+      ENDDO
+      WORK( J+3*N ) = REAL( KOUNT )*WORK( J ) + SUMS
       ENDDO
 !
-   SUM = SDOT( NR, WORK( ILO+N ), 1, WORK( ILO+2*N ), 1 ) + &
-         SDOT( NR, WORK( ILO ), 1, WORK( ILO+3*N ), 1 )
-   ALPHA = GAMMA / SUM
+
+   SUMS = SUM(WORK(ILO+N:ILO+N+NR-1)*WORK(ILO+2*N:ILO+2*N+NR-1)) + &
+         SUM(WORK(ILO:ILO+NR-1)*WORK(ILO+3*N:ILO+3*N+NR-1))
+   ALPHA = GAMMA / SUMS
 !
 !     Determine correction to current iteration
 !
-   CMAX = ZERO
+   CMAX = 0.0E+0
    DO I = ILO, IHI
       COR = ALPHA*WORK( I+N )
-      IF( ABS( COR ) > CMAX ) &
-         CMAX = ABS( COR )
+      IF( ABS( COR ) > CMAX ) CMAX = ABS( COR )
       LSCALE( I ) = LSCALE( I ) + COR
       COR = ALPHA*WORK( I )
-      IF( ABS( COR ) > CMAX ) &
-         CMAX = ABS( COR )
+      IF( ABS( COR ) > CMAX ) CMAX = ABS( COR )
       RSCALE( I ) = RSCALE( I ) + COR
-      ENDDO
-   IF( CMAX < HALF ) &
-      GO TO 350
+   ENDDO
+   IF( CMAX < 0.5E+0 ) GO TO 350
 !
-   CALL SAXPY( NR, -ALPHA, WORK( ILO+2*N ), 1, WORK( ILO+4*N ), 1 )
-   CALL SAXPY( NR, -ALPHA, WORK( ILO+3*N ), 1, WORK( ILO+5*N ), 1 )
+   WORK(ILO+4*N:ILO+4*N+NR-1) = WORK(ILO+4*N:ILO+4*N+NR-1) - ALPHA*WORK(ILO+2*N:ILO+2*N+NR-1)
+   WORK(ILO+5*N:ILO+5*N+NR-1) = WORK(ILO+5*N:ILO+5*N+NR-1) - ALPHA*WORK(ILO+3*N:ILO+3*N+NR-1)
 !
    PGAMMA = GAMMA
    IT = IT + 1
-   IF( IT <= NRP2 ) &
-      GO TO 250
+   IF( IT <= NRP2 ) GO TO 250
 !
 !     End generalized conjugate gradient iteration
 !
   350 CONTINUE
    SFMIN = SLAMCH( 'S' )
-   SFMAX = ONE / SFMIN
-   LSFMIN = INT( LOG10( SFMIN ) / BASL+ONE )
+   SFMAX = 1.0E+0 / SFMIN
+   LSFMIN = INT( LOG10( SFMIN ) / BASL+1.0E+0 )
    LSFMAX = INT( LOG10( SFMAX ) / BASL )
    DO I = ILO, IHI
       IRAB = ICAMAX( N-ILO+1, A( I, ILO ), LDA )
       RAB = ABS( A( I, IRAB+ILO-1 ) )
       IRAB = ICAMAX( N-ILO+1, B( I, ILO ), LDB )
       RAB = MAX( RAB, ABS( B( I, IRAB+ILO-1 ) ) )
-      LRAB = INT( LOG10( RAB+SFMIN ) / BASL+ONE )
-      IR = INT( LSCALE( I ) + SIGN( HALF, LSCALE( I ) ) )
+      LRAB = INT( LOG10( RAB+SFMIN ) / BASL+1.0E+0 )
+      IR = INT( LSCALE( I ) + SIGN( 0.5E+0, LSCALE( I ) ) )
       IR = MIN( MAX( IR, LSFMIN ), LSFMAX, LSFMAX-LRAB )
       LSCALE( I ) = SCLFAC**IR
       ICAB = ICAMAX( IHI, A( 1, I ), 1 )
       CAB = ABS( A( ICAB, I ) )
       ICAB = ICAMAX( IHI, B( 1, I ), 1 )
       CAB = MAX( CAB, ABS( B( ICAB, I ) ) )
-      LCAB = INT( LOG10( CAB+SFMIN ) / BASL+ONE )
-      JC = INT( RSCALE( I ) + SIGN( HALF, RSCALE( I ) ) )
+      LCAB = INT( LOG10( CAB+SFMIN ) / BASL+1.0E+0 )
+      JC = INT( RSCALE( I ) + SIGN( 0.5E+0, RSCALE( I ) ) )
       JC = MIN( MAX( JC, LSFMIN ), LSFMAX, LSFMAX-LCAB )
       RSCALE( I ) = SCLFAC**JC
-      ENDDO
+   ENDDO
 !
 !     Row scaling of matrices A and B
 !
    DO I = ILO, IHI
-      CALL CSSCAL( N-ILO+1, LSCALE( I ), A( I, ILO ), LDA )
-      CALL CSSCAL( N-ILO+1, LSCALE( I ), B( I, ILO ), LDB )
-      ENDDO
+      A(I,ILO:N) = LSCALE(I)*A(I,ILO:N)
+      B(I,ILO:N) = LSCALE(I)*A(I,ILO:N)
+   ENDDO
 !
 !     Column scaling of matrices A and B
 !
    DO J = ILO, IHI
-      CALL CSSCAL( IHI, RSCALE( J ), A( 1, J ), 1 )
-      CALL CSSCAL( IHI, RSCALE( J ), B( 1, J ), 1 )
-      ENDDO
+      A(1:IHI,J) = RSCALE(J)*A(1:IHI,J)
+      A(1:IHI,J) = RSCALE(J)*B(1:IHI,J)
+   ENDDO
 !
    RETURN
 !
 !     End of CGGBAL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
