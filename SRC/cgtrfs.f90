@@ -230,12 +230,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -249,9 +243,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CCOPY, CGTTRS, CLACN2, CLAGTM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, MAX, REAL
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -290,10 +281,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -318,7 +307,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -326,8 +315,8 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CLAGTM( TRANS, N, 1, -ONE, DL, D, DU, X( 1, J ), LDX, ONE, &
+      WORK(1:N) = B(1:N,J)
+      CALL CLAGTM( TRANS, N, 1, -1.0E+0, DL, D, DU, X( 1, J ), LDX, 1.0E+0, &
                    WORK, N )
 !
 !        Compute abs(op(A))*abs(x) + abs(b) for use in the backward
@@ -380,7 +369,7 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
@@ -397,14 +386,14 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. &
           COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CGTTRS( TRANS, N, 1, DLF, DF, DUF, DU2, IPIV, WORK, N, &
                       INFO )
-         CALL CAXPY( N, CMPLX( ONE ), WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -449,39 +438,31 @@
 !
 !              Multiply by diag(W)*inv(op(A)**H).
 !
-            CALL CGTTRS( TRANST, N, 1, DLF, DF, DUF, DU2, IPIV, WORK, &
-                         N, INFO )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-            ENDDO
+            CALL CGTTRS( TRANST, N, 1, DLF, DF, DUF, DU2, IPIV, WORK, N, INFO )
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-            ENDDO
-            CALL CGTTRS( TRANSN, N, 1, DLF, DF, DUF, DU2, IPIV, WORK, &
-                         N, INFO )
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
+            CALL CGTTRS( TRANSN, N, 1, DLF, DF, DUF, DU2, IPIV, WORK, N, INFO )
          END IF
          GO TO 70
       END IF
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
+      ENDDO
+      IF( LSTRES /= 0.0E+0 ) &
          FERR( J ) = FERR( J ) / LSTRES
 !
-      ENDDO
+   ENDDO
 !
    RETURN
 !
 !     End of CGTRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

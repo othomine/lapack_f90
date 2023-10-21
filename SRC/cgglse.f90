@@ -292,7 +292,7 @@
 !
 !        Put the solution in X
 !
-      X(N-P+1:P) = D(1:P)
+      X(N-P+1:N) = D(1:P)
 !
 !        Update c1
 !
