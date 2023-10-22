@@ -226,10 +226,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER, WANTZ, LQUERY
@@ -247,9 +243,6 @@
 !     .. External Subroutines ..
    EXTERNAL           SSCAL, SSTERF, XERBLA, CLASCL, CSTEQR, &
                       CHETRD_2STAGE, CHETRD_HB2ST
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -289,8 +282,7 @@
          WORK( 1 )  = LWMIN
       ENDIF
 !
-      IF( LWORK < LWMIN .AND. .NOT.LQUERY ) &
-         INFO = -11
+      IF( LWORK < LWMIN .AND. .NOT.LQUERY ) INFO = -11
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -302,8 +294,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( N == 1 ) THEN
       IF( LOWER ) THEN
@@ -311,8 +302,7 @@
       ELSE
          W( 1 ) = REAL( AB( KD+1, 1 ) )
       END IF
-      IF( WANTZ ) &
-         Z( 1, 1 ) = ONE
+      IF( WANTZ ) Z( 1, 1 ) = 1.0E+0
       RETURN
    END IF
 !
@@ -321,7 +311,7 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS    = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN   = SQRT( SMLNUM )
    RMAX   = SQRT( BIGNUM )
 !
@@ -329,7 +319,7 @@
 !
    ANRM = CLANHB( 'M', UPLO, N, KD, AB, LDAB, RWORK )
    ISCALE = 0
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
@@ -338,9 +328,9 @@
    END IF
    IF( ISCALE == 1 ) THEN
       IF( LOWER ) THEN
-         CALL CLASCL( 'B', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'B', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       ELSE
-         CALL CLASCL( 'Q', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'Q', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       END IF
    END IF
 !
@@ -373,7 +363,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      CALL SSCAL( IMAX, 1.0E+0 / SIGMA, W, 1 )
    END IF
 !
 !     Set WORK(1) to optimal workspace size.
@@ -385,5 +375,3 @@
 !     End of CHBEV_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

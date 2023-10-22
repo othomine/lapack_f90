@@ -204,12 +204,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER, LQUERY, WANTZ
@@ -227,9 +221,6 @@
 !     .. External Subroutines ..
    EXTERNAL           SSCAL, SSTERF, XERBLA, CLASCL, CSTEQR, &
                       CUNGTR, CHETRD_2STAGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -278,8 +269,7 @@
    IF( N == 1 ) THEN
       W( 1 ) = REAL( A( 1, 1 ) )
       WORK( 1 ) = 1
-      IF( WANTZ ) &
-         A( 1, 1 ) = CONE
+      IF( WANTZ ) A( 1, 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -288,7 +278,7 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS    = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN   = SQRT( SMLNUM )
    RMAX   = SQRT( BIGNUM )
 !
@@ -296,7 +286,7 @@
 !
    ANRM = CLANHE( 'M', UPLO, N, A, LDA, RWORK )
    ISCALE = 0
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
@@ -304,7 +294,7 @@
       SIGMA = RMAX / ANRM
    END IF
    IF( ISCALE == 1 ) &
-      CALL CLASCL( UPLO, 0, 0, ONE, SIGMA, N, N, A, LDA, INFO )
+      CALL CLASCL( UPLO, 0, 0, 1.0E+0, SIGMA, N, N, A, LDA, INFO )
 !
 !     Call CHETRD_2STAGE to reduce Hermitian matrix to tridiagonal form.
 !
@@ -339,7 +329,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      W(1:IMAX) = W(1:IMAX)/SIGMA
    END IF
 !
 !     Set WORK(1) to optimal complex workspace size.
@@ -351,5 +341,3 @@
 !     End of CHEEV_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

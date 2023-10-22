@@ -148,8 +148,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E0, ZERO = 0.0E0 )
    INTEGER            MAX_ITER
    PARAMETER          ( MAX_ITER = 100 )
 !     ..
@@ -167,9 +165,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, INT, LOG, MAX, MIN, REAL, SQRT
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -195,20 +190,18 @@
    END IF
 
    UP = LSAME( UPLO, 'U' )
-   AMAX = ZERO
+   AMAX = 0.0E+0
 !
 !     Quick return if possible.
 !
    IF ( N  ==  0 ) THEN
-      SCOND = ONE
+      SCOND = 1.0E+0
       RETURN
    END IF
 
-   DO I = 1, N
-      S( I ) = ZERO
-   END DO
+   S(1:N) = 0.0E+0
 
-   AMAX = ZERO
+   AMAX = 0.0E+0
    IF ( UP ) THEN
       DO J = 1, N
          DO I = 1, J-1
@@ -230,19 +223,15 @@
          END DO
       END DO
    END IF
-   DO J = 1, N
-      S( J ) = 1.0E0 / S( J )
-   END DO
+   S(1:N) = 1.0E0 / S(1:N)
 
-   TOL = ONE / SQRT( 2.0E0 * N )
+   TOL = 1.0E+0 / SQRT( 2.0E0 * N )
 
    DO ITER = 1, MAX_ITER
       SCALE = 0.0E0
       SUMSQ = 0.0E0
 !        beta = |A|s
-      DO I = 1, N
-         WORK( I ) = ZERO
-      END DO
+      WORK(1:N) = 0.0E+0
       IF ( UP ) THEN
          DO J = 1, N
             DO I = 1, J-1
@@ -262,16 +251,10 @@
       END IF
 
 !        avg = s^T beta / n
-      AVG = 0.0E0
-      DO I = 1, N
-         AVG = AVG + REAL( S( I )*WORK( I ) )
-      END DO
-      AVG = AVG / N
+      AVG = SUM(REAL( S(1:N)*WORK(1:N) ))/N
 
       STD = 0.0E0
-      DO I = N+1, 2*N
-         WORK( I ) = S( I-N ) * WORK( I-N ) - AVG
-      END DO
+      WORK(N+1:2*N) = S(1:N) * WORK(1:N) - AVG
       CALL CLASSQ( N, WORK( N+1 ), 1, SCALE, SUMSQ )
       STD = SCALE * SQRT( SUMSQ / N )
 
@@ -292,7 +275,7 @@
          SI = -2*C0 / ( C1 + SQRT( D ) )
 
          D = SI - S( I )
-         U = ZERO
+         U = 0.0E+0
          IF ( UP ) THEN
             DO J = 1, I
                T = CABS1( A( J, I ) )
@@ -325,19 +308,13 @@
  999  CONTINUE
 
    SMLNUM = SLAMCH( 'SAFEMIN' )
-   BIGNUM = ONE / SMLNUM
-   SMIN = BIGNUM
-   SMAX = ZERO
-   T = ONE / SQRT( AVG )
+   BIGNUM = 1.0E+0 / SMLNUM
+   T = 1.0E+0 / SQRT( AVG )
    BASE = SLAMCH( 'B' )
-   U = ONE / LOG( BASE )
-   DO I = 1, N
-      S( I ) = BASE ** INT( U * LOG( S( I ) * T ) )
-      SMIN = MIN( SMIN, S( I ) )
-      SMAX = MAX( SMAX, S( I ) )
-   END DO
+   U = 1.0E+0 / LOG( BASE )
+   S(1:N) = BASE ** INT( U * LOG( S(1:N) * T ) )
+   SMIN = MINVAL(S(1:N))
+   SMAX = MAXVAL(S(1:N))
    SCOND = MAX( SMIN, SMLNUM ) / MIN( SMAX, BIGNUM )
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

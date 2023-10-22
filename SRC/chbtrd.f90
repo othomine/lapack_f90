@@ -176,13 +176,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            INITQ, UPPER, WANTQ
@@ -195,9 +188,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACGV, CLAR2V, CLARGV, CLARTG, CLARTV, CLASET, &
                       CROT, CSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN, REAL
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -236,13 +226,12 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Initialize Q to the unit matrix, if needed
 !
    IF( INITQ ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
 !
 !     Wherever possible, plane rotations are generated and applied in
 !     vector operations of length NR over the index set J1:J2:KD1.
@@ -434,31 +423,24 @@
             ABST = ABS( T )
             AB( KD, I+1 ) = ABST
             E( I ) = ABST
-            IF( ABST /= ZERO ) THEN
+            IF( ABST /= 0.0E+0 ) THEN
                T = T / ABST
             ELSE
-               T = CONE
+               T = (1.0E+0,0.0E+0)
             END IF
-            IF( I < N-1 ) &
-               AB( KD, I+2 ) = AB( KD, I+2 )*T
-            IF( WANTQ ) THEN
-               CALL CSCAL( N, CONJG( T ), Q( 1, I+1 ), 1 )
-            END IF
-            ENDDO
+            IF( I < N-1 ) AB( KD, I+2 ) = AB( KD, I+2 )*T
+            IF( WANTQ ) Q(1:N,I+1) = CONJG(T)*Q(1:N,I+1)
+         ENDDO
       ELSE
 !
 !           set E to zero if original matrix was diagonal
 !
-         DO I = 1, N - 1
-            E( I ) = ZERO
-            ENDDO
+         E(1:N-1) = 0.0E+0
       END IF
 !
 !        copy diagonal elements to D
 !
-      DO I = 1, N
-         D( I ) = REAL( AB( KD1, I ) )
-         ENDDO
+      D(1:N) = REAL( AB( KD1,1:N) )
 !
    ELSE
 !
@@ -499,14 +481,14 @@
                         CALL CLARTV( NR, AB( KD1-L, J1-KD1+L ), INCA, &
                                      AB( KD1-L+1, J1-KD1+L ), INCA, &
                                      D( J1 ), WORK( J1 ), KD1 )
-                        ENDDO
+                     ENDDO
                   ELSE
                      JEND = J1 + KD1*( NR-1 )
                      DO JINC = J1, JEND, KD1
                         CALL CROT( KDM1, AB( KD, JINC-KD ), INCX, &
                                    AB( KD1, JINC-KD ), INCX, &
                                    D( JINC ), WORK( JINC ) )
-                        ENDDO
+                     ENDDO
                   END IF
 !
                END IF
@@ -566,7 +548,7 @@
                            CALL CROT( KDM1, AB( 3, J1INC-1 ), 1, &
                                       AB( 2, J1INC ), 1, D( J1INC ), &
                                       WORK( J1INC ) )
-                           ENDDO
+                        ENDDO
                      END IF
                      LEND = MIN( KDM1, N-J2 )
                      LAST = J1END + KD1
@@ -602,13 +584,13 @@
                         IQAEND = MIN( IQAEND+KD, IQEND )
                         CALL CROT( NQ, Q( IQB, J-1 ), 1, Q( IQB, J ), &
                                    1, D( J ), WORK( J ) )
-                        ENDDO
+                     ENDDO
                   ELSE
 !
                      DO J = J1, J2, KD1
                         CALL CROT( N, Q( 1, J-1 ), 1, Q( 1, J ), 1, &
                                    D( J ), WORK( J ) )
-                        ENDDO
+                     ENDDO
                   END IF
                END IF
 !
@@ -627,9 +609,9 @@
 !
                   WORK( J+KD ) = WORK( J )*AB( KD1, J )
                   AB( KD1, J ) = D( J )*AB( KD1, J )
-                  ENDDO
                ENDDO
             ENDDO
+         ENDDO
       END IF
 !
       IF( KD > 0 ) THEN
@@ -641,31 +623,24 @@
             ABST = ABS( T )
             AB( 2, I ) = ABST
             E( I ) = ABST
-            IF( ABST /= ZERO ) THEN
+            IF( ABST /= 0.0E+0 ) THEN
                T = T / ABST
             ELSE
-               T = CONE
+               T = (1.0E+0,0.0E+0)
             END IF
-            IF( I < N-1 ) &
-               AB( 2, I+1 ) = AB( 2, I+1 )*T
-            IF( WANTQ ) THEN
-               CALL CSCAL( N, T, Q( 1, I+1 ), 1 )
-            END IF
+            IF( I < N-1 ) AB( 2, I+1 ) = AB( 2, I+1 )*T
+            IF( WANTQ ) Q(1:N,I+1) = T*Q(1:N,I+1)
             ENDDO
       ELSE
 !
 !           set E to zero if original matrix was diagonal
 !
-         DO I = 1, N - 1
-            E( I ) = ZERO
-            ENDDO
+         E(1:N-1) = 0.0E+0
       END IF
 !
 !        copy diagonal elements to D
 !
-      DO I = 1, N
-         D( I ) = REAL( AB( 1, I ) )
-         ENDDO
+      D(1:N) = REAL( AB( 1,1:N) )
    END IF
 !
    RETURN
@@ -673,5 +648,3 @@
 !     End of CHBTRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -179,12 +179,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   REAL               ONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ), ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPDATE, UPPER, WANTX
@@ -200,9 +194,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CGERC, CGERU, CLACGV, CLAR2V, CLARGV, CLARTG, &
                       CLARTV, CLASET, CROT, CSSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -237,15 +228,13 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    INCA = LDAB*KA1
 !
 !     Initialize X to the unit matrix, if needed
 !
-   IF( WANTX ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, X, LDX )
+   IF( WANTX ) CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), X, LDX )
 !
 !     Set M to the splitting point m. It must be the same value as is
 !     used in CPBSTF. The chosen value allows the arrays WORK and RWORK
@@ -325,14 +314,12 @@
          UPDATE = .FALSE.
          I = I + 1
          I0 = M
-         IF( KA == 0 ) &
-            GO TO 480
+         IF( KA == 0 ) GO TO 480
          GO TO 10
       END IF
    ELSE
       I = I + KA
-      IF( I > N-1 ) &
-         GO TO 480
+      IF( I > N-1 ) GO TO 480
    END IF
 !
    IF( UPPER ) THEN
@@ -379,9 +366,9 @@
 !
 !              post-multiply X by inv(S(i))
 !
-            CALL CSSCAL( N-M, ONE / BII, X( M+1, I ), 1 )
+            X(M+1:N,I) = X(M+1:N,I)/BII
             IF( KBT > 0 ) &
-               CALL CGERC( N-M, KBT, -CONE, X( M+1, I ), 1, &
+               CALL CGERC( N-M, KBT, -(1.0E+0,0.0E+0), X( M+1, I ), 1, &
                            BB( KB1-KBT, I ), 1, X( M+1, I-KBT ), &
                            LDX )
          END IF
@@ -452,7 +439,7 @@
                CALL CLARTV( NR, AB( KA1-L, J2 ), INCA, &
                             AB( KA-L, J2+1 ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 1st set from both sides to diagonal
 !              blocks
@@ -472,7 +459,7 @@
                CALL CLARTV( NRT, AB( L, J2+KA1-L ), INCA, &
                             AB( L+1, J2+KA1-L ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -481,9 +468,9 @@
             DO J = J2, J1, KA1
                CALL CROT( N-M, X( M+1, J ), 1, X( M+1, J+1 ), 1, &
                           RWORK( J-M ), CONJG( WORK( J-M ) ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       IF( UPDATE ) THEN
          IF( I2 <= N .AND. KBT > 0 ) THEN
@@ -510,13 +497,13 @@
                CALL CLARTV( NRT, AB( L, J2-L+1 ), INCA, &
                             AB( L+1, J2-L+1 ), INCA, RWORK( J2-KA ), &
                             WORK( J2-KA ), KA1 )
-            ENDDO
+         ENDDO
          NR = ( N-J2+KA ) / KA1
          J1 = J2 + ( NR-1 )*KA1
          DO J = J1, J2, -KA1
             WORK( J ) = WORK( J-KA )
             RWORK( J ) = RWORK( J-KA )
-            ENDDO
+         ENDDO
          DO J = J2, J1, KA1
 !
 !              create nonzero element a(j-ka,j+1) outside the band
@@ -524,12 +511,11 @@
 !
             WORK( J ) = WORK( J )*AB( 1, J+1 )
             AB( 1, J+1 ) = RWORK( J )*AB( 1, J+1 )
-            ENDDO
-         IF( UPDATE ) THEN
-            IF( I-K < N-KA .AND. K <= KBT ) &
-               WORK( I-K+KA ) = WORK( I-K )
-         END IF
          ENDDO
+         IF( UPDATE ) THEN
+            IF( I-K < N-KA .AND. K <= KBT ) WORK( I-K+KA ) = WORK( I-K )
+         END IF
+      ENDDO
 !
       DO K = KB, 1, -1
          J2 = I - K - 1 + MAX( 1, K-I0+1 )*KA1
@@ -549,7 +535,7 @@
                CALL CLARTV( NR, AB( KA1-L, J2 ), INCA, &
                             AB( KA-L, J2+1 ), INCA, RWORK( J2 ), &
                             WORK( J2 ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 2nd set from both sides to diagonal
 !              blocks
@@ -569,7 +555,7 @@
                CALL CLARTV( NRT, AB( L, J2+KA1-L ), INCA, &
                             AB( L+1, J2+KA1-L ), INCA, RWORK( J2 ), &
                             WORK( J2 ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -578,9 +564,9 @@
             DO J = J2, J1, KA1
                CALL CROT( N-M, X( M+1, J ), 1, X( M+1, J+1 ), 1, &
                           RWORK( J ), CONJG( WORK( J ) ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = 1, KB - 1
          J2 = I - K - 1 + MAX( 1, K-I0+2 )*KA1
@@ -593,14 +579,14 @@
                CALL CLARTV( NRT, AB( L, J2+KA1-L ), INCA, &
                             AB( L+1, J2+KA1-L ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-            ENDDO
          ENDDO
+      ENDDO
 !
       IF( KB > 1 ) THEN
          DO J = N - 1, J2 + KA, -1
             RWORK( J-M ) = RWORK( J-KA-M )
             WORK( J-M ) = WORK( J-KA-M )
-            ENDDO
+         ENDDO
       END IF
 !
    ELSE
@@ -613,12 +599,10 @@
 !
          BII = REAL( BB( 1, I ) )
          AB( 1, I ) = ( REAL( AB( 1, I ) ) / BII ) / BII
-         DO J = I + 1, I1
-            AB( J-I+1, I ) = AB( J-I+1, I ) / BII
-            ENDDO
+         AB( 2:1-I+I1, I ) = AB( 2:1-I+I1, I ) / BII
          DO J = MAX( 1, I-KA ), I - 1
             AB( I-J+1, J ) = AB( I-J+1, J ) / BII
-            ENDDO
+         ENDDO
          DO K = I - KBT, I - 1
             DO J = I - KBT, K
                AB( K-J+1, J ) = AB( K-J+1, J ) - &
@@ -627,27 +611,27 @@
                                 AB( I-J+1, J ) + REAL( AB( 1, I ) )* &
                                 BB( I-J+1, J )*CONJG( BB( I-K+1, &
                                 K ) )
-               ENDDO
+            ENDDO
             DO J = MAX( 1, I-KA ), I - KBT - 1
                AB( K-J+1, J ) = AB( K-J+1, J ) - &
                                 CONJG( BB( I-K+1, K ) )* &
                                 AB( I-J+1, J )
-               ENDDO
             ENDDO
+         ENDDO
          DO J = I, I1
             DO K = MAX( J-KA, I-KBT ), I - 1
                AB( J-K+1, K ) = AB( J-K+1, K ) - &
                                 BB( I-K+1, K )*AB( J-I+1, I )
-               ENDDO
             ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
 !              post-multiply X by inv(S(i))
 !
-            CALL CSSCAL( N-M, ONE / BII, X( M+1, I ), 1 )
+            X(M+1:N,I) = X(M+1:N,I)/BII
             IF( KBT > 0 ) &
-               CALL CGERU( N-M, KBT, -CONE, X( M+1, I ), 1, &
+               CALL CGERU( N-M, KBT, -(1.0E+0,0.0E+0), X( M+1, I ), 1, &
                            BB( KBT+1, I-KBT ), LDBB-1, &
                            X( M+1, I-KBT ), LDX )
          END IF
@@ -701,7 +685,7 @@
 !
             WORK( J-M ) = WORK( J-M )*AB( KA1, J-KA+1 )
             AB( KA1, J-KA+1 ) = RWORK( J-M )*AB( KA1, J-KA+1 )
-            ENDDO
+         ENDDO
 !
 !           generate rotations in 1st set to annihilate elements which
 !           have been created outside the band
@@ -717,7 +701,7 @@
                CALL CLARTV( NR, AB( L+1, J2-L ), INCA, &
                             AB( L+2, J2-L ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 1st set from both sides to diagonal
 !              blocks
@@ -736,7 +720,7 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J2 ), INCA, &
                             AB( KA1-L, J2+1 ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -745,9 +729,9 @@
             DO J = J2, J1, KA1
                CALL CROT( N-M, X( M+1, J ), 1, X( M+1, J+1 ), 1, &
                           RWORK( J-M ), WORK( J-M ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       IF( UPDATE ) THEN
          IF( I2 <= N .AND. KBT > 0 ) THEN
@@ -774,13 +758,13 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J2-KA ), INCA, &
                             AB( KA1-L, J2-KA+1 ), INCA, &
                             RWORK( J2-KA ), WORK( J2-KA ), KA1 )
-            ENDDO
+         ENDDO
          NR = ( N-J2+KA ) / KA1
          J1 = J2 + ( NR-1 )*KA1
          DO J = J1, J2, -KA1
             WORK( J ) = WORK( J-KA )
             RWORK( J ) = RWORK( J-KA )
-            ENDDO
+         ENDDO
          DO J = J2, J1, KA1
 !
 !              create nonzero element a(j+1,j-ka) outside the band
@@ -788,12 +772,12 @@
 !
             WORK( J ) = WORK( J )*AB( KA1, J-KA+1 )
             AB( KA1, J-KA+1 ) = RWORK( J )*AB( KA1, J-KA+1 )
-            ENDDO
+         ENDDO
          IF( UPDATE ) THEN
             IF( I-K < N-KA .AND. K <= KBT ) &
                WORK( I-K+KA ) = WORK( I-K )
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = KB, 1, -1
          J2 = I - K - 1 + MAX( 1, K-I0+1 )*KA1
@@ -813,7 +797,7 @@
                CALL CLARTV( NR, AB( L+1, J2-L ), INCA, &
                             AB( L+2, J2-L ), INCA, RWORK( J2 ), &
                             WORK( J2 ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 2nd set from both sides to diagonal
 !              blocks
@@ -832,7 +816,7 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J2 ), INCA, &
                             AB( KA1-L, J2+1 ), INCA, RWORK( J2 ), &
                             WORK( J2 ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -841,9 +825,9 @@
             DO J = J2, J1, KA1
                CALL CROT( N-M, X( M+1, J ), 1, X( M+1, J+1 ), 1, &
                           RWORK( J ), WORK( J ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = 1, KB - 1
          J2 = I - K - 1 + MAX( 1, K-I0+2 )*KA1
@@ -856,14 +840,14 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J2 ), INCA, &
                             AB( KA1-L, J2+1 ), INCA, RWORK( J2-M ), &
                             WORK( J2-M ), KA1 )
-            ENDDO
          ENDDO
+      ENDDO
 !
       IF( KB > 1 ) THEN
          DO J = N - 1, J2 + KA, -1
             RWORK( J-M ) = RWORK( J-KA-M )
             WORK( J-M ) = WORK( J-KA-M )
-            ENDDO
+         ENDDO
       END IF
 !
    END IF
@@ -901,14 +885,12 @@
          UPDATE = .FALSE.
          I = I - 1
          I0 = M + 1
-         IF( KA == 0 ) &
-            RETURN
+         IF( KA == 0 ) RETURN
          GO TO 490
       END IF
    ELSE
       I = I - KA
-      IF( I < 2 ) &
-         RETURN
+      IF( I < 2 ) RETURN
    END IF
 !
    IF( I < M-KBT ) THEN
@@ -927,12 +909,10 @@
 !
          BII = REAL( BB( KB1, I ) )
          AB( KA1, I ) = ( REAL( AB( KA1, I ) ) / BII ) / BII
-         DO J = I1, I - 1
-            AB( J-I+KA1, I ) = AB( J-I+KA1, I ) / BII
-            ENDDO
+         AB( KA1-I+I1:KA1-1, I ) = AB( KA1-I+I1:KA1-1, I ) / BII
          DO J = I + 1, MIN( N, I+KA )
             AB( I-J+KA1, J ) = AB( I-J+KA1, J ) / BII
-            ENDDO
+         ENDDO
          DO K = I + 1, I + KBT
             DO J = K, I + KBT
                AB( K-J+KA1, J ) = AB( K-J+KA1, J ) - &
@@ -943,27 +923,27 @@
                                   REAL( AB( KA1, I ) )* &
                                   BB( I-J+KB1, J )* &
                                   CONJG( BB( I-K+KB1, K ) )
-               ENDDO
+            ENDDO
             DO J = I + KBT + 1, MIN( N, I+KA )
                AB( K-J+KA1, J ) = AB( K-J+KA1, J ) - &
                                   CONJG( BB( I-K+KB1, K ) )* &
                                   AB( I-J+KA1, J )
-               ENDDO
             ENDDO
+         ENDDO
          DO J = I1, I
             DO K = I + 1, MIN( J+KA, I+KBT )
                AB( J-K+KA1, K ) = AB( J-K+KA1, K ) - &
                                   BB( I-K+KB1, K )*AB( J-I+KA1, I )
-               ENDDO
             ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
 !              post-multiply X by inv(S(i))
 !
-            CALL CSSCAL( NX, ONE / BII, X( 1, I ), 1 )
+            X(1:NX,I) = X(1:NX,I) / BII
             IF( KBT > 0 ) &
-               CALL CGERU( NX, KBT, -CONE, X( 1, I ), 1, &
+               CALL CGERU( NX, KBT, -(1.0E+0,0.0E+0), X( 1, I ), 1, &
                            BB( KB, I+1 ), LDBB-1, X( 1, I+1 ), LDX )
          END IF
 !
@@ -1016,7 +996,7 @@
 !
             WORK( J ) = WORK( J )*AB( 1, J+KA-1 )
             AB( 1, J+KA-1 ) = RWORK( J )*AB( 1, J+KA-1 )
-            ENDDO
+         ENDDO
 !
 !           generate rotations in 1st set to annihilate elements which
 !           have been created outside the band
@@ -1032,7 +1012,7 @@
                CALL CLARTV( NR, AB( KA1-L, J1+L ), INCA, &
                             AB( KA-L, J1+L ), INCA, RWORK( J1 ), &
                             WORK( J1 ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 1st set from both sides to diagonal
 !              blocks
@@ -1053,7 +1033,7 @@
                CALL CLARTV( NRT, AB( L, J1T ), INCA, &
                             AB( L+1, J1T-1 ), INCA, RWORK( J1T ), &
                             WORK( J1T ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -1062,9 +1042,9 @@
             DO J = J1, J2, KA1
                CALL CROT( NX, X( 1, J ), 1, X( 1, J-1 ), 1, &
                           RWORK( J ), WORK( J ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       IF( UPDATE ) THEN
          IF( I2 > 0 .AND. KBT > 0 ) THEN
@@ -1093,13 +1073,13 @@
                             AB( L+1, J1T+KA-1 ), INCA, &
                             RWORK( M-KB+J1T+KA ), &
                             WORK( M-KB+J1T+KA ), KA1 )
-            ENDDO
+         ENDDO
          NR = ( J2+KA-1 ) / KA1
          J1 = J2 - ( NR-1 )*KA1
          DO J = J1, J2, KA1
             WORK( M-KB+J ) = WORK( M-KB+J+KA )
             RWORK( M-KB+J ) = RWORK( M-KB+J+KA )
-            ENDDO
+         ENDDO
          DO J = J1, J2, KA1
 !
 !              create nonzero element a(j-1,j+ka) outside the band
@@ -1107,12 +1087,12 @@
 !
             WORK( M-KB+J ) = WORK( M-KB+J )*AB( 1, J+KA-1 )
             AB( 1, J+KA-1 ) = RWORK( M-KB+J )*AB( 1, J+KA-1 )
-            ENDDO
+         ENDDO
          IF( UPDATE ) THEN
             IF( I+K > KA1 .AND. K <= KBT ) &
                WORK( M-KB+I+K-KA ) = WORK( M-KB+I+K )
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = KB, 1, -1
          J2 = I + K + 1 - MAX( 1, K+I0-M )*KA1
@@ -1132,7 +1112,7 @@
                CALL CLARTV( NR, AB( KA1-L, J1+L ), INCA, &
                             AB( KA-L, J1+L ), INCA, RWORK( M-KB+J1 ), &
                             WORK( M-KB+J1 ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 2nd set from both sides to diagonal
 !              blocks
@@ -1154,7 +1134,7 @@
                             AB( L+1, J1T-1 ), INCA, &
                             RWORK( M-KB+J1T ), WORK( M-KB+J1T ), &
                             KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -1163,9 +1143,9 @@
             DO J = J1, J2, KA1
                CALL CROT( NX, X( 1, J ), 1, X( 1, J-1 ), 1, &
                           RWORK( M-KB+J ), WORK( M-KB+J ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = 1, KB - 1
          J2 = I + K + 1 - MAX( 1, K+I0-M+1 )*KA1
@@ -1179,8 +1159,8 @@
                CALL CLARTV( NRT, AB( L, J1T ), INCA, &
                             AB( L+1, J1T-1 ), INCA, RWORK( J1T ), &
                             WORK( J1T ), KA1 )
-            ENDDO
          ENDDO
+      ENDDO
 !
       IF( KB > 1 ) THEN
          DO J = 2, I2 - KA
@@ -1201,10 +1181,10 @@
          AB( 1, I ) = ( REAL( AB( 1, I ) ) / BII ) / BII
          DO J = I1, I - 1
             AB( I-J+1, J ) = AB( I-J+1, J ) / BII
-            ENDDO
+         ENDDO
          DO J = I + 1, MIN( N, I+KA )
             AB( J-I+1, I ) = AB( J-I+1, I ) / BII
-            ENDDO
+         ENDDO
          DO K = I + 1, I + KBT
             DO J = K, I + KBT
                AB( J-K+1, K ) = AB( J-K+1, K ) - &
@@ -1213,27 +1193,27 @@
                                 AB( J-I+1, I ) + REAL( AB( 1, I ) )* &
                                 BB( J-I+1, I )*CONJG( BB( K-I+1, &
                                 I ) )
-               ENDDO
+            ENDDO
             DO J = I + KBT + 1, MIN( N, I+KA )
                AB( J-K+1, K ) = AB( J-K+1, K ) - &
                                 CONJG( BB( K-I+1, I ) )* &
                                 AB( J-I+1, I )
-               ENDDO
             ENDDO
+         ENDDO
          DO J = I1, I
             DO K = I + 1, MIN( J+KA, I+KBT )
                AB( K-J+1, J ) = AB( K-J+1, J ) - &
                                 BB( K-I+1, I )*AB( I-J+1, J )
-               ENDDO
             ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
 !              post-multiply X by inv(S(i))
 !
-            CALL CSSCAL( NX, ONE / BII, X( 1, I ), 1 )
+            X(1:NX,I) = X(1:NX,I)/BII
             IF( KBT > 0 ) &
-               CALL CGERC( NX, KBT, -CONE, X( 1, I ), 1, BB( 2, I ), &
+               CALL CGERC( NX, KBT, -(1.0E+0,0.0E+0), X( 1, I ), 1, BB( 2, I ), &
                            1, X( 1, I+1 ), LDX )
          END IF
 !
@@ -1286,7 +1266,7 @@
 !
             WORK( J ) = WORK( J )*AB( KA1, J-1 )
             AB( KA1, J-1 ) = RWORK( J )*AB( KA1, J-1 )
-            ENDDO
+         ENDDO
 !
 !           generate rotations in 1st set to annihilate elements which
 !           have been created outside the band
@@ -1301,7 +1281,7 @@
             DO L = 1, KA - 1
                CALL CLARTV( NR, AB( L+1, J1 ), INCA, AB( L+2, J1-1 ), &
                             INCA, RWORK( J1 ), WORK( J1 ), KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 1st set from both sides to diagonal
 !              blocks
@@ -1322,7 +1302,7 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J1T-KA1+L ), INCA, &
                             AB( KA1-L, J1T-KA1+L ), INCA, &
                             RWORK( J1T ), WORK( J1T ), KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -1331,9 +1311,9 @@
             DO J = J1, J2, KA1
                CALL CROT( NX, X( 1, J ), 1, X( 1, J-1 ), 1, &
                           RWORK( J ), CONJG( WORK( J ) ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       IF( UPDATE ) THEN
          IF( I2 > 0 .AND. KBT > 0 ) THEN
@@ -1362,13 +1342,13 @@
                             AB( KA1-L, J1T+L-1 ), INCA, &
                             RWORK( M-KB+J1T+KA ), &
                             WORK( M-KB+J1T+KA ), KA1 )
-            ENDDO
+         ENDDO
          NR = ( J2+KA-1 ) / KA1
          J1 = J2 - ( NR-1 )*KA1
          DO J = J1, J2, KA1
             WORK( M-KB+J ) = WORK( M-KB+J+KA )
             RWORK( M-KB+J ) = RWORK( M-KB+J+KA )
-            ENDDO
+         ENDDO
          DO J = J1, J2, KA1
 !
 !              create nonzero element a(j+ka,j-1) outside the band
@@ -1376,12 +1356,12 @@
 !
             WORK( M-KB+J ) = WORK( M-KB+J )*AB( KA1, J-1 )
             AB( KA1, J-1 ) = RWORK( M-KB+J )*AB( KA1, J-1 )
-            ENDDO
+         ENDDO
          IF( UPDATE ) THEN
             IF( I+K > KA1 .AND. K <= KBT ) &
                WORK( M-KB+I+K-KA ) = WORK( M-KB+I+K )
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = KB, 1, -1
          J2 = I + K + 1 - MAX( 1, K+I0-M )*KA1
@@ -1401,7 +1381,7 @@
                CALL CLARTV( NR, AB( L+1, J1 ), INCA, AB( L+2, J1-1 ), &
                             INCA, RWORK( M-KB+J1 ), WORK( M-KB+J1 ), &
                             KA1 )
-               ENDDO
+            ENDDO
 !
 !              apply rotations in 2nd set from both sides to diagonal
 !              blocks
@@ -1423,7 +1403,7 @@
                             AB( KA1-L, J1T-KA1+L ), INCA, &
                             RWORK( M-KB+J1T ), WORK( M-KB+J1T ), &
                             KA1 )
-            ENDDO
+         ENDDO
 !
          IF( WANTX ) THEN
 !
@@ -1432,9 +1412,9 @@
             DO J = J1, J2, KA1
                CALL CROT( NX, X( 1, J ), 1, X( 1, J-1 ), 1, &
                           RWORK( M-KB+J ), CONJG( WORK( M-KB+J ) ) )
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
       DO K = 1, KB - 1
          J2 = I + K + 1 - MAX( 1, K+I0-M+1 )*KA1
@@ -1448,14 +1428,14 @@
                CALL CLARTV( NRT, AB( KA1-L+1, J1T-KA1+L ), INCA, &
                             AB( KA1-L, J1T-KA1+L ), INCA, &
                             RWORK( J1T ), WORK( J1T ), KA1 )
-            ENDDO
          ENDDO
+      ENDDO
 !
       IF( KB > 1 ) THEN
          DO J = 2, I2 - KA
             RWORK( J ) = RWORK( J+KA )
             WORK( J ) = WORK( J+KA )
-            ENDDO
+         ENDDO
       END IF
 !
    END IF
@@ -1465,5 +1445,3 @@
 !     End of CHBGST
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

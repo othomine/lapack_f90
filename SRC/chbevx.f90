@@ -283,13 +283,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ALLEIG, INDEIG, LOWER, TEST, VALEIG, WANTZ
@@ -299,7 +292,7 @@
                       J, JJ, NSPLIT
    REAL               ABSTLL, ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, &
                       SIGMA, SMLNUM, TMP1, VLL, VUU
-   COMPLEX            CTMP1
+   COMPLEX            CTMP1, Z_TMP( LDZ )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -307,12 +300,8 @@
    EXTERNAL           LSAME, CLANHB, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMV, CHBTRD, CLACPY, CLASCL, CSTEIN, &
-                      CSTEQR, CSWAP, SCOPY, SSCAL, SSTEBZ, SSTERF, &
-                      XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL, SQRT
+   EXTERNAL           CGEMV, CHBTRD, CLACPY, CLASCL, CSTEIN, &
+                      CSTEQR, SSTEBZ, SSTERF, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -352,8 +341,7 @@
       END IF
    END IF
    IF( INFO == 0 ) THEN
-      IF( LDZ < 1 .OR. ( WANTZ .AND. LDZ < N ) ) &
-        INFO = -18
+      IF( LDZ < 1 .OR. ( WANTZ .AND. LDZ < N ) ) INFO = -18
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -364,8 +352,7 @@
 !     Quick return if possible
 !
    M = 0
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( N == 1 ) THEN
       M = 1
@@ -376,13 +363,11 @@
       END IF
       TMP1 = REAL( CTMP1 )
       IF( VALEIG ) THEN
-         IF( .NOT.( VL < TMP1 .AND. VU >= TMP1 ) ) &
-            M = 0
+         IF( .NOT.( VL < TMP1 .AND. VU >= TMP1 ) ) M = 0
       END IF
       IF( M == 1 ) THEN
          W( 1 ) = REAL( CTMP1 )
-         IF( WANTZ ) &
-            Z( 1, 1 ) = CONE
+         IF( WANTZ ) Z( 1, 1 ) = (1.0E+0,0.0E+0)
       END IF
       RETURN
    END IF
@@ -392,9 +377,9 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN = SQRT( SMLNUM )
-   RMAX = MIN( SQRT( BIGNUM ), ONE / SQRT( SQRT( SAFMIN ) ) )
+   RMAX = MIN( SQRT( BIGNUM ), 1.0E+0 / SQRT( SQRT( SAFMIN ) ) )
 !
 !     Scale matrix to allowable range, if necessary.
 !
@@ -404,11 +389,11 @@
       VLL = VL
       VUU = VU
    ELSE
-      VLL = ZERO
-      VUU = ZERO
+      VLL = 0.0E+0
+      VUU = 0.0E+0
    ENDIF
    ANRM = CLANHB( 'M', UPLO, N, KD, AB, LDAB, RWORK )
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
@@ -417,9 +402,9 @@
    END IF
    IF( ISCALE == 1 ) THEN
       IF( LOWER ) THEN
-         CALL CLASCL( 'B', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'B', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       ELSE
-         CALL CLASCL( 'Q', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'Q', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       END IF
       IF( ABSTOL > 0 ) &
          ABSTLL = ABSTOL*SIGMA
@@ -444,26 +429,19 @@
 !
    TEST = .FALSE.
    IF (INDEIG) THEN
-      IF (IL == 1 .AND. IU == N) THEN
-         TEST = .TRUE.
-      END IF
+      IF (IL == 1 .AND. IU == N) TEST = .TRUE.
    END IF
-   IF ((ALLEIG .OR. TEST) .AND. (ABSTOL <= ZERO)) THEN
-      CALL SCOPY( N, RWORK( INDD ), 1, W, 1 )
+   IF ((ALLEIG .OR. TEST) .AND. (ABSTOL <= 0.0E+0)) THEN
+      W(1:N) = RWORK( INDD:INDD+N-1 )
       INDEE = INDRWK + 2*N
+      RWORK( INDEE:INDEE+N-2 ) = RWORK( INDE:INDE+N-2 )
       IF( .NOT.WANTZ ) THEN
-         CALL SCOPY( N-1, RWORK( INDE ), 1, RWORK( INDEE ), 1 )
          CALL SSTERF( N, W, RWORK( INDEE ), INFO )
       ELSE
-         CALL CLACPY( 'A', N, N, Q, LDQ, Z, LDZ )
-         CALL SCOPY( N-1, RWORK( INDE ), 1, RWORK( INDEE ), 1 )
+         Z(1:N,1:N) = Q(1:N,1:N)
          CALL CSTEQR( JOBZ, N, W, RWORK( INDEE ), Z, LDZ, &
                       RWORK( INDRWK ), INFO )
-         IF( INFO == 0 ) THEN
-            DO I = 1, N
-               IFAIL( I ) = 0
-            ENDDO
-         END IF
+         IF( INFO == 0 ) IFAIL(1:N) = 0
       END IF
       IF( INFO == 0 ) THEN
          M = N
@@ -496,8 +474,8 @@
 !        form to eigenvectors returned by CSTEIN.
 !
       DO J = 1, M
-         CALL CCOPY( N, Z( 1, J ), 1, WORK( 1 ), 1 )
-         CALL CGEMV( 'N', N, N, CONE, Q, LDQ, WORK, 1, CZERO, &
+         WORK(1:N) = Z(1:N,J)
+         CALL CGEMV( 'N', N, N, (1.0E+0,0.0E+0), Q, LDQ, WORK, 1, (0.0E+0,0.0E+0), &
                      Z( 1, J ), 1 )
       ENDDO
    END IF
@@ -511,7 +489,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      W(1:IMAX) = W(1:IMAX)/SIGMA
    END IF
 !
 !     If eigenvalues are not in order, then sort them, along with
@@ -534,7 +512,9 @@
             IWORK( INDIBL+I-1 ) = IWORK( INDIBL+J-1 )
             W( J ) = TMP1
             IWORK( INDIBL+J-1 ) = ITMP1
-            CALL CSWAP( N, Z( 1, I ), 1, Z( 1, J ), 1 )
+            Z_TMP(1:N) = Z(1:N,I)
+            Z(1:N,I) = Z(1:N,J)
+            Z(1:N,J) = Z_TMP(1:N)
             IF( INFO /= 0 ) THEN
                ITMP1 = IFAIL( I )
                IFAIL( I ) = IFAIL( J )

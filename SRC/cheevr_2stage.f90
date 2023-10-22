@@ -424,12 +424,9 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TWO = 2.0E+0 )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            Z_TMP( LDZ )
    LOGICAL            ALLEIG, INDEIG, LOWER, LQUERY, TEST, VALEIG, &
                       WANTZ, TRYRAC
    CHARACTER          ORDER
@@ -448,11 +445,8 @@
    EXTERNAL           LSAME, SLAMCH, CLANSY, ILAENV, ILAENV2STAGE
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           SCOPY, SSCAL, SSTEBZ, SSTERF, XERBLA, CSSCAL, &
-                      CHETRD_2STAGE, CSTEMR, CSTEIN, CSWAP, CUNMTR
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, MAX, MIN, SQRT
+   EXTERNAL           SSTEBZ, SSTERF, XERBLA, &
+                      CHETRD_2STAGE, CSTEMR, CSTEIN, CUNMTR
 !     ..
 !     .. Executable Statements ..
 !
@@ -501,9 +495,7 @@
       END IF
    END IF
    IF( INFO == 0 ) THEN
-      IF( LDZ < 1 .OR. ( WANTZ .AND. LDZ < N ) ) THEN
-         INFO = -15
-      END IF
+      IF( LDZ < 1 .OR. ( WANTZ .AND. LDZ < N ) ) INFO = -15
    END IF
 !
    IF( INFO == 0 ) THEN
@@ -548,7 +540,7 @@
          END IF
       END IF
       IF( WANTZ ) THEN
-         Z( 1, 1 ) = ONE
+         Z( 1, 1 ) = 1.0E+0
          ISUPPZ( 1 ) = 1
          ISUPPZ( 2 ) = 1
       END IF
@@ -560,9 +552,9 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS    = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN   = SQRT( SMLNUM )
-   RMAX   = MIN( SQRT( BIGNUM ), ONE / SQRT( SQRT( SAFMIN ) ) )
+   RMAX   = MIN( SQRT( BIGNUM ), 1.0E+0 / SQRT( SQRT( SAFMIN ) ) )
 !
 !     Scale matrix to allowable range, if necessary.
 !
@@ -573,7 +565,7 @@
       VUU = VU
    END IF
    ANRM = CLANSY( 'M', UPLO, N, A, LDA, RWORK )
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
@@ -583,15 +575,14 @@
    IF( ISCALE == 1 ) THEN
       IF( LOWER ) THEN
          DO J = 1, N
-            CALL CSSCAL( N-J+1, SIGMA, A( J, J ), 1 )
+            A(J:N,J) = SIGMA*A(J:N,J)
          ENDDO
       ELSE
          DO J = 1, N
-            CALL CSSCAL( J, SIGMA, A( 1, J ), 1 )
+            A(1:J,J) = SIGMA*A(1:J,J)
          ENDDO
       END IF
-      IF( ABSTOL > 0 ) &
-         ABSTLL = ABSTOL*SIGMA
+      IF( ABSTOL > 0 ) ABSTLL = ABSTOL*SIGMA
       IF( VALEIG ) THEN
          VLL = VL*SIGMA
          VUU = VU*SIGMA
@@ -654,24 +645,18 @@
 !
    TEST = .FALSE.
    IF( INDEIG ) THEN
-      IF( IL == 1 .AND. IU == N ) THEN
-         TEST = .TRUE.
-      END IF
+      IF( IL == 1 .AND. IU == N ) TEST = .TRUE.
    END IF
    IF( ( ALLEIG.OR.TEST ) .AND. ( IEEEOK == 1 ) ) THEN
       IF( .NOT.WANTZ ) THEN
-         CALL SCOPY( N, RWORK( INDRD ), 1, W, 1 )
-         CALL SCOPY( N-1, RWORK( INDRE ), 1, RWORK( INDREE ), 1 )
+         W(1:N) = RWORK( INDRD:INDRD+N-1 )
+         RWORK( INDREE:INDREE+N-2 ) = RWORK( INDRE:INDRE+N-2)
          CALL SSTERF( N, W, RWORK( INDREE ), INFO )
       ELSE
-         CALL SCOPY( N-1, RWORK( INDRE ), 1, RWORK( INDREE ), 1 )
-         CALL SCOPY( N, RWORK( INDRD ), 1, RWORK( INDRDD ), 1 )
+         RWORK( INDREE:INDREE+N-2 ) = RWORK( INDRE:INDRE+N-2)
+         RWORK( INDRDD:INDRDD+N-1 ) = RWORK( INDRD:INDRD+N-1)
 !
-         IF (ABSTOL  <=  TWO*N*EPS) THEN
-            TRYRAC = .TRUE.
-         ELSE
-            TRYRAC = .FALSE.
-         END IF
+         TRYRAC = (ABSTOL  <=  2.0E+0*N*EPS)
          CALL CSTEMR( JOBZ, 'A', N, RWORK( INDRDD ), &
                       RWORK( INDREE ), VL, VU, IL, IU, M, W, &
                       Z, LDZ, N, ISUPPZ, TRYRAC, &
@@ -736,7 +721,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      W(1:IMAX) = W(1:IMAX)/SIGMA
    END IF
 !
 !     If eigenvalues are not in order, then sort them, along with
@@ -759,7 +744,9 @@
             IWORK( INDIBL+I-1 ) = IWORK( INDIBL+J-1 )
             W( J ) = TMP1
             IWORK( INDIBL+J-1 ) = ITMP1
-            CALL CSWAP( N, Z( 1, I ), 1, Z( 1, J ), 1 )
+            Z_TMP(1:N) = Z(1:N,I)
+            Z(1:N,I) = Z(1:N,J)
+            Z(1:N,J) = Z_TMP(1:N)
          END IF
       ENDDO
    END IF
@@ -775,5 +762,3 @@
 !     End of CHEEVR_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

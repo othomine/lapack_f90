@@ -187,11 +187,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -201,9 +196,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLARFG, CLARFX, CLARFY
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MOD
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
@@ -238,14 +230,13 @@
        IF( TTYPE == 1 ) THEN
            LM = ED - ST + 1
 !
-           V( VPOS ) = ONE
+           V( VPOS ) = (1.0E+0,0.0E+0)
            DO I = 1, LM-1
                V( VPOS+I )         = CONJG( A( OFDPOS-I, ST+I ) )
-               A( OFDPOS-I, ST+I ) = ZERO
+               A( OFDPOS-I, ST+I ) = (0.0E+0,0.0E+0)
            ENDDO
            CTMP = CONJG( A( OFDPOS, ST ) )
-           CALL CLARFG( LM, CTMP, V( VPOS+1 ), 1, &
-                                          TAU( TAUPOS ) )
+           CALL CLARFG( LM, CTMP, V( VPOS+1 ), 1, TAU( TAUPOS ) )
            A( OFDPOS, ST ) = CTMP
 !
            LM = ED - ST + 1
@@ -280,11 +271,10 @@
                    TAUPOS = MOD( SWEEP-1, 2 ) * N + J1
                ENDIF
 !
-               V( VPOS ) = ONE
+               V( VPOS ) = (1.0E+0,0.0E+0)
                DO I = 1, LM-1
-                   V( VPOS+I )          = &
-                                       CONJG( A( DPOS-NB-I, J1+I ) )
-                   A( DPOS-NB-I, J1+I ) = ZERO
+                   V( VPOS+I )          = CONJG( A( DPOS-NB-I, J1+I ) )
+                   A( DPOS-NB-I, J1+I ) = (0.0E+0,0.0E+0)
                ENDDO
                CTMP = CONJG( A( DPOS-NB, J1 ) )
                CALL CLARFG( LM, CTMP, V( VPOS+1 ), 1, TAU( TAUPOS ) )
@@ -311,10 +301,10 @@
        IF( TTYPE == 1 ) THEN
            LM = ED - ST + 1
 !
-           V( VPOS ) = ONE
+           V( VPOS ) = (1.0E+0,0.0E+0)
            DO I = 1, LM-1
                V( VPOS+I )         = A( OFDPOS+I, ST-1 )
-               A( OFDPOS+I, ST-1 ) = ZERO
+               A( OFDPOS+I, ST-1 ) = (0.0E+0,0.0E+0)
            ENDDO
            CALL CLARFG( LM, A( OFDPOS, ST-1 ), V( VPOS+1 ), 1, &
                                           TAU( TAUPOS ) )
@@ -355,10 +345,10 @@
                    TAUPOS = MOD( SWEEP-1, 2 ) * N + J1
                ENDIF
 !
-               V( VPOS ) = ONE
+               V( VPOS ) = (1.0E+0,0.0E+0)
                DO I = 1, LM-1
                    V( VPOS+I )        = A( DPOS+NB+I, ST )
-                   A( DPOS+NB+I, ST ) = ZERO
+                   A( DPOS+NB+I, ST ) = (0.0E+0,0.0E+0)
                ENDDO
                CALL CLARFG( LM, A( DPOS+NB, ST ), V( VPOS+1 ), 1, &
                                            TAU( TAUPOS ) )
@@ -376,4 +366,3 @@
 !     End of CHB2ST_KERNELS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

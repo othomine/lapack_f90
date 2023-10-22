@@ -270,13 +270,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ), &
-                      CONE = ( 1.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER, LQUERY, WANTZ
@@ -295,9 +288,6 @@
 !     .. External Subroutines ..
    EXTERNAL           SSCAL, SSTERF, XERBLA, CGEMM, CLACPY, &
                       CLASCL, CSTEDC, CHETRD_HB2ST
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -368,8 +358,7 @@
 !
    IF( N == 1 ) THEN
       W( 1 ) = REAL( AB( 1, 1 ) )
-      IF( WANTZ ) &
-         Z( 1, 1 ) = CONE
+      IF( WANTZ ) Z( 1, 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -378,7 +367,7 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS    = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN   = SQRT( SMLNUM )
    RMAX   = SQRT( BIGNUM )
 !
@@ -386,7 +375,7 @@
 !
    ANRM = CLANHB( 'M', UPLO, N, KD, AB, LDAB, RWORK )
    ISCALE = 0
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
@@ -395,9 +384,9 @@
    END IF
    IF( ISCALE == 1 ) THEN
       IF( LOWER ) THEN
-         CALL CLASCL( 'B', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'B', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       ELSE
-         CALL CLASCL( 'Q', KD, KD, ONE, SIGMA, N, N, AB, LDAB, INFO )
+         CALL CLASCL( 'Q', KD, KD, 1.0E+0, SIGMA, N, N, AB, LDAB, INFO )
       END IF
    END IF
 !
@@ -424,7 +413,7 @@
       CALL CSTEDC( 'I', N, W, RWORK( INDE ), WORK, N, WORK( INDWK2 ), &
                    LLWK2, RWORK( INDRWK ), LLRWK, IWORK, LIWORK, &
                    INFO )
-      CALL CGEMM( 'N', 'N', N, N, N, CONE, Z, LDZ, WORK, N, CZERO, &
+      CALL CGEMM( 'N', 'N', N, N, N, (1.0E+0,0.0E+0), Z, LDZ, WORK, N, (0.0E+0,0.0E+0), &
                   WORK( INDWK2 ), N )
       CALL CLACPY( 'A', N, N, WORK( INDWK2 ), N, Z, LDZ )
    END IF
@@ -437,7 +426,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      W(1:IMAX) = W(1:IMAX)/SIGMA
    END IF
 !
    WORK( 1 )  = LWMIN
@@ -448,5 +437,5 @@
 !     End of CHBEVD_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
 

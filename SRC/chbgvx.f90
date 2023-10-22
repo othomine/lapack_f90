@@ -317,15 +317,9 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
+   COMPLEX            Z_TMP( LDZ )
    LOGICAL            ALLEIG, INDEIG, TEST, UPPER, VALEIG, WANTZ
    CHARACTER          ORDER, VECT
    INTEGER            I, IINFO, INDD, INDE, INDEE, INDISP, &
@@ -338,11 +332,8 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEMV, CHBGST, CHBTRD, CLACPY, CPBSTF, &
-                      CSTEIN, CSTEQR, CSWAP, SCOPY, SSTEBZ, SSTERF, &
+                      CSTEIN, CSTEQR, SSTEBZ, SSTERF, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -399,8 +390,7 @@
 !     Quick return if possible
 !
    M = 0
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Form a split Cholesky factorization of B.
 !
@@ -436,25 +426,19 @@
 !
    TEST = .FALSE.
    IF( INDEIG ) THEN
-      IF( IL == 1 .AND. IU == N ) THEN
-         TEST = .TRUE.
-      END IF
+      IF( IL == 1 .AND. IU == N ) TEST = .TRUE.
    END IF
-   IF( ( ALLEIG .OR. TEST ) .AND. ( ABSTOL <= ZERO ) ) THEN
-      CALL SCOPY( N, RWORK( INDD ), 1, W, 1 )
+   IF( ( ALLEIG .OR. TEST ) .AND. ( ABSTOL <= 0.0E+0 ) ) THEN
+      W(1:N) = RWORK( INDD:INDD+N-1 )
       INDEE = INDRWK + 2*N
-      CALL SCOPY( N-1, RWORK( INDE ), 1, RWORK( INDEE ), 1 )
+      RWORK( INDEE:INDEE+N-2 ) = RWORK( INDE:INDE+N-2 )
       IF( .NOT.WANTZ ) THEN
          CALL SSTERF( N, W, RWORK( INDEE ), INFO )
       ELSE
-         CALL CLACPY( 'A', N, N, Q, LDQ, Z, LDZ )
+         Z(1:N,1:N) = Q(1:N,1:N)
          CALL CSTEQR( JOBZ, N, W, RWORK( INDEE ), Z, LDZ, &
                       RWORK( INDRWK ), INFO )
-         IF( INFO == 0 ) THEN
-            DO I = 1, N
-               IFAIL( I ) = 0
-            ENDDO
-         END IF
+         IF( INFO == 0 ) IFAIL(1:N) = 0
       END IF
       IF( INFO == 0 ) THEN
          M = N
@@ -487,8 +471,8 @@
 !        form to eigenvectors returned by CSTEIN.
 !
       DO J = 1, M
-         CALL CCOPY( N, Z( 1, J ), 1, WORK( 1 ), 1 )
-         CALL CGEMV( 'N', N, N, CONE, Q, LDQ, WORK, 1, CZERO, &
+         WORK(1:N) = Z(1:N,J)
+         CALL CGEMV( 'N', N, N, (1.0E+0,0.0E+0), Q, LDQ, WORK, 1, (0.0E+0,0.0E+0), &
                      Z( 1, J ), 1 )
       ENDDO
    END IF
@@ -515,7 +499,9 @@
             IWORK( 1 + I-1 ) = IWORK( 1 + J-1 )
             W( J ) = TMP1
             IWORK( 1 + J-1 ) = ITMP1
-            CALL CSWAP( N, Z( 1, I ), 1, Z( 1, J ), 1 )
+            Z_TMP(1:N) = Z(1:N,I)
+            Z(1:N,I) = Z(1:N,J)
+            Z(1:N,J) = Z_TMP(1:N)
             IF( INFO /= 0 ) THEN
                ITMP1 = IFAIL( I )
                IFAIL( I ) = IFAIL( J )
@@ -530,5 +516,3 @@
 !     End of CHBGVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
