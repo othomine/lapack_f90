@@ -250,13 +250,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               RZERO
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( RZERO = 0.0E+0, &
-                      ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      ONE  = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WANTQ, UPPER, AFTERS1
@@ -271,10 +264,7 @@
    COMPLEX            TMP
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CHB2ST_KERNELS, CLACPY, CLASET, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN, MAX, CEILING, REAL
+   EXTERNAL           CHB2ST_KERNELS, CLACPY, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -375,12 +365,8 @@
 !     in a parallel environment it might need two cores for D and E
 !
    IF( KD == 0 ) THEN
-       DO I = 1, N
-           D( I ) = REAL( AB( ABDPOS, I ) )
-       ENDDO
-       DO I = 1, N-1
-           E( I ) = RZERO
-       ENDDO
+       D(1:N) = REAL( AB( ABDPOS,1:N) )
+       E(1:N-1) = 0.0E+0
 !
        HOUS( 1 ) = 1
        WORK( 1 ) = 1
@@ -398,9 +384,7 @@
 !     or not this might complicate the story.
 !
    IF( KD == 1 ) THEN
-       DO I = 1, N
-           D( I ) = REAL( AB( ABDPOS, I ) )
-       ENDDO
+       D(1:N) = REAL( AB( ABDPOS,1:N) )
 !
 !         make off-diagonal elements real and copy them to E
 !
@@ -410,13 +394,12 @@
                ABSTMP = ABS( TMP )
                AB( ABOFDPOS, I+1 ) = ABSTMP
                E( I ) = ABSTMP
-               IF( ABSTMP /= RZERO ) THEN
+               IF( ABSTMP /= 0.0E+0 ) THEN
                   TMP = TMP / ABSTMP
                ELSE
-                  TMP = ONE
+                  TMP = (1.0E+0,0.0E+0)
                END IF
-               IF( I < N-1 ) &
-                  AB( ABOFDPOS, I+2 ) = AB( ABOFDPOS, I+2 )*TMP
+               IF( I < N-1 ) AB( ABOFDPOS, I+2 ) = AB( ABOFDPOS, I+2 )*TMP
 !                  IF( WANTZ ) THEN
 !                     CALL CSCAL( N, CONJG( TMP ), Q( 1, I+1 ), 1 )
 !                  END IF
@@ -427,13 +410,12 @@
               ABSTMP = ABS( TMP )
               AB( ABOFDPOS, I ) = ABSTMP
               E( I ) = ABSTMP
-              IF( ABSTMP /= RZERO ) THEN
+              IF( ABSTMP /= 0.0E+0 ) THEN
                  TMP = TMP / ABSTMP
               ELSE
-                 TMP = ONE
+                 TMP = (1.0E+0,0.0E+0)
               END IF
-              IF( I < N-1 ) &
-                 AB( ABOFDPOS, I+1 ) = AB( ABOFDPOS, I+1 )*TMP
+              IF( I < N-1 ) AB( ABOFDPOS, I+1 ) = AB( ABOFDPOS, I+1 )*TMP
 !                 IF( WANTQ ) THEN
 !                    CALL CSCAL( N, TMP, Q( 1, I+1 ), 1 )
 !                 END IF
@@ -456,7 +438,9 @@
    THGRNB    = CEILING( REAL(N-1)/REAL(THGRSIZ) )
 !
    CALL CLACPY( "A", KD+1, N, AB, LDAB, WORK( APOS ), LDA )
-   CALL CLASET( "A", KD,   N, ZERO, ZERO, WORK( AWPOS ), LDA )
+   CALL CLASET( "A", KD,   N, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( AWPOS ), LDA )
+
+!    WORK( AWPOS:AWPOS+KD*N-1 ) = (0.0E+0,0.0E+0)
 !
 !
 !     openMP parallelisation start here
@@ -558,9 +542,9 @@
 !     Copy the diagonal from A to D. Note that D is REAL thus only
 !     the Real part is needed, the imaginary part should be zero.
 !
-   DO I = 1, N
+   DO I = 1,N
        D( I ) = REAL( WORK( DPOS+(I-1)*LDA ) )
-      ENDDO
+   ENDDO
 !
 !     Copy the off diagonal from A to E. Note that E is REAL thus only
 !     the Real part is needed, the imaginary part should be zero.
@@ -568,11 +552,11 @@
    IF( UPPER ) THEN
        DO I = 1, N-1
           E( I ) = REAL( WORK( OFDPOS+I*LDA ) )
-          ENDDO
+       ENDDO
    ELSE
        DO I = 1, N-1
           E( I ) = REAL( WORK( OFDPOS+(I-1)*LDA ) )
-          ENDDO
+       ENDDO
    ENDIF
 !
    HOUS( 1 ) = LHMIN
@@ -582,6 +566,4 @@
 !     End of CHETRD_HB2ST
 !
    END
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 

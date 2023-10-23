@@ -277,6 +277,7 @@
    LOGICAL            LQUERY, UPPER
    INTEGER            I, IINFO, IP, IWS, K, KB, LDWORK, LWKOPT, &
                       NB, NBMIN
+   COMPLEX            A_TMP( LDA )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -284,10 +285,7 @@
    EXTERNAL           LSAME, ILAENV
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLAHEF_RK, CHETF2_RK, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
+   EXTERNAL           CLAHEF_RK, CHETF2_RK, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -334,8 +332,7 @@
    ELSE
       IWS = 1
    END IF
-   IF( NB < NBMIN ) &
-      NB = N
+   IF( NB < NBMIN ) NB = N
 !
    IF( UPPER ) THEN
 !
@@ -350,8 +347,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 15
+      IF( K < 1 ) GO TO 15
 !
       IF( K > NB ) THEN
 !
@@ -370,8 +366,7 @@
 !
 !        Set INFO on the first occurrence of a zero pivot
 !
-      IF( INFO == 0 .AND. IINFO > 0 ) &
-         INFO = IINFO
+      IF( INFO == 0 .AND. IINFO > 0 ) INFO = IINFO
 !
 !        No need to adjust IPIV
 !
@@ -389,8 +384,9 @@
          DO I = K, ( K - KB + 1 ), -1
             IP = ABS( IPIV( I ) )
             IF( IP /= I ) THEN
-               CALL CSWAP( N-K, A( I, K+1 ), LDA, &
-                           A( IP, K+1 ), LDA )
+               A_TMP(1:N-K) = A(I,K+1:N)
+               A(I,K+1:N) = A(IP,K+1:N)
+               A(IP,K+1:N) = A_TMP(1:N-K)
             END IF
          END DO
       END IF
@@ -442,8 +438,7 @@
 !
 !        Set INFO on the first occurrence of a zero pivot
 !
-      IF( INFO == 0 .AND. IINFO > 0 ) &
-         INFO = IINFO + K - 1
+      IF( INFO == 0 .AND. IINFO > 0 ) INFO = IINFO + K - 1
 !
 !        Adjust IPIV
 !
@@ -468,8 +463,9 @@
          DO I = K, ( K + KB - 1 ), 1
             IP = ABS( IPIV( I ) )
             IF( IP /= I ) THEN
-               CALL CSWAP( K-1, A( I, 1 ), LDA, &
-                           A( IP, 1 ), LDA )
+               A_TMP(1:K-1) = A(I,1:K-1)
+               A(I,1:K-1) = A(IP,1:K-1)
+               A(IP,1:K-1) = A_TMP(1:K-1)
             END IF
          END DO
       END IF
@@ -494,5 +490,3 @@
 !     End of CHETRF_RK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

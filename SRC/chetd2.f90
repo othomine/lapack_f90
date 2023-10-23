@@ -188,12 +188,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO, HALF
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      HALF = ( 0.5E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -201,15 +195,12 @@
    COMPLEX            ALPHA, TAUI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CHEMV, CHER2, CLARFG, XERBLA
+   EXTERNAL           CHEMV, CHER2, CLARFG, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    COMPLEX            CDOTC
    EXTERNAL           LSAME, CDOTC
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -231,8 +222,7 @@
 !
 !     Quick return if possible
 !
-   IF( N <= 0 ) &
-      RETURN
+   IF( N <= 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -248,26 +238,26 @@
          CALL CLARFG( I, ALPHA, A( 1, I+1 ), 1, TAUI )
          E( I ) = REAL( ALPHA )
 !
-         IF( TAUI /= ZERO ) THEN
+         IF( TAUI /= (0.0E+0,0.0E+0) ) THEN
 !
 !              Apply H(i) from both sides to A(1:i,1:i)
 !
-            A( I, I+1 ) = ONE
+            A( I, I+1 ) = (1.0E+0,0.0E+0)
 !
 !              Compute  x := tau * A * v  storing x in TAU(1:i)
 !
-            CALL CHEMV( UPLO, I, TAUI, A, LDA, A( 1, I+1 ), 1, ZERO, &
+            CALL CHEMV( UPLO, I, TAUI, A, LDA, A( 1, I+1 ), 1, (0.0E+0,0.0E+0), &
                         TAU, 1 )
 !
 !              Compute  w := x - 1/2 * tau * (x**H * v) * v
 !
-            ALPHA = -HALF*TAUI*CDOTC( I, TAU, 1, A( 1, I+1 ), 1 )
-            CALL CAXPY( I, ALPHA, A( 1, I+1 ), 1, TAU, 1 )
+            ALPHA = -(0.5E+0,0.0E+0)*TAUI*CDOTC( I, TAU, 1, A( 1, I+1 ), 1 )
+            TAU(1:I) = TAU(1:I) + ALPHA*A(1:I,I+1)
 !
 !              Apply the transformation as a rank-2 update:
 !                 A := A - v * w**H - w * v**H
 !
-            CALL CHER2( UPLO, I, -ONE, A( 1, I+1 ), 1, TAU, 1, A, &
+            CALL CHER2( UPLO, I, -(1.0E+0,0.0E+0), A( 1, I+1 ), 1, TAU, 1, A, &
                         LDA )
 !
          ELSE
@@ -292,27 +282,26 @@
          CALL CLARFG( N-I, ALPHA, A( MIN( I+2, N ), I ), 1, TAUI )
          E( I ) = REAL( ALPHA )
 !
-         IF( TAUI /= ZERO ) THEN
+         IF( TAUI /= (0.0E+0,0.0E+0) ) THEN
 !
 !              Apply H(i) from both sides to A(i+1:n,i+1:n)
 !
-            A( I+1, I ) = ONE
+            A( I+1, I ) = (1.0E+0,0.0E+0)
 !
 !              Compute  x := tau * A * v  storing y in TAU(i:n-1)
 !
             CALL CHEMV( UPLO, N-I, TAUI, A( I+1, I+1 ), LDA, &
-                        A( I+1, I ), 1, ZERO, TAU( I ), 1 )
+                        A( I+1, I ), 1, (0.0E+0,0.0E+0), TAU( I ), 1 )
 !
 !              Compute  w := x - 1/2 * tau * (x**H * v) * v
 !
-            ALPHA = -HALF*TAUI*CDOTC( N-I, TAU( I ), 1, A( I+1, I ), &
-                    1 )
-            CALL CAXPY( N-I, ALPHA, A( I+1, I ), 1, TAU( I ), 1 )
+            ALPHA = -(0.5E+0,0.0E+0)*TAUI*CDOTC( N-I, TAU( I ), 1, A( I+1, I ), 1 )
+            TAU(I:N-1) = TAU(I:N-1) + ALPHA*A(I+1:N,I)
 !
 !              Apply the transformation as a rank-2 update:
 !                 A := A - v * w**H - w * v**H
 !
-            CALL CHER2( UPLO, N-I, -ONE, A( I+1, I ), 1, TAU( I ), 1, &
+            CALL CHER2( UPLO, N-I, -(1.0E+0,0.0E+0), A( I+1, I ), 1, TAU( I ), 1, &
                         A( I+1, I+1 ), LDA )
 !
          ELSE
@@ -330,5 +319,3 @@
 !     End of CHETD2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

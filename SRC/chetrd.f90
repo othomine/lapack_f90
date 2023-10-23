@@ -205,12 +205,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, UPPER
@@ -219,9 +213,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CHER2K, CHETD2, CLATRD, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -290,8 +281,7 @@
 !
             NB = MAX( LWORK / LDWORK, 1 )
             NBMIN = ILAENV( 2, 'CHETRD', UPLO, N, -1, -1, -1 )
-            IF( NB < NBMIN ) &
-               NX = N
+            IF( NB < NBMIN ) NX = N
          END IF
       ELSE
          NX = N
@@ -318,8 +308,8 @@
 !           Update the unreduced submatrix A(1:i-1,1:i-1), using an
 !           update of the form:  A := A - V*W**H - W*V**H
 !
-         CALL CHER2K( UPLO, 'No transpose', I-1, NB, -CONE, &
-                      A( 1, I ), LDA, WORK, LDWORK, ONE, A, LDA )
+         CALL CHER2K( UPLO, 'No transpose', I-1, NB, -(1.0E+0,0.0E+0), &
+                      A( 1, I ), LDA, WORK, LDWORK, 1.0E+0, A, LDA )
 !
 !           Copy superdiagonal elements back into A, and diagonal
 !           elements into D
@@ -349,8 +339,8 @@
 !           Update the unreduced submatrix A(i+nb:n,i+nb:n), using
 !           an update of the form:  A := A - V*W**H - W*V**H
 !
-         CALL CHER2K( UPLO, 'No transpose', N-I-NB+1, NB, -CONE, &
-                      A( I+NB, I ), LDA, WORK( NB+1 ), LDWORK, ONE, &
+         CALL CHER2K( UPLO, 'No transpose', N-I-NB+1, NB, -(1.0E+0,0.0E+0), &
+                      A( I+NB, I ), LDA, WORK( NB+1 ), LDWORK, 1.0E+0, &
                       A( I+NB, I+NB ), LDA )
 !
 !           Copy subdiagonal elements back into A, and diagonal
@@ -374,5 +364,3 @@
 !     End of CHETRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

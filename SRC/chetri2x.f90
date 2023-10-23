@@ -133,23 +133,14 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE
-   COMPLEX            CONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, &
-                      CONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, IINFO, IP, K, CUT, NNB
-   INTEGER            COUNT
    INTEGER            J, U11, INVD
 
    COMPLEX   AK, AKKP1, AKP1, D, T
-   COMPLEX   U01_I_J, U01_IP1_J
-   COMPLEX   U11_I_J, U11_IP1_J
+   COMPLEX   UTMP1( N ), UTMP2( N )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -158,9 +149,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CSYCONV, XERBLA, CTRTRI
    EXTERNAL           CGEMM, CTRMM, CHESWAPR
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -183,8 +171,7 @@
       CALL XERBLA( 'CHETRI2X', -INFO )
       RETURN
    END IF
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Convert A
 !     Workspace got Non-diag elements of D
@@ -198,16 +185,14 @@
 !        Upper triangular storage: examine D from bottom to top
 !
       DO INFO = N, 1, -1
-         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == ZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == (0.0E+0,0.0E+0) ) RETURN
       END DO
    ELSE
 !
 !        Lower triangular storage: examine D from top to bottom.
 !
       DO INFO = 1, N
-         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == ZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == (0.0E+0,0.0E+0) ) RETURN
       END DO
    END IF
    INFO = 0
@@ -234,7 +219,7 @@
      DO WHILE ( K  <=  N )
       IF( IPIV( K ) > 0 ) THEN
 !           1 x 1 diagonal NNB
-          WORK(K,INVD) = ONE / REAL ( A( K, K ) )
+          WORK(K,INVD) = 1.0E+0 / REAL ( A( K, K ) )
           WORK(K,INVD+1) = 0
          K=K+1
       ELSE
@@ -243,7 +228,7 @@
           AK = REAL ( A( K, K ) ) / T
           AKP1 = REAL ( A( K+1, K+1 ) ) / T
           AKKP1 = WORK(K+1,1)  / T
-          D = T*( AK*AKP1-ONE )
+          D = T*( AK*AKP1-1.0E+0 )
           WORK(K,INVD) = AKP1 / D
           WORK(K+1,INVD+1) = AK / D
           WORK(K,INVD+1) = -AKKP1 / D
@@ -262,35 +247,23 @@
         IF (CUT  <=  NNB) THEN
            NNB=CUT
         ELSE
-           COUNT = 0
 !             count negative elements,
-           DO I=CUT+1-NNB,CUT
-               IF (IPIV(I)  <  0) COUNT=COUNT+1
-           END DO
 !             need a even number for a clear cut
-           IF (MOD(COUNT,2)  ==  1) NNB=NNB+1
+           IF (MOD(COUNT(IPIV(CUT+1-NNB:CUT)  <  0),2) == 1) NNB=NNB+1
         END IF
 
         CUT=CUT-NNB
 !
 !          U01 Block
 !
-        DO I=1,CUT
-          DO J=1,NNB
-           WORK(I,J)=A(I,CUT+J)
-          END DO
-        END DO
+        WORK(1:CUT,1:NNB)=A(1:CUT,CUT+1:CUT+NNB)
 !
 !          U11 Block
 !
         DO I=1,NNB
-          WORK(U11+I,I)=CONE
-          DO J=1,I-1
-             WORK(U11+I,J)=ZERO
-          END DO
-          DO J=I+1,NNB
-             WORK(U11+I,J)=A(CUT+I,CUT+J)
-          END DO
+           WORK(U11+I,I)=(1.0E+0,0.0E+0)
+           WORK(U11+I,1:I-1)=(0.0E+0,0.0E+0)
+           WORK(U11+I,I+1:NNB)=A(CUT+I,CUT+I+1:CUT+NNB)
         END DO
 !
 !          invD*U01
@@ -298,19 +271,15 @@
         I=1
         DO WHILE (I  <=  CUT)
           IF (IPIV(I) > 0) THEN
-             DO J=1,NNB
-                 WORK(I,J)=WORK(I,INVD)*WORK(I,J)
-             END DO
+             WORK(I,1:NNB)=WORK(I,INVD)*WORK(I,1:NNB)
              I=I+1
           ELSE
-             DO J=1,NNB
-                U01_I_J = WORK(I,J)
-                U01_IP1_J = WORK(I+1,J)
-                WORK(I,J)=WORK(I,INVD)*U01_I_J+ &
-                         WORK(I,INVD+1)*U01_IP1_J
-                WORK(I+1,J)=WORK(I+1,INVD)*U01_I_J+ &
-                         WORK(I+1,INVD+1)*U01_IP1_J
-             END DO
+             UTMP1(1:NNB) = WORK(I,1:NNB)
+             UTMP2(1:NNB) = WORK(I+1,1:NNB)
+             WORK(I,1:NNB)=WORK(I,INVD)*UTMP1(1:NNB)+ &
+                           WORK(I,INVD+1)*UTMP2(1:NNB)
+             WORK(I+1,1:NNB)=WORK(I+1,INVD)*UTMP1(1:NNB)+ &
+                             WORK(I+1,INVD+1)*UTMP2(1:NNB)
              I=I+2
           END IF
         END DO
@@ -325,14 +294,12 @@
              END DO
              I=I+1
           ELSE
-             DO J=I,NNB
-                U11_I_J = WORK(U11+I,J)
-                U11_IP1_J = WORK(U11+I+1,J)
-             WORK(U11+I,J)=WORK(CUT+I,INVD)*WORK(U11+I,J) + &
-                         WORK(CUT+I,INVD+1)*WORK(U11+I+1,J)
-             WORK(U11+I+1,J)=WORK(CUT+I+1,INVD)*U11_I_J+ &
-                         WORK(CUT+I+1,INVD+1)*U11_IP1_J
-             END DO
+             UTMP1(I:NNB) = WORK(U11+I,I:NNB)
+             UTMP2(I:NNB) = WORK(U11+I+1,I:NNB)
+             WORK(U11+I,I:NNB)=WORK(CUT+I,INVD)*WORK(U11+I,I:NNB) + &
+                               WORK(CUT+I,INVD+1)*WORK(U11+I+1,I:NNB)
+             WORK(U11+I+1,I:NNB)=WORK(CUT+I+1,INVD)*UTMP1(I:NNB)+ &
+                                 WORK(CUT+I+1,INVD+1)*UTMP2(I:NNB)
              I=I+2
           END IF
         END DO
@@ -340,39 +307,32 @@
 !       U11**H*invD1*U11->U11
 !
      CALL CTRMM('L','U','C','U',NNB, NNB, &
-                CONE,A(CUT+1,CUT+1),LDA,WORK(U11+1,1),N+NB+1)
+                (1.0E+0,0.0E+0),A(CUT+1,CUT+1),LDA,WORK(U11+1,1),N+NB+1)
 !
       DO I=1,NNB
-         DO J=I,NNB
-           A(CUT+I,CUT+J)=WORK(U11+I,J)
-         END DO
+         A(CUT+I,CUT+I:CUT+NNB)=WORK(U11+I,I:NNB)
       END DO
 !
 !          U01**H*invD*U01->A(CUT+I,CUT+J)
 !
-      CALL CGEMM('C','N',NNB,NNB,CUT,CONE,A(1,CUT+1),LDA, &
-                 WORK,N+NB+1, ZERO, WORK(U11+1,1), N+NB+1)
+      CALL CGEMM('C','N',NNB,NNB,CUT,(1.0E+0,0.0E+0),A(1,CUT+1),LDA, &
+                 WORK,N+NB+1, (0.0E+0,0.0E+0), WORK(U11+1,1), N+NB+1)
 !
 !        U11 =  U11**H*invD1*U11 + U01**H*invD*U01
 !
       DO I=1,NNB
-         DO J=I,NNB
-           A(CUT+I,CUT+J)=A(CUT+I,CUT+J)+WORK(U11+I,J)
-         END DO
+         A(CUT+I,CUT+I:CUT+NNB)=A(CUT+I,CUT+I:CUT+NNB)+WORK(U11+I,I:NNB)
       END DO
 !
 !        U01 =  U00**H*invD0*U01
 !
-      CALL CTRMM('L',UPLO,'C','U',CUT, NNB, &
-                CONE,A,LDA,WORK,N+NB+1)
+      CALL CTRMM('L',UPLO,'C','U',CUT, NNB, (1.0E+0,0.0E+0),A,LDA,WORK,N+NB+1)
 
 !
 !        Update U01
 !
       DO I=1,CUT
-        DO J=1,NNB
-         A(I,CUT+J)=WORK(I,J)
-        END DO
+         A(I,CUT+1:CUT+NNB)=WORK(I,1:NNB)
       END DO
 !
 !      Next Block
@@ -385,16 +345,14 @@
          DO WHILE ( I  <=  N )
             IF( IPIV(I)  >  0 ) THEN
                IP=IPIV(I)
-              IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
-              IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+               IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
+               IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
             ELSE
-              IP=-IPIV(I)
-              I=I+1
-              IF ( (I-1)  <  IP) &
-                     CALL CHESWAPR( UPLO, N, A, LDA, I-1 ,IP )
-              IF ( (I-1)  >  IP) &
-                     CALL CHESWAPR( UPLO, N, A, LDA, IP ,I-1 )
-           ENDIF
+               IP=-IPIV(I)
+               I=I+1
+               IF ( (I-1)  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I-1 ,IP )
+               IF ( (I-1)  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I-1 )
+            ENDIF
             I=I+1
          END DO
    ELSE
@@ -409,24 +367,24 @@
 !
      K=N
      DO WHILE ( K  >=  1 )
-      IF( IPIV( K ) > 0 ) THEN
-!           1 x 1 diagonal NNB
-          WORK(K,INVD) = ONE / REAL ( A( K, K ) )
-          WORK(K,INVD+1) = 0
-         K=K-1
-      ELSE
-!           2 x 2 diagonal NNB
-          T = ABS ( WORK(K-1,1) )
-          AK = REAL ( A( K-1, K-1 ) ) / T
-          AKP1 = REAL ( A( K, K ) ) / T
-          AKKP1 = WORK(K-1,1) / T
-          D = T*( AK*AKP1-ONE )
-          WORK(K-1,INVD) = AKP1 / D
-          WORK(K,INVD) = AK / D
-          WORK(K,INVD+1) = -AKKP1 / D
-          WORK(K-1,INVD+1) = CONJG (WORK(K,INVD+1) )
-         K=K-2
-      END IF
+         IF( IPIV( K ) > 0 ) THEN
+!              1 x 1 diagonal NNB
+             WORK(K,INVD) = 1.0E+0 / REAL ( A( K, K ) )
+             WORK(K,INVD+1) = 0
+            K=K-1
+         ELSE
+!              2 x 2 diagonal NNB
+           T = ABS(WORK(K-1,1))
+           AK = REAL ( A( K-1, K-1 ) ) / T
+           AKP1 = REAL ( A( K, K ) ) / T
+           AKKP1 = WORK(K-1,1) / T
+           D = T*( AK*AKP1-1.0E+0 )
+           WORK(K-1,INVD) = AKP1 / D
+           WORK(K,INVD) = AK / D
+           WORK(K,INVD+1) = -AKKP1 / D
+           WORK(K-1,INVD+1) = CONJG(WORK(K,INVD+1))
+           K=K-2
+        END IF
      END DO
 !
 !       inv(U**H) = (inv(U))**H
@@ -439,29 +397,17 @@
         IF (CUT + NNB  >=  N) THEN
            NNB=N-CUT
         ELSE
-           COUNT = 0
 !             count negative elements,
-           DO I=CUT+1,CUT+NNB
-               IF (IPIV(I)  <  0) COUNT=COUNT+1
-           END DO
 !             need a even number for a clear cut
-           IF (MOD(COUNT,2)  ==  1) NNB=NNB+1
+           IF (MOD(COUNT(IPIV(CUT+1:CUT+NNB)<0),2) == 1) NNB=NNB+1
         END IF
 !      L21 Block
-        DO I=1,N-CUT-NNB
-          DO J=1,NNB
-           WORK(I,J)=A(CUT+NNB+I,CUT+J)
-          END DO
-        END DO
+        WORK(1:N-CUT-NNB,1:NNB)=A(CUT+NNB+1:N,CUT+1:CUT+NNB)
 !     L11 Block
         DO I=1,NNB
-          WORK(U11+I,I)=CONE
-          DO J=I+1,NNB
-             WORK(U11+I,J)=ZERO
-          END DO
-          DO J=1,I-1
-             WORK(U11+I,J)=A(CUT+I,CUT+J)
-          END DO
+          WORK(U11+I,I)=(1.0E+0,0.0E+0)
+          WORK(U11+I,I+1:NNB)=(0.0E+0,0.0E+0)
+          WORK(U11+I,1:I-1)=A(CUT+I,CUT+1:CUT+I-1)
         END DO
 !
 !          invD*L21
@@ -469,19 +415,15 @@
         I=N-CUT-NNB
         DO WHILE (I  >=  1)
           IF (IPIV(CUT+NNB+I) > 0) THEN
-             DO J=1,NNB
-                 WORK(I,J)=WORK(CUT+NNB+I,INVD)*WORK(I,J)
-             END DO
+             WORK(I,1:NNB)=WORK(CUT+NNB+I,INVD)*WORK(I,1:NNB)
              I=I-1
           ELSE
-             DO J=1,NNB
-                U01_I_J = WORK(I,J)
-                U01_IP1_J = WORK(I-1,J)
-                WORK(I,J)=WORK(CUT+NNB+I,INVD)*U01_I_J+ &
-                           WORK(CUT+NNB+I,INVD+1)*U01_IP1_J
-                WORK(I-1,J)=WORK(CUT+NNB+I-1,INVD+1)*U01_I_J+ &
-                           WORK(CUT+NNB+I-1,INVD)*U01_IP1_J
-             END DO
+             UTMP1(1:NNB) = WORK(I,1:NNB)
+             UTMP2(1:NNB) = WORK(I-1,1:NNB)
+             WORK(I,1:NNB)=WORK(CUT+NNB+I,INVD)*UTMP1(1:NNB)+ &
+                           WORK(CUT+NNB+I,INVD+1)*UTMP2(1:NNB)
+             WORK(I-1,1:NNB)=WORK(CUT+NNB+I-1,INVD+1)*UTMP1(1:NNB)+ &
+                             WORK(CUT+NNB+I-1,INVD)*UTMP2(1:NNB)
              I=I-2
           END IF
         END DO
@@ -491,19 +433,15 @@
         I=NNB
         DO WHILE (I  >=  1)
           IF (IPIV(CUT+I) > 0) THEN
-             DO J=1,NNB
-                 WORK(U11+I,J)=WORK(CUT+I,INVD)*WORK(U11+I,J)
-             END DO
+             WORK(U11+I,1:NNB)=WORK(CUT+I,INVD)*WORK(U11+I,1:NNB)
              I=I-1
           ELSE
-             DO J=1,NNB
-                U11_I_J = WORK(U11+I,J)
-                U11_IP1_J = WORK(U11+I-1,J)
-             WORK(U11+I,J)=WORK(CUT+I,INVD)*WORK(U11+I,J) + &
-                         WORK(CUT+I,INVD+1)*U11_IP1_J
-             WORK(U11+I-1,J)=WORK(CUT+I-1,INVD+1)*U11_I_J+ &
-                         WORK(CUT+I-1,INVD)*U11_IP1_J
-             END DO
+             UTMP1(1:NNB) = WORK(U11+I,1:NNB)
+             UTMP2(1:NNB) = WORK(U11+I-1,1:NNB)
+             WORK(U11+I,1:NNB)=WORK(CUT+I,INVD)*WORK(U11+I,1:NNB) + &
+                               WORK(CUT+I,INVD+1)*UTMP2(1:NNB)
+             WORK(U11+I-1,1:NNB)=WORK(CUT+I-1,INVD+1)*UTMP1(1:NNB)+ &
+                                 WORK(CUT+I-1,INVD)*UTMP2(1:NNB)
              I=I-2
           END IF
         END DO
@@ -511,49 +449,39 @@
 !       L11**H*invD1*L11->L11
 !
      CALL CTRMM('L',UPLO,'C','U',NNB, NNB, &
-                CONE,A(CUT+1,CUT+1),LDA,WORK(U11+1,1),N+NB+1)
+                (1.0E+0,0.0E+0),A(CUT+1,CUT+1),LDA,WORK(U11+1,1),N+NB+1)
 !
       DO I=1,NNB
-         DO J=1,I
-           A(CUT+I,CUT+J)=WORK(U11+I,J)
-         END DO
+         A(CUT+I,CUT+1:CUT+I)=WORK(U11+I,1:I)
       END DO
 !
      IF ( (CUT+NNB)  <  N ) THEN
 !
 !          L21**H*invD2*L21->A(CUT+I,CUT+J)
 !
-      CALL CGEMM('C','N',NNB,NNB,N-NNB-CUT,CONE,A(CUT+NNB+1,CUT+1) &
-                ,LDA,WORK,N+NB+1, ZERO, WORK(U11+1,1), N+NB+1)
+      CALL CGEMM('C','N',NNB,NNB,N-NNB-CUT,(1.0E+0,0.0E+0),A(CUT+NNB+1,CUT+1) &
+                ,LDA,WORK,N+NB+1, (0.0E+0,0.0E+0), WORK(U11+1,1), N+NB+1)
 
 !
 !        L11 =  L11**H*invD1*L11 + U01**H*invD*U01
 !
       DO I=1,NNB
-         DO J=1,I
-           A(CUT+I,CUT+J)=A(CUT+I,CUT+J)+WORK(U11+I,J)
-         END DO
+         A(CUT+I,CUT+1:CUT+I)=A(CUT+I,CUT+1:CUT+I)+WORK(U11+I,1:I)
       END DO
 !
 !        L01 =  L22**H*invD2*L21
 !
       CALL CTRMM('L',UPLO,'C','U', N-NNB-CUT, NNB, &
-                CONE,A(CUT+NNB+1,CUT+NNB+1),LDA,WORK,N+NB+1)
+                (1.0E+0,0.0E+0),A(CUT+NNB+1,CUT+NNB+1),LDA,WORK,N+NB+1)
 
 !      Update L21
-      DO I=1,N-CUT-NNB
-        DO J=1,NNB
-           A(CUT+NNB+I,CUT+J)=WORK(I,J)
-        END DO
-      END DO
+        A(CUT+NNB+1:N,CUT+1:CUT+NNB)=WORK(1:N-CUT-NNB,1:NNB)
     ELSE
 !
 !        L11 =  L11**H*invD1*L11
 !
       DO I=1,NNB
-         DO J=1,I
-           A(CUT+I,CUT+J)=WORK(U11+I,J)
-         END DO
+         A(CUT+I,CUT+1:CUT+I)=WORK(U11+I,1:I)
       END DO
     END IF
 !
@@ -584,7 +512,4 @@
 !
 !     End of CHETRI2X
 !
-   END
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
+END

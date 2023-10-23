@@ -207,20 +207,18 @@
 !     ..
 !
 !  ======================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            DONE, UPPER
    INTEGER            I, II, IMAX, ITEMP, J, JMAX, K, KK, KP, KSTEP, &
                       P
-   REAL               ABSAKK, ALPHA, COLMAX, D, D11, D22, R1, STEMP, &
+   REAL               ABSAKK, COLMAX, D, D11, D22, R1, STEMP, &
                       ROWMAX, TT, SFMIN
-   COMPLEX            D12, D21, T, WK, WKM1, WKP1, Z
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
+   COMPLEX            D12, D21, T, WK, WKM1, WKP1, Z, A_TMP( LDA )
 !     ..
 !     .. External Functions ..
 !
@@ -232,11 +230,8 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CSSCAL, CHER, CSWAP
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, REAL, SQRT
-!     ..
 !     .. Statement Functions ..
-   REAL   CABS1
+   REAL               CABS1
 !     ..
 !     .. Statement Function definitions ..
    CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
@@ -259,10 +254,6 @@
       RETURN
    END IF
 !
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
-!
 !     Compute machine safe minimum
 !
    SFMIN = SLAMCH( 'S' )
@@ -279,8 +270,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 70
+      IF( K < 1 ) GO TO 70
       KSTEP = 1
       P = K
 !
@@ -297,15 +287,14 @@
          IMAX = ICAMAX( K-1, A( 1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( ( MAX( ABSAKK, COLMAX ) == ZERO ) ) THEN
+      IF( ( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
          A( K, K ) = REAL( A( K, K ) )
       ELSE
@@ -344,7 +333,7 @@
                                         LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX > 1 ) THEN
@@ -374,8 +363,7 @@
 !                 Equivalent to testing for ROWMAX == COLMAX,
 !                 (used to handle NaN and Inf)
 !
-               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) &
-               THEN
+               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) THEN
 !
 !                    interchange rows and columns K-1 and IMAX,
 !                    use 2-by-2 pivot block
@@ -413,14 +401,15 @@
 !
          IF( ( KSTEP == 2 ) .AND. ( P /= K ) ) THEN
 !              (1) Swap columnar parts
-            IF( P > 1 ) &
-               CALL CSWAP( P-1, A( 1, K ), 1, A( 1, P ), 1 )
+            IF( P > 1 ) THEN
+               A_TMP(1:P-1) = A(1:P-1,K)
+               A(1:P-1,K) = A(1:P-1,P)
+               A(1:P-1,P) = A_TMP(1:P-1)
+            ENDIF
 !              (2) Swap and conjugate middle parts
-            DO J = P + 1, K - 1
-               T = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( P, J ) )
-               A( P, J ) = T
-            ENDDO
+            A_TMP(1:K-1-P) = CONJG(A(P+1:K-1,K) )
+            A(P+1:K-1, K ) = CONJG(A(P,P+1:K-1) )
+            A(P,P+1:K-1) = A_TMP(1:K-1-P)
 !              (3) Swap and conjugate corner elements at row-col intersection
             A( P, K ) = CONJG( A( P, K ) )
 !              (4) Swap diagonal elements at row-col intersection
@@ -434,14 +423,15 @@
 !
          IF( KP /= KK ) THEN
 !              (1) Swap columnar parts
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) THEN
+               A_TMP(1:KP-1) = A(1:KP-1,KK)
+               A(1:KP-1,KK) = A(1:KP-1,KP)
+               A(1:KP-1,KP) = A_TMP(1:KP-1)
+            ENDIF
 !              (2) Swap and conjugate middle parts
-            DO J = KP + 1, KK - 1
-               T = CONJG( A( J, KK ) )
-               A( J, KK ) = CONJG( A( KP, J ) )
-               A( KP, J ) = T
-            ENDDO
+            A_TMP(1:KK-KP-1) = CONJG(A(KP+1:KK-1,KK))
+            A(KP+1:KK-1,KK) = CONJG(A(KP,KP+1:KK-1))
+            A(KP,KP+1:KK-1) = A_TMP(1:KK-KP-1)
 !              (3) Swap and conjugate corner elements at row-col intersection
             A( KP, KK ) = CONJG( A( KP, KK ) )
 !              (4) Swap diagonal elements at row-col intersection
@@ -460,8 +450,7 @@
          ELSE
 !              (*) Make sure that diagonal element of pivot is real
             A( K, K ) = REAL( A( K, K ) )
-            IF( KSTEP == 2 ) &
-               A( K-1, K-1 ) = REAL( A( K-1, K-1 ) )
+            IF( KSTEP == 2 ) A( K-1, K-1 ) = REAL( A( K-1, K-1 ) )
          END IF
 !
 !           Update the leading submatrix
@@ -485,20 +474,18 @@
 !                    A := A - U(k)*D(k)*U(k)**T
 !                       = A - W(k)*1/D(k)*W(k)**T
 !
-                  D11 = ONE / REAL( A( K, K ) )
+                  D11 = 1.0E+0 / REAL( A( K, K ) )
                   CALL CHER( UPLO, K-1, -D11, A( 1, K ), 1, A, LDA )
 !
 !                    Store U(k) in column k
 !
-                  CALL CSSCAL( K-1, D11, A( 1, K ), 1 )
+                  A(1:K-1,K) = D11*A(1:K-1,K)
                ELSE
 !
 !                    Store L(k) in column K
 !
                   D11 = REAL( A( K, K ) )
-                  DO II = 1, K - 1
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(1:K-1,K) = A(1:K-1,K) / D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - U(k)*D(k)*U(k)**T
@@ -527,19 +514,17 @@
 !
             IF( K > 2 ) THEN
 !                 D = |A12|
-               D = SLAPY2( REAL( A( K-1, K ) ), &
-                   AIMAG( A( K-1, K ) ) )
+               D = SLAPY2( REAL( A( K-1, K ) ), AIMAG( A( K-1, K ) ) )
                D11 = REAL( A( K, K ) / D )
                D22 = REAL( A( K-1, K-1 ) / D )
                D12 = A( K-1, K ) / D
-               TT = ONE / ( D11*D22-ONE )
+               TT = 1.0E+0 / ( D11*D22-1.0E+0 )
 !
                DO J = K - 2, 1, -1
 !
 !                    Compute  D21 * ( W(k)W(k+1) ) * inv(D(k)) for row J
 !
-                  WKM1 = TT*( D11*A( J, K-1 )-CONJG( D12 )* &
-                         A( J, K ) )
+                  WKM1 = TT*( D11*A( J, K-1 )-CONJG( D12 )*A( J, K ) )
                   WK = TT*( D22*A( J, K )-D12*A( J, K-1 ) )
 !
 !                    Perform a rank-2 update of A(1:k-2,1:k-2)
@@ -555,7 +540,7 @@
                   A( J, K ) = WK / D
                   A( J, K-1 ) = WKM1 / D
 !                    (*) Make sure that diagonal element of pivot is real
-                  A( J, J ) = CMPLX( REAL( A( J, J ) ), ZERO )
+                  A( J, J ) = CMPLX( REAL( A( J, J ) ), 0.0E+0 )
 !
                ENDDO
 !
@@ -591,8 +576,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 70
+      IF( K > N ) GO TO 70
       KSTEP = 1
       P = K
 !
@@ -609,15 +593,14 @@
          IMAX = K + ICAMAX( N-K, A( K+1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
          A( K, K ) = REAL( A( K, K ) )
       ELSE
@@ -655,7 +638,7 @@
                   JMAX = K - 1 + ICAMAX( IMAX-K, A( IMAX, K ), LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX < N ) THEN
@@ -673,8 +656,7 @@
 !                 ABS( REAL( W( IMAX,KW-1 ) ) ) >= ALPHA*ROWMAX
 !                 (used to handle NaN and Inf)
 !
-               IF( .NOT.( ABS( REAL( A( IMAX, IMAX ) ) ) &
-                           < ALPHA*ROWMAX ) ) THEN
+               IF( .NOT.( ABS( REAL( A( IMAX, IMAX ) ) ) < ALPHA*ROWMAX ) ) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -686,8 +668,7 @@
 !                 Equivalent to testing for ROWMAX == COLMAX,
 !                 (used to handle NaN and Inf)
 !
-               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) &
-               THEN
+               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) THEN
 !
 !                    interchange rows and columns K+1 and IMAX,
 !                    use 2-by-2 pivot block
@@ -726,14 +707,15 @@
 !
          IF( ( KSTEP == 2 ) .AND. ( P /= K ) ) THEN
 !              (1) Swap columnar parts
-            IF( P < N ) &
-               CALL CSWAP( N-P, A( P+1, K ), 1, A( P+1, P ), 1 )
+            IF( P < N ) THEN
+              A_TMP(1:N-P) = A(P+1:N,K)
+              A(P+1:N,K) = A(P+1:N,P)
+              A(P+1:N,P) = A_TMP(1:N-P)
+            ENDIF
 !              (2) Swap and conjugate middle parts
-            DO J = K + 1, P - 1
-               T = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( P, J ) )
-               A( P, J ) = T
-            ENDDO
+            A_TMP(1:P-K-1) = CONJG(A(K+1:P-1,K))
+            A(K+1:P-1,K) = CONJG(A(P,K+1:P-1))
+            A(P,K+1:P-1) = A_TMP(1:P-K-1)
 !              (3) Swap and conjugate corner elements at row-col intersection
             A( P, K ) = CONJG( A( P, K ) )
 !              (4) Swap diagonal elements at row-col intersection
@@ -747,14 +729,15 @@
 !
          IF( KP /= KK ) THEN
 !              (1) Swap columnar parts
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) THEN
+               A_TMP(1:N-KP) = A(KP+1:N,KK)
+               A(KP+1:N,KK) = A(KP+1:N,KP)
+               A(KP+1:N,KP) = A_TMP(1:N-KP)
+            ENDIF
 !              (2) Swap and conjugate middle parts
-            DO J = KK + 1, KP - 1
-               T = CONJG( A( J, KK ) )
-               A( J, KK ) = CONJG( A( KP, J ) )
-               A( KP, J ) = T
-            ENDDO
+            A_TMP(1:KP-KK-1) = CONJG(A(KK+1:KP-1,KK))
+            A(KK+1:KP-1,KK) = CONJG(A(KP,KK+1:KP-1))
+            A(KP,KK+1:KP-1) = A_TMP(1:KP-KK-1)
 !              (3) Swap and conjugate corner elements at row-col intersection
             A( KP, KK ) = CONJG( A( KP, KK ) )
 !              (4) Swap diagonal elements at row-col intersection
@@ -800,21 +783,19 @@
 !                    A := A - L(k)*D(k)*L(k)**T
 !                       = A - W(k)*(1/D(k))*W(k)**T
 !
-                  D11 = ONE / REAL( A( K, K ) )
+                  D11 = 1.0E+0 / REAL( A( K, K ) )
                   CALL CHER( UPLO, N-K, -D11, A( K+1, K ), 1, &
                              A( K+1, K+1 ), LDA )
 !
 !                    Store L(k) in column k
 !
-                  CALL CSSCAL( N-K, D11, A( K+1, K ), 1 )
+                  A(K+1:N,K) = D11*A(K+1:N,K)
                ELSE
 !
 !                    Store L(k) in column k
 !
                   D11 = REAL( A( K, K ) )
-                  DO II = K + 1, N
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(K+1:N,K) = A(K+1:N,K)/D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - L(k)*D(k)*L(k)**T
@@ -850,7 +831,7 @@
                D11 = REAL( A( K+1, K+1 ) ) / D
                D22 = REAL( A( K, K ) ) / D
                D21 = A( K+1, K ) / D
-               TT = ONE / ( D11*D22-ONE )
+               TT = 1.0E+0 / ( D11*D22-1.0E+0 )
 !
                DO J = K + 2, N
 !
@@ -862,18 +843,15 @@
 !
 !                    Perform a rank-2 update of A(k+2:n,k+2:n)
 !
-                  DO I = J, N
-                     A( I, J ) = A( I, J ) - &
-                                 ( A( I, K ) / D )*CONJG( WK ) - &
-                                 ( A( I, K+1 ) / D )*CONJG( WKP1 )
-                  ENDDO
+                  A(J:N,J) = A(J:N,J) - (A(J:N,K)/D)*CONJG(WK) - &
+                              (A(J:N,K+1)/D )*CONJG(WKP1)
 !
 !                    Store L(k) and L(k+1) in cols k and k+1 for row J
 !
                   A( J, K ) = WK / D
                   A( J, K+1 ) = WKP1 / D
 !                    (*) Make sure that diagonal element of pivot is real
-                  A( J, J ) = CMPLX( REAL( A( J, J ) ), ZERO )
+                  A( J, J ) = CMPLX( REAL( A( J, J ) ), 0.0E+0 )
 !
                ENDDO
 !
@@ -906,5 +884,4 @@
 !     End of CHETF2_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 

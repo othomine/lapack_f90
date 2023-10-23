@@ -139,9 +139,9 @@
 !>    Bobby Cheng, MathWorks
 !>
 !>    Replace l.210 and l.392
-!>         IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+!>         IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !>    by
-!>         IF( (MAX( ABSAKK, COLMAX ) == ZERO) .OR. SISNAN(ABSAKK) ) THEN
+!>         IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) .OR. SISNAN(ABSAKK) ) THEN
 !>
 !>  01-01-96 - Based on modifications by
 !>    J. Lewis, Boeing Computer Services Company
@@ -199,31 +199,27 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, IMAX, J, JMAX, K, KK, KP, KSTEP
-   REAL               ABSAKK, ALPHA, COLMAX, D, D11, D22, R1, ROWMAX, &
+   REAL               ABSAKK, COLMAX, D, D11, D22, R1, ROWMAX, &
                       TT
-   COMPLEX            D12, D21, T, WK, WKM1, WKP1, ZDUM
+   COMPLEX            D12, D21, T, WK, WKM1, WKP1, ZDUM, A_TMP( LDA )
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !     ..
 !     .. External Functions ..
+!
    LOGICAL            LSAME, SISNAN
    INTEGER            ICAMAX
    REAL               SLAPY2
    EXTERNAL           LSAME, ICAMAX, SLAPY2, SISNAN
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CHER, CSSCAL, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, REAL, SQRT
+   EXTERNAL           XERBLA, CHER
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -249,10 +245,6 @@
       RETURN
    END IF
 !
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
-!
    IF( UPPER ) THEN
 !
 !        Factorize A as U*D*U**H using the upper triangle of A
@@ -265,8 +257,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 90
+      IF( K < 1 ) GO TO 90
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -282,16 +273,15 @@
          IMAX = ICAMAX( K-1, A( 1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( (MAX( ABSAKK, COLMAX ) == ZERO) .OR. SISNAN(ABSAKK) ) THEN
+      IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) .OR. SISNAN(ABSAKK) ) THEN
 !
 !           Column K is or underflow, or contains a NaN:
 !           set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
          A( K, K ) = REAL( A( K, K ) )
       ELSE
@@ -340,12 +330,14 @@
 !              Interchange rows and columns KK and KP in the leading
 !              submatrix A(1:k,1:k)
 !
-            CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
-            DO J = KP + 1, KK - 1
-               T = CONJG( A( J, KK ) )
-               A( J, KK ) = CONJG( A( KP, J ) )
-               A( KP, J ) = T
-            ENDDO
+            A_TMP(1:KP-1) = A(1:KP-1,KK)
+            A(1:KP-1,KK) = A(1:KP-1,KP)
+            A(1:KP-1,KP) = A_TMP(1:KP-1)
+            
+            A_TMP(1:KK-KP-1) = CONJG( A(KP+1:KK-1, KK ) )
+            A(KP+1:KK-1, KK ) = CONJG( A( KP,KP+1:KK-1) )
+            A( KP,KP+1:KK-1) = A_TMP(1:KK-KP-1)
+
             A( KP, KK ) = CONJG( A( KP, KK ) )
             R1 = REAL( A( KK, KK ) )
             A( KK, KK ) = REAL( A( KP, KP ) )
@@ -358,8 +350,7 @@
             END IF
          ELSE
             A( K, K ) = REAL( A( K, K ) )
-            IF( KSTEP == 2 ) &
-               A( K-1, K-1 ) = REAL( A( K-1, K-1 ) )
+            IF( KSTEP == 2 ) A( K-1, K-1 ) = REAL( A( K-1, K-1 ) )
          END IF
 !
 !           Update the leading submatrix
@@ -376,12 +367,12 @@
 !
 !              A := A - U(k)*D(k)*U(k)**H = A - W(k)*1/D(k)*W(k)**H
 !
-            R1 = ONE / REAL( A( K, K ) )
+            R1 = 1.0E+0 / REAL( A( K, K ) )
             CALL CHER( UPLO, K-1, -R1, A( 1, K ), 1, A, LDA )
 !
 !              Store U(k) in column k
 !
-            CALL CSSCAL( K-1, R1, A( 1, K ), 1 )
+            A(1:K-1,K) = R1*A(1:K-1,K)
          ELSE
 !
 !              2-by-2 pivot block D(k): columns k and k-1 now hold
@@ -402,7 +393,7 @@
                    AIMAG( A( K-1, K ) ) )
                D22 = REAL( A( K-1, K-1 ) ) / D
                D11 = REAL( A( K, K ) ) / D
-               TT = ONE / ( D11*D22-ONE )
+               TT = 1.0E+0 / ( D11*D22-1.0E+0 )
                D12 = A( K-1, K ) / D
                D = TT / D
 !
@@ -449,8 +440,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 90
+      IF( K > N ) GO TO 90
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -466,16 +456,15 @@
          IMAX = K + ICAMAX( N-K, A( K+1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( (MAX( ABSAKK, COLMAX ) == ZERO) .OR. SISNAN(ABSAKK) ) THEN
+      IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) .OR. SISNAN(ABSAKK) ) THEN
 !
 !           Column K is zero or underflow, contains a NaN:
 !           set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
          A( K, K ) = REAL( A( K, K ) )
       ELSE
@@ -524,13 +513,15 @@
 !              Interchange rows and columns KK and KP in the trailing
 !              submatrix A(k:n,k:n)
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
-            DO J = KK + 1, KP - 1
-               T = CONJG( A( J, KK ) )
-               A( J, KK ) = CONJG( A( KP, J ) )
-               A( KP, J ) = T
-            ENDDO
+            IF( KP < N ) THEN
+              A_TMP(1:N-KP) = A(KP+1:N,KK)
+              A(KP+1:N,KK) = A(KP+1:N,KP)
+              A(KP+1:N,KP) = A_TMP(1:N-KP)
+            ENDIF
+            A_TMP(1:KP-KK-1) = CONJG(A(KK+1:KP-1,KK))
+            A(KK+1:KP-1,KK) = CONJG(A(KP,KK+1:KP-1))
+            A(KP,KK+1:KP-1) = A_TMP(1:KP-KK-1)
+
             A( KP, KK ) = CONJG( A( KP, KK ) )
             R1 = REAL( A( KK, KK ) )
             A( KK, KK ) = REAL( A( KP, KP ) )
@@ -543,8 +534,7 @@
             END IF
          ELSE
             A( K, K ) = REAL( A( K, K ) )
-            IF( KSTEP == 2 ) &
-               A( K+1, K+1 ) = REAL( A( K+1, K+1 ) )
+            IF( KSTEP == 2 ) A( K+1, K+1 ) = REAL( A( K+1, K+1 ) )
          END IF
 !
 !           Update the trailing submatrix
@@ -563,13 +553,13 @@
 !
 !                 A := A - L(k)*D(k)*L(k)**H = A - W(k)*(1/D(k))*W(k)**H
 !
-               R1 = ONE / REAL( A( K, K ) )
+               R1 = 1.0E+0 / REAL( A( K, K ) )
                CALL CHER( UPLO, N-K, -R1, A( K+1, K ), 1, &
                           A( K+1, K+1 ), LDA )
 !
 !                 Store L(k) in column K
 !
-               CALL CSSCAL( N-K, R1, A( K+1, K ), 1 )
+               A(K+1:N,K) = R1*A(K+1:N,K)
             END IF
          ELSE
 !
@@ -585,11 +575,10 @@
 !                 where L(k) and L(k+1) are the k-th and (k+1)-th
 !                 columns of L
 !
-               D = SLAPY2( REAL( A( K+1, K ) ), &
-                           AIMAG( A( K+1, K ) ) )
+               D = SLAPY2( REAL( A( K+1, K ) ), AIMAG( A( K+1, K ) ) )
                D11 = REAL( A( K+1, K+1 ) ) / D
                D22 = REAL( A( K, K ) ) / D
-               TT = ONE / ( D11*D22-ONE )
+               TT = 1.0E+0 / ( D11*D22-1.0E+0 )
                D21 = A( K+1, K ) / D
                D =  TT / D
 !
@@ -630,5 +619,3 @@
 !     End of CHETF2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

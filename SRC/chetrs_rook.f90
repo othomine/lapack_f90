@@ -132,8 +132,7 @@
 !> \endverbatim
 !
 !  =====================================================================
-   SUBROUTINE CHETRS_ROOK( UPLO, N, NRHS, A, LDA, IPIV, B, LDB, &
-                           INFO )
+   SUBROUTINE CHETRS_ROOK( UPLO, N, NRHS, A, LDA, IPIV, B, LDB, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -149,26 +148,19 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            J, K, KP
    REAL               S
-   COMPLEX            AK, AKM1, AKM1K, BK, BKM1, DENOM
+   COMPLEX            AK, AKM1, AKM1K, BK, BKM1, DENOM, B_TMP( NRHS )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CGERU, CLACGV, CSSCAL, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX, REAL
+   EXTERNAL           CGEMV, CGERU, CLACGV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -192,8 +184,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -209,8 +200,7 @@
 !
 !        If K < 1, exit from loop.
 !
-      IF( K < 1 ) &
-         GO TO 30
+      IF( K < 1 ) GO TO 30
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -219,19 +209,22 @@
 !           Interchange rows K and IPIV(K).
 !
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
 !           Multiply by inv(U(K)), where U(K) is the transformation
 !           stored in column K of A.
 !
-         CALL CGERU( K-1, NRHS, -ONE, A( 1, K ), 1, B( K, 1 ), LDB, &
+         CALL CGERU( K-1, NRHS, -(1.0E+0,0.0E+0), A( 1, K ), 1, B( K, 1 ), LDB, &
                      B( 1, 1 ), LDB )
 !
 !           Multiply by the inverse of the diagonal block.
 !
-         S = REAL( ONE ) / REAL( A( K, K ) )
-         CALL CSSCAL( NRHS, S, B( K, 1 ), LDB )
+         S = REAL( (1.0E+0,0.0E+0) ) / REAL( A( K, K ) )
+         B(K,1:NRHS) = S*B(K,1:NRHS)
          K = K - 1
       ELSE
 !
@@ -240,19 +233,25 @@
 !           Interchange rows K and -IPIV(K), then K-1 and -IPIV(K-1)
 !
          KP = -IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          KP = -IPIV( K-1)
-         IF( KP /= K-1 ) &
-            CALL CSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K-1 ) THEN
+            B_TMP(1:NRHS) = B(K-1,1:NRHS)
+            B(K-1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
 !           Multiply by inv(U(K)), where U(K) is the transformation
 !           stored in columns K-1 and K of A.
 !
-         CALL CGERU( K-2, NRHS, -ONE, A( 1, K ), 1, B( K, 1 ), LDB, &
+         CALL CGERU( K-2, NRHS, -(1.0E+0,0.0E+0), A( 1, K ), 1, B( K, 1 ), LDB, &
                      B( 1, 1 ), LDB )
-         CALL CGERU( K-2, NRHS, -ONE, A( 1, K-1 ), 1, B( K-1, 1 ), &
+         CALL CGERU( K-2, NRHS, -(1.0E+0,0.0E+0), A( 1, K-1 ), 1, B( K-1, 1 ), &
                      LDB, B( 1, 1 ), LDB )
 !
 !           Multiply by the inverse of the diagonal block.
@@ -260,7 +259,7 @@
          AKM1K = A( K-1, K )
          AKM1 = A( K-1, K-1 ) / AKM1K
          AK = A( K, K ) / CONJG( AKM1K )
-         DENOM = AKM1*AK - ONE
+         DENOM = AKM1*AK - (1.0E+0,0.0E+0)
          DO J = 1, NRHS
             BKM1 = B( K-1, J ) / AKM1K
             BK = B( K, J ) / CONJG( AKM1K )
@@ -283,8 +282,7 @@
 !
 !        If K > N, exit from loop.
 !
-      IF( K > N ) &
-         GO TO 50
+      IF( K > N ) GO TO 50
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -295,16 +293,19 @@
 !
          IF( K > 1 ) THEN
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -ONE, B, &
-                        LDB, A( 1, K ), 1, ONE, B( K, 1 ), LDB )
+            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
+                        LDB, A( 1, K ), 1, (1.0E+0,0.0E+0), B( K, 1 ), LDB )
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
          END IF
 !
 !           Interchange rows K and IPIV(K).
 !
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
          K = K + 1
       ELSE
 !
@@ -315,25 +316,31 @@
 !
          IF( K > 1 ) THEN
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -ONE, B, &
-                        LDB, A( 1, K ), 1, ONE, B( K, 1 ), LDB )
+            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
+                        LDB, A( 1, K ), 1, (1.0E+0,0.0E+0), B( K, 1 ), LDB )
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
 !
             CALL CLACGV( NRHS, B( K+1, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -ONE, B, &
-                        LDB, A( 1, K+1 ), 1, ONE, B( K+1, 1 ), LDB )
+            CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
+                        LDB, A( 1, K+1 ), 1, (1.0E+0,0.0E+0), B( K+1, 1 ), LDB )
             CALL CLACGV( NRHS, B( K+1, 1 ), LDB )
          END IF
 !
 !           Interchange rows K and -IPIV(K), then K+1 and -IPIV(K+1)
 !
          KP = -IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          KP = -IPIV( K+1 )
-         IF( KP /= K+1 ) &
-            CALL CSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K+1 ) THEN
+            B_TMP(1:NRHS) = B(K+1,1:NRHS)
+            B(K+1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          K = K + 2
       END IF
@@ -355,8 +362,7 @@
 !
 !        If K > N, exit from loop.
 !
-      IF( K > N ) &
-         GO TO 80
+      IF( K > N ) GO TO 80
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -365,20 +371,23 @@
 !           Interchange rows K and IPIV(K).
 !
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
 !           Multiply by inv(L(K)), where L(K) is the transformation
 !           stored in column K of A.
 !
          IF( K < N ) &
-            CALL CGERU( N-K, NRHS, -ONE, A( K+1, K ), 1, B( K, 1 ), &
+            CALL CGERU( N-K, NRHS, -(1.0E+0,0.0E+0), A( K+1, K ), 1, B( K, 1 ), &
                         LDB, B( K+1, 1 ), LDB )
 !
 !           Multiply by the inverse of the diagonal block.
 !
-         S = REAL( ONE ) / REAL( A( K, K ) )
-         CALL CSSCAL( NRHS, S, B( K, 1 ), LDB )
+         S = REAL( (1.0E+0,0.0E+0) ) / REAL( A( K, K ) )
+         B(K,1:NRHS) = S*B(K,1:NRHS)
          K = K + 1
       ELSE
 !
@@ -387,20 +396,26 @@
 !           Interchange rows K and -IPIV(K), then K+1 and -IPIV(K+1)
 !
          KP = -IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          KP = -IPIV( K+1 )
-         IF( KP /= K+1 ) &
-            CALL CSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K+1 ) THEN
+            B_TMP(1:NRHS) = B(K+1,1:NRHS)
+            B(K+1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
 !           Multiply by inv(L(K)), where L(K) is the transformation
 !           stored in columns K and K+1 of A.
 !
          IF( K < N-1 ) THEN
-            CALL CGERU( N-K-1, NRHS, -ONE, A( K+2, K ), 1, B( K, 1 ), &
+            CALL CGERU( N-K-1, NRHS, -(1.0E+0,0.0E+0), A( K+2, K ), 1, B( K, 1 ), &
                         LDB, B( K+2, 1 ), LDB )
-            CALL CGERU( N-K-1, NRHS, -ONE, A( K+2, K+1 ), 1, &
+            CALL CGERU( N-K-1, NRHS, -(1.0E+0,0.0E+0), A( K+2, K+1 ), 1, &
                         B( K+1, 1 ), LDB, B( K+2, 1 ), LDB )
          END IF
 !
@@ -409,7 +424,7 @@
          AKM1K = A( K+1, K )
          AKM1 = A( K, K ) / CONJG( AKM1K )
          AK = A( K+1, K+1 ) / AKM1K
-         DENOM = AKM1*AK - ONE
+         DENOM = AKM1*AK - (1.0E+0,0.0E+0)
          DO J = 1, NRHS
             BKM1 = B( K, J ) / CONJG( AKM1K )
             BK = B( K+1, J ) / AKM1K
@@ -432,8 +447,7 @@
 !
 !        If K < 1, exit from loop.
 !
-      IF( K < 1 ) &
-         GO TO 100
+      IF( K < 1 ) GO TO 100
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -444,8 +458,8 @@
 !
          IF( K < N ) THEN
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -ONE, &
-                        B( K+1, 1 ), LDB, A( K+1, K ), 1, ONE, &
+            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
+                        B( K+1, 1 ), LDB, A( K+1, K ), 1, (1.0E+0,0.0E+0), &
                         B( K, 1 ), LDB )
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
          END IF
@@ -453,8 +467,11 @@
 !           Interchange rows K and IPIV(K).
 !
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
          K = K - 1
       ELSE
 !
@@ -465,14 +482,14 @@
 !
          IF( K < N ) THEN
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -ONE, &
-                        B( K+1, 1 ), LDB, A( K+1, K ), 1, ONE, &
+            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
+                        B( K+1, 1 ), LDB, A( K+1, K ), 1, (1.0E+0,0.0E+0), &
                         B( K, 1 ), LDB )
             CALL CLACGV( NRHS, B( K, 1 ), LDB )
 !
             CALL CLACGV( NRHS, B( K-1, 1 ), LDB )
-            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -ONE, &
-                        B( K+1, 1 ), LDB, A( K+1, K-1 ), 1, ONE, &
+            CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
+                        B( K+1, 1 ), LDB, A( K+1, K-1 ), 1, (1.0E+0,0.0E+0), &
                         B( K-1, 1 ), LDB )
             CALL CLACGV( NRHS, B( K-1, 1 ), LDB )
          END IF
@@ -480,12 +497,18 @@
 !           Interchange rows K and -IPIV(K), then K-1 and -IPIV(K-1)
 !
          KP = -IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          KP = -IPIV( K-1 )
-         IF( KP /= K-1 ) &
-            CALL CSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K-1 ) THEN
+            B_TMP(1:NRHS) = B(K-1,1:NRHS)
+            B(K-1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
+         ENDIF
 !
          K = K - 2
       END IF
@@ -499,5 +522,3 @@
 !     End of CHETRS_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -323,10 +323,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ALLEIG, INDEIG, LQUERY, UPPER, VALEIG, WANTZ
@@ -340,9 +336,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CHEEVX, CHEGST, CPOTRF, CTRMM, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -372,8 +365,7 @@
       INFO = -9
    ELSE
       IF( VALEIG ) THEN
-         IF( N > 0 .AND. VU <= VL ) &
-            INFO = -11
+         IF( N > 0 .AND. VU <= VL ) INFO = -11
       ELSE IF( INDEIG ) THEN
          IF( IL < 1 .OR. IL > MAX( 1, N ) ) THEN
             INFO = -12
@@ -393,9 +385,7 @@
       LWKOPT = MAX( 1, ( NB + 1 )*N )
       WORK( 1 ) = LWKOPT
 !
-      IF( LWORK < MAX( 1, 2*N ) .AND. .NOT.LQUERY ) THEN
-         INFO = -20
-      END IF
+      IF( LWORK < MAX( 1, 2*N ) .AND. .NOT.LQUERY ) INFO = -20
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -408,9 +398,7 @@
 !     Quick return if possible
 !
    M = 0
-   IF( N == 0 ) THEN
-      RETURN
-   END IF
+   IF( N == 0 ) RETURN
 !
 !     Form a Cholesky factorization of B.
 !
@@ -431,8 +419,7 @@
 !
 !        Backtransform eigenvectors to the original problem.
 !
-      IF( INFO > 0 ) &
-         M = INFO - 1
+      IF( INFO > 0 ) M = INFO - 1
       IF( ITYPE == 1 .OR. ITYPE == 2 ) THEN
 !
 !           For A*x=(lambda)*B*x and A*B*x=(lambda)*x;
@@ -444,7 +431,7 @@
             TRANS = 'C'
          END IF
 !
-         CALL CTRSM( 'Left', UPLO, TRANS, 'Non-unit', N, M, CONE, B, &
+         CALL CTRSM( 'Left', UPLO, TRANS, 'Non-unit', N, M, (1.0E+0,0.0E+0), B, &
                      LDB, Z, LDZ )
 !
       ELSE IF( ITYPE == 3 ) THEN
@@ -458,7 +445,7 @@
             TRANS = 'N'
          END IF
 !
-         CALL CTRMM( 'Left', UPLO, TRANS, 'Non-unit', N, M, CONE, B, &
+         CALL CTRMM( 'Left', UPLO, TRANS, 'Non-unit', N, M, (1.0E+0,0.0E+0), B, &
                      LDB, Z, LDZ )
       END IF
    END IF
@@ -472,5 +459,3 @@
 !     End of CHEGVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

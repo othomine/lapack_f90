@@ -258,14 +258,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               RONE
-   COMPLEX            ZERO, ONE, HALF
-   PARAMETER          ( RONE = 1.0E+0, &
-                      ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      ONE = ( 1.0E+0, 0.0E+0 ), &
-                      HALF = ( 0.5E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, UPPER
@@ -277,9 +269,6 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CHER2K, CHEMM, CGEMM, CCOPY, &
                       CLARFT, CGELQF, CGEQRF, CLASET
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN, MAX
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -325,14 +314,13 @@
        IF( UPPER ) THEN
            DO I = 1, N
                LK = MIN( KD+1, I )
-               CALL CCOPY( LK, A( I-LK+1, I ), 1, &
-                               AB( KD+1-LK+1, I ), 1 )
-              ENDDO
+               AB(KD-LK+2:KD+1,I) = A(I-LK+1:I,I)
+           ENDDO
        ELSE
            DO I = 1, N
                LK = MIN( KD+1, N-I+1 )
-               CALL CCOPY( LK, A( I, I ), 1, AB( 1, I ), 1 )
-              ENDDO
+               AB(1:LK,I) = A(I:LK+I-1,I)
+           ENDDO
        ENDIF
        WORK( 1 ) = 1
        RETURN
@@ -363,7 +351,7 @@
 !     Set the workspace of the triangular matrix T to zero once such a
 !     way every time T is generated the upper/lower portion will be always zero
 !
-   CALL CLASET( "A", LDT, KD, ZERO, ZERO, WORK( TPOS ), LDT )
+   CALL CLASET( "A", LDT, KD, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( TPOS ), LDT )
 !
    IF( UPPER ) THEN
        DO I = 1, N - KD, KD
@@ -382,7 +370,7 @@
              CALL CCOPY( LK, A( J, J ), LDA, AB( KD+1, J ), LDAB-1 )
           ENDDO
 !
-          CALL CLASET( 'Lower', PK, PK, ZERO, ONE, &
+          CALL CLASET( 'Lower', PK, PK, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                        A( I, I+KD ), LDA )
 !
 !            Form the matrix T
@@ -394,33 +382,33 @@
 !            Compute W:
 !
           CALL CGEMM( 'Conjugate', 'No transpose', PK, PN, PK, &
-                      ONE,  WORK( TPOS ), LDT, &
+                      (1.0E+0,0.0E+0),  WORK( TPOS ), LDT, &
                             A( I, I+KD ), LDA, &
-                      ZERO, WORK( S2POS ), LDS2 )
+                      (0.0E+0,0.0E+0), WORK( S2POS ), LDS2 )
 !
           CALL CHEMM( 'Right', UPLO, PK, PN, &
-                      ONE,  A( I+KD, I+KD ), LDA, &
+                      (1.0E+0,0.0E+0),  A( I+KD, I+KD ), LDA, &
                             WORK( S2POS ), LDS2, &
-                      ZERO, WORK( WPOS ), LDW )
+                      (0.0E+0,0.0E+0), WORK( WPOS ), LDW )
 !
           CALL CGEMM( 'No transpose', 'Conjugate', PK, PK, PN, &
-                      ONE,  WORK( WPOS ), LDW, &
+                      (1.0E+0,0.0E+0),  WORK( WPOS ), LDW, &
                             WORK( S2POS ), LDS2, &
-                      ZERO, WORK( S1POS ), LDS1 )
+                      (0.0E+0,0.0E+0), WORK( S1POS ), LDS1 )
 !
           CALL CGEMM( 'No transpose', 'No transpose', PK, PN, PK, &
-                      -HALF, WORK( S1POS ), LDS1, &
+                      -(0.5E+0,0.0E+0), WORK( S1POS ), LDS1, &
                              A( I, I+KD ), LDA, &
-                      ONE,   WORK( WPOS ), LDW )
+                      (1.0E+0,0.0E+0),   WORK( WPOS ), LDW )
 !
 !
 !            Update the unreduced submatrix A(i+kd:n,i+kd:n), using
 !            an update of the form:  A := A - V'*W - W'*V
 !
           CALL CHER2K( UPLO, 'Conjugate', PN, PK, &
-                       -ONE, A( I, I+KD ), LDA, &
+                       -(1.0E+0,0.0E+0), A( I, I+KD ), LDA, &
                              WORK( WPOS ), LDW, &
-                       RONE, A( I+KD, I+KD ), LDA )
+                       1.0E+0, A( I+KD, I+KD ), LDA )
        ENDDO
 !
 !        Copy the upper band to AB which is the band storage matrix
@@ -447,10 +435,10 @@
 !
           DO J = I, I+PK-1
              LK = MIN( KD, N-J ) + 1
-             CALL CCOPY( LK, A( J, J ), 1, AB( 1, J ), 1 )
+             AB(1:LK,J) = A(J:J+LK-1,J)
           ENDDO
 !
-          CALL CLASET( 'Upper', PK, PK, ZERO, ONE, &
+          CALL CLASET( 'Upper', PK, PK, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                        A( I+KD, I ), LDA )
 !
 !            Form the matrix T
@@ -462,33 +450,33 @@
 !            Compute W:
 !
           CALL CGEMM( 'No transpose', 'No transpose', PN, PK, PK, &
-                      ONE, A( I+KD, I ), LDA, &
+                      (1.0E+0,0.0E+0), A( I+KD, I ), LDA, &
                             WORK( TPOS ), LDT, &
-                      ZERO, WORK( S2POS ), LDS2 )
+                      (0.0E+0,0.0E+0), WORK( S2POS ), LDS2 )
 !
           CALL CHEMM( 'Left', UPLO, PN, PK, &
-                      ONE, A( I+KD, I+KD ), LDA, &
+                      (1.0E+0,0.0E+0), A( I+KD, I+KD ), LDA, &
                             WORK( S2POS ), LDS2, &
-                      ZERO, WORK( WPOS ), LDW )
+                      (0.0E+0,0.0E+0), WORK( WPOS ), LDW )
 !
           CALL CGEMM( 'Conjugate', 'No transpose', PK, PK, PN, &
-                      ONE, WORK( S2POS ), LDS2, &
+                      (1.0E+0,0.0E+0), WORK( S2POS ), LDS2, &
                             WORK( WPOS ), LDW, &
-                      ZERO, WORK( S1POS ), LDS1 )
+                      (0.0E+0,0.0E+0), WORK( S1POS ), LDS1 )
 !
           CALL CGEMM( 'No transpose', 'No transpose', PN, PK, PK, &
-                      -HALF, A( I+KD, I ), LDA, &
+                      -(0.5E+0,0.0E+0), A( I+KD, I ), LDA, &
                             WORK( S1POS ), LDS1, &
-                      ONE, WORK( WPOS ), LDW )
+                      (1.0E+0,0.0E+0), WORK( WPOS ), LDW )
 !
 !
 !            Update the unreduced submatrix A(i+kd:n,i+kd:n), using
 !            an update of the form:  A := A - V*W' - W*V'
 !
           CALL CHER2K( UPLO, 'No transpose', PN, PK, &
-                       -ONE, A( I+KD, I ), LDA, &
+                       -(1.0E+0,0.0E+0), A( I+KD, I ), LDA, &
                               WORK( WPOS ), LDW, &
-                       RONE, A( I+KD, I+KD ), LDA )
+                       1.0E+0, A( I+KD, I+KD ), LDA )
 !            ==================================================================
 !            RESTORE A FOR COMPARISON AND CHECKING TO BE REMOVED
 !             DO 45 J = I, I+PK-1
@@ -502,7 +490,7 @@
 !
       DO J = N-KD+1, N
          LK = MIN(KD, N-J) + 1
-         CALL CCOPY( LK, A( J, J ), 1, AB( 1, J ), 1 )
+         AB(1:LK,J) = A(J:J+LK-1,J)
       ENDDO
 
    END IF
@@ -513,5 +501,3 @@
 !     End of CHETRD_HE2HB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

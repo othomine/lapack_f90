@@ -140,12 +140,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, HALF
-   PARAMETER          ( ONE = 1.0E+0, HALF = 0.5E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -156,9 +150,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CHER2, CLACGV, CSSCAL, CTRMV, CTRSV, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -200,16 +191,14 @@
             AKK = AKK / BKK**2
             A( K, K ) = AKK
             IF( K < N ) THEN
-               CALL CSSCAL( N-K, ONE / BKK, A( K, K+1 ), LDA )
-               CT = -HALF*AKK
+               CALL CSSCAL( N-K, 1.0E+0 / BKK, A( K, K+1 ), LDA )
+               CT = -0.5E+0*AKK
                CALL CLACGV( N-K, A( K, K+1 ), LDA )
                CALL CLACGV( N-K, B( K, K+1 ), LDB )
-               CALL CAXPY( N-K, CT, B( K, K+1 ), LDB, A( K, K+1 ), &
-                           LDA )
-               CALL CHER2( UPLO, N-K, -CONE, A( K, K+1 ), LDA, &
+               A(K,K+1:N) = A(K,K+1:N) + CT*B(K,K+1:N)
+               CALL CHER2( UPLO, N-K, -(1.0E+0,0.0E+0), A( K, K+1 ), LDA, &
                            B( K, K+1 ), LDB, A( K+1, K+1 ), LDA )
-               CALL CAXPY( N-K, CT, B( K, K+1 ), LDB, A( K, K+1 ), &
-                           LDA )
+               A(K,K+1:N) = A(K,K+1:N) + CT*B(K,K+1:N)
                CALL CLACGV( N-K, B( K, K+1 ), LDB )
                CALL CTRSV( UPLO, 'Conjugate transpose', 'Non-unit', &
                            N-K, B( K+1, K+1 ), LDB, A( K, K+1 ), &
@@ -230,12 +219,12 @@
             AKK = AKK / BKK**2
             A( K, K ) = AKK
             IF( K < N ) THEN
-               CALL CSSCAL( N-K, ONE / BKK, A( K+1, K ), 1 )
-               CT = -HALF*AKK
-               CALL CAXPY( N-K, CT, B( K+1, K ), 1, A( K+1, K ), 1 )
-               CALL CHER2( UPLO, N-K, -CONE, A( K+1, K ), 1, &
+               A(K+1:N,K) = A(K+1:N,K)/BKK
+               CT = -0.5E+0*AKK
+               A(K+1:N,K) = A(K+1:N,K) + CT*B(K+1:N,K)
+               CALL CHER2( UPLO, N-K, -(1.0E+0,0.0E+0), A( K+1, K ), 1, &
                            B( K+1, K ), 1, A( K+1, K+1 ), LDA )
-               CALL CAXPY( N-K, CT, B( K+1, K ), 1, A( K+1, K ), 1 )
+               A(K+1:N,K) = A(K+1:N,K) + CT*B(K+1:N,K)
                CALL CTRSV( UPLO, 'No transpose', 'Non-unit', N-K, &
                            B( K+1, K+1 ), LDB, A( K+1, K ), 1 )
             END IF
@@ -254,12 +243,11 @@
             BKK = REAL( B( K, K ) )
             CALL CTRMV( UPLO, 'No transpose', 'Non-unit', K-1, B, &
                         LDB, A( 1, K ), 1 )
-            CT = HALF*AKK
-            CALL CAXPY( K-1, CT, B( 1, K ), 1, A( 1, K ), 1 )
-            CALL CHER2( UPLO, K-1, CONE, A( 1, K ), 1, B( 1, K ), 1, &
+            CT = 0.5E+0*AKK
+            A(1:K-1,K) = A(1:K-1,K) + CT*B(1:K-1,K)
+            CALL CHER2( UPLO, K-1, (1.0E+0,0.0E+0), A( 1, K ), 1, B( 1, K ), 1, &
                         A, LDA )
-            CALL CAXPY( K-1, CT, B( 1, K ), 1, A( 1, K ), 1 )
-            CALL CSSCAL( K-1, BKK, A( 1, K ), 1 )
+            A(1:K-1,K) = BKK*(A(1:K-1,K) + CT*B(1:K-1,K))
             A( K, K ) = AKK*BKK**2
          ENDDO
       ELSE
@@ -275,14 +263,14 @@
             CALL CLACGV( K-1, A( K, 1 ), LDA )
             CALL CTRMV( UPLO, 'Conjugate transpose', 'Non-unit', K-1, &
                         B, LDB, A( K, 1 ), LDA )
-            CT = HALF*AKK
+            CT = 0.5E+0*AKK
             CALL CLACGV( K-1, B( K, 1 ), LDB )
-            CALL CAXPY( K-1, CT, B( K, 1 ), LDB, A( K, 1 ), LDA )
-            CALL CHER2( UPLO, K-1, CONE, A( K, 1 ), LDA, B( K, 1 ), &
+            A(K,1:K-1) = A(K,1:K-1) + CT*B(K,1:K-1)
+            CALL CHER2( UPLO, K-1, (1.0E+0,0.0E+0), A( K, 1 ), LDA, B( K, 1 ), &
                         LDB, A, LDA )
-            CALL CAXPY( K-1, CT, B( K, 1 ), LDB, A( K, 1 ), LDA )
+            A(K,1:K-1) = A(K,1:K-1) + CT*B(K,1:K-1)
             CALL CLACGV( K-1, B( K, 1 ), LDB )
-            CALL CSSCAL( K-1, BKK, A( K, 1 ), LDA )
+            A(K,1:K-1) = BKK*A(K,1:K-1)
             CALL CLACGV( K-1, A( K, 1 ), LDA )
             A( K, K ) = AKK*BKK**2
          ENDDO
@@ -293,5 +281,3 @@
 !     End of CHEGS2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

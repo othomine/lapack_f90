@@ -178,26 +178,19 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0,0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, J, K, KP
    REAL               S
-   COMPLEX            AK, AKM1, AKM1K, BK, BKM1, DENOM
+   COMPLEX            AK, AKM1, AKM1K, BK, BKM1, DENOM, B_TMP( NRHS )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSSCAL, CSWAP, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, REAL
+   EXTERNAL           CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -221,8 +214,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -242,26 +234,28 @@
       DO K = N, 1, -1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
          END IF
       END DO
 !
 !        Compute (U \P**T * B) -> B    [ (U \P**T * B) ]
 !
-      CALL CTRSM( 'L', 'U', 'N', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'U', 'N', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        Compute D \ B -> B   [ D \ (U \P**T * B) ]
 !
       I = N
       DO WHILE ( I >= 1 )
          IF( IPIV( I ) > 0 ) THEN
-            S = REAL( ONE ) / REAL( A( I, I ) )
-            CALL CSSCAL( NRHS, S, B( I, 1 ), LDB )
+            S = REAL( (1.0E+0,0.0E+0) ) / REAL( A( I, I ) )
+            B(I,1:NRHS) = S*B(I,1:NRHS)
          ELSE IF ( I > 1 ) THEN
             AKM1K = E( I )
             AKM1 = A( I-1, I-1 ) / AKM1K
             AK = A( I, I ) / CONJG( AKM1K )
-            DENOM = AKM1*AK - ONE
+            DENOM = AKM1*AK - (1.0E+0,0.0E+0)
             DO J = 1, NRHS
                BKM1 = B( I-1, J ) / AKM1K
                BK = B( I, J ) / CONJG( AKM1K )
@@ -275,7 +269,7 @@
 !
 !        Compute (U**H \ B) -> B   [ U**H \ (D \ (U \P**T * B) ) ]
 !
-      CALL CTRSM( 'L', 'U', 'C', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'U', 'C', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        P * B  [ P * (U**H \ (D \ (U \P**T * B) )) ]
 !
@@ -289,7 +283,9 @@
       DO K = 1, N, 1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
          END IF
       END DO
 !
@@ -310,26 +306,28 @@
       DO K = 1, N, 1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
          END IF
       END DO
 !
 !        Compute (L \P**T * B) -> B    [ (L \P**T * B) ]
 !
-      CALL CTRSM( 'L', 'L', 'N', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'L', 'N', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        Compute D \ B -> B   [ D \ (L \P**T * B) ]
 !
       I = 1
       DO WHILE ( I <= N )
          IF( IPIV( I ) > 0 ) THEN
-            S = REAL( ONE ) / REAL( A( I, I ) )
-            CALL CSSCAL( NRHS, S, B( I, 1 ), LDB )
+            S = REAL( (1.0E+0,0.0E+0) ) / REAL( A( I, I ) )
+            B(I,1:NRHS) = S*B(I,1:NRHS)
          ELSE IF( I < N ) THEN
             AKM1K = E( I )
             AKM1 = A( I, I ) / CONJG( AKM1K )
             AK = A( I+1, I+1 ) / AKM1K
-            DENOM = AKM1*AK - ONE
+            DENOM = AKM1*AK - (1.0E+0,0.0E+0)
             DO  J = 1, NRHS
                BKM1 = B( I, J ) / CONJG( AKM1K )
                BK = B( I+1, J ) / AKM1K
@@ -343,7 +341,7 @@
 !
 !        Compute (L**H \ B) -> B   [ L**H \ (D \ (L \P**T * B) ) ]
 !
-      CALL CTRSM('L', 'L', 'C', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM('L', 'L', 'C', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        P * B  [ P * (L**H \ (D \ (L \P**T * B) )) ]
 !
@@ -357,7 +355,9 @@
       DO K = N, 1, -1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_TMP(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_TMP(1:NRHS)
          END IF
       END DO
 !
@@ -370,5 +370,3 @@
 !     End of CHETRS_3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

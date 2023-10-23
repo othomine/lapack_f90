@@ -301,10 +301,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, NOFACT
@@ -320,9 +316,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CHECON, CHERFS, CHETRF, CHETRS, CLACPY, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -332,8 +325,7 @@
    LQUERY = ( LWORK == -1 )
    IF( .NOT.NOFACT .AND. .NOT.LSAME( FACT, 'F' ) ) THEN
       INFO = -1
-   ELSE IF( .NOT.LSAME( UPLO, 'U' ) .AND. .NOT.LSAME( UPLO, 'L' ) ) &
-             THEN
+   ELSE IF( .NOT.LSAME( UPLO, 'U' ) .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
       INFO = -2
    ELSE IF( N < 0 ) THEN
       INFO = -3
@@ -377,7 +369,7 @@
 !        Return if INFO is non-zero.
 !
       IF( INFO > 0 )THEN
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -392,7 +384,7 @@
 !
 !     Compute the solution vectors X.
 !
-   CALL CLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL CHETRS( UPLO, N, NRHS, AF, LDAF, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solutions and
@@ -403,8 +395,7 @@
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < SLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < SLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    WORK( 1 ) = LWKOPT
 !
@@ -413,5 +404,3 @@
 !     End of CHESVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

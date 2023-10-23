@@ -147,15 +147,12 @@
 !     ..
 !
 !  =====================================================================
-!     .. Parameters ..
-   COMPLEX      ZERO, ONE
-   PARAMETER    ( ZERO = (0.0E+0, 0.0E+0), ONE = (1.0E+0, 0.0E+0) )
 !
 !     .. Local Scalars ..
    LOGICAL      LQUERY, UPPER
    INTEGER      J, LWKOPT
    INTEGER      NB, MJ, NJ, K1, K2, J1, J2, J3, JB
-   COMPLEX      ALPHA
+   COMPLEX      ALPHA, A_TMP( LDA )
 !     ..
 !     .. External Functions ..
    LOGICAL      LSAME
@@ -164,9 +161,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL     CLAHEF_AA, CGEMM, CCOPY, CSWAP, CSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC    REAL, CONJG, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -203,9 +197,7 @@
 !
 !     Quick return
 !
-   IF ( N == 0 ) THEN
-       RETURN
-   ENDIF
+   IF ( N == 0 ) RETURN
    IPIV( 1 ) = 1
    IF ( N == 1 ) THEN
       A( 1, 1 ) = REAL( A( 1, 1 ) )
@@ -214,9 +206,7 @@
 !
 !     Adjust block size based on the workspace size
 !
-   IF( LWORK < ((1+NB)*N) ) THEN
-      NB = ( LWORK-N ) / N
-   END IF
+   IF( LWORK < ((1+NB)*N) ) NB = ( LWORK-N ) / N
 !
    IF( UPPER ) THEN
 !
@@ -226,7 +216,7 @@
 !
 !        copy first row A(1, 1:N) into H(1:n) (stored in WORK(1:N))
 !
-      CALL CCOPY( N, A( 1, 1 ), LDA, WORK( 1 ), 1 )
+      WORK(1:N) = A(1,1:N)
 !
 !        J is the main loop index, increasing from 1 to N in steps of
 !        JB, where JB is the number of columns factorized by CLAHEF;
@@ -234,8 +224,7 @@
 !
       J = 0
  10      CONTINUE
-      IF( J >= N ) &
-         GO TO 20
+      IF( J >= N ) GO TO 20
 !
 !        each step of the main loop
 !         J is the last column of the previous panel
@@ -259,8 +248,9 @@
       DO J2 = J+2, MIN(N, J+JB+1)
          IPIV( J2 ) = IPIV( J2 ) + J
          IF( (J2 /= IPIV(J2)) .AND. ((J1-K1) > 2) ) THEN
-            CALL CSWAP( J1-K1-2, A( 1, J2 ), 1, &
-                                 A( 1, IPIV(J2) ), 1 )
+            A_TMP(1:J1-K1-2) = A(1:J1-K1-2,J2)
+            A(1:J1-K1-2,J2) = A(1:J1-K1-2,IPIV(J2))
+            A(1:J1-K1-2,IPIV(J2)) = A_TMP(1:J1-K1-2)
          END IF
       END DO
       J = J + JB
@@ -278,10 +268,8 @@
 !              Merge rank-1 update with BLAS-3 update
 !
             ALPHA = CONJG( A( J, J+1 ) )
-            A( J, J+1 ) = ONE
-            CALL CCOPY( N-J, A( J-1, J+1 ), LDA, &
-                             WORK( (J+1-J1+1)+JB*N ), 1 )
-            CALL CSCAL( N-J, ALPHA, WORK( (J+1-J1+1)+JB*N ), 1 )
+            A( J, J+1 ) = (1.0E+0,0.0E+0)
+            WORK(J-J1+2+JB*N:1-J1+JB*N+N) = ALPHA*A(J-1,J+1:N)
 !
 !              K1 identifies if the previous column of the panel has been
 !               explicitly stored, e.g., K1=0 and K2=1 for the first panel,
@@ -312,9 +300,9 @@
                DO MJ = NJ-1, 1, -1
                   CALL CGEMM( 'Conjugate transpose', 'Transpose', &
                                1, MJ, JB+1, &
-                              -ONE, A( J1-K2, J3 ), LDA, &
+                              -(1.0E+0,0.0E+0), A( J1-K2, J3 ), LDA, &
                                     WORK( (J3-J1+1)+K1*N ), N, &
-                               ONE, A( J3, J3 ), LDA )
+                               (1.0E+0,0.0E+0), A( J3, J3 ), LDA )
                   J3 = J3 + 1
                END DO
 !
@@ -322,9 +310,9 @@
 !
                CALL CGEMM( 'Conjugate transpose', 'Transpose', &
                            NJ, N-J3+1, JB+1, &
-                          -ONE, A( J1-K2, J2 ), LDA, &
+                          -(1.0E+0,0.0E+0), A( J1-K2, J2 ), LDA, &
                                 WORK( (J3-J1+1)+K1*N ), N, &
-                           ONE, A( J2, J3 ), LDA )
+                           (1.0E+0,0.0E+0), A( J2, J3 ), LDA )
             END DO
 !
 !              Recover T( J, J+1 )
@@ -334,7 +322,7 @@
 !
 !           WORK(J+1, 1) stores H(J+1, 1)
 !
-         CALL CCOPY( N-J, A( J+1, J+1 ), LDA, WORK( 1 ), 1 )
+         WORK(1:N-J) = A(J+1,J+1:N)
       END IF
       GO TO 10
    ELSE
@@ -346,7 +334,7 @@
 !        copy first column A(1:N, 1) into H(1:N, 1)
 !         (stored in WORK(1:N))
 !
-      CALL CCOPY( N, A( 1, 1 ), 1, WORK( 1 ), 1 )
+      WORK(1:N) = A(1:N,1)
 !
 !        J is the main loop index, increasing from 1 to N in steps of
 !        JB, where JB is the number of columns factorized by CLAHEF;
@@ -354,8 +342,7 @@
 !
       J = 0
  11      CONTINUE
-      IF( J >= N ) &
-         GO TO 20
+      IF( J >= N ) GO TO 20
 !
 !        each step of the main loop
 !         J is the last column of the previous panel
@@ -379,8 +366,9 @@
       DO J2 = J+2, MIN(N, J+JB+1)
          IPIV( J2 ) = IPIV( J2 ) + J
          IF( (J2 /= IPIV(J2)) .AND. ((J1-K1) > 2) ) THEN
-            CALL CSWAP( J1-K1-2, A( J2, 1 ), LDA, &
-                                 A( IPIV(J2), 1 ), LDA )
+            A_TMP(1:J1-K1-2) = A(J2,1:J1-K1-2)
+            A(J2,1:J1-K1-2) = A(IPIV(J2),1:J1-K1-2)
+            A(IPIV(J2),1:J1-K1-2) = A_TMP(1:J1-K1-2)
          END IF
       END DO
       J = J + JB
@@ -398,10 +386,8 @@
 !              Merge rank-1 update with BLAS-3 update
 !
             ALPHA = CONJG( A( J+1, J ) )
-            A( J+1, J ) = ONE
-            CALL CCOPY( N-J, A( J+1, J-1 ), 1, &
-                             WORK( (J+1-J1+1)+JB*N ), 1 )
-            CALL CSCAL( N-J, ALPHA, WORK( (J+1-J1+1)+JB*N ), 1 )
+            A( J+1, J ) = (1.0E+0,0.0E+0)
+            WORK(J-J1+2+JB*N:1-J1+JB*N+N) = ALPHA*A(J+1:N,J-1)
 !
 !              K1 identifies if the previous column of the panel has been
 !               explicitly stored, e.g., K1=0 and K2=1 for the first panel,
@@ -432,9 +418,9 @@
                DO MJ = NJ-1, 1, -1
                   CALL CGEMM( 'No transpose', 'Conjugate transpose', &
                               MJ, 1, JB+1, &
-                             -ONE, WORK( (J3-J1+1)+K1*N ), N, &
+                             -(1.0E+0,0.0E+0), WORK( (J3-J1+1)+K1*N ), N, &
                                    A( J3, J1-K2 ), LDA, &
-                              ONE, A( J3, J3 ), LDA )
+                              (1.0E+0,0.0E+0), A( J3, J3 ), LDA )
                   J3 = J3 + 1
                END DO
 !
@@ -442,9 +428,9 @@
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', &
                            N-J3+1, NJ, JB+1, &
-                          -ONE, WORK( (J3-J1+1)+K1*N ), N, &
+                          -(1.0E+0,0.0E+0), WORK( (J3-J1+1)+K1*N ), N, &
                                 A( J2, J1-K2 ), LDA, &
-                           ONE, A( J3, J2 ), LDA )
+                           (1.0E+0,0.0E+0), A( J3, J2 ), LDA )
             END DO
 !
 !              Recover T( J+1, J )
@@ -454,7 +440,7 @@
 !
 !           WORK(J+1, 1) stores H(J+1, 1)
 !
-         CALL CCOPY( N-J, A( J+1, J+1 ), 1, WORK( 1 ), 1 )
+         WORK(1:N-J) = A(J+1:N,J+1)
       END IF
       GO TO 11
    END IF
@@ -466,5 +452,3 @@
 !     End of CHETRF_AA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

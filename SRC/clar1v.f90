@@ -247,12 +247,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E0, 0.0E0 ) )
 
 !     ..
 !     .. Local Scalars ..
@@ -265,9 +259,6 @@
    LOGICAL SISNAN
    REAL               SLAMCH
    EXTERNAL           SISNAN, SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -290,7 +281,7 @@
    INDP = 3*N + 1
 
    IF( B1 == 1 ) THEN
-      WORK( INDS ) = ZERO
+      WORK( INDS ) = 0.0E+0
    ELSE
       WORK( INDS+B1-1 ) = LLD( B1-1 )
    END IF
@@ -305,7 +296,7 @@
    DO I = B1, R1 - 1
       DPLUS = D( I ) + S
       WORK( INDLPL+I ) = LD( I ) / DPLUS
-      IF(DPLUS < ZERO) NEG1 = NEG1 + 1
+      IF(DPLUS < 0.0E+0) NEG1 = NEG1 + 1
       WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
       S = WORK( INDS+I ) - LAMBDA
       ENDDO
@@ -328,10 +319,9 @@
          DPLUS = D( I ) + S
          IF(ABS(DPLUS) < PIVMIN) DPLUS = -PIVMIN
          WORK( INDLPL+I ) = LD( I ) / DPLUS
-         IF(DPLUS < ZERO) NEG1 = NEG1 + 1
+         IF(DPLUS < 0.0E+0) NEG1 = NEG1 + 1
          WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
-         IF( WORK( INDLPL+I ) == ZERO ) &
-                         WORK( INDS+I ) = LLD( I )
+         IF( WORK( INDLPL+I ) == 0.0E+0 ) WORK( INDS+I ) = LLD( I )
          S = WORK( INDS+I ) - LAMBDA
          ENDDO
       DO I = R1, R2 - 1
@@ -339,7 +329,7 @@
          IF(ABS(DPLUS) < PIVMIN) DPLUS = -PIVMIN
          WORK( INDLPL+I ) = LD( I ) / DPLUS
          WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
-         IF( WORK( INDLPL+I ) == ZERO ) &
+         IF( WORK( INDLPL+I ) == 0.0E+0 ) &
                          WORK( INDS+I ) = LLD( I )
          S = WORK( INDS+I ) - LAMBDA
          ENDDO
@@ -354,10 +344,10 @@
    DO I = BN - 1, R1, -1
       DMINUS = LLD( I ) + WORK( INDP+I )
       TMP = D( I ) / DMINUS
-      IF(DMINUS < ZERO) NEG2 = NEG2 + 1
+      IF(DMINUS < 0.0E+0) NEG2 = NEG2 + 1
       WORK( INDUMN+I ) = L( I )*TMP
       WORK( INDP+I-1 ) = WORK( INDP+I )*TMP - LAMBDA
-      ENDDO
+   ENDDO
    TMP = WORK( INDP+R1-1 )
    SAWNAN2 = SISNAN( TMP )
 
@@ -368,43 +358,41 @@
          DMINUS = LLD( I ) + WORK( INDP+I )
          IF(ABS(DMINUS) < PIVMIN) DMINUS = -PIVMIN
          TMP = D( I ) / DMINUS
-         IF(DMINUS < ZERO) NEG2 = NEG2 + 1
+         IF(DMINUS < 0.0E+0) NEG2 = NEG2 + 1
          WORK( INDUMN+I ) = L( I )*TMP
          WORK( INDP+I-1 ) = WORK( INDP+I )*TMP - LAMBDA
-         IF( TMP == ZERO ) &
+         IF( TMP == 0.0E+0 ) &
              WORK( INDP+I-1 ) = D( I ) - LAMBDA
-         ENDDO
+      ENDDO
    END IF
 !
 !     Find the index (from R1 to R2) of the largest (in magnitude)
 !     diagonal element of the inverse
 !
    MINGMA = WORK( INDS+R1-1 ) + WORK( INDP+R1-1 )
-   IF( MINGMA < ZERO ) NEG1 = NEG1 + 1
+   IF( MINGMA < 0.0E+0 ) NEG1 = NEG1 + 1
    IF( WANTNC ) THEN
       NEGCNT = NEG1 + NEG2
    ELSE
       NEGCNT = -1
    ENDIF
-   IF( ABS(MINGMA) == ZERO ) &
-      MINGMA = EPS*WORK( INDS+R1-1 )
+   IF( ABS(MINGMA) == 0.0E+0 ) MINGMA = EPS*WORK( INDS+R1-1 )
    R = R1
    DO I = R1, R2 - 1
       TMP = WORK( INDS+I ) + WORK( INDP+I )
-      IF( TMP == ZERO ) &
-         TMP = EPS*WORK( INDS+I )
+      IF( TMP == 0.0E+0 ) TMP = EPS*WORK( INDS+I )
       IF( ABS( TMP ) <= ABS( MINGMA ) ) THEN
          MINGMA = TMP
          R = I + 1
       END IF
-      ENDDO
+   ENDDO
 !
 !     Compute the FP vector: solve N^T v = e_r
 !
    ISUPPZ( 1 ) = B1
    ISUPPZ( 2 ) = BN
-   Z( R ) = CONE
-   ZTZ = ONE
+   Z( R ) = (1.0E+0,0.0E+0)
+   ZTZ = 1.0E+0
 !
 !     Compute the FP vector upwards from R
 !
@@ -413,30 +401,27 @@
          Z( I ) = -( WORK( INDLPL+I )*Z( I+1 ) )
          IF( (ABS(Z(I))+ABS(Z(I+1)))* ABS(LD(I)) < GAPTOL ) &
               THEN
-            Z( I ) = ZERO
+            Z( I ) = 0.0E+0
             ISUPPZ( 1 ) = I + 1
-            GOTO 220
+            EXIT
          ENDIF
          ZTZ = ZTZ + REAL( Z( I )*Z( I ) )
-         ENDDO
- 220     CONTINUE
+      ENDDO
    ELSE
 !        Run slower loop if NaN occurred.
       DO I = R - 1, B1, -1
-         IF( Z( I+1 ) == ZERO ) THEN
+         IF( Z( I+1 ) == 0.0E+0 ) THEN
             Z( I ) = -( LD( I+1 ) / LD( I ) )*Z( I+2 )
          ELSE
             Z( I ) = -( WORK( INDLPL+I )*Z( I+1 ) )
          END IF
-         IF( (ABS(Z(I))+ABS(Z(I+1)))* ABS(LD(I)) < GAPTOL ) &
-              THEN
-            Z( I ) = ZERO
+         IF( (ABS(Z(I))+ABS(Z(I+1)))* ABS(LD(I)) < GAPTOL ) THEN
+            Z( I ) = 0.0E+0
             ISUPPZ( 1 ) = I + 1
-            GO TO 240
+            EXIT
          END IF
          ZTZ = ZTZ + REAL( Z( I )*Z( I ) )
-         ENDDO
- 240     CONTINUE
+      ENDDO
    ENDIF
 
 !     Compute the FP vector downwards from R in blocks of size BLKSIZ
@@ -445,35 +430,33 @@
          Z( I+1 ) = -( WORK( INDUMN+I )*Z( I ) )
          IF( (ABS(Z(I))+ABS(Z(I+1)))* ABS(LD(I)) < GAPTOL ) &
             THEN
-            Z( I+1 ) = ZERO
+            Z( I+1 ) = 0.0E+0
             ISUPPZ( 2 ) = I
-            GO TO 260
+            EXIT
          END IF
          ZTZ = ZTZ + REAL( Z( I+1 )*Z( I+1 ) )
-         ENDDO
- 260     CONTINUE
+      ENDDO
    ELSE
 !        Run slower loop if NaN occurred.
       DO I = R, BN - 1
-         IF( Z( I ) == ZERO ) THEN
+         IF( Z( I ) == 0.0E+0 ) THEN
             Z( I+1 ) = -( LD( I-1 ) / LD( I ) )*Z( I-1 )
          ELSE
             Z( I+1 ) = -( WORK( INDUMN+I )*Z( I ) )
          END IF
          IF( (ABS(Z(I))+ABS(Z(I+1)))* ABS(LD(I)) < GAPTOL ) &
               THEN
-            Z( I+1 ) = ZERO
+            Z( I+1 ) = 0.0E+0
             ISUPPZ( 2 ) = I
-            GO TO 280
+            EXIT
          END IF
          ZTZ = ZTZ + REAL( Z( I+1 )*Z( I+1 ) )
-         ENDDO
- 280     CONTINUE
+      ENDDO
    END IF
 !
 !     Compute quantities for convergence test
 !
-   TMP = ONE / ZTZ
+   TMP = 1.0E+0 / ZTZ
    NRMINV = SQRT( TMP )
    RESID = ABS( MINGMA )*NRMINV
    RQCORR = MINGMA*TMP
@@ -484,5 +467,3 @@
 !     End of CLAR1V
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

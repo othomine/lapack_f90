@@ -146,23 +146,18 @@
 !     ..
 !
 !  =====================================================================
-!
-   COMPLEX            ONE
-   PARAMETER          ( ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, UPPER
    INTEGER            K, KP, LWKOPT
+   COMPLEX            B_TMP( NRHS )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACPY, CLACGV, CGTSV, CSWAP, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
+   EXTERNAL           CLACPY, CLACGV, CGTSV, CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -193,8 +188,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -209,14 +203,17 @@
          K = 1
          DO WHILE ( K <= N )
             KP = IPIV( K )
-            IF( KP /= K ) &
-               CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            IF( KP /= K ) THEN
+               B_TMP(1:NRHS) = B(K,1:NRHS)
+               B(K,1:NRHS) = B(KP,1:NRHS)
+               B(KP,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
             K = K + 1
          END DO
 !
 !           Compute U**H \ B -> B    [ (U**H \P**T * B) ]
 !
-         CALL CTRSM( 'L', 'U', 'C', 'U', N-1, NRHS, ONE, A( 1, 2 ), &
+         CALL CTRSM( 'L', 'U', 'C', 'U', N-1, NRHS, 1.0E+0, A( 1, 2 ), &
                      LDA, B( 2, 1 ), LDB)
       END IF
 !
@@ -239,7 +236,7 @@
 !
 !           Compute U \ B -> B   [ U \ (T \ (U**H \P**T * B) ) ]
 !
-         CALL CTRSM( 'L', 'U', 'N', 'U', N-1, NRHS, ONE, A( 1, 2 ), &
+         CALL CTRSM( 'L', 'U', 'N', 'U', N-1, NRHS, 1.0E+0, A( 1, 2 ), &
                      LDA, B(2, 1), LDB)
 !
 !           Pivot, P * B  -> B [ P * (U \ (T \ (U**H \P**T * B) )) ]
@@ -247,8 +244,11 @@
          K = N
          DO WHILE ( K >= 1 )
             KP = IPIV( K )
-            IF( KP /= K ) &
-               CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            IF( KP /= K ) THEN
+               B_TMP(1:NRHS) = B(K,1:NRHS)
+               B(K,1:NRHS) = B(KP,1:NRHS)
+               B(KP,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
             K = K - 1
          END DO
       END IF
@@ -266,14 +266,17 @@
          K = 1
          DO WHILE ( K <= N )
             KP = IPIV( K )
-            IF( KP /= K ) &
-               CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            IF( KP /= K ) THEN
+               B_TMP(1:NRHS) = B(K,1:NRHS)
+               B(K,1:NRHS) = B(KP,1:NRHS)
+               B(KP,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
             K = K + 1
          END DO
 !
 !           Compute L \ B -> B    [ (L \P**T * B) ]
 !
-         CALL CTRSM( 'L', 'L', 'N', 'U', N-1, NRHS, ONE, A( 2, 1), &
+         CALL CTRSM( 'L', 'L', 'N', 'U', N-1, NRHS, 1.0E+0, A( 2, 1), &
                      LDA, B(2, 1), LDB )
       END IF
 !
@@ -296,7 +299,7 @@
 !
 !           Compute (L**H \ B) -> B   [ L**H \ (T \ (L \P**T * B) ) ]
 !
-         CALL CTRSM( 'L', 'L', 'C', 'U', N-1, NRHS, ONE, A( 2, 1 ), &
+         CALL CTRSM( 'L', 'L', 'C', 'U', N-1, NRHS, 1.0E+0, A( 2, 1 ), &
                      LDA, B( 2, 1 ), LDB )
 !
 !           Pivot, P * B -> B  [ P * (L**H \ (T \ (L \P**T * B) )) ]
@@ -304,8 +307,11 @@
          K = N
          DO WHILE ( K >= 1 )
             KP = IPIV( K )
-            IF( KP /= K ) &
-               CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            IF( KP /= K ) THEN
+               B_TMP(1:NRHS) = B(K,1:NRHS)
+               B(K,1:NRHS) = B(KP,1:NRHS)
+               B(KP,1:NRHS) = B_TMP(1:NRHS)
+            ENDIF
             K = K - 1
          END DO
       END IF
@@ -317,5 +323,3 @@
 !     End of CHETRS_AA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -141,18 +141,12 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE
-   COMPLEX            CONE, CZERO
-   PARAMETER          ( ONE = 1.0E+0, CONE = ( 1.0E+0, 0.0E+0 ), &
-                      CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            J, K, KP, KSTEP
    REAL               AK, AKP1, D, T
-   COMPLEX            AKKP1, TEMP
+   COMPLEX            AKKP1, TEMP, A_TMP( LDA )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -160,10 +154,7 @@
    EXTERNAL           LSAME, CDOTC
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CHEMV, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, REAL
+   EXTERNAL           CHEMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -185,8 +176,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Check that the diagonal matrix D is nonsingular.
 !
@@ -195,16 +185,14 @@
 !        Upper triangular storage: examine D from bottom to top
 !
       DO INFO = N, 1, -1
-         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == CZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == (0.0E+0,0.0E+0) ) RETURN
       ENDDO
    ELSE
 !
 !        Lower triangular storage: examine D from top to bottom.
 !
       DO INFO = 1, N
-         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == CZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. A( INFO, INFO ) == (0.0E+0,0.0E+0) ) RETURN
       ENDDO
    END IF
    INFO = 0
@@ -221,8 +209,7 @@
 !
 !        If K > N, exit from loop.
 !
-      IF( K > N ) &
-         GO TO 70
+      IF( K > N ) GO TO 70
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -230,16 +217,15 @@
 !
 !           Invert the diagonal block.
 !
-         A( K, K ) = ONE / REAL( A( K, K ) )
+         A( K, K ) = 1.0E+0 / REAL( A( K, K ) )
 !
 !           Compute column K of the inverse.
 !
          IF( K > 1 ) THEN
-            CALL CCOPY( K-1, A( 1, K ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, K-1, -CONE, A, LDA, WORK, 1, CZERO, &
+            WORK(1:K-1) = A(1:K-1,K)
+            CALL CHEMV( UPLO, K-1, -(1.0E+0,0.0E+0), A, LDA, WORK, 1, (0.0E+0,0.0E+0), &
                         A( 1, K ), 1 )
-            A( K, K ) = A( K, K ) - REAL( CDOTC( K-1, WORK, 1, A( 1, &
-                        K ), 1 ) )
+            A( K, K ) = A( K, K ) - REAL( CDOTC( K-1, WORK, 1, A( 1, K ), 1 ) )
          END IF
          KSTEP = 1
       ELSE
@@ -252,7 +238,7 @@
          AK = REAL( A( K, K ) ) / T
          AKP1 = REAL( A( K+1, K+1 ) ) / T
          AKKP1 = A( K, K+1 ) / T
-         D = T*( AK*AKP1-ONE )
+         D = T*( AK*AKP1-1.0E+0 )
          A( K, K ) = AKP1 / D
          A( K+1, K+1 ) = AK / D
          A( K, K+1 ) = -AKKP1 / D
@@ -260,19 +246,18 @@
 !           Compute columns K and K+1 of the inverse.
 !
          IF( K > 1 ) THEN
-            CALL CCOPY( K-1, A( 1, K ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, K-1, -CONE, A, LDA, WORK, 1, CZERO, &
+            WORK(1:K-1) = A(1:K-1,K)
+            CALL CHEMV( UPLO, K-1, -(1.0E+0,0.0E+0), A, LDA, WORK, 1, (0.0E+0,0.0E+0), &
                         A( 1, K ), 1 )
             A( K, K ) = A( K, K ) - REAL( CDOTC( K-1, WORK, 1, A( 1, &
                         K ), 1 ) )
             A( K, K+1 ) = A( K, K+1 ) - &
                           CDOTC( K-1, A( 1, K ), 1, A( 1, K+1 ), 1 )
-            CALL CCOPY( K-1, A( 1, K+1 ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, K-1, -CONE, A, LDA, WORK, 1, CZERO, &
+            WORK(1:K-1) = A(1:K-1,K+1)
+            CALL CHEMV( UPLO, K-1, -(1.0E+0,0.0E+0), A, LDA, WORK, 1, (0.0E+0,0.0E+0), &
                         A( 1, K+1 ), 1 )
             A( K+1, K+1 ) = A( K+1, K+1 ) - &
-                            REAL( CDOTC( K-1, WORK, 1, A( 1, K+1 ), &
-                            1 ) )
+                            REAL( CDOTC( K-1, WORK, 1, A( 1, K+1 ), 1 ) )
          END IF
          KSTEP = 2
       END IF
@@ -285,14 +270,15 @@
          KP = IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, K ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) THEN
+               A_TMP(1:KP-1) = A(1:KP-1,K)
+               A(1:KP-1,K) = A(1:KP-1,KP)
+               A(1:KP-1,KP) = A_TMP(1:KP-1)
+            ENDIF
 !
-            DO J = KP + 1, K - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-            ENDDO
+            A_TMP(1:K-KP-1) = CONJG(A(KP+1:K-1,K))
+            A(KP+1:K-1,K) = CONJG(A(KP,KP+1:K-1))
+            A(KP,KP+1:K-1) = A_TMP(1:K-KP-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -310,14 +296,15 @@
          KP = -IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, K ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) THEN
+               A_TMP(1:KP-1) = A(1:KP-1,K)
+               A(1:KP-1,K) = A(1:KP-1,KP)
+               A(1:KP-1,KP) = A_TMP(1:KP-1)
+            ENDIF
 !
-            DO J = KP + 1, K - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-            ENDDO
+            A_TMP(1:K-KP-1) = CONJG(A(KP+1:K-1,K))
+            A(KP+1:K-1,K) = CONJG(A(KP,KP+1:K-1))
+            A(KP,KP+1:K-1) = A_TMP(1:K-KP-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -336,14 +323,15 @@
          KP = -IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, K ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) THEN
+               A_TMP(1:KP-1) = A(1:KP-1,K)
+               A(1:KP-1,K) = A(1:KP-1,KP)
+               A(1:KP-1,KP) = A_TMP(1:KP-1)
+            ENDIF
 !
-            DO J = KP + 1, K - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-            ENDDO
+            A_TMP(1:K-KP-1) = CONJG(A(KP+1:K-1,K))
+            A(KP+1:K-1,K) = CONJG(A(KP,KP+1:K-1))
+            A(KP,KP+1:K-1) = A_TMP(1:K-KP-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -369,8 +357,7 @@
 !
 !        If K < 1, exit from loop.
 !
-      IF( K < 1 ) &
-         GO TO 120
+      IF( K < 1 ) GO TO 120
 !
       IF( IPIV( K ) > 0 ) THEN
 !
@@ -378,16 +365,15 @@
 !
 !           Invert the diagonal block.
 !
-         A( K, K ) = ONE / REAL( A( K, K ) )
+         A( K, K ) = 1.0E+0 / REAL( A( K, K ) )
 !
 !           Compute column K of the inverse.
 !
          IF( K < N ) THEN
-            CALL CCOPY( N-K, A( K+1, K ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, N-K, -CONE, A( K+1, K+1 ), LDA, WORK, &
-                        1, CZERO, A( K+1, K ), 1 )
-            A( K, K ) = A( K, K ) - REAL( CDOTC( N-K, WORK, 1, &
-                        A( K+1, K ), 1 ) )
+            WORK(1:N-K) = A(K+1:N,K)
+            CALL CHEMV( UPLO, N-K, -(1.0E+0,0.0E+0), A( K+1, K+1 ), LDA, WORK, &
+                        1, (0.0E+0,0.0E+0), A( K+1, K ), 1 )
+            A( K, K ) = A( K, K ) - REAL( CDOTC( N-K, WORK, 1, A( K+1, K ), 1 ) )
          END IF
          KSTEP = 1
       ELSE
@@ -400,7 +386,7 @@
          AK = REAL( A( K-1, K-1 ) ) / T
          AKP1 = REAL( A( K, K ) ) / T
          AKKP1 = A( K, K-1 ) / T
-         D = T*( AK*AKP1-ONE )
+         D = T*( AK*AKP1-1.0E+0 )
          A( K-1, K-1 ) = AKP1 / D
          A( K, K ) = AK / D
          A( K, K-1 ) = -AKKP1 / D
@@ -408,20 +394,18 @@
 !           Compute columns K-1 and K of the inverse.
 !
          IF( K < N ) THEN
-            CALL CCOPY( N-K, A( K+1, K ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, N-K, -CONE, A( K+1, K+1 ), LDA, WORK, &
-                        1, CZERO, A( K+1, K ), 1 )
+            WORK(1:N-K) = A(K+1:N,K)
+            CALL CHEMV( UPLO, N-K, -(1.0E+0,0.0E+0), A( K+1, K+1 ), LDA, WORK, &
+                        1, (0.0E+0,0.0E+0), A( K+1, K ), 1 )
             A( K, K ) = A( K, K ) - REAL( CDOTC( N-K, WORK, 1, &
                         A( K+1, K ), 1 ) )
             A( K, K-1 ) = A( K, K-1 ) - &
-                          CDOTC( N-K, A( K+1, K ), 1, A( K+1, K-1 ), &
-                          1 )
-            CALL CCOPY( N-K, A( K+1, K-1 ), 1, WORK, 1 )
-            CALL CHEMV( UPLO, N-K, -CONE, A( K+1, K+1 ), LDA, WORK, &
-                        1, CZERO, A( K+1, K-1 ), 1 )
+                          CDOTC( N-K, A( K+1, K ), 1, A( K+1, K-1 ), 1 )
+            WORK(1:N-K) = A(K+1:N,K-1)
+            CALL CHEMV( UPLO, N-K, -(1.0E+0,0.0E+0), A( K+1, K+1 ), LDA, WORK, &
+                        1, (0.0E+0,0.0E+0), A( K+1, K-1 ), 1 )
             A( K-1, K-1 ) = A( K-1, K-1 ) - &
-                            REAL( CDOTC( N-K, WORK, 1, A( K+1, K-1 ), &
-                            1 ) )
+                            REAL( CDOTC( N-K, WORK, 1, A( K+1, K-1 ), 1 ) )
          END IF
          KSTEP = 2
       END IF
@@ -434,14 +418,15 @@
          KP = IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, K ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) THEN
+               A_TMP(1:N-KP) = A(KP+1:N,K)
+               A(KP+1:N,K) = A(KP+1:N,KP)
+               A(KP+1:N,KP) = A_TMP(1:N-KP)
+            ENDIF
 !
-            DO J = K + 1, KP - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-            ENDDO
+            A_TMP(1:KP-K-1) = CONJG(A(K+1:KP-1,K))
+            A(K+1:KP-1,K) = CONJG(A(KP,K+1:KP-1))
+            A(KP,K+1:KP-1) = A_TMP(1:KP-K-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -459,14 +444,15 @@
          KP = -IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, K ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) THEN
+               A_TMP(1:N-KP) = A(KP+1:N,K)
+               A(KP+1:N,K) = A(KP+1:N,KP)
+               A(KP+1:N,KP) = A_TMP(1:N-KP)
+            ENDIF
 !
-            DO J = K + 1, KP - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-              ENDDO
+            A_TMP(1:KP-K-1) = CONJG(A(K+1:KP-1,K))
+            A(K+1:KP-1,K) = CONJG(A(KP,K+1:KP-1))
+            A(KP,K+1:KP-1) = A_TMP(1:KP-K-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -485,14 +471,15 @@
          KP = -IPIV( K )
          IF( KP /= K ) THEN
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, K ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) THEN
+               A_TMP(1:N-KP) = A(KP+1:N,K)
+               A(KP+1:N,K) = A(KP+1:N,KP)
+               A(KP+1:N,KP) = A_TMP(1:N-KP)
+            ENDIF
 !
-            DO J = K + 1, KP - 1
-               TEMP = CONJG( A( J, K ) )
-               A( J, K ) = CONJG( A( KP, J ) )
-               A( KP, J ) = TEMP
-              ENDDO
+            A_TMP(1:KP-K-1) = CONJG(A(K+1:KP-1,K))
+            A(K+1:KP-1,K) = CONJG(A(KP,K+1:KP-1))
+            A(KP,K+1:KP-1) = A_TMP(1:KP-K-1)
 !
             A( KP, K ) = CONJG( A( KP, K ) )
 !
@@ -512,5 +499,4 @@
 !     End of CHETRI_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 
