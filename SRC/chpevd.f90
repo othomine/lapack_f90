@@ -208,12 +208,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WANTZ
@@ -228,11 +222,7 @@
    EXTERNAL           LSAME, CLANHP, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CHPTRD, CSSCAL, CSTEDC, CUPMTR, SSCAL, SSTERF, &
-                      XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          SQRT
+   EXTERNAL           CHPTRD, CSTEDC, CUPMTR, SSTERF, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -291,13 +281,11 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( N == 1 ) THEN
       W( 1 ) = REAL( AP( 1 ) )
-      IF( WANTZ ) &
-         Z( 1, 1 ) = CONE
+      IF( WANTZ ) Z( 1, 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -306,7 +294,7 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN = SQRT( SMLNUM )
    RMAX = SQRT( BIGNUM )
 !
@@ -314,16 +302,14 @@
 !
    ANRM = CLANHP( 'M', UPLO, N, AP, RWORK )
    ISCALE = 0
-   IF( ANRM > ZERO .AND. ANRM < RMIN ) THEN
+   IF( ANRM > 0.0E+0 .AND. ANRM < RMIN ) THEN
       ISCALE = 1
       SIGMA = RMIN / ANRM
    ELSE IF( ANRM > RMAX ) THEN
       ISCALE = 1
       SIGMA = RMAX / ANRM
    END IF
-   IF( ISCALE == 1 ) THEN
-      CALL CSSCAL( ( N*( N+1 ) ) / 2, SIGMA, AP, 1 )
-   END IF
+   IF( ISCALE == 1 ) AP(1:N*(N+1)/2) = SIGMA*AP(1:N*(N+1)/2)
 !
 !     Call CHPTRD to reduce Hermitian packed matrix to tridiagonal form.
 !
@@ -333,8 +319,7 @@
    INDWRK = INDTAU + N
    LLWRK = LWORK - INDWRK + 1
    LLRWK = LRWORK - INDRWK + 1
-   CALL CHPTRD( UPLO, N, AP, W, RWORK( INDE ), WORK( INDTAU ), &
-                IINFO )
+   CALL CHPTRD( UPLO, N, AP, W, RWORK( INDE ), WORK( INDTAU ), IINFO )
 !
 !     For eigenvalues only, call SSTERF.  For eigenvectors, first call
 !     CUPGTR to generate the orthogonal matrix, then call CSTEDC.
@@ -343,8 +328,7 @@
       CALL SSTERF( N, W, RWORK( INDE ), INFO )
    ELSE
       CALL CSTEDC( 'I', N, W, RWORK( INDE ), Z, LDZ, WORK( INDWRK ), &
-                   LLWRK, RWORK( INDRWK ), LLRWK, IWORK, LIWORK, &
-                   INFO )
+                   LLWRK, RWORK( INDRWK ), LLRWK, IWORK, LIWORK, INFO )
       CALL CUPMTR( 'L', UPLO, 'N', N, N, AP, WORK( INDTAU ), Z, LDZ, &
                    WORK( INDWRK ), IINFO )
    END IF
@@ -357,7 +341,7 @@
       ELSE
          IMAX = INFO - 1
       END IF
-      CALL SSCAL( IMAX, ONE / SIGMA, W, 1 )
+      W(1:IMAX) = W(1:IMAX)/SIGMA
    END IF
 !
    WORK( 1 ) = LWMIN
@@ -368,5 +352,3 @@
 !     End of CHPEVD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -261,12 +261,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ) )
-   REAL               RZERO
-   PARAMETER          ( RZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BOTHV, FROMQR, LEFTV, NOINIT, RIGHTV
@@ -281,9 +275,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLAEIN, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -306,11 +297,7 @@
 !     Set M to the number of columns required to store the selected
 !     eigenvectors.
 !
-   M = 0
-   DO K = 1, N
-      IF( SELECT( K ) ) &
-         M = M + 1
-   ENDDO
+   M = COUNT(SELECT(1:N))
 !
    INFO = 0
    IF( .NOT.RIGHTV .AND. .NOT.LEFTV ) THEN
@@ -337,8 +324,7 @@
 !
 !     Quick return if possible.
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Set machine-dependent constants.
 !
@@ -376,17 +362,13 @@
 !              the submatrix H(1:KR,1:KR) for a right eigenvector.
 !
             DO I = K, KL + 1, -1
-               IF( H( I, I-1 ) == ZERO ) &
-                  GO TO 30
+               IF( H( I, I-1 ) == (0.0E+0,0.0E+0) ) EXIT
             ENDDO
-30          CONTINUE
             KL = I
             IF( K > KR ) THEN
                DO I = K, N - 1
-                  IF( H( I+1, I ) == ZERO ) &
-                     GO TO 50
+                  IF( H( I+1, I ) == (0.0E+0,0.0E+0) ) EXIT
                ENDDO
-50             CONTINUE
                KR = I
             END IF
          END IF
@@ -401,7 +383,7 @@
             IF( SISNAN( HNORM ) ) THEN
                INFO = -6
                RETURN
-            ELSE IF( (HNORM > RZERO) ) THEN
+            ELSE IF( (HNORM > 0.0E+0) ) THEN
                EPS3 = HNORM*ULP
             ELSE
                EPS3 = SMLNUM
@@ -436,7 +418,7 @@
                IFAILL( KS ) = 0
             END IF
             DO I = 1, KL - 1
-               VL( I, KS ) = ZERO
+               VL( I, KS ) = (0.0E+0,0.0E+0)
             ENDDO
          END IF
          IF( RIGHTV ) THEN
@@ -451,9 +433,7 @@
             ELSE
                IFAILR( KS ) = 0
             END IF
-            DO I = KR + 1, N
-               VR( I, KS ) = ZERO
-            ENDDO
+            VR(KR+1:N, KS ) = (0.0E+0,0.0E+0)
          END IF
          KS = KS + 1
       END IF
@@ -464,5 +444,3 @@
 !     End of CHSEIN
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

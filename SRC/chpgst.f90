@@ -125,12 +125,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, HALF
-   PARAMETER          ( ONE = 1.0E+0, HALF = 0.5E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -139,11 +133,8 @@
    COMPLEX            CT
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CHPMV, CHPR2, CSSCAL, CTPMV, CTPSV, &
+   EXTERNAL           CHPMV, CHPR2, CTPMV, CTPSV, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -186,11 +177,10 @@
             BJJ = REAL( BP( JJ ) )
             CALL CTPSV( UPLO, 'Conjugate transpose', 'Non-unit', J, &
                         BP, AP( J1 ), 1 )
-            CALL CHPMV( UPLO, J-1, -CONE, AP, BP( J1 ), 1, CONE, &
+            CALL CHPMV( UPLO, J-1, -(1.0E+0,0.0E+0), AP, BP( J1 ), 1, (1.0E+0,0.0E+0), &
                         AP( J1 ), 1 )
-            CALL CSSCAL( J-1, ONE / BJJ, AP( J1 ), 1 )
-            AP( JJ ) = ( AP( JJ )-CDOTC( J-1, AP( J1 ), 1, BP( J1 ), &
-                       1 ) ) / BJJ
+            AP(J1:J1+J-2) = AP(J1:J1+J-2)/BJJ
+            AP( JJ ) = ( AP( JJ )-CDOTC( J-1, AP( J1 ), 1, BP( J1 ), 1 ) ) / BJJ
          ENDDO
       ELSE
 !
@@ -209,12 +199,12 @@
             AKK = AKK / BKK**2
             AP( KK ) = AKK
             IF( K < N ) THEN
-               CALL CSSCAL( N-K, ONE / BKK, AP( KK+1 ), 1 )
-               CT = -HALF*AKK
-               CALL CAXPY( N-K, CT, BP( KK+1 ), 1, AP( KK+1 ), 1 )
-               CALL CHPR2( UPLO, N-K, -CONE, AP( KK+1 ), 1, &
+               AP(KK+1:KK+N-K) = AP(KK+1:KK+N-K)/BKK
+               CT = -0.5E+0*AKK
+               AP(KK+1:KK+N-K) = AP(KK+1:KK+N-K) + CT*BP(KK+1:KK+N-K)
+               CALL CHPR2( UPLO, N-K, -(1.0E+0,0.0E+0), AP( KK+1 ), 1, &
                            BP( KK+1 ), 1, AP( K1K1 ) )
-               CALL CAXPY( N-K, CT, BP( KK+1 ), 1, AP( KK+1 ), 1 )
+               AP(KK+1:KK+N-K) = AP(KK+1:KK+N-K) + CT*BP(KK+1:KK+N-K)
                CALL CTPSV( UPLO, 'No transpose', 'Non-unit', N-K, &
                            BP( K1K1 ), AP( KK+1 ), 1 )
             END IF
@@ -239,12 +229,12 @@
             BKK = REAL( BP( KK ) )
             CALL CTPMV( UPLO, 'No transpose', 'Non-unit', K-1, BP, &
                         AP( K1 ), 1 )
-            CT = HALF*AKK
-            CALL CAXPY( K-1, CT, BP( K1 ), 1, AP( K1 ), 1 )
-            CALL CHPR2( UPLO, K-1, CONE, AP( K1 ), 1, BP( K1 ), 1, &
+            CT = 0.5E+0*AKK
+            AP(K1:K1+K-2) = AP(K1:K1+K-2) + CT*BP(K1:K1+K-2)
+            CALL CHPR2( UPLO, K-1, (1.0E+0,0.0E+0), AP( K1 ), 1, BP( K1 ), 1, &
                         AP )
-            CALL CAXPY( K-1, CT, BP( K1 ), 1, AP( K1 ), 1 )
-            CALL CSSCAL( K-1, BKK, AP( K1 ), 1 )
+            AP(K1:K1+K-2) = AP(K1:K1+K-2) + CT*BP(K1:K1+K-2)
+            AP(K1:K1+K-2) = BKK*AP(K1:K1+K-2)
             AP( KK ) = AKK*BKK**2
          ENDDO
       ELSE
@@ -263,9 +253,9 @@
             BJJ = REAL( BP( JJ ) )
             AP( JJ ) = AJJ*BJJ + CDOTC( N-J, AP( JJ+1 ), 1, &
                        BP( JJ+1 ), 1 )
-            CALL CSSCAL( N-J, BJJ, AP( JJ+1 ), 1 )
-            CALL CHPMV( UPLO, N-J, CONE, AP( J1J1 ), BP( JJ+1 ), 1, &
-                        CONE, AP( JJ+1 ), 1 )
+            AP(JJ+1:JJ+N-J) = BJJ*AP(JJ+1:JJ+N-J)
+            CALL CHPMV( UPLO, N-J, (1.0E+0,0.0E+0), AP( J1J1 ), BP( JJ+1 ), 1, &
+                        (1.0E+0,0.0E+0), AP( JJ+1 ), 1 )
             CALL CTPMV( UPLO, 'Conjugate transpose', 'Non-unit', &
                         N-J+1, BP( JJ ), AP( JJ ), 1 )
             JJ = J1J1
@@ -277,5 +267,3 @@
 !     End of CHPGST
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

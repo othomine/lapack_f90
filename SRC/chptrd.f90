@@ -164,12 +164,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO, HALF
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ), &
-                      HALF = ( 0.5E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -177,15 +171,12 @@
    COMPLEX            ALPHA, TAUI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CHPMV, CHPR2, CLARFG, XERBLA
+   EXTERNAL           CHPMV, CHPR2, CLARFG, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    COMPLEX            CDOTC
    EXTERNAL           LSAME, CDOTC
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -205,8 +196,7 @@
 !
 !     Quick return if possible
 !
-   IF( N <= 0 ) &
-      RETURN
+   IF( N <= 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -224,26 +214,26 @@
          CALL CLARFG( I, ALPHA, AP( I1 ), 1, TAUI )
          E( I ) = REAL( ALPHA )
 !
-         IF( TAUI /= ZERO ) THEN
+         IF( TAUI /= (0.0E+0,0.0E+0) ) THEN
 !
 !              Apply H(i) from both sides to A(1:i,1:i)
 !
-            AP( I1+I-1 ) = ONE
+            AP( I1+I-1 ) = (1.0E+0,0.0E+0)
 !
 !              Compute  y := tau * A * v  storing y in TAU(1:i)
 !
-            CALL CHPMV( UPLO, I, TAUI, AP, AP( I1 ), 1, ZERO, TAU, &
+            CALL CHPMV( UPLO, I, TAUI, AP, AP( I1 ), 1, (0.0E+0,0.0E+0), TAU, &
                         1 )
 !
 !              Compute  w := y - 1/2 * tau * (y**H *v) * v
 !
-            ALPHA = -HALF*TAUI*CDOTC( I, TAU, 1, AP( I1 ), 1 )
-            CALL CAXPY( I, ALPHA, AP( I1 ), 1, TAU, 1 )
+            ALPHA = -(0.5E+0,0.0E+0)*TAUI*CDOTC( I, TAU, 1, AP( I1 ), 1 )
+            TAU(1:I) = TAU(1:I) + ALPHA*AP(I1:I1+I-1)
 !
 !              Apply the transformation as a rank-2 update:
 !                 A := A - v * w**H - w * v**H
 !
-            CALL CHPR2( UPLO, I, -ONE, AP( I1 ), 1, TAU, 1, AP )
+            CALL CHPR2( UPLO, I, -(1.0E+0,0.0E+0), AP( I1 ), 1, TAU, 1, AP )
 !
          END IF
          AP( I1+I-1 ) = E( I )
@@ -269,28 +259,25 @@
          CALL CLARFG( N-I, ALPHA, AP( II+2 ), 1, TAUI )
          E( I ) = REAL( ALPHA )
 !
-         IF( TAUI /= ZERO ) THEN
+         IF( TAUI /= (0.0E+0,0.0E+0) ) THEN
 !
 !              Apply H(i) from both sides to A(i+1:n,i+1:n)
 !
-            AP( II+1 ) = ONE
+            AP( II+1 ) = (1.0E+0,0.0E+0)
 !
 !              Compute  y := tau * A * v  storing y in TAU(i:n-1)
 !
-            CALL CHPMV( UPLO, N-I, TAUI, AP( I1I1 ), AP( II+1 ), 1, &
-                        ZERO, TAU( I ), 1 )
+            CALL CHPMV( UPLO, N-I, TAUI, AP( I1I1 ), AP( II+1 ), 1, (0.0E+0,0.0E+0), TAU( I ), 1 )
 !
 !              Compute  w := y - 1/2 * tau * (y**H *v) * v
 !
-            ALPHA = -HALF*TAUI*CDOTC( N-I, TAU( I ), 1, AP( II+1 ), &
-                    1 )
-            CALL CAXPY( N-I, ALPHA, AP( II+1 ), 1, TAU( I ), 1 )
+            ALPHA = -(0.5E+0,0.0E+0)*TAUI*CDOTC( N-I, TAU( I ), 1, AP( II+1 ), 1 )
+            TAU(I:N-1) = TAU(I:N-1) + ALPHA*AP(II+1:II+N-I)
 !
 !              Apply the transformation as a rank-2 update:
 !                 A := A - v * w**H - w * v**H
 !
-            CALL CHPR2( UPLO, N-I, -ONE, AP( II+1 ), 1, TAU( I ), 1, &
-                        AP( I1I1 ) )
+            CALL CHPR2( UPLO, N-I, -(1.0E+0,0.0E+0), AP( II+1 ), 1, TAU( I ), 1, AP( I1I1 ) )
 !
          END IF
          AP( II+1 ) = E( I )
@@ -306,5 +293,3 @@
 !     End of CHPTRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -293,10 +293,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOFACT
@@ -308,11 +304,8 @@
    EXTERNAL           LSAME, CLANHP, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CHPCON, CHPRFS, CHPTRF, CHPTRS, CLACPY, &
+   EXTERNAL           CHPCON, CHPRFS, CHPTRF, CHPTRS, CLACPY, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -349,7 +342,7 @@
 !        Return if INFO is non-zero.
 !
       IF( INFO > 0 )THEN
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -364,7 +357,7 @@
 !
 !     Compute the solution vectors X.
 !
-   CALL CLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL CHPTRS( UPLO, N, NRHS, AFP, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solutions and
@@ -375,13 +368,10 @@
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < SLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < SLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    RETURN
 !
 !     End of CHPSVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -328,11 +328,6 @@
 !     .    deflation window.  ====
    INTEGER            NL
    PARAMETER          ( NL = 49 )
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0e0, 0.0e0 ), &
-                      ONE = ( 1.0e0, 0.0e0 ) )
-   REAL               RZERO
-   PARAMETER          ( RZERO = 0.0e0 )
 !     ..
 !     .. Local Arrays ..
    COMPLEX            HL( NL, NL ), WORKL( NL )
@@ -347,10 +342,7 @@
    EXTERNAL           ILAENV, LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLACPY, CLAHQR, CLAQR0, CLASET, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, MAX, MIN, REAL
+   EXTERNAL           CLACPY, CLAHQR, CLAQR0, CLASET, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -359,7 +351,7 @@
    WANTT = LSAME( JOB, 'S' )
    INITZ = LSAME( COMPZ, 'I' )
    WANTZ = INITZ .OR. LSAME( COMPZ, 'V' )
-   WORK( 1 ) = CMPLX( REAL( MAX( 1, N ) ), RZERO )
+   WORK( 1 ) = CMPLX( REAL( MAX( 1, N ) ), 0.0E+0 )
    LQUERY = LWORK == -1
 !
    INFO = 0
@@ -403,22 +395,19 @@
 !        ==== Ensure reported workspace size is backward-compatible with
 !        .    previous LAPACK versions. ====
       WORK( 1 ) = CMPLX( MAX( REAL( WORK( 1 ) ), REAL( MAX( 1, &
-                  N ) ) ), RZERO )
+                  N ) ) ), 0.0E+0 )
       RETURN
 !
    ELSE
 !
 !        ==== copy eigenvalues isolated by CGEBAL ====
 !
-      IF( ILO > 1 ) &
-         CALL CCOPY( ILO-1, H, LDH+1, W, 1 )
-      IF( IHI < N ) &
-         CALL CCOPY( N-IHI, H( IHI+1, IHI+1 ), LDH+1, W( IHI+1 ), 1 )
+      IF( ILO > 1 ) CALL CCOPY( ILO-1, H, LDH+1, W, 1 )
+      IF( IHI < N ) CALL CCOPY( N-IHI, H( IHI+1, IHI+1 ), LDH+1, W( IHI+1 ), 1 )
 !
 !        ==== Initialize Z, if requested ====
 !
-      IF( INITZ ) &
-         CALL CLASET( 'A', N, N, ZERO, ONE, Z, LDZ )
+      IF( INITZ ) CALL CLASET( 'A', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDZ )
 !
 !        ==== Quick return if possible ====
 !
@@ -429,8 +418,7 @@
 !
 !        ==== CLAHQR/CLAQR0 crossover point ====
 !
-      NMIN = ILAENV( 12, 'CHSEQR', JOB( : 1 ) // COMPZ( : 1 ), N, &
-             ILO, IHI, LWORK )
+      NMIN = ILAENV( 12, 'CHSEQR', JOB( : 1 ) // COMPZ( : 1 ), N, ILO, IHI, LWORK )
       NMIN = MAX( NTINY, NMIN )
 !
 !        ==== CLAQR0 for big matrices; CLAHQR for small ones ====
@@ -467,14 +455,12 @@
 !                 .    tiny matrices must be copied into a larger
 !                 .    array before calling CLAQR0. ====
 !
-               CALL CLACPY( 'A', N, N, H, LDH, HL, NL )
-               HL( N+1, N ) = ZERO
-               CALL CLASET( 'A', NL, NL-N, ZERO, ZERO, HL( 1, N+1 ), &
-                            NL )
+               HL(1:N,1:N) = H(1:N,1:N)
+               HL(N+1,N ) = (0.0E+0,0.0E+0)
+               HL(1:NL,N+1:NL) = (0.0E+0,0.0E+0)
                CALL CLAQR0( WANTT, WANTZ, NL, ILO, KBOT, HL, NL, W, &
                             ILO, IHI, Z, LDZ, WORKL, NL, INFO )
-               IF( WANTT .OR. INFO /= 0 ) &
-                  CALL CLACPY( 'A', N, N, HL, NL, H, LDH )
+               IF( WANTT .OR. INFO /= 0 ) H(1:N,1:N) = HL(1:N,1:N)
             END IF
          END IF
       END IF
@@ -482,17 +468,14 @@
 !        ==== Clear out the trash, if necessary. ====
 !
       IF( ( WANTT .OR. INFO /= 0 ) .AND. N > 2 ) &
-         CALL CLASET( 'L', N-2, N-2, ZERO, ZERO, H( 3, 1 ), LDH )
+         CALL CLASET( 'L', N-2, N-2, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), H( 3, 1 ), LDH )
 !
 !        ==== Ensure reported workspace size is backward-compatible with
 !        .    previous LAPACK versions. ====
 !
-      WORK( 1 ) = CMPLX( MAX( REAL( MAX( 1, N ) ), &
-                  REAL( WORK( 1 ) ) ), RZERO )
+      WORK( 1 ) = CMPLX( MAX( REAL( MAX( 1, N ) ), REAL( WORK( 1 ) ) ), 0.0E+0 )
    END IF
 !
 !     ==== End of CHSEQR ====
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

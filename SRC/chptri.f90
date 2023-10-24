@@ -122,18 +122,12 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE
-   COMPLEX            CONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, CONE = ( 1.0E+0, 0.0E+0 ), &
-                      ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            J, K, KC, KCNEXT, KP, KPC, KSTEP, KX, NPP
    REAL               AK, AKP1, D, T
-   COMPLEX            AKKP1, TEMP
+   COMPLEX            AKKP1, TEMP, AP_TMP(N*(N+1)/2)
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -141,10 +135,7 @@
    EXTERNAL           LSAME, CDOTC
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CHPMV, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, REAL
+   EXTERNAL           CHPMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -164,8 +155,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Check that the diagonal matrix D is nonsingular.
 !
@@ -175,8 +165,7 @@
 !
       KP = N*( N+1 ) / 2
       DO INFO = N, 1, -1
-         IF( IPIV( INFO ) > 0 .AND. AP( KP ) == ZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. AP( KP ) == (0.0E+0,0.0E+0) ) RETURN
          KP = KP - INFO
       ENDDO
    ELSE
@@ -185,8 +174,7 @@
 !
       KP = 1
       DO INFO = 1, N
-         IF( IPIV( INFO ) > 0 .AND. AP( KP ) == ZERO ) &
-            RETURN
+         IF( IPIV( INFO ) > 0 .AND. AP( KP ) == (0.0E+0,0.0E+0) ) RETURN
          KP = KP + N - INFO + 1
       ENDDO
    END IF
@@ -205,8 +193,7 @@
 !
 !        If K > N, exit from loop.
 !
-      IF( K > N ) &
-         GO TO 50
+      IF( K > N ) GO TO 50
 !
       KCNEXT = KC + K
       IF( IPIV( K ) > 0 ) THEN
@@ -215,16 +202,15 @@
 !
 !           Invert the diagonal block.
 !
-         AP( KC+K-1 ) = ONE / REAL( AP( KC+K-1 ) )
+         AP( KC+K-1 ) = 1.0E+0 / REAL( AP( KC+K-1 ) )
 !
 !           Compute column K of the inverse.
 !
          IF( K > 1 ) THEN
-            CALL CCOPY( K-1, AP( KC ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, K-1, -CONE, AP, WORK, 1, ZERO, &
+            WORK(1:K-1) = AP(KC:KC+K-2)
+            CALL CHPMV( UPLO, K-1, -(1.0E+0,0.0E+0), AP, WORK, 1, (0.0E+0,0.0E+0), &
                         AP( KC ), 1 )
-            AP( KC+K-1 ) = AP( KC+K-1 ) - &
-                           REAL( CDOTC( K-1, WORK, 1, AP( KC ), 1 ) )
+            AP( KC+K-1 ) = AP( KC+K-1 ) - REAL( CDOTC( K-1, WORK, 1, AP( KC ), 1 ) )
          END IF
          KSTEP = 1
       ELSE
@@ -237,7 +223,7 @@
          AK = REAL( AP( KC+K-1 ) ) / T
          AKP1 = REAL( AP( KCNEXT+K ) ) / T
          AKKP1 = AP( KCNEXT+K-1 ) / T
-         D = T*( AK*AKP1-ONE )
+         D = T*( AK*AKP1-1.0E+0 )
          AP( KC+K-1 ) = AKP1 / D
          AP( KCNEXT+K ) = AK / D
          AP( KCNEXT+K-1 ) = -AKKP1 / D
@@ -245,20 +231,18 @@
 !           Compute columns K and K+1 of the inverse.
 !
          IF( K > 1 ) THEN
-            CALL CCOPY( K-1, AP( KC ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, K-1, -CONE, AP, WORK, 1, ZERO, &
+            WORK(1:K-1) = AP(KC:KC+K-2)
+            CALL CHPMV( UPLO, K-1, -(1.0E+0,0.0E+0), AP, WORK, 1, (0.0E+0,0.0E+0), &
                         AP( KC ), 1 )
             AP( KC+K-1 ) = AP( KC+K-1 ) - &
                            REAL( CDOTC( K-1, WORK, 1, AP( KC ), 1 ) )
             AP( KCNEXT+K-1 ) = AP( KCNEXT+K-1 ) - &
-                               CDOTC( K-1, AP( KC ), 1, AP( KCNEXT ), &
-                               1 )
-            CALL CCOPY( K-1, AP( KCNEXT ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, K-1, -CONE, AP, WORK, 1, ZERO, &
+                               CDOTC( K-1, AP( KC ), 1, AP( KCNEXT ), 1 )
+            WORK(1:K-1) = AP(KCNEXT:KCNEXT+K-2)
+            CALL CHPMV( UPLO, K-1, -(1.0E+0,0.0E+0), AP, WORK, 1, (0.0E+0,0.0E+0), &
                         AP( KCNEXT ), 1 )
             AP( KCNEXT+K ) = AP( KCNEXT+K ) - &
-                             REAL( CDOTC( K-1, WORK, 1, AP( KCNEXT ), &
-                             1 ) )
+                             REAL( CDOTC( K-1, WORK, 1, AP( KCNEXT ), 1 ) )
          END IF
          KSTEP = 2
          KCNEXT = KCNEXT + K + 1
@@ -271,7 +255,9 @@
 !           submatrix A(1:k+1,1:k+1)
 !
          KPC = ( KP-1 )*KP / 2 + 1
-         CALL CSWAP( KP-1, AP( KC ), 1, AP( KPC ), 1 )
+         AP_TMP(1:KP-1) = AP(KC:KC+KP-2)
+         AP(KC:KC+KP-2) = AP(KPC:KPC+KP-2)
+         AP(KPC:KPC+KP-2) = AP_TMP(1:KP-1)
          KX = KPC + KP - 1
          DO J = KP + 1, K - 1
             KX = KX + J - 1
@@ -309,8 +295,7 @@
 !
 !        If K < 1, exit from loop.
 !
-      IF( K < 1 ) &
-         GO TO 80
+      IF( K < 1 ) GO TO 80
 !
       KCNEXT = KC - ( N-K+2 )
       IF( IPIV( K ) > 0 ) THEN
@@ -319,14 +304,14 @@
 !
 !           Invert the diagonal block.
 !
-         AP( KC ) = ONE / REAL( AP( KC ) )
+         AP( KC ) = 1.0E+0 / REAL( AP( KC ) )
 !
 !           Compute column K of the inverse.
 !
          IF( K < N ) THEN
-            CALL CCOPY( N-K, AP( KC+1 ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, N-K, -CONE, AP( KC+N-K+1 ), WORK, 1, &
-                        ZERO, AP( KC+1 ), 1 )
+            WORK(1:N-K) = AP(KC+1:KC+N-K)
+            CALL CHPMV( UPLO, N-K, -(1.0E+0,0.0E+0), AP( KC+N-K+1 ), WORK, 1, &
+                        (0.0E+0,0.0E+0), AP( KC+1 ), 1 )
             AP( KC ) = AP( KC ) - REAL( CDOTC( N-K, WORK, 1, &
                        AP( KC+1 ), 1 ) )
          END IF
@@ -341,7 +326,7 @@
          AK = REAL( AP( KCNEXT ) ) / T
          AKP1 = REAL( AP( KC ) ) / T
          AKKP1 = AP( KCNEXT+1 ) / T
-         D = T*( AK*AKP1-ONE )
+         D = T*( AK*AKP1-1.0E+0 )
          AP( KCNEXT ) = AKP1 / D
          AP( KC ) = AK / D
          AP( KCNEXT+1 ) = -AKKP1 / D
@@ -349,17 +334,17 @@
 !           Compute columns K-1 and K of the inverse.
 !
          IF( K < N ) THEN
-            CALL CCOPY( N-K, AP( KC+1 ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, N-K, -CONE, AP( KC+( N-K+1 ) ), WORK, &
-                        1, ZERO, AP( KC+1 ), 1 )
+            WORK(1:N-K) = AP(KC+1:KC+N-K)
+            CALL CHPMV( UPLO, N-K, -(1.0E+0,0.0E+0), AP( KC+( N-K+1 ) ), WORK, &
+                        1, (0.0E+0,0.0E+0), AP( KC+1 ), 1 )
             AP( KC ) = AP( KC ) - REAL( CDOTC( N-K, WORK, 1, &
                        AP( KC+1 ), 1 ) )
             AP( KCNEXT+1 ) = AP( KCNEXT+1 ) - &
                              CDOTC( N-K, AP( KC+1 ), 1, &
                              AP( KCNEXT+2 ), 1 )
-            CALL CCOPY( N-K, AP( KCNEXT+2 ), 1, WORK, 1 )
-            CALL CHPMV( UPLO, N-K, -CONE, AP( KC+( N-K+1 ) ), WORK, &
-                        1, ZERO, AP( KCNEXT+2 ), 1 )
+            WORK(1:N-K) = AP(KCNEXT+2:KCNEXT+1+N-K)
+            CALL CHPMV( UPLO, N-K, -(1.0E+0,0.0E+0), AP( KC+( N-K+1 ) ), WORK, &
+                        1, (0.0E+0,0.0E+0), AP( KCNEXT+2 ), 1 )
             AP( KCNEXT ) = AP( KCNEXT ) - &
                            REAL( CDOTC( N-K, WORK, 1, AP( KCNEXT+2 ), &
                            1 ) )
@@ -375,8 +360,11 @@
 !           submatrix A(k-1:n,k-1:n)
 !
          KPC = NPP - ( N-KP+1 )*( N-KP+2 ) / 2 + 1
-         IF( KP < N ) &
-            CALL CSWAP( N-KP, AP( KC+KP-K+1 ), 1, AP( KPC+1 ), 1 )
+         IF( KP < N ) THEN
+            AP_TMP(1:N-KP) = AP(KC+KP-K+1:KC-K+N)
+            AP(KC+KP-K+1:KC-K+N) = AP(KPC+1:KPC+N-KP)
+            AP(KPC+1:KPC+N-KP) = AP_TMP(1:N-KP)
+         ENDIF
          KX = KC + KP - K
          DO J = K + 1, KP - 1
             KX = KX + N - J + 1
@@ -406,5 +394,3 @@
 !     End of CHPTRI
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -299,15 +299,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               HALF
-   PARAMETER          ( HALF = 0.5E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILAZR2, ILAZRO, ILQ, ILSCHR, ILZ, LQUERY
@@ -318,7 +309,7 @@
                       C, SAFMIN, TEMP, TEMP2, TEMPR, ULP
    COMPLEX            ABI22, AD11, AD12, AD21, AD22, CTEMP, CTEMP2, &
                       CTEMP3, ESHIFT, S, SHIFT, SIGNBC, &
-                      U12, X, ABI12, Y
+                      U12, X, ABI12, Y, TMP_ROT( N )
 !     ..
 !     .. External Functions ..
    COMPLEX            CLADIV
@@ -327,10 +318,7 @@
    EXTERNAL           CLADIV, LSAME, CLANHS, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLARTG, CLASET, CROT, CSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, MIN, REAL, SQRT
+   EXTERNAL           CLARTG, CLASET, XERBLA
 !     ..
 !     .. Statement Functions ..
    REAL               ABS1
@@ -427,9 +415,9 @@
 !     Initialize Q and Z
 !
    IF( ICOMPQ == 3 ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Q, LDQ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, LDQ )
    IF( ICOMPZ == 3 ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Z, LDZ )
+      CALL CLASET( 'Full', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, LDZ )
 !
 !     Machine Constants
 !
@@ -440,8 +428,8 @@
    BNORM = CLANHS( 'F', IN, T( ILO, ILO ), LDT, RWORK )
    ATOL = MAX( SAFMIN, ULP*ANORM )
    BTOL = MAX( SAFMIN, ULP*BNORM )
-   ASCALE = ONE / MAX( SAFMIN, ANORM )
-   BSCALE = ONE / MAX( SAFMIN, BNORM )
+   ASCALE = 1.0E+0 / MAX( SAFMIN, ANORM )
+   BSCALE = 1.0E+0 / MAX( SAFMIN, BNORM )
 !
 !
 !     Set Eigenvalues IHI+1:N
@@ -452,15 +440,14 @@
          SIGNBC = CONJG( T( J, J ) / ABSB )
          T( J, J ) = ABSB
          IF( ILSCHR ) THEN
-            CALL CSCAL( J-1, SIGNBC, T( 1, J ), 1 )
-            CALL CSCAL( J, SIGNBC, H( 1, J ), 1 )
+            T(1:J-1,J) = SIGNBC*T(1:J-1,J)
+            H(1:J,J) = SIGNBC*H(1:J,J)
          ELSE
-            CALL CSCAL( 1, SIGNBC, H( J, J ), 1 )
+            H(J,J) = SIGNBC*H(J,J)
          END IF
-         IF( ILZ ) &
-            CALL CSCAL( N, SIGNBC, Z( 1, J ), 1 )
+         IF( ILZ ) Z(1:N,J) = SIGNBC*Z(1:N,J)
       ELSE
-         T( J, J ) = CZERO
+         T( J, J ) = (0.0E+0,0.0E+0)
       END IF
       ALPHA( J ) = H( J, J )
       BETA( J ) = T( J, J )
@@ -468,8 +455,7 @@
 !
 !     If IHI < ILO, skip QZ steps
 !
-   IF( IHI < ILO ) &
-      GO TO 190
+   IF( IHI < ILO ) GO TO 190
 !
 !     MAIN QZ ITERATION LOOP
 !
@@ -495,15 +481,14 @@
       ILASTM = IHI
    END IF
    IITER = 0
-   ESHIFT = CZERO
+   ESHIFT = (0.0E+0,0.0E+0)
    MAXIT = 30*( IHI-ILO+1 )
 !
    DO JITER = 1, MAXIT
 !
 !        Check for too many iterations.
 !
-      IF( JITER > MAXIT ) &
-         GO TO 180
+      IF( JITER > MAXIT ) GO TO 180
 !
 !        Split the matrix if possible.
 !
@@ -519,13 +504,13 @@
          IF( ABS1( H( ILAST, ILAST-1 ) ) <= MAX( SAFMIN, ULP*( &
             ABS1( H( ILAST, ILAST ) ) + ABS1( H( ILAST-1, ILAST-1 ) &
             ) ) ) ) THEN
-            H( ILAST, ILAST-1 ) = CZERO
+            H( ILAST, ILAST-1 ) = (0.0E+0,0.0E+0)
             GO TO 60
          END IF
       END IF
 !
       IF( ABS( T( ILAST, ILAST ) ) <= BTOL ) THEN
-         T( ILAST, ILAST ) = CZERO
+         T( ILAST, ILAST ) = (0.0E+0,0.0E+0)
          GO TO 50
       END IF
 !
@@ -541,7 +526,7 @@
             IF( ABS1( H( J, J-1 ) ) <= MAX( SAFMIN, ULP*( &
                ABS1( H( J, J ) ) + ABS1( H( J-1, J-1 ) ) &
                ) ) ) THEN
-               H( J, J-1 ) = CZERO
+               H( J, J-1 ) = (0.0E+0,0.0E+0)
                ILAZRO = .TRUE.
             ELSE
                ILAZRO = .FALSE.
@@ -551,7 +536,7 @@
 !           Test 2: for T(j,j)=0
 !
          IF( ABS( T( J, J ) ) < BTOL ) THEN
-            T( J, J ) = CZERO
+            T( J, J ) = (0.0E+0,0.0E+0)
 !
 !              Test 1a: Check for 2 consecutive small subdiagonals in A
 !
@@ -573,14 +558,20 @@
                   CTEMP = H( JCH, JCH )
                   CALL CLARTG( CTEMP, H( JCH+1, JCH ), C, S, &
                                H( JCH, JCH ) )
-                  H( JCH+1, JCH ) = CZERO
-                  CALL CROT( ILASTM-JCH, H( JCH, JCH+1 ), LDH, &
-                             H( JCH+1, JCH+1 ), LDH, C, S )
-                  CALL CROT( ILASTM-JCH, T( JCH, JCH+1 ), LDT, &
-                             T( JCH+1, JCH+1 ), LDT, C, S )
-                  IF( ILQ ) &
-                     CALL CROT( N, Q( 1, JCH ), 1, Q( 1, JCH+1 ), 1, &
-                                C, CONJG( S ) )
+                  H( JCH+1, JCH ) = (0.0E+0,0.0E+0)
+                  TMP_ROT(1:ILASTM-JCH) = C*H(JCH,JCH+1:ILASTM) + S*H(JCH+1,JCH+1:ILASTM)
+                  H(JCH+1,JCH+1:ILASTM) = C*H(JCH+1,JCH+1:ILASTM) - CONJG( S )*H(JCH,JCH+1:ILASTM)
+                  H(JCH,JCH+1:ILASTM) = TMP_ROT(1:ILASTM-JCH)
+!
+                  TMP_ROT(1:ILASTM-JCH) = C*T(JCH,JCH+1:ILASTM) + S*T(JCH+1,JCH+1:ILASTM)
+                  T(JCH+1,JCH+1:ILASTM) = C*T(JCH+1,JCH+1:ILASTM) - CONJG( S )*T(JCH,JCH+1:ILASTM)
+                  T(JCH,JCH+1:ILASTM) = TMP_ROT(1:ILASTM-JCH)
+!
+                  IF( ILQ ) THEN
+                    TMP_ROT(1:N) = C*Q(1:N,JCH) + CONJG(S)*Q(1:N,JCH+1)
+                    Q(1:N,JCH+1) = C*Q(1:N,JCH+1) - S*Q(1:N,JCH)
+                    Q(1:N,JCH) = TMP_ROT(1:N)
+                  ENDIF
                   IF( ILAZR2 ) &
                      H( JCH, JCH-1 ) = H( JCH, JCH-1 )*C
                   ILAZR2 = .FALSE.
@@ -592,7 +583,7 @@
                         GO TO 70
                      END IF
                   END IF
-                  T( JCH+1, JCH+1 ) = CZERO
+                  T( JCH+1, JCH+1 ) = (0.0E+0,0.0E+0)
                ENDDO
                GO TO 50
             ELSE
@@ -602,28 +593,38 @@
 !
                DO JCH = J, ILAST - 1
                   CTEMP = T( JCH, JCH+1 )
-                  CALL CLARTG( CTEMP, T( JCH+1, JCH+1 ), C, S, &
-                               T( JCH, JCH+1 ) )
-                  T( JCH+1, JCH+1 ) = CZERO
-                  IF( JCH < ILASTM-1 ) &
-                     CALL CROT( ILASTM-JCH-1, T( JCH, JCH+2 ), LDT, &
-                                T( JCH+1, JCH+2 ), LDT, C, S )
-                  CALL CROT( ILASTM-JCH+2, H( JCH, JCH-1 ), LDH, &
-                             H( JCH+1, JCH-1 ), LDH, C, S )
-                  IF( ILQ ) &
-                     CALL CROT( N, Q( 1, JCH ), 1, Q( 1, JCH+1 ), 1, &
-                                C, CONJG( S ) )
+                  CALL CLARTG( CTEMP, T( JCH+1, JCH+1 ), C, S, T( JCH, JCH+1 ) )
+                  T( JCH+1, JCH+1 ) = (0.0E+0,0.0E+0)
+                  IF( JCH < ILASTM-1 ) THEN
+                     TMP_ROT(1:ILASTM-JCH-1) = C*T(JCH,JCH+2:ILASTM) + S*T(JCH+1,JCH+2:ILASTM)
+                     T(JCH+1,JCH+2:ILASTM) = C*T(JCH+1,JCH+2:ILASTM) - CONJG( S )*T(JCH,JCH+2:ILASTM)
+                     T(JCH,JCH+2:ILASTM) = TMP_ROT(1:ILASTM-JCH-1)
+                  ENDIF
+                  TMP_ROT(1:ILASTM-JCH+2) = C*H(JCH,JCH-1:ILASTM) + S*H(JCH+1,JCH-1:ILASTM)
+                  H(JCH+1,JCH-1:ILASTM) = C*H(JCH+1,JCH-1:ILASTM) - CONJG( S )*H(JCH,JCH-1:ILASTM)
+                  H(JCH,JCH-1:ILASTM) = TMP_ROT(1:ILASTM-JCH+2)
+                  IF( ILQ ) THEN
+                     TMP_ROT(1:N) = C*Q(1:N,JCH) + CONJG(S)*Q(1:N,JCH+1)
+                     Q(1:N,JCH+1) = C*Q(1:N,JCH+1) - S*Q(1:N,JCH)
+                     Q(1:N,JCH) = TMP_ROT(1:N)
+                  ENDIF
                   CTEMP = H( JCH+1, JCH )
                   CALL CLARTG( CTEMP, H( JCH+1, JCH-1 ), C, S, &
                                H( JCH+1, JCH ) )
-                  H( JCH+1, JCH-1 ) = CZERO
-                  CALL CROT( JCH+1-IFRSTM, H( IFRSTM, JCH ), 1, &
-                             H( IFRSTM, JCH-1 ), 1, C, S )
-                  CALL CROT( JCH-IFRSTM, T( IFRSTM, JCH ), 1, &
-                             T( IFRSTM, JCH-1 ), 1, C, S )
-                  IF( ILZ ) &
-                     CALL CROT( N, Z( 1, JCH ), 1, Z( 1, JCH-1 ), 1, &
-                                C, S )
+                  H( JCH+1, JCH-1 ) = (0.0E+0,0.0E+0)
+                  TMP_ROT(1:JCH+1-IFRSTM) = C*H(IFRSTM:JCH,JCH) + S*H(IFRSTM:JCH,JCH-1)
+                  H(IFRSTM:JCH,JCH-1) = C*H(IFRSTM:JCH,JCH-1) - CONJG( S )*H(IFRSTM:JCH,JCH)
+                  H(IFRSTM:JCH,JCH) = TMP_ROT(1:JCH+1-IFRSTM)
+!
+                  TMP_ROT(1:JCH-IFRSTM) = C*T(IFRSTM:JCH-1,JCH) + S*T(IFRSTM:JCH-1,JCH-1)
+                  T(IFRSTM:JCH-1,JCH-1) = C*T(IFRSTM:JCH-1,JCH-1) - CONJG( S )*T(IFRSTM:JCH-1,JCH)
+                  T(IFRSTM:JCH-1,JCH) = TMP_ROT(1:JCH-IFRSTM)
+
+                  IF( ILZ ) THEN
+                     TMP_ROT(1:N) = C*Z(1:N,JCH) + S*Z(1:N,JCH-1)
+                     Z(1:N,JCH-1) = C*Z(1:N,JCH-1) - CONJG(S)*Z(1:N,JCH)
+                     Z(1:N,JCH) = TMP_ROT(1:N)
+                  ENDIF
                ENDDO
                GO TO 50
             END IF
@@ -651,13 +652,20 @@
       CTEMP = H( ILAST, ILAST )
       CALL CLARTG( CTEMP, H( ILAST, ILAST-1 ), C, S, &
                    H( ILAST, ILAST ) )
-      H( ILAST, ILAST-1 ) = CZERO
-      CALL CROT( ILAST-IFRSTM, H( IFRSTM, ILAST ), 1, &
-                 H( IFRSTM, ILAST-1 ), 1, C, S )
-      CALL CROT( ILAST-IFRSTM, T( IFRSTM, ILAST ), 1, &
-                 T( IFRSTM, ILAST-1 ), 1, C, S )
-      IF( ILZ ) &
-         CALL CROT( N, Z( 1, ILAST ), 1, Z( 1, ILAST-1 ), 1, C, S )
+      H( ILAST, ILAST-1 ) = (0.0E+0,0.0E+0)
+      TMP_ROT(1:ILAST-IFRSTM) = C*H(IFRSTM:ILAST-1,ILAST) + S*H(IFRSTM:ILAST-1,ILAST-1)
+      H(IFRSTM:ILAST-1,ILAST-1) = C*H(IFRSTM:ILAST-1,ILAST-1) - CONJG( S )*H(IFRSTM:ILAST-1,ILAST)
+      H(IFRSTM:ILAST-1,ILAST) = TMP_ROT(1:ILAST-IFRSTM)
+!
+      TMP_ROT(1:ILAST-IFRSTM) = C*T(IFRSTM:ILAST-1,ILAST) + S*T(IFRSTM:ILAST-1,ILAST-1)
+      T(IFRSTM:ILAST-1,ILAST-1) = C*T(IFRSTM:ILAST-1,ILAST-1) - CONJG( S )*T(IFRSTM:ILAST-1,ILAST)
+      T(IFRSTM:ILAST-1,ILAST) = TMP_ROT(1:ILAST-IFRSTM)
+     
+      IF( ILZ ) THEN
+         TMP_ROT(1:N) = C*Z(1:N,ILAST) + S*Z(1:N,ILAST-1)
+         Z(1:N,ILAST-1) = C*Z(1:N,ILAST-1) - CONJG( S )*Z(1:N,ILAST)
+         Z(1:N,ILAST) = TMP_ROT(1:N)
+      ENDIF
 !
 !        H(ILAST,ILAST-1)=0 -- Standardize B, set ALPHA and BETA
 !
@@ -667,16 +675,14 @@
          SIGNBC = CONJG( T( ILAST, ILAST ) / ABSB )
          T( ILAST, ILAST ) = ABSB
          IF( ILSCHR ) THEN
-            CALL CSCAL( ILAST-IFRSTM, SIGNBC, T( IFRSTM, ILAST ), 1 )
-            CALL CSCAL( ILAST+1-IFRSTM, SIGNBC, H( IFRSTM, ILAST ), &
-                        1 )
+            T(IFRSTM:ILAST-1,ILAST) = SIGNBC*T(IFRSTM:ILAST-1,ILAST)
+            H(IFRSTM:ILAST,ILAST) = SIGNBC*H(IFRSTM:ILAST,ILAST)
          ELSE
-            CALL CSCAL( 1, SIGNBC, H( ILAST, ILAST ), 1 )
+            H(ILAST,ILAST) = SIGNBC*H(ILAST,ILAST)
          END IF
-         IF( ILZ ) &
-            CALL CSCAL( N, SIGNBC, Z( 1, ILAST ), 1 )
+         IF( ILZ ) Z(1:N,ILAST) = SIGNBC*Z(1:N,ILAST)
       ELSE
-         T( ILAST, ILAST ) = CZERO
+         T( ILAST, ILAST ) = (0.0E+0,0.0E+0)
       END IF
       ALPHA( ILAST ) = H( ILAST, ILAST )
       BETA( ILAST ) = T( ILAST, ILAST )
@@ -684,17 +690,15 @@
 !        Go to next block -- exit if finished.
 !
       ILAST = ILAST - 1
-      IF( ILAST < ILO ) &
-         GO TO 190
+      IF( ILAST < ILO ) GO TO 190
 !
 !        Reset counters
 !
       IITER = 0
-      ESHIFT = CZERO
+      ESHIFT = (0.0E+0,0.0E+0)
       IF( .NOT.ILSCHR ) THEN
          ILASTM = ILAST
-         IF( IFRSTM > ILAST ) &
-            IFRSTM = ILO
+         IF( IFRSTM > ILAST ) IFRSTM = ILO
       END IF
       GO TO 160
 !
@@ -705,9 +709,7 @@
 !
 70    CONTINUE
       IITER = IITER + 1
-      IF( .NOT.ILSCHR ) THEN
-         IFRSTM = IFIRST
-      END IF
+      IF( .NOT.ILSCHR ) IFRSTM = IFIRST
 !
 !        Compute the Shift.
 !
@@ -724,30 +726,25 @@
 !           We factor B as U*D, where U has unit diagonals, and
 !           compute (A*inv(D))*inv(U).
 !
-         U12 = ( BSCALE*T( ILAST-1, ILAST ) ) / &
-               ( BSCALE*T( ILAST, ILAST ) )
-         AD11 = ( ASCALE*H( ILAST-1, ILAST-1 ) ) / &
-                ( BSCALE*T( ILAST-1, ILAST-1 ) )
-         AD21 = ( ASCALE*H( ILAST, ILAST-1 ) ) / &
-                ( BSCALE*T( ILAST-1, ILAST-1 ) )
-         AD12 = ( ASCALE*H( ILAST-1, ILAST ) ) / &
-                ( BSCALE*T( ILAST, ILAST ) )
-         AD22 = ( ASCALE*H( ILAST, ILAST ) ) / &
-                ( BSCALE*T( ILAST, ILAST ) )
+         U12 = ( BSCALE*T( ILAST-1, ILAST ) ) / ( BSCALE*T( ILAST, ILAST ) )
+         AD11 = ( ASCALE*H( ILAST-1, ILAST-1 ) ) / ( BSCALE*T( ILAST-1, ILAST-1 ) )
+         AD21 = ( ASCALE*H( ILAST, ILAST-1 ) ) / ( BSCALE*T( ILAST-1, ILAST-1 ) )
+         AD12 = ( ASCALE*H( ILAST-1, ILAST ) ) / ( BSCALE*T( ILAST, ILAST ) )
+         AD22 = ( ASCALE*H( ILAST, ILAST ) ) / ( BSCALE*T( ILAST, ILAST ) )
          ABI22 = AD22 - U12*AD21
          ABI12 = AD12 - U12*AD11
 !
          SHIFT = ABI22
          CTEMP = SQRT( ABI12 )*SQRT( AD21 )
          TEMP = ABS1( CTEMP )
-         IF( CTEMP /= ZERO ) THEN
-            X = HALF*( AD11-SHIFT )
+         IF( CTEMP /= 0.0E+0 ) THEN
+            X = 0.5E+0*( AD11-SHIFT )
             TEMP2 = ABS1( X )
             TEMP = MAX( TEMP, ABS1( X ) )
             Y = TEMP*SQRT( ( X / TEMP )**2+( CTEMP / TEMP )**2 )
-            IF( TEMP2 > ZERO ) THEN
+            IF( TEMP2 > 0.0E+0 ) THEN
                IF( REAL( X / TEMP2 )*REAL( Y )+ &
-                   AIMAG( X / TEMP2 )*AIMAG( Y ) < ZERO )Y = -Y
+                   AIMAG( X / TEMP2 )*AIMAG( Y ) < 0.0E+0 )Y = -Y
             END IF
             SHIFT = SHIFT - CTEMP*CLADIV( CTEMP, ( X+Y ) )
          END IF
@@ -774,17 +771,15 @@
          TEMP = ABS1( CTEMP )
          TEMP2 = ASCALE*ABS1( H( J+1, J ) )
          TEMPR = MAX( TEMP, TEMP2 )
-         IF( TEMPR < ONE .AND. TEMPR /= ZERO ) THEN
+         IF( TEMPR < 1.0E+0 .AND. TEMPR /= 0.0E+0 ) THEN
             TEMP = TEMP / TEMPR
             TEMP2 = TEMP2 / TEMPR
          END IF
-         IF( ABS1( H( J, J-1 ) )*TEMP2 <= TEMP*ATOL ) &
-            GO TO 90
+         IF( ABS1( H( J, J-1 ) )*TEMP2 <= TEMP*ATOL ) GO TO 90
       ENDDO
 !
       ISTART = IFIRST
-      CTEMP = ASCALE*H( IFIRST, IFIRST ) - &
-              SHIFT*( BSCALE*T( IFIRST, IFIRST ) )
+      CTEMP = ASCALE*H( IFIRST, IFIRST ) - SHIFT*( BSCALE*T( IFIRST, IFIRST ) )
 90    CONTINUE
 !
 !        Do an implicit-shift QZ sweep.
@@ -800,51 +795,44 @@
          IF( J > ISTART ) THEN
             CTEMP = H( J, J-1 )
             CALL CLARTG( CTEMP, H( J+1, J-1 ), C, S, H( J, J-1 ) )
-            H( J+1, J-1 ) = CZERO
+            H( J+1, J-1 ) = (0.0E+0,0.0E+0)
          END IF
 !
-         DO JC = J, ILASTM
-            CTEMP = C*H( J, JC ) + S*H( J+1, JC )
-            H( J+1, JC ) = -CONJG( S )*H( J, JC ) + C*H( J+1, JC )
-            H( J, JC ) = CTEMP
-            CTEMP2 = C*T( J, JC ) + S*T( J+1, JC )
-            T( J+1, JC ) = -CONJG( S )*T( J, JC ) + C*T( J+1, JC )
-            T( J, JC ) = CTEMP2
-            ENDDO
+         TMP_ROT(J:ILASTM) = C*H(J,J:ILASTM) + S*H(J+1,J:ILASTM)
+         H( J+1,J:ILASTM) = -CONJG( S )*H( J,J:ILASTM) + C*H( J+1,J:ILASTM)
+         H( J, J:ILASTM ) = TMP_ROT(J:ILASTM)
+!
+         TMP_ROT(J:ILASTM) = C*T( J,J:ILASTM) + S*T( J+1,J:ILASTM)
+         T( J+1,J:ILASTM) = -CONJG( S )*T( J,J:ILASTM) + C*T( J+1,J:ILASTM)
+         T( J,J:ILASTM) = TMP_ROT(J:ILASTM)
          IF( ILQ ) THEN
-            DO JR = 1, N
-               CTEMP = C*Q( JR, J ) + CONJG( S )*Q( JR, J+1 )
-               Q( JR, J+1 ) = -S*Q( JR, J ) + C*Q( JR, J+1 )
-               Q( JR, J ) = CTEMP
-               ENDDO
+            TMP_ROT(1:N) = C*Q( 1:N, J ) + CONJG( S )*Q( 1:N, J+1 )
+            Q( 1:N, J+1 ) = -S*Q( 1:N, J ) + C*Q( 1:N, J+1 )
+            Q( 1:N, J ) = TMP_ROT(1:N)
          END IF
 !
          CTEMP = T( J+1, J+1 )
          CALL CLARTG( CTEMP, T( J+1, J ), C, S, T( J+1, J+1 ) )
-         T( J+1, J ) = CZERO
+         T( J+1, J ) = (0.0E+0,0.0E+0)
 !
          DO JR = IFRSTM, MIN( J+2, ILAST )
             CTEMP = C*H( JR, J+1 ) + S*H( JR, J )
             H( JR, J ) = -CONJG( S )*H( JR, J+1 ) + C*H( JR, J )
             H( JR, J+1 ) = CTEMP
-            ENDDO
-         DO JR = IFRSTM, J
-            CTEMP = C*T( JR, J+1 ) + S*T( JR, J )
-            T( JR, J ) = -CONJG( S )*T( JR, J+1 ) + C*T( JR, J )
-            T( JR, J+1 ) = CTEMP
-            ENDDO
-         IF( ILZ ) THEN
-            DO JR = 1, N
-               CTEMP = C*Z( JR, J+1 ) + S*Z( JR, J )
-               Z( JR, J ) = -CONJG( S )*Z( JR, J+1 ) + C*Z( JR, J )
-               Z( JR, J+1 ) = CTEMP
-               ENDDO
-         END IF
          ENDDO
+         TMP_ROT(IFRSTM:J) = C*T( IFRSTM:J, J+1 ) + S*T( IFRSTM:J, J )
+         T( IFRSTM:J, J ) = -CONJG( S )*T( IFRSTM:J, J+1 ) + C*T( IFRSTM:J, J )
+         T( IFRSTM:J, J+1 ) = TMP_ROT(IFRSTM:J)
+         IF( ILZ ) THEN
+            TMP_ROT(1:N) = C*Z( 1:N, J+1 ) + S*Z( 1:N, J )
+            Z( 1:N, J ) = -CONJG( S )*Z( 1:N, J+1 ) + C*Z( 1:N, J )
+            Z( 1:N, J+1 ) = TMP_ROT(1:N)
+         END IF
+      ENDDO
 !
   160    CONTINUE
 !
-      ENDDO
+   ENDDO
 !
 !     Drop-through = non-convergence
 !
@@ -864,19 +852,18 @@
          SIGNBC = CONJG( T( J, J ) / ABSB )
          T( J, J ) = ABSB
          IF( ILSCHR ) THEN
-            CALL CSCAL( J-1, SIGNBC, T( 1, J ), 1 )
-            CALL CSCAL( J, SIGNBC, H( 1, J ), 1 )
+            T(1:J-1,J) = SIGNBC*T(1:J-1,J)
+            H(1:J,J) = SIGNBC*H(1:J,J)
          ELSE
-            CALL CSCAL( 1, SIGNBC, H( J, J ), 1 )
+            H(J,J) = SIGNBC*H(J,J)
          END IF
-         IF( ILZ ) &
-            CALL CSCAL( N, SIGNBC, Z( 1, J ), 1 )
+         IF( ILZ ) Z(1:N,J) = SIGNBC*Z(1:N,J)
       ELSE
-         T( J, J ) = CZERO
+         T( J, J ) = (0.0E+0,0.0E+0)
       END IF
       ALPHA( J ) = H( J, J )
       BETA( J ) = T( J, J )
-      ENDDO
+   ENDDO
 !
 !     Normal Termination
 !
@@ -891,5 +878,3 @@
 !     End of CHGEQZ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
