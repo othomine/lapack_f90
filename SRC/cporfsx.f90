@@ -413,8 +413,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    REAL               ITREF_DEFAULT, ITHRESH_DEFAULT, &
                       COMPONENTWISE_DEFAULT
    REAL               RTHRESH_DEFAULT, DZTHRESH_DEFAULT
@@ -446,9 +444,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CPOCON, CLA_PORFSX_EXTENDED
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT, TRANSFER
 !     ..
 !     .. External Functions ..
    EXTERNAL           LSAME, ILAPREC
@@ -577,8 +572,7 @@
 !
    NORM = 'I'
    ANORM = CLANHE( NORM, UPLO, N, A, LDA, RWORK )
-   CALL CPOCON( UPLO, N, AF, LDAF, ANORM, RCOND, WORK, RWORK, &
-        INFO )
+   CALL CPOCON( UPLO, N, AF, LDAF, ANORM, RCOND, WORK, RWORK, INFO )
 !
 !     Perform refinement on each right-hand side
 !
@@ -590,7 +584,7 @@
            NRHS, A, LDA, AF, LDAF, RCEQU, S, B, &
            LDB, X, LDX, BERR, N_NORMS, ERR_BNDS_NORM, ERR_BNDS_COMP, &
            WORK, RWORK, WORK(N+1), &
-           TRANSFER (RWORK(1:2*N), (/ (ZERO, ZERO) /), N), RCOND, &
+           TRANSFER (RWORK(1:2*N), (/ (0.0E+0, 0.0E+0) /), N), RCOND, &
            ITHRESH, RTHRESH, UNSTABLE_THRESH, IGNORE_CWISE, &
            INFO )
    END IF
@@ -689,5 +683,3 @@
 !     End of CPORFSX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -189,14 +189,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -208,10 +200,7 @@
    INTEGER            ISAVE( 3 )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CHPMV, CLACN2, CPPTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
+   EXTERNAL           CHPMV, CLACN2, CPPTRS, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -249,10 +238,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -269,15 +256,15 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
 !
 !        Compute residual R = B - A * X
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CHPMV( UPLO, N, -CONE, AP, X( 1, J ), 1, CONE, WORK, 1 )
+      WORK(1:N) = B(1:N,J)
+      CALL CHPMV( UPLO, N, -(1.0E+0,0.0E+0), AP, X( 1, J ), 1, (1.0E+0,0.0E+0), WORK, 1 )
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -297,7 +284,7 @@
       KK = 1
       IF( UPPER ) THEN
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             XK = CABS1( X( K, J ) )
             IK = KK
             DO I = 1, K - 1
@@ -305,13 +292,12 @@
                S = S + CABS1( AP( IK ) )*CABS1( X( I, J ) )
                IK = IK + 1
             ENDDO
-            RWORK( K ) = RWORK( K ) + ABS( REAL( AP( KK+K-1 ) ) )* &
-                         XK + S
+            RWORK( K ) = RWORK( K ) + ABS( REAL( AP( KK+K-1 ) ) )*XK + S
             KK = KK + K
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             XK = CABS1( X( K, J ) )
             RWORK( K ) = RWORK( K ) + ABS( REAL( AP( KK ) ) )*XK
             IK = KK + 1
@@ -324,13 +310,12 @@
             KK = KK + ( N-K+1 )
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
          ELSE
-            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / &
-                ( RWORK( I )+SAFE1 ) )
+            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / ( RWORK( I )+SAFE1 ) )
          END IF
       ENDDO
       BERR( J ) = S
@@ -341,13 +326,12 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
-          COUNT <= ITMAX ) THEN
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CPPTRS( UPLO, N, 1, AFP, WORK, N, INFO )
-         CALL CAXPY( N, CONE, WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -379,8 +363,7 @@
          IF( RWORK( I ) > SAFE2 ) THEN
             RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I )
          ELSE
-            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + &
-                         SAFE1
+            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + SAFE1
          END IF
       ENDDO
 !
@@ -393,16 +376,12 @@
 !              Multiply by diag(W)*inv(A**H).
 !
             CALL CPPTRS( UPLO, N, 1, AFP, WORK, N, INFO )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE IF( KASE == 2 ) THEN
 !
 !              Multiply by inv(A)*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
             CALL CPPTRS( UPLO, N, 1, AFP, WORK, N, INFO )
          END IF
          GO TO 100
@@ -410,19 +389,16 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
-!
       ENDDO
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
+!
+   ENDDO
 !
    RETURN
 !
 !     End of CPPRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -165,10 +165,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -181,9 +177,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CHER, CLACGV, CSSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -207,8 +200,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    KLD = MAX( 1, LDAB-1 )
 !
@@ -225,7 +217,7 @@
 !           Compute s(j,j) and test for non-positive-definiteness.
 !
          AJJ = REAL( AB( KD+1, J ) )
-         IF( AJJ <= ZERO ) THEN
+         IF( AJJ <= 0.0E+0 ) THEN
             AB( KD+1, J ) = AJJ
             GO TO 50
          END IF
@@ -236,8 +228,8 @@
 !           Compute elements j-km:j-1 of the j-th column and update the
 !           the leading submatrix within the band.
 !
-         CALL CSSCAL( KM, ONE / AJJ, AB( KD+1-KM, J ), 1 )
-         CALL CHER( 'Upper', KM, -ONE, AB( KD+1-KM, J ), 1, &
+         AB(KD-KM+1:KD,J) = AB(KD-KM+1:KD,J) / AJJ
+         CALL CHER( 'Upper', KM, -1.0E+0, AB( KD+1-KM, J ), 1, &
                     AB( KD+1, J-KM ), KLD )
       ENDDO
 !
@@ -248,7 +240,7 @@
 !           Compute s(j,j) and test for non-positive-definiteness.
 !
          AJJ = REAL( AB( KD+1, J ) )
-         IF( AJJ <= ZERO ) THEN
+         IF( AJJ <= 0.0E+0 ) THEN
             AB( KD+1, J ) = AJJ
             GO TO 50
          END IF
@@ -260,9 +252,9 @@
 !           trailing submatrix within the band.
 !
          IF( KM > 0 ) THEN
-            CALL CSSCAL( KM, ONE / AJJ, AB( KD, J+1 ), KLD )
+            CALL CSSCAL( KM, 1.0E+0 / AJJ, AB(KD, J+1 ), KLD )
             CALL CLACGV( KM, AB( KD, J+1 ), KLD )
-            CALL CHER( 'Upper', KM, -ONE, AB( KD, J+1 ), KLD, &
+            CALL CHER( 'Upper', KM, -1.0E+0, AB( KD, J+1 ), KLD, &
                        AB( KD+1, J+1 ), KLD )
             CALL CLACGV( KM, AB( KD, J+1 ), KLD )
          END IF
@@ -276,7 +268,7 @@
 !           Compute s(j,j) and test for non-positive-definiteness.
 !
          AJJ = REAL( AB( 1, J ) )
-         IF( AJJ <= ZERO ) THEN
+         IF( AJJ <= 0.0E+0 ) THEN
             AB( 1, J ) = AJJ
             GO TO 50
          END IF
@@ -287,9 +279,9 @@
 !           Compute elements j-km:j-1 of the j-th row and update the
 !           trailing submatrix within the band.
 !
-         CALL CSSCAL( KM, ONE / AJJ, AB( KM+1, J-KM ), KLD )
+         CALL CSSCAL( KM, 1.0E+0 / AJJ, AB( KM+1, J-KM ), KLD )
          CALL CLACGV( KM, AB( KM+1, J-KM ), KLD )
-         CALL CHER( 'Lower', KM, -ONE, AB( KM+1, J-KM ), KLD, &
+         CALL CHER( 'Lower', KM, -1.0E+0, AB( KM+1, J-KM ), KLD, &
                     AB( 1, J-KM ), KLD )
          CALL CLACGV( KM, AB( KM+1, J-KM ), KLD )
       ENDDO
@@ -301,7 +293,7 @@
 !           Compute s(j,j) and test for non-positive-definiteness.
 !
          AJJ = REAL( AB( 1, J ) )
-         IF( AJJ <= ZERO ) THEN
+         IF( AJJ <= 0.0E+0 ) THEN
             AB( 1, J ) = AJJ
             GO TO 50
          END IF
@@ -313,8 +305,8 @@
 !           trailing submatrix within the band.
 !
          IF( KM > 0 ) THEN
-            CALL CSSCAL( KM, ONE / AJJ, AB( 2, J ), 1 )
-            CALL CHER( 'Lower', KM, -ONE, AB( 2, J ), 1, &
+            AB(2:1+KM,J) = AB(2:1+KM,J) / AJJ
+            CALL CHER( 'Lower', KM, -1.0E+0, AB( 2, J ), 1, &
                        AB( 1, J+1 ), KLD )
          END IF
       ENDDO
@@ -328,5 +320,3 @@
 !     End of CPBSTF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

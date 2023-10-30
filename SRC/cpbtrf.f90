@@ -156,10 +156,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            NBMAX, LDWORK
    PARAMETER          ( NBMAX = 32, LDWORK = NBMAX+1 )
 !     ..
@@ -176,9 +172,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CHERK, CPBTF2, CPOTF2, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -202,8 +195,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Determine the block size for this environment
 !
@@ -232,9 +224,7 @@
 !           Zero the upper triangle of the work array.
 !
          DO J = 1, NB
-            DO I = 1, J - 1
-               WORK( I, J ) = ZERO
-            ENDDO
+            WORK(1:J-1,J) = 0.0E+0
          ENDDO
 !
 !           Process the band matrix one diagonal block at a time.
@@ -273,14 +263,14 @@
 !                    Update A12
 !
                   CALL CTRSM( 'Left', 'Upper', 'Conjugate transpose', &
-                              'Non-unit', IB, I2, CONE, &
+                              'Non-unit', IB, I2, (1.0E+0,0.0E+0), &
                               AB( KD+1, I ), LDAB-1, &
                               AB( KD+1-IB, I+IB ), LDAB-1 )
 !
 !                    Update A22
 !
                   CALL CHERK( 'Upper', 'Conjugate transpose', I2, IB, &
-                              -ONE, AB( KD+1-IB, I+IB ), LDAB-1, ONE, &
+                              -1.0E+0, AB( KD+1-IB, I+IB ), LDAB-1, 1.0E+0, &
                               AB( KD+1, I+IB ), LDAB-1 )
                END IF
 !
@@ -289,38 +279,34 @@
 !                    Copy the lower triangle of A13 into the work array.
 !
                   DO JJ = 1, I3
-                     DO II = JJ, IB
-                        WORK( II, JJ ) = AB( II-JJ+1, JJ+I+KD-1 )
-                     ENDDO
+                     WORK(JJ:IB,JJ) = AB(1:1-JJ+IB,JJ+I+KD-1)
                   ENDDO
 !
 !                    Update A13 (in the work array).
 !
                   CALL CTRSM( 'Left', 'Upper', 'Conjugate transpose', &
-                              'Non-unit', IB, I3, CONE, &
+                              'Non-unit', IB, I3, (1.0E+0,0.0E+0), &
                               AB( KD+1, I ), LDAB-1, WORK, LDWORK )
 !
 !                    Update A23
 !
                   IF( I2 > 0 ) &
                      CALL CGEMM( 'Conjugate transpose', &
-                                 'No transpose', I2, I3, IB, -CONE, &
+                                 'No transpose', I2, I3, IB, -(1.0E+0,0.0E+0), &
                                  AB( KD+1-IB, I+IB ), LDAB-1, WORK, &
-                                 LDWORK, CONE, AB( 1+IB, I+KD ), &
+                                 LDWORK, (1.0E+0,0.0E+0), AB( 1+IB, I+KD ), &
                                  LDAB-1 )
 !
 !                    Update A33
 !
                   CALL CHERK( 'Upper', 'Conjugate transpose', I3, IB, &
-                              -ONE, WORK, LDWORK, ONE, &
+                              -1.0E+0, WORK, LDWORK, 1.0E+0, &
                               AB( KD+1, I+KD ), LDAB-1 )
 !
 !                    Copy the lower triangle of A13 back into place.
 !
                   DO JJ = 1, I3
-                     DO II = JJ, IB
-                        AB( II-JJ+1, JJ+I+KD-1 ) = WORK( II, JJ )
-                     ENDDO
+                     AB(1:1-JJ+IB, JJ+I+KD-1) = WORK(JJ:IB,JJ)
                   ENDDO
                END IF
             END IF
@@ -334,9 +320,7 @@
 !           Zero the lower triangle of the work array.
 !
          DO J = 1, NB
-            DO I = J + 1, NB
-               WORK( I, J ) = ZERO
-            ENDDO
+            WORK(J+1:NB,J) = 0.0E+0
          ENDDO
 !
 !           Process the band matrix one diagonal block at a time.
@@ -376,13 +360,13 @@
 !
                   CALL CTRSM( 'Right', 'Lower', &
                               'Conjugate transpose', 'Non-unit', I2, &
-                              IB, CONE, AB( 1, I ), LDAB-1, &
+                              IB, (1.0E+0,0.0E+0), AB( 1, I ), LDAB-1, &
                               AB( 1+IB, I ), LDAB-1 )
 !
 !                    Update A22
 !
-                  CALL CHERK( 'Lower', 'No transpose', I2, IB, -ONE, &
-                              AB( 1+IB, I ), LDAB-1, ONE, &
+                  CALL CHERK( 'Lower', 'No transpose', I2, IB, -1.0E+0, &
+                              AB( 1+IB, I ), LDAB-1, 1.0E+0, &
                               AB( 1, I+IB ), LDAB-1 )
                END IF
 !
@@ -393,14 +377,14 @@
                   DO JJ = 1, IB
                      DO II = 1, MIN( JJ, I3 )
                         WORK( II, JJ ) = AB( KD+1-JJ+II, JJ+I-1 )
-                        ENDDO
                      ENDDO
+                  ENDDO
 !
 !                    Update A31 (in the work array).
 !
                   CALL CTRSM( 'Right', 'Lower', &
                               'Conjugate transpose', 'Non-unit', I3, &
-                              IB, CONE, AB( 1, I ), LDAB-1, WORK, &
+                              IB, (1.0E+0,0.0E+0), AB( 1, I ), LDAB-1, WORK, &
                               LDWORK )
 !
 !                    Update A32
@@ -408,14 +392,14 @@
                   IF( I2 > 0 ) &
                      CALL CGEMM( 'No transpose', &
                                  'Conjugate transpose', I3, I2, IB, &
-                                 -CONE, WORK, LDWORK, AB( 1+IB, I ), &
-                                 LDAB-1, CONE, AB( 1+KD-IB, I+IB ), &
+                                 -(1.0E+0,0.0E+0), WORK, LDWORK, AB( 1+IB, I ), &
+                                 LDAB-1, (1.0E+0,0.0E+0), AB( 1+KD-IB, I+IB ), &
                                  LDAB-1 )
 !
 !                    Update A33
 !
-                  CALL CHERK( 'Lower', 'No transpose', I3, IB, -ONE, &
-                              WORK, LDWORK, ONE, AB( 1, I+KD ), &
+                  CALL CHERK( 'Lower', 'No transpose', I3, IB, -1.0E+0, &
+                              WORK, LDWORK, 1.0E+0, AB( 1, I+KD ), &
                               LDAB-1 )
 !
 !                    Copy the upper triangle of A31 back into place.
@@ -423,11 +407,11 @@
                   DO JJ = 1, IB
                      DO II = 1, MIN( JJ, I3 )
                         AB( KD+1-JJ+II, JJ+I-1 ) = WORK( II, JJ )
-                        ENDDO
                      ENDDO
+                  ENDDO
                END IF
             END IF
-            ENDDO
+         ENDDO
       END IF
    END IF
    RETURN
@@ -438,5 +422,3 @@
 !     End of CPBTRF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

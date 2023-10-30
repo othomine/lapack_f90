@@ -157,15 +157,9 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
-   COMPLEX            CTEMP
+   COMPLEX            CTEMP, A_TMP( LDA ), A_TMP2( N )
    REAL               AJJ, SSTOP, STEMP
    INTEGER            I, ITEMP, J, PVT
    LOGICAL            UPPER
@@ -176,10 +170,7 @@
    EXTERNAL           SLAMCH, LSAME, SISNAN
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CLACGV, CSSCAL, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX, REAL, SQRT
+   EXTERNAL           CGEMV, CLACGV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -201,23 +192,22 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Initialize PIV
 !
    DO I = 1, N
       PIV( I ) = I
-      ENDDO
+   ENDDO
 !
 !     Compute stopping value
 !
    DO I = 1, N
       WORK( I ) = REAL( A( I, I ) )
-      ENDDO
+   ENDDO
    PVT = MAXLOC( WORK( 1:N ), 1 )
    AJJ = REAL ( A( PVT, PVT ) )
-   IF( AJJ <= ZERO.OR.SISNAN( AJJ ) ) THEN
+   IF( AJJ <= 0.0E+0.OR.SISNAN( AJJ ) ) THEN
       RANK = 0
       INFO = 1
       GO TO 200
@@ -225,7 +215,7 @@
 !
 !     Compute stopping value if not supplied
 !
-   IF( TOL < ZERO ) THEN
+   IF( TOL < 0.0E+0 ) THEN
       SSTOP = N * SLAMCH( 'Epsilon' ) * AJJ
    ELSE
       SSTOP = TOL
@@ -233,9 +223,7 @@
 !
 !     Set first half of WORK to zero, holds dot products
 !
-   DO I = 1, N
-      WORK( I ) = 0
-      ENDDO
+   WORK(1:N) = 0
 !
    IF( UPPER ) THEN
 !
@@ -250,13 +238,12 @@
          DO I = J, N
 !
             IF( J > 1 ) THEN
-               WORK( I ) = WORK( I ) + &
-                           REAL( CONJG( A( J-1, I ) )* &
+               WORK( I ) = WORK( I ) + REAL( CONJG( A( J-1, I ) )* &
                                  A( J-1, I ) )
             END IF
             WORK( N+I ) = REAL( A( I, I ) ) - WORK( I )
 !
-            ENDDO
+         ENDDO
 !
          IF( J > 1 ) THEN
             ITEMP = MAXLOC( WORK( (N+J):(2*N) ), 1 )
@@ -273,15 +260,18 @@
 !              Pivot OK, so can now swap pivot rows and columns
 !
             A( PVT, PVT ) = A( J, J )
-            CALL CSWAP( J-1, A( 1, J ), 1, A( 1, PVT ), 1 )
-            IF( PVT < N ) &
-               CALL CSWAP( N-PVT, A( J, PVT+1 ), LDA, &
-                           A( PVT, PVT+1 ), LDA )
-            DO I = J + 1, PVT - 1
-               CTEMP = CONJG( A( J, I ) )
-               A( J, I ) = CONJG( A( I, PVT ) )
-               A( I, PVT ) = CTEMP
-               ENDDO
+            A_TMP(1:J-1) = A(1:J-1,J)
+            A(1:J-1,J) = A(1:J-1,PVT)
+            A(1:J-1,PVT) = A_TMP(1:J-1)
+
+            IF( PVT < N ) THEN
+              A_TMP2(1:N-PVT) = A(J,PVT+1:N )
+              A(J,PVT+1:N ) = A(PVT,PVT+1:N)
+              A(PVT,PVT+1:N) = A_TMP2(1:N-PVT)
+            ENDIF
+            A_TMP2(J+1:PVT-1) = CONJG(A(J,J+1:PVT-1))
+            A(J,J+1:PVT-1) = CONJG(A(J+1:PVT-1,PVT))
+            A(J+1:PVT-1,PVT) = A_TMP2(J+1:PVT-1)
             A( J, PVT ) = CONJG( A( J, PVT ) )
 !
 !              Swap dot products and PIV
@@ -300,11 +290,11 @@
 !           Compute elements J+1:N of row J
 !
          IF( J < N ) THEN
-            CALL CLACGV( J-1, A( 1, J ), 1 )
-            CALL CGEMV( 'Trans', J-1, N-J, -CONE, A( 1, J+1 ), LDA, &
-                        A( 1, J ), 1, CONE, A( J, J+1 ), LDA )
-            CALL CLACGV( J-1, A( 1, J ), 1 )
-            CALL CSSCAL( N-J, ONE / AJJ, A( J, J+1 ), LDA )
+            A(1:J-1,J) = CONJG(A(1:J-1,J))
+            CALL CGEMV( 'Trans', J-1, N-J, -(1.0E+0,0.0E+0), A( 1, J+1 ), LDA, &
+                        A( 1, J ), 1, (1.0E+0,0.0E+0), A( J, J+1 ), LDA )
+            A(1:J-1,J) = CONJG(A(1:J-1,J))
+            A(J,J+1:N) = A(J,J+1:N) / AJJ
          END IF
 !
          ENDDO
@@ -345,15 +335,17 @@
 !              Pivot OK, so can now swap pivot rows and columns
 !
             A( PVT, PVT ) = A( J, J )
-            CALL CSWAP( J-1, A( J, 1 ), LDA, A( PVT, 1 ), LDA )
-            IF( PVT < N ) &
-               CALL CSWAP( N-PVT, A( PVT+1, J ), 1, A( PVT+1, PVT ), &
-                           1 )
-            DO I = J + 1, PVT - 1
-               CTEMP = CONJG( A( I, J ) )
-               A( I, J ) = CONJG( A( PVT, I ) )
-               A( PVT, I ) = CTEMP
-               ENDDO
+            A_TMP2(1:J-1) = A(J,1:J-1)
+            A(J,1:J-1) = A(PVT,1:J-1)
+            A(PVT,1:J-1) = A_TMP2(1:J-1)
+            IF( PVT < N ) THEN
+               A_TMP(1:N-PVT) = A(PVT+1:N,J)
+               A(PVT+1:N,J) = A(PVT+1:N,PVT)
+               A(PVT+1:N,PVT) = A_TMP(1:N-PVT)
+            ENDIF
+            A_TMP(J+1:PVT-1) = CONJG(A(J+1:PVT-1,J))
+            A(J+1:PVT-1,J) = CONJG(A(PVT,J+1:PVT-1))
+            A(PVT,J+1:PVT-1) = A_TMP(J+1:PVT-1)
             A( PVT, J ) = CONJG( A( PVT, J ) )
 !
 !              Swap dot products and PIV
@@ -372,11 +364,11 @@
 !           Compute elements J+1:N of column J
 !
          IF( J < N ) THEN
-            CALL CLACGV( J-1, A( J, 1 ), LDA )
-            CALL CGEMV( 'No Trans', N-J, J-1, -CONE, A( J+1, 1 ), &
-                        LDA, A( J, 1 ), LDA, CONE, A( J+1, J ), 1 )
-            CALL CLACGV( J-1, A( J, 1 ), LDA )
-            CALL CSSCAL( N-J, ONE / AJJ, A( J+1, J ), 1 )
+            A(J,1:J-1) = CONJG(A(J,1:J-1))
+            CALL CGEMV( 'No Trans', N-J, J-1, -(1.0E+0,0.0E+0), A( J+1, 1 ), &
+                        LDA, A( J, 1 ), LDA, (1.0E+0,0.0E+0), A( J+1, J ), 1 )
+            A(J,1:J-1) = CONJG(A(J,1:J-1))
+            A(J+1:N,J) = A(J+1:N,J) / AJJ
          END IF
 !
          ENDDO
@@ -402,5 +394,3 @@
 !     End of CPSTF2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -191,10 +191,8 @@
    INTEGER            INFO, LDB, LDX, N, NRHS
 !     ..
 !     .. Array Arguments ..
-   REAL               BERR( * ), D( * ), DF( * ), FERR( * ), &
-                      RWORK( * )
-   COMPLEX            B( LDB, * ), E( * ), EF( * ), WORK( * ), &
-                      X( LDX, * )
+   REAL               BERR( * ), D( * ), DF( * ), FERR( * ), RWORK( * )
+   COMPLEX            B( LDB, * ), E( * ), EF( * ), WORK( * ), X( LDX, * )
 !     ..
 !
 !  =====================================================================
@@ -202,14 +200,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E+0 )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -224,10 +214,7 @@
    EXTERNAL           LSAME, ISAMAX, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CPTTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, REAL
+   EXTERNAL           CPTTRS, XERBLA
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -260,10 +247,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -280,7 +265,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -361,13 +346,12 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
          ELSE
-            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / &
-                ( RWORK( I )+SAFE1 ) )
+            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / ( RWORK( I )+SAFE1 ) )
          END IF
       ENDDO
       BERR( J ) = S
@@ -378,13 +362,12 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
-          COUNT <= ITMAX ) THEN
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CPTTRS( UPLO, N, 1, DF, EF, WORK, N, INFO )
-         CALL CAXPY( N, CMPLX( ONE ), WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -412,8 +395,7 @@
          IF( RWORK( I ) > SAFE2 ) THEN
             RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I )
          ELSE
-            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + &
-                         SAFE1
+            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + SAFE1
          END IF
       ENDDO
       IX = ISAMAX( N, RWORK, 1 )
@@ -430,17 +412,16 @@
 !
 !        Solve M(L) * x = e.
 !
-      RWORK( 1 ) = ONE
+      RWORK( 1 ) = 1.0E+0
       DO I = 2, N
-         RWORK( I ) = ONE + RWORK( I-1 )*ABS( EF( I-1 ) )
+         RWORK( I ) = 1.0E+0 + RWORK( I-1 )*ABS( EF( I-1 ) )
       ENDDO
 !
 !        Solve D * M(L)**H * x = b.
 !
       RWORK( N ) = RWORK( N ) / DF( N )
       DO I = N - 1, 1, -1
-         RWORK( I ) = RWORK( I ) / DF( I ) + &
-                      RWORK( I+1 )*ABS( EF( I ) )
+         RWORK( I ) = RWORK( I ) / DF( I ) + RWORK( I+1 )*ABS( EF( I ) )
       ENDDO
 !
 !        Compute norm(inv(A)) = max(x(i)), 1<=i<=n.
@@ -450,12 +431,8 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
-      DO I = 1, N
-         LSTRES = MAX( LSTRES, ABS( X( I, J ) ) )
-      ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
+      LSTRES = MAXVAL(ABS(X(1:N,J)))
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
 !
@@ -464,5 +441,3 @@
 !     End of CPTRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

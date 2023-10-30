@@ -321,10 +321,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            EQUIL, NOFACT, RCEQU
@@ -340,9 +336,6 @@
    EXTERNAL           CLACPY, CLAQHE, CPOCON, CPOEQU, CPORFS, CPOTRF, &
                       CPOTRS, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
@@ -354,7 +347,7 @@
    ELSE
       RCEQU = LSAME( EQUED, 'Y' )
       SMLNUM = SLAMCH( 'Safe minimum' )
-      BIGNUM = ONE / SMLNUM
+      BIGNUM = 1.0E+0 / SMLNUM
    END IF
 !
 !     Test the input parameters.
@@ -379,17 +372,17 @@
    ELSE
       IF( RCEQU ) THEN
          SMIN = BIGNUM
-         SMAX = ZERO
+         SMAX = 0.0E+0
          DO J = 1, N
             SMIN = MIN( SMIN, S( J ) )
             SMAX = MAX( SMAX, S( J ) )
          ENDDO
-         IF( SMIN <= ZERO ) THEN
+         IF( SMIN <= 0.0E+0 ) THEN
             INFO = -10
          ELSE IF( N > 0 ) THEN
             SCOND = MAX( SMIN, SMLNUM ) / MIN( SMAX, BIGNUM )
          ELSE
-            SCOND = ONE
+            SCOND = 1.0E+0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -424,9 +417,7 @@
 !
    IF( RCEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = S( I )*B( I, J )
-         ENDDO
+         B(1:N,J) = S(1:N)*B(1:N,J)
       ENDDO
    END IF
 !
@@ -440,7 +431,7 @@
 !        Return if INFO is non-zero.
 !
       IF( INFO > 0 )THEN
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -469,24 +460,17 @@
 !
    IF( RCEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            X( I, J ) = S( I )*X( I, J )
-         ENDDO
+         X(1:N,J) = S(1:N)*X(1:N,J)
       ENDDO
-      DO J = 1, NRHS
-         FERR( J ) = FERR( J ) / SCOND
-      ENDDO
+      FERR(1:NRHS) = FERR(1:NRHS) / SCOND
    END IF
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < SLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < SLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    RETURN
 !
 !     End of CPOSVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
