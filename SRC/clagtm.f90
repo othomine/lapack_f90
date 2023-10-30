@@ -159,10 +159,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
@@ -171,31 +167,19 @@
    LOGICAL            LSAME
    EXTERNAL           LSAME
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG
-!     ..
 !     .. Executable Statements ..
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Multiply B by BETA if BETA /= 1.
 !
-   IF( BETA == ZERO ) THEN
-      DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = ZERO
-         ENDDO
-      ENDDO
-   ELSE IF( BETA == -ONE ) THEN
-      DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = -B( I, J )
-         ENDDO
-      ENDDO
+   IF( BETA == 0.0E+0 ) THEN
+      B(1:N,1:NRHS) = 0.0E+0
+   ELSE IF( BETA == -1.0E+0 ) THEN
+      B(1:N,1:NRHS) = -B(1:N,1:NRHS)
    END IF
 !
-   IF( ALPHA == ONE ) THEN
+   IF( ALPHA == 1.0E+0 ) THEN
       IF( LSAME( TRANS, 'N' ) ) THEN
 !
 !           Compute B := B + A*X
@@ -208,10 +192,8 @@
                            DU( 1 )*X( 2, J )
                B( N, J ) = B( N, J ) + DL( N-1 )*X( N-1, J ) + &
                            D( N )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) + DL( I-1 )*X( I-1, J ) + &
-                              D( I )*X( I, J ) + DU( I )*X( I+1, J )
-               ENDDO
+               B(2:N-1,J) = B(2:N-1,J) + DL(1:N-2)*X(1:N-2,J) + &
+                           D(2:N-1)*X(2:N-1,J) + DU(2:N-1)*X(3:N,J)
             END IF
          ENDDO
       ELSE IF( LSAME( TRANS, 'T' ) ) THEN
@@ -226,10 +208,8 @@
                            DL( 1 )*X( 2, J )
                B( N, J ) = B( N, J ) + DU( N-1 )*X( N-1, J ) + &
                            D( N )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) + DU( I-1 )*X( I-1, J ) + &
-                              D( I )*X( I, J ) + DL( I )*X( I+1, J )
-               ENDDO
+               B(2:N-1,J) = B(2:N-1,J) + DU(1:N-2)*X(1:N-2,J) + &
+                           D(2:N-1)*X(2:N-1,J) + DL(2:N-1)*X(3:N,J)
             END IF
          ENDDO
       ELSE IF( LSAME( TRANS, 'C' ) ) THEN
@@ -244,16 +224,14 @@
                            CONJG( DL( 1 ) )*X( 2, J )
                B( N, J ) = B( N, J ) + CONJG( DU( N-1 ) )* &
                            X( N-1, J ) + CONJG( D( N ) )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) + CONJG( DU( I-1 ) )* &
-                              X( I-1, J ) + CONJG( D( I ) )* &
-                              X( I, J ) + CONJG( DL( I ) )* &
-                              X( I+1, J )
-               ENDDO
+               B(2:N-1,J) = B(2:N-1,J) + CONJG(DU(1:N-2))* &
+                           X(1:N-2,J) + CONJG(D(2:N-1))* &
+                           X(2:N-1,J) + CONJG(DL(2:N-1))* &
+                           X(3:N,J)
             END IF
-            ENDDO
+         ENDDO
       END IF
-   ELSE IF( ALPHA == -ONE ) THEN
+   ELSE IF( ALPHA == -1.0E+0 ) THEN
       IF( LSAME( TRANS, 'N' ) ) THEN
 !
 !           Compute B := B - A*X
@@ -266,12 +244,10 @@
                            DU( 1 )*X( 2, J )
                B( N, J ) = B( N, J ) - DL( N-1 )*X( N-1, J ) - &
                            D( N )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) - DL( I-1 )*X( I-1, J ) - &
-                              D( I )*X( I, J ) - DU( I )*X( I+1, J )
-                  ENDDO
+               B(2:N-1,J) = B(2:N-1,J) - DL(1:N-2)*X(1:N-2,J) - &
+                           D(2:N-1)*X(2:N-1,J) - DU(2:N-1)*X(3:N,J)
             END IF
-            ENDDO
+         ENDDO
       ELSE IF( LSAME( TRANS, 'T' ) ) THEN
 !
 !           Compute B := B - A**T*X
@@ -284,12 +260,10 @@
                            DL( 1 )*X( 2, J )
                B( N, J ) = B( N, J ) - DU( N-1 )*X( N-1, J ) - &
                            D( N )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) - DU( I-1 )*X( I-1, J ) - &
-                              D( I )*X( I, J ) - DL( I )*X( I+1, J )
-                  ENDDO
+               B(2:N-1,J) = B(2:N-1,J) - DU(1:N-2)*X(1:N-2,J) - &
+                           D(2:N-1)*X(2:N-1,J) - DL(2:N-1)*X(3:N,J)
             END IF
-            ENDDO
+         ENDDO
       ELSE IF( LSAME( TRANS, 'C' ) ) THEN
 !
 !           Compute B := B - A**H*X
@@ -302,14 +276,12 @@
                            CONJG( DL( 1 ) )*X( 2, J )
                B( N, J ) = B( N, J ) - CONJG( DU( N-1 ) )* &
                            X( N-1, J ) - CONJG( D( N ) )*X( N, J )
-               DO I = 2, N - 1
-                  B( I, J ) = B( I, J ) - CONJG( DU( I-1 ) )* &
-                              X( I-1, J ) - CONJG( D( I ) )* &
-                              X( I, J ) - CONJG( DL( I ) )* &
-                              X( I+1, J )
-                  ENDDO
+               B(2:N-1,J) = B(2:N-1,J) - CONJG(DU(1:N-2))* &
+                           X(1:N-2,J) - CONJG(D(2:N-1))* &
+                           X(2:N-1,J) - CONJG(DL(2:N-1))* &
+                           X(3:N,J)
             END IF
-            ENDDO
+         ENDDO
       END IF
    END IF
    RETURN
@@ -317,5 +289,3 @@
 !     End of CLAGTM
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

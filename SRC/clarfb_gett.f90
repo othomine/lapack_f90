@@ -427,8 +427,7 @@
 !
 !     Quick return if possible
 !
-   IF( M < 0 .OR. N <= 0 .OR. K == 0 .OR. K > N ) &
-      RETURN
+   IF( M < 0 .OR. N <= 0 .OR. K == 0 .OR. K > N ) RETURN
 !
    LNOTIDENT = .NOT.LSAME( IDENT, 'I' )
 !
@@ -447,7 +446,7 @@
 !        into W2=WORK(1:K, 1:N-K) column-by-column.
 !
       DO J = 1, N-K
-         CALL CCOPY( K, A( 1, K+J ), 1, WORK( 1, J ), 1 )
+         WORK(1:K,J) = A(1:K,K+J)
       END DO
 
       IF( LNOTIDENT ) THEN
@@ -457,7 +456,7 @@
 !           V1 stored in A1 (diagonal ones are not stored).
 !
 !
-         CALL CTRMM( 'L', 'L', 'C', 'U', K, N-K, CONE, A, LDA, &
+         CALL CTRMM( 'L', 'L', 'C', 'U', K, N-K, (1.0E+0,0.0E+0), A, LDA, &
                      WORK, LDWORK )
       END IF
 !
@@ -465,22 +464,22 @@
 !        V2 stored in B1.
 !
       IF( M > 0 ) THEN
-         CALL CGEMM( 'C', 'N', K, N-K, M, CONE, B, LDB, &
-                     B( 1, K+1 ), LDB, CONE, WORK, LDWORK )
+         CALL CGEMM( 'C', 'N', K, N-K, M, (1.0E+0,0.0E+0), B, LDB, &
+                     B( 1, K+1 ), LDB, (1.0E+0,0.0E+0), WORK, LDWORK )
       END IF
 !
 !        col2_(4) Compute W2: = T * W2,
 !        T is upper-triangular.
 !
-      CALL CTRMM( 'L', 'U', 'N', 'N', K, N-K, CONE, T, LDT, &
+      CALL CTRMM( 'L', 'U', 'N', 'N', K, N-K, (1.0E+0,0.0E+0), T, LDT, &
                   WORK, LDWORK )
 !
 !        col2_(5) Compute B2: = B2 - V2 * W2 = B2 - B1 * W2,
 !        V2 stored in B1.
 !
       IF( M > 0 ) THEN
-         CALL CGEMM( 'N', 'N', M, N-K, K, -CONE, B, LDB, &
-                      WORK, LDWORK, CONE, B( 1, K+1 ), LDB )
+         CALL CGEMM( 'N', 'N', M, N-K, K, -(1.0E+0,0.0E+0), B, LDB, &
+                      WORK, LDWORK, (1.0E+0,0.0E+0), B( 1, K+1 ), LDB )
       END IF
 !
       IF( LNOTIDENT ) THEN
@@ -489,7 +488,7 @@
 !           V1 is not an identity matrix, but unit lower-triangular,
 !           V1 stored in A1 (diagonal ones are not stored).
 !
-         CALL CTRMM( 'L', 'L', 'N', 'U', K, N-K, CONE, A, LDA, &
+         CALL CTRMM( 'L', 'L', 'N', 'U', K, N-K, (1.0E+0,0.0E+0), A, LDA, &
                      WORK, LDWORK )
       END IF
 !
@@ -498,9 +497,7 @@
 !        column-by-column.
 !
       DO J = 1, N-K
-         DO I = 1, K
-            A( I, K+J ) = A( I, K+J ) - WORK( I, J )
-         END DO
+         A(1:K,K+J) = A(1:K,K+J)-WORK(1:K,J)
       END DO
 !
    END IF
@@ -519,15 +516,13 @@
 !     W1 = WORK(1:K, 1:K) column-by-column.
 !
    DO J = 1, K
-      CALL CCOPY( J, A( 1, J ), 1, WORK( 1, J ), 1 )
+      WORK(1:J,J) = A(1:J,J)
    END DO
 !
 !     Set the subdiagonal elements of W1 to zero column-by-column.
 !
    DO J = 1, K - 1
-      DO I = J + 1, K
-         WORK( I, J ) = CZERO
-      END DO
+      WORK(J+1:K,J) = (0.0E+0,0.0E+0)
    END DO
 !
    IF( LNOTIDENT ) THEN
@@ -537,7 +532,7 @@
 !        V1 stored in A1 (diagonal ones are not stored),
 !        W1 is upper-triangular with zeroes below the diagonal.
 !
-      CALL CTRMM( 'L', 'L', 'C', 'U', K, K, CONE, A, LDA, &
+      CALL CTRMM( 'L', 'L', 'C', 'U', K, K, (1.0E+0,0.0E+0), A, LDA, &
                   WORK, LDWORK )
    END IF
 !
@@ -545,14 +540,14 @@
 !     T is upper-triangular,
 !     W1 is upper-triangular with zeroes below the diagonal.
 !
-   CALL CTRMM( 'L', 'U', 'N', 'N', K, K, CONE, T, LDT, &
+   CALL CTRMM( 'L', 'U', 'N', 'N', K, K, (1.0E+0,0.0E+0), T, LDT, &
                WORK, LDWORK )
 !
 !     col1_(4) Compute B1: = - V2 * W1 = - B1 * W1,
 !     V2 = B1, W1 is upper-triangular with zeroes below the diagonal.
 !
    IF( M > 0 ) THEN
-      CALL CTRMM( 'R', 'U', 'N', 'N', M, K, -CONE, WORK, LDWORK, &
+      CALL CTRMM( 'R', 'U', 'N', 'N', M, K, -(1.0E+0,0.0E+0), WORK, LDWORK, &
                   B, LDB )
    END IF
 !
@@ -564,7 +559,7 @@
 !        W1 is upper-triangular on input with zeroes below the diagonal,
 !        and square on output.
 !
-      CALL CTRMM( 'L', 'L', 'N', 'U', K, K, CONE, A, LDA, &
+      CALL CTRMM( 'L', 'L', 'N', 'U', K, K, (1.0E+0,0.0E+0), A, LDA, &
                   WORK, LDWORK )
 !
 !        col1_(6) Compute A1: = A1 - W1 = A(1:K, 1:K) - WORK(1:K, 1:K)
@@ -576,9 +571,7 @@
 !        col1_(6)_a Compute elements of A1 below the diagonal.
 !
       DO J = 1, K - 1
-         DO I = J + 1, K
-            A( I, J ) = - WORK( I, J )
-         END DO
+         A(J+1:K,J) = - WORK(J+1:K,J)
       END DO
 !
    END IF
@@ -586,9 +579,7 @@
 !     col1_(6)_b Compute elements of A1 on and above the diagonal.
 !
    DO J = 1, K
-      DO I = 1, J
-         A( I, J ) = A( I, J ) - WORK( I, J )
-      END DO
+      A(1:J,J) = A(1:J,J) - WORK(1:J,J)
    END DO
 !
    RETURN
@@ -596,5 +587,3 @@
 !     End of CLARFB_GETT
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

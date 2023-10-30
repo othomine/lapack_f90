@@ -299,7 +299,7 @@
       IF(DPLUS < 0.0E+0) NEG1 = NEG1 + 1
       WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
       S = WORK( INDS+I ) - LAMBDA
-      ENDDO
+   ENDDO
    SAWNAN1 = SISNAN( S )
    IF( SAWNAN1 ) GOTO 60
    DO I = R1, R2 - 1
@@ -307,7 +307,7 @@
       WORK( INDLPL+I ) = LD( I ) / DPLUS
       WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
       S = WORK( INDS+I ) - LAMBDA
-      ENDDO
+   ENDDO
    SAWNAN1 = SISNAN( S )
 !
  60   CONTINUE
@@ -323,7 +323,7 @@
          WORK( INDS+I ) = S*WORK( INDLPL+I )*L( I )
          IF( WORK( INDLPL+I ) == 0.0E+0 ) WORK( INDS+I ) = LLD( I )
          S = WORK( INDS+I ) - LAMBDA
-         ENDDO
+      ENDDO
       DO I = R1, R2 - 1
          DPLUS = D( I ) + S
          IF(ABS(DPLUS) < PIVMIN) DPLUS = -PIVMIN
@@ -332,7 +332,7 @@
          IF( WORK( INDLPL+I ) == 0.0E+0 ) &
                          WORK( INDS+I ) = LLD( I )
          S = WORK( INDS+I ) - LAMBDA
-         ENDDO
+      ENDDO
    END IF
 !
 !     Compute the progressive transform (using the differential form)
@@ -361,8 +361,7 @@
          IF(DMINUS < 0.0E+0) NEG2 = NEG2 + 1
          WORK( INDUMN+I ) = L( I )*TMP
          WORK( INDP+I-1 ) = WORK( INDP+I )*TMP - LAMBDA
-         IF( TMP == 0.0E+0 ) &
-             WORK( INDP+I-1 ) = D( I ) - LAMBDA
+         IF( TMP == 0.0E+0 ) WORK( INDP+I-1 ) = D( I ) - LAMBDA
       ENDDO
    END IF
 !

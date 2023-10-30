@@ -210,11 +210,6 @@
 !  =========================================================
 !
 !     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0e0, 0.0e0 ), &
-                      ONE = ( 1.0e0, 0.0e0 ) )
-   REAL               RZERO, RONE, HALF
-   PARAMETER          ( RZERO = 0.0e0, RONE = 1.0e0, HALF = 0.5e0 )
    REAL               DAT1
    PARAMETER          ( DAT1 = 3.0e0 / 4.0e0 )
    INTEGER            KEXSH
@@ -242,9 +237,6 @@
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CONJG, MAX, MIN, REAL, SQRT
-!     ..
 !     .. Statement Function definitions ..
    CABS1( CDUM ) = ABS( REAL( CDUM ) ) + ABS( AIMAG( CDUM ) )
 !     ..
@@ -254,8 +246,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
    IF( ILO == IHI ) THEN
       W( ILO ) = H( ILO, ILO )
       RETURN
@@ -263,11 +254,10 @@
 !
 !     ==== clear out the trash ====
    DO J = ILO, IHI - 3
-      H( J+2, J ) = ZERO
-      H( J+3, J ) = ZERO
+      H( J+2, J ) = (0.0E+0,0.0E+0)
+      H( J+3, J ) = (0.0E+0,0.0E+0)
    ENDDO
-   IF( ILO <= IHI-2 ) &
-      H( IHI, IHI-2 ) = ZERO
+   IF( ILO <= IHI-2 ) H( IHI, IHI-2 ) = (0.0E+0,0.0E+0)
 !     ==== ensure that subdiagonal entries are real ====
    IF( WANTT ) THEN
       JLO = 1
@@ -277,18 +267,16 @@
       JHI = IHI
    END IF
    DO I = ILO + 1, IHI
-      IF( AIMAG( H( I, I-1 ) ) /= RZERO ) THEN
+      IF( AIMAG( H( I, I-1 ) ) /= 0.0E+0 ) THEN
 !           ==== The following redundant normalization
 !           .    avoids problems with both gradual and
 !           .    sudden underflow in ABS(H(I,I-1)) ====
          SC = H( I, I-1 ) / CABS1( H( I, I-1 ) )
          SC = CONJG( SC ) / ABS( SC )
          H( I, I-1 ) = ABS( H( I, I-1 ) )
-         CALL CSCAL( JHI-I+1, SC, H( I, I ), LDH )
-         CALL CSCAL( MIN( JHI, I+1 )-JLO+1, CONJG( SC ), H( JLO, I ), &
-                     1 )
-         IF( WANTZ ) &
-            CALL CSCAL( IHIZ-ILOZ+1, CONJG( SC ), Z( ILOZ, I ), 1 )
+         H(I,I:JHI) = SC*H(I,I:JHI)
+         H(JLO:MIN(JHI,I+1),I) = CONJG(SC)*H(JLO:MIN(JHI,I+1),I)
+         IF( WANTZ ) Z(ILOZ:IHIZ,I) = CONJG(SC)*Z(ILOZ:IHIZ,I)
       END IF
    ENDDO
 !
@@ -298,7 +286,7 @@
 !     Set machine-dependent constants for the stopping criterion.
 !
    SAFMIN = SLAMCH( 'SAFE MINIMUM' )
-   SAFMAX = RONE / SAFMIN
+   SAFMAX = 1.0E+0 / SAFMIN
    ULP = SLAMCH( 'PRECISION' )
    SMLNUM = SAFMIN*( REAL( NH ) / ULP )
 !
@@ -327,8 +315,7 @@
 !
    I = IHI
 30 CONTINUE
-   IF( I < ILO ) &
-      GO TO 150
+   IF( I < ILO ) GO TO 150
 !
 !     Perform QR iterations on rows and columns ILO to I until a
 !     submatrix of order 1 splits off at the bottom because a
@@ -340,14 +327,11 @@
 !        Look for a single small subdiagonal element.
 !
       DO K = I, L + 1, -1
-         IF( CABS1( H( K, K-1 ) ) <= SMLNUM ) &
-            GO TO 50
+         IF( CABS1( H( K, K-1 ) ) <= SMLNUM ) GO TO 50
          TST = CABS1( H( K-1, K-1 ) ) + CABS1( H( K, K ) )
-         IF( TST == ZERO ) THEN
-            IF( K-2 >= ILO ) &
-               TST = TST + ABS( REAL( H( K-1, K-2 ) ) )
-            IF( K+1 <= IHI ) &
-               TST = TST + ABS( REAL( H( K+1, K ) ) )
+         IF( TST == (0.0E+0,0.0E+0) ) THEN
+            IF( K-2 >= ILO ) TST = TST + ABS( REAL( H( K-1, K-2 ) ) )
+            IF( K+1 <= IHI ) TST = TST + ABS( REAL( H( K+1, K ) ) )
          END IF
 !           ==== The following is a conservative small subdiagonal
 !           .    deflation criterion due to Ahues & Tisseur (LAWN 122,
@@ -371,13 +355,12 @@
 !
 !           H(L,L-1) is negligible
 !
-         H( L, L-1 ) = ZERO
+         H( L, L-1 ) = (0.0E+0,0.0E+0)
       END IF
 !
 !        Exit from loop if a submatrix of order 1 has split off.
 !
-      IF( L >= I ) &
-         GO TO 140
+      IF( L >= I ) GO TO 140
       KDEFL = KDEFL + 1
 !
 !        Now the active submatrix is in rows and columns L to I. If
@@ -406,16 +389,16 @@
 !           Wilkinson's shift.
 !
          T = H( I, I )
-         U = SQRT( H( I-1, I ) )*SQRT( H( I, I-1 ) )
+         U = SQRT( H( I-1, I ) * H( I, I-1 ) )
          S = CABS1( U )
-         IF( S /= RZERO ) THEN
-            X = HALF*( H( I-1, I-1 )-T )
+         IF( S /= 0.0E+0 ) THEN
+            X = 0.5E+0*( H( I-1, I-1 )-T )
             SX = CABS1( X )
             S = MAX( S, CABS1( X ) )
-            Y = S*SQRT( ( X / S )**2+( U / S )**2 )
-            IF( SX > RZERO ) THEN
+            Y = SQRT( X**2+U**2 )
+            IF( SX > 0.0E+0 ) THEN
                IF( REAL( X / SX )*REAL( Y )+AIMAG( X / SX )* &
-                   AIMAG( Y ) < RZERO )Y = -Y
+                   AIMAG( Y ) < 0.0E+0 )Y = -Y
             END IF
             T = T - U*CLADIV( U, ( X+Y ) )
          END IF
@@ -470,12 +453,11 @@
 !           V(2) is always real before the call to CLARFG, and hence
 !           after the call T2 ( = T1*V(2) ) is also real.
 !
-         IF( K > M ) &
-            CALL CCOPY( 2, H( K, K-1 ), 1, V, 1 )
+         IF( K > M ) V(1:2) = H(K:K+1,K-1)
          CALL CLARFG( 2, V( 1 ), V( 2 ), 1, T1 )
          IF( K > M ) THEN
             H( K, K-1 ) = V( 1 )
-            H( K+1, K-1 ) = ZERO
+            H( K+1, K-1 ) = (0.0E+0,0.0E+0)
          END IF
          V2 = V( 2 )
          T2 = REAL( T1*V2 )
@@ -516,37 +498,30 @@
 !              scaling must be performed to ensure that H(M,M-1) remains
 !              real.
 !
-            TEMP = ONE - T1
+            TEMP = (1.0E+0,0.0E+0) - T1
             TEMP = TEMP / ABS( TEMP )
             H( M+1, M ) = H( M+1, M )*CONJG( TEMP )
-            IF( M+2 <= I ) &
-               H( M+2, M+1 ) = H( M+2, M+1 )*TEMP
+            IF( M+2 <= I ) H( M+2, M+1 ) = H( M+2, M+1 )*TEMP
             DO J = M, I
                IF( J /= M+1 ) THEN
-                  IF( I2 > J ) &
-                     CALL CSCAL( I2-J, TEMP, H( J, J+1 ), LDH )
-                  CALL CSCAL( J-I1, CONJG( TEMP ), H( I1, J ), 1 )
-                  IF( WANTZ ) THEN
-                     CALL CSCAL( NZ, CONJG( TEMP ), Z( ILOZ, J ), 1 )
-                  END IF
+                  IF( I2 > J ) H(J,J+1:I2) = TEMP*H(J,J+1:I2)
+                  H(I1:J-1,J) = CONJG( TEMP )*H(I1:J-1,J)
+                  IF( WANTZ ) Z(ILOZ:ILOZ+NZ-1,J) = CONJG( TEMP )*Z(ILOZ:ILOZ+NZ-1,J)
                END IF
-               ENDDO
+            ENDDO
          END IF
-         ENDDO
+      ENDDO
 !
 !        Ensure that H(I,I-1) is real.
 !
       TEMP = H( I, I-1 )
-      IF( AIMAG( TEMP ) /= RZERO ) THEN
+      IF( AIMAG( TEMP ) /= 0.0E+0 ) THEN
          RTEMP = ABS( TEMP )
          H( I, I-1 ) = RTEMP
          TEMP = TEMP / RTEMP
-         IF( I2 > I ) &
-            CALL CSCAL( I2-I, CONJG( TEMP ), H( I, I+1 ), LDH )
-         CALL CSCAL( I-I1, TEMP, H( I1, I ), 1 )
-         IF( WANTZ ) THEN
-            CALL CSCAL( NZ, TEMP, Z( ILOZ, I ), 1 )
-         END IF
+         IF( I2 > I ) H(I,I+1:I2) = CONJG( TEMP )*H(I,I+1:I2)
+         H(I1:I-1,I) = TEMP*H(I1:I-1,I)
+         IF( WANTZ ) Z(ILOZ:ILOZ+NZ-1,I) = TEMP*Z(ILOZ:ILOZ+NZ-1,I)
       END IF
 !
       ENDDO
@@ -575,5 +550,3 @@
 !     End of CLAHQR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

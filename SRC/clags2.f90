@@ -168,10 +168,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    REAL               A, AUA11, AUA12, AUA21, AUA22, AVB11, AVB12, &
@@ -182,9 +178,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLARTG, SLASV2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, REAL
 !     ..
 !     .. Statement Functions ..
    REAL               ABS1
@@ -209,9 +202,8 @@
 !        Transform complex 2-by-2 matrix C to real matrix by unitary
 !        diagonal matrix diag(1,D1).
 !
-      D1 = ONE
-      IF( FB /= ZERO ) &
-         D1 = B / FB
+      D1 = 1.0E+0
+      IF( FB /= 0.0E+0 ) D1 = B / FB
 !
 !        The SVD of real 2 by 2 triangular C
 !
@@ -220,8 +212,7 @@
 !
       CALL SLASV2( A, FB, D, S1, S2, SNR, CSR, SNL, CSL )
 !
-      IF( ABS( CSL ) >= ABS( SNL ) .OR. ABS( CSR ) >= ABS( SNR ) ) &
-           THEN
+      IF( ABS( CSL ) >= ABS( SNL ) .OR. ABS( CSR ) >= ABS( SNR ) ) THEN
 !
 !           Compute the (1,1) and (1,2) elements of U**H *A and V**H *B,
 !           and (1,2) element of |U|**H *|A| and |V|**H *|B|.
@@ -237,19 +228,15 @@
 !
 !           zero (1,2) elements of U**H *A and V**H *B
 !
-         IF( ( ABS( UA11R )+ABS1( UA12 ) ) == ZERO ) THEN
-            CALL CLARTG( -CMPLX( VB11R ), CONJG( VB12 ), CSQ, SNQ, &
-                         R )
-         ELSE IF( ( ABS( VB11R )+ABS1( VB12 ) ) == ZERO ) THEN
-            CALL CLARTG( -CMPLX( UA11R ), CONJG( UA12 ), CSQ, SNQ, &
-                         R )
+         IF( ( ABS( UA11R )+ABS1( UA12 ) ) == 0.0E+0 ) THEN
+            CALL CLARTG( -CMPLX( VB11R ), CONJG( VB12 ), CSQ, SNQ, R )
+         ELSE IF( ( ABS( VB11R )+ABS1( VB12 ) ) == 0.0E+0 ) THEN
+            CALL CLARTG( -CMPLX( UA11R ), CONJG( UA12 ), CSQ, SNQ, R )
          ELSE IF( AUA12 / ( ABS( UA11R )+ABS1( UA12 ) ) <= AVB12 / &
                   ( ABS( VB11R )+ABS1( VB12 ) ) ) THEN
-            CALL CLARTG( -CMPLX( UA11R ), CONJG( UA12 ), CSQ, SNQ, &
-                         R )
+            CALL CLARTG( -CMPLX( UA11R ), CONJG( UA12 ), CSQ, SNQ, R )
          ELSE
-            CALL CLARTG( -CMPLX( VB11R ), CONJG( VB12 ), CSQ, SNQ, &
-                         R )
+            CALL CLARTG( -CMPLX( VB11R ), CONJG( VB12 ), CSQ, SNQ, R )
          END IF
 !
          CSU = CSL
@@ -273,9 +260,9 @@
 !
 !           zero (2,2) elements of U**H *A and V**H *B, and then swap.
 !
-         IF( ( ABS1( UA21 )+ABS1( UA22 ) ) == ZERO ) THEN
+         IF( ( ABS1( UA21 )+ABS1( UA22 ) ) == 0.0E+0 ) THEN
             CALL CLARTG( -CONJG( VB21 ), CONJG( VB22 ), CSQ, SNQ, R )
-         ELSE IF( ( ABS1( VB21 )+ABS( VB22 ) ) == ZERO ) THEN
+         ELSE IF( ( ABS1( VB21 )+ABS( VB22 ) ) == 0.0E+0 ) THEN
             CALL CLARTG( -CONJG( UA21 ), CONJG( UA22 ), CSQ, SNQ, R )
          ELSE IF( AUA22 / ( ABS1( UA21 )+ABS1( UA22 ) ) <= AVB22 / &
                   ( ABS1( VB21 )+ABS1( VB22 ) ) ) THEN
@@ -306,9 +293,8 @@
 !        Transform complex 2-by-2 matrix C to real matrix by unitary
 !        diagonal matrix diag(d1,1).
 !
-      D1 = ONE
-      IF( FC /= ZERO ) &
-         D1 = C / FC
+      D1 = 1.0E+0
+      IF( FC /= 0.0E+0 ) D1 = C / FC
 !
 !        The SVD of real 2 by 2 triangular C
 !
@@ -317,8 +303,7 @@
 !
       CALL SLASV2( A, FC, D, S1, S2, SNR, CSR, SNL, CSL )
 !
-      IF( ABS( CSR ) >= ABS( SNR ) .OR. ABS( CSL ) >= ABS( SNL ) ) &
-           THEN
+      IF( ABS( CSR ) >= ABS( SNR ) .OR. ABS( CSL ) >= ABS( SNL ) ) THEN
 !
 !           Compute the (2,1) and (2,2) elements of U**H *A and V**H *B,
 !           and (2,1) element of |U|**H *|A| and |V|**H *|B|.
@@ -334,9 +319,9 @@
 !
 !           zero (2,1) elements of U**H *A and V**H *B.
 !
-         IF( ( ABS1( UA21 )+ABS( UA22R ) ) == ZERO ) THEN
+         IF( ( ABS1( UA21 )+ABS( UA22R ) ) == 0.0E+0 ) THEN
             CALL CLARTG( CMPLX( VB22R ), VB21, CSQ, SNQ, R )
-         ELSE IF( ( ABS1( VB21 )+ABS( VB22R ) ) == ZERO ) THEN
+         ELSE IF( ( ABS1( VB21 )+ABS( VB22R ) ) == 0.0E+0 ) THEN
             CALL CLARTG( CMPLX( UA22R ), UA21, CSQ, SNQ, R )
          ELSE IF( AUA21 / ( ABS1( UA21 )+ABS( UA22R ) ) <= AVB21 / &
                   ( ABS1( VB21 )+ABS( VB22R ) ) ) THEN
@@ -366,9 +351,9 @@
 !
 !           zero (1,1) elements of U**H *A and V**H *B, and then swap.
 !
-         IF( ( ABS1( UA11 )+ABS1( UA12 ) ) == ZERO ) THEN
+         IF( ( ABS1( UA11 )+ABS1( UA12 ) ) == 0.0E+0 ) THEN
             CALL CLARTG( VB12, VB11, CSQ, SNQ, R )
-         ELSE IF( ( ABS1( VB11 )+ABS1( VB12 ) ) == ZERO ) THEN
+         ELSE IF( ( ABS1( VB11 )+ABS1( VB12 ) ) == 0.0E+0 ) THEN
             CALL CLARTG( UA12, UA11, CSQ, SNQ, R )
          ELSE IF( AUA11 / ( ABS1( UA11 )+ABS1( UA12 ) ) <= AVB11 / &
                   ( ABS1( VB11 )+ABS1( VB12 ) ) ) THEN
@@ -391,5 +376,3 @@
 !     End of CLAGS2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

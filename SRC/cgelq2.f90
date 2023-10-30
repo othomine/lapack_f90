@@ -146,7 +146,7 @@
    COMPLEX            ALPHA
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACGV, CLARF, CLARFG, XERBLA
+   EXTERNAL           CLARF, CLARFG, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -171,7 +171,7 @@
 !
 !        Generate elementary reflector H(i) to annihilate A(i,i+1:n)
 !
-      CALL CLACGV( N-I+1, A( I, I ), LDA )
+      A(I,I:N) = CONJG(A(I,I:N))
       ALPHA = A( I, I )
       CALL CLARFG( N-I+1, ALPHA, A( I, MIN( I+1, N ) ), LDA, &
                    TAU( I ) )
@@ -184,7 +184,7 @@
                      A( I+1, I ), LDA, WORK )
       END IF
       A( I, I ) = ALPHA
-      CALL CLACGV( N-I+1, A( I, I ), LDA )
+      A(I,I:N) = CONJG(A(I,I:N))
    ENDDO
    RETURN
 !

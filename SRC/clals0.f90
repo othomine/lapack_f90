@@ -287,10 +287,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO, NEGONE
-   PARAMETER          ( ONE = 1.0E0, ZERO = 0.0E0, NEGONE = -1.0E0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J, JCOL, JROW, M, N, NLP1
@@ -303,9 +299,6 @@
 !     .. External Functions ..
    REAL               SLAMC3, SNRM2
    EXTERNAL           SLAMC3, SNRM2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          AIMAG, CMPLX, MAX, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -359,19 +352,17 @@
 !
 !        Step (2L): permute rows of B.
 !
-      CALL CCOPY( NRHS, B( NLP1, 1 ), LDB, BX( 1, 1 ), LDBX )
+      BX(1,1:NRHS) = B(NLP1,1:NRHS)
       DO I = 2, N
-         CALL CCOPY( NRHS, B( PERM( I ), 1 ), LDB, BX( I, 1 ), LDBX )
+         BX(I,1:NRHS) = B(PERM(I),1:NRHS)
       ENDDO
 !
 !        Step (3L): apply the inverse of the left singular vector
 !        matrix to BX.
 !
       IF( K == 1 ) THEN
-         CALL CCOPY( NRHS, BX, LDBX, B, LDB )
-         IF( Z( 1 ) < ZERO ) THEN
-            CALL CSSCAL( NRHS, NEGONE, B, LDB )
-         END IF
+         B(1:NRHS,1) = BX(1:NRHS,1)
+         IF( Z( 1 ) < 0.0E+0 ) B(1:NRHS,1) = -B(1:NRHS,1)
       ELSE
          DO J = 1, K
             DIFLJ = DIFL( J )
@@ -381,17 +372,15 @@
                DIFRJ = -DIFR( J, 1 )
                DSIGJP = -POLES( J+1, 2 )
             END IF
-            IF( ( Z( J ) == ZERO ) .OR. ( POLES( J, 2 ) == ZERO ) ) &
-                 THEN
-               RWORK( J ) = ZERO
+            IF( ( Z( J ) == 0.0E+0 ) .OR. ( POLES( J, 2 ) == 0.0E+0 ) ) THEN
+               RWORK( J ) = 0.0E+0
             ELSE
-               RWORK( J ) = -POLES( J, 2 )*Z( J ) / DIFLJ / &
-                            ( POLES( J, 2 )+DJ )
+               RWORK( J ) = -POLES( J, 2 )*Z( J ) / DIFLJ / ( POLES( J, 2 )+DJ )
             END IF
             DO I = 1, J - 1
-               IF( ( Z( I ) == ZERO ) .OR. &
-                   ( POLES( I, 2 ) == ZERO ) ) THEN
-                  RWORK( I ) = ZERO
+               IF( ( Z( I ) == 0.0E+0 ) .OR. &
+                   ( POLES( I, 2 ) == 0.0E+0 ) ) THEN
+                  RWORK( I ) = 0.0E+0
                ELSE
 !
 !                    Use calls to the subroutine SLAMC3 to enforce the
@@ -404,22 +393,22 @@
                END IF
             ENDDO
             DO I = J + 1, K
-               IF( ( Z( I ) == ZERO ) .OR. &
-                   ( POLES( I, 2 ) == ZERO ) ) THEN
-                  RWORK( I ) = ZERO
+               IF( ( Z( I ) == 0.0E+0 ) .OR. &
+                   ( POLES( I, 2 ) == 0.0E+0 ) ) THEN
+                  RWORK( I ) = 0.0E+0
                ELSE
                   RWORK( I ) = POLES( I, 2 )*Z( I ) / &
                                ( SLAMC3( POLES( I, 2 ), DSIGJP )+ &
                                DIFRJ ) / ( POLES( I, 2 )+DJ )
                END IF
             ENDDO
-            RWORK( 1 ) = NEGONE
+            RWORK( 1 ) = -1.0E+0
             TEMP = SNRM2( K, RWORK, 1 )
 !
 !              Since B and BX are complex, the following call to SGEMV
 !              is performed in two steps (real and imaginary parts).
 !
-!              CALL SGEMV( 'T', K, NRHS, ONE, BX, LDBX, WORK, 1, ZERO,
+!              CALL SGEMV( 'T', K, NRHS, 1.0E+0, BX, LDBX, WORK, 1, 0.0E+0,
 !    $                     B( J, 1 ), LDB )
 !
             I = K + NRHS*2
@@ -429,8 +418,8 @@
                   RWORK( I ) = REAL( BX( JROW, JCOL ) )
                ENDDO
             ENDDO
-            CALL SGEMV( 'T', K, NRHS, ONE, RWORK( 1+K+NRHS*2 ), K, &
-                        RWORK( 1 ), 1, ZERO, RWORK( 1+K ), 1 )
+            CALL SGEMV( 'T', K, NRHS, 1.0E+0, RWORK( 1+K+NRHS*2 ), K, &
+                        RWORK( 1 ), 1, 0.0E+0, RWORK( 1+K ), 1 )
             I = K + NRHS*2
             DO JCOL = 1, NRHS
                DO JROW = 1, K
@@ -438,22 +427,20 @@
                   RWORK( I ) = AIMAG( BX( JROW, JCOL ) )
                ENDDO
             ENDDO
-            CALL SGEMV( 'T', K, NRHS, ONE, RWORK( 1+K+NRHS*2 ), K, &
-                        RWORK( 1 ), 1, ZERO, RWORK( 1+K+NRHS ), 1 )
+            CALL SGEMV( 'T', K, NRHS, 1.0E+0, RWORK( 1+K+NRHS*2 ), K, &
+                        RWORK( 1 ), 1, 0.0E+0, RWORK( 1+K+NRHS ), 1 )
             DO JCOL = 1, NRHS
                B( J, JCOL ) = CMPLX( RWORK( JCOL+K ), &
                               RWORK( JCOL+K+NRHS ) )
             ENDDO
-            CALL CLASCL( 'G', 0, 0, TEMP, ONE, 1, NRHS, B( J, 1 ), &
+            CALL CLASCL( 'G', 0, 0, TEMP, 1.0E+0, 1, NRHS, B( J, 1 ), &
                          LDB, INFO )
             ENDDO
       END IF
 !
 !        Move the deflated rows of BX to B also.
 !
-      IF( K < MAX( M, N ) ) &
-         CALL CLACPY( 'A', N-K, NRHS, BX( K+1, 1 ), LDBX, &
-                      B( K+1, 1 ), LDB )
+      IF( K < MAX( M, N ) ) B(K+1:N,1:NRHS) = BX(K+1:N,1:NRHS)
    ELSE
 !
 !        Apply back the right orthogonal transformations.
@@ -462,19 +449,19 @@
 !        to B.
 !
       IF( K == 1 ) THEN
-         CALL CCOPY( NRHS, B, LDB, BX, LDBX )
+         BX(1:NRHS,1) = B(1:NRHS,1)
       ELSE
          DO J = 1, K
             DSIGJ = POLES( J, 2 )
-            IF( Z( J ) == ZERO ) THEN
-               RWORK( J ) = ZERO
+            IF( Z( J ) == 0.0E+0 ) THEN
+               RWORK( J ) = 0.0E+0
             ELSE
                RWORK( J ) = -Z( J ) / DIFL( J ) / &
                             ( DSIGJ+POLES( J, 1 ) ) / DIFR( J, 2 )
             END IF
             DO I = 1, J - 1
-               IF( Z( J ) == ZERO ) THEN
-                  RWORK( I ) = ZERO
+               IF( Z( J ) == 0.0E+0 ) THEN
+                  RWORK( I ) = 0.0E+0
                ELSE
 !
 !                    Use calls to the subroutine SLAMC3 to enforce the
@@ -485,21 +472,21 @@
                                2 ) )-DIFR( I, 1 ) ) / &
                                ( DSIGJ+POLES( I, 1 ) ) / DIFR( I, 2 )
                END IF
-               ENDDO
+            ENDDO
             DO I = J + 1, K
-               IF( Z( J ) == ZERO ) THEN
-                  RWORK( I ) = ZERO
+               IF( Z( J ) == 0.0E+0 ) THEN
+                  RWORK( I ) = 0.0E+0
                ELSE
                   RWORK( I ) = Z( J ) / ( SLAMC3( DSIGJ, -POLES( I, &
                                2 ) )-DIFL( I ) ) / &
                                ( DSIGJ+POLES( I, 1 ) ) / DIFR( I, 2 )
                END IF
-               ENDDO
+            ENDDO
 !
 !              Since B and BX are complex, the following call to SGEMV
 !              is performed in two steps (real and imaginary parts).
 !
-!              CALL SGEMV( 'T', K, NRHS, ONE, B, LDB, WORK, 1, ZERO,
+!              CALL SGEMV( 'T', K, NRHS, 1.0E+0, B, LDB, WORK, 1, 0.0E+0,
 !    $                     BX( J, 1 ), LDBX )
 !
             I = K + NRHS*2
@@ -507,46 +494,41 @@
                DO JROW = 1, K
                   I = I + 1
                   RWORK( I ) = REAL( B( JROW, JCOL ) )
-                  ENDDO
                ENDDO
-            CALL SGEMV( 'T', K, NRHS, ONE, RWORK( 1+K+NRHS*2 ), K, &
-                        RWORK( 1 ), 1, ZERO, RWORK( 1+K ), 1 )
+            ENDDO
+            CALL SGEMV( 'T', K, NRHS, 1.0E+0, RWORK( 1+K+NRHS*2 ), K, &
+                        RWORK( 1 ), 1, 0.0E+0, RWORK( 1+K ), 1 )
             I = K + NRHS*2
             DO JCOL = 1, NRHS
                DO JROW = 1, K
                   I = I + 1
                   RWORK( I ) = AIMAG( B( JROW, JCOL ) )
-                  ENDDO
-               ENDDO
-            CALL SGEMV( 'T', K, NRHS, ONE, RWORK( 1+K+NRHS*2 ), K, &
-                        RWORK( 1 ), 1, ZERO, RWORK( 1+K+NRHS ), 1 )
-            DO JCOL = 1, NRHS
-               BX( J, JCOL ) = CMPLX( RWORK( JCOL+K ), &
-                               RWORK( JCOL+K+NRHS ) )
                ENDDO
             ENDDO
+            CALL SGEMV( 'T', K, NRHS, 1.0E+0, RWORK( 1+K+NRHS*2 ), K, &
+                        RWORK( 1 ), 1, 0.0E+0, RWORK( 1+K+NRHS ), 1 )
+            BX( J,1:NRHS) = CMPLX( RWORK(K+1:K+NRHS), RWORK( K+NRHS+1:K+2*NRHS ) )
+         ENDDO
       END IF
 !
 !        Step (2R): if SQRE = 1, apply back the rotation that is
 !        related to the right null space of the subproblem.
 !
       IF( SQRE == 1 ) THEN
-         CALL CCOPY( NRHS, B( M, 1 ), LDB, BX( M, 1 ), LDBX )
+         BX(M:M+NRHS-1,1) = B(M:M+NRHS-1,1)
          CALL CSROT( NRHS, BX( 1, 1 ), LDBX, BX( M, 1 ), LDBX, C, S )
       END IF
-      IF( K < MAX( M, N ) ) &
-         CALL CLACPY( 'A', N-K, NRHS, B( K+1, 1 ), LDB, &
-                      BX( K+1, 1 ), LDBX )
+      IF( K < MAX( M, N ) ) BX(K+1:N,1:NRHS) = B(K+1:N,1:NRHS)
 !
 !        Step (3R): permute rows of B.
 !
-      CALL CCOPY( NRHS, BX( 1, 1 ), LDBX, B( NLP1, 1 ), LDB )
+      B(NLP1,1:NRHS) = BX(1,1:NRHS)
       IF( SQRE == 1 ) THEN
-         CALL CCOPY( NRHS, BX( M, 1 ), LDBX, B( M, 1 ), LDB )
+         B(M,1:NRHS) = BX(M,1:NRHS)
       END IF
       DO I = 2, N
-         CALL CCOPY( NRHS, BX( I, 1 ), LDBX, B( PERM( I ), 1 ), LDB )
-         ENDDO
+         B(PERM(I),1:NRHS) = BX(I,1:NRHS)
+      ENDDO
 !
 !        Step (4R): apply back the Givens rotations performed.
 !
@@ -554,7 +536,7 @@
          CALL CSROT( NRHS, B( GIVCOL( I, 2 ), 1 ), LDB, &
                      B( GIVCOL( I, 1 ), 1 ), LDB, GIVNUM( I, 2 ), &
                      -GIVNUM( I, 1 ) )
-         ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -562,5 +544,3 @@
 !     End of CLALS0
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

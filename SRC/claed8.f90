@@ -244,11 +244,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               MONE, ZERO, ONE, TWO, EIGHT
-   PARAMETER          ( MONE = -1.0E0, ZERO = 0.0E0, ONE = 1.0E0, &
-                      TWO = 2.0E0, EIGHT = 8.0E0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IMAX, J, JLAM, JMAX, JP, K2, N1, N1P1, N2
@@ -262,9 +257,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CLACPY, CSROT, SCOPY, SLAMRG, SSCAL, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -297,31 +289,26 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    N1 = CUTPNT
    N2 = N - N1
    N1P1 = N1 + 1
 !
-   IF( RHO < ZERO ) THEN
-      CALL SSCAL( N2, MONE, Z( N1P1 ), 1 )
-   END IF
+   IF( RHO < 0.0E+0 ) Z(N1P1:N1+N2) = -Z(N1P1:N1+N2)
 !
 !     Normalize z so that norm(z) = 1
 !
-   T = ONE / SQRT( TWO )
+   T = 1.0E+0 / SQRT( 2.0E+0 )
    DO J = 1, N
       INDX( J ) = J
    ENDDO
-   CALL SSCAL( N, T, Z, 1 )
-   RHO = ABS( TWO*RHO )
+   Z(1:N) = T*Z(1:N)
+   RHO = ABS( 2.0E+0*RHO )
 !
 !     Sort the eigenvalues into increasing order
 !
-   DO I = CUTPNT + 1, N
-      INDXQ( I ) = INDXQ( I ) + CUTPNT
-   ENDDO
+   INDXQ(CUTPNT+1:N) = INDXQ(CUTPNT+1:N) + CUTPNT
    DO I = 1, N
       DLAMBDA( I ) = D( INDXQ( I ) )
       W( I ) = Z( INDXQ( I ) )
@@ -339,7 +326,7 @@
    IMAX = ISAMAX( N, Z, 1 )
    JMAX = ISAMAX( N, D, 1 )
    EPS = SLAMCH( 'Epsilon' )
-   TOL = EIGHT*EPS*ABS( D( JMAX ) )
+   TOL = 8.0E+0*EPS*ABS( D( JMAX ) )
 !
 !     If the rank-1 modifier is small enough, no more needs to be done
 !     -- except to reorganize Q so that its columns correspond with the
@@ -349,9 +336,9 @@
       K = 0
       DO J = 1, N
          PERM( J ) = INDXQ( INDX( J ) )
-         CALL CCOPY( QSIZ, Q( 1, PERM( J ) ), 1, Q2( 1, J ), 1 )
+         Q2(1:QSIZ,J) = Q(1:QSIZ,PERM(J))
       ENDDO
-      CALL CLACPY( 'A', QSIZ, N, Q2( 1, 1 ), LDQ2, Q( 1, 1 ), LDQ )
+      Q(1:QSIZ,1:N) = Q2(1:QSIZ,1:N)
       RETURN
    END IF
 !
@@ -370,8 +357,7 @@
 !
          K2 = K2 - 1
          INDXP( K2 ) = J
-         IF( J == N ) &
-            GO TO 100
+         IF( J == N ) GO TO 100
       ELSE
          JLAM = J
          GO TO 70
@@ -379,8 +365,7 @@
    ENDDO
 70 CONTINUE
    J = J + 1
-   IF( J > N ) &
-      GO TO 90
+   IF( J > N ) GO TO 90
    IF( RHO*ABS( Z( J ) ) <= TOL ) THEN
 !
 !        Deflate due to small z component.
@@ -406,7 +391,7 @@
 !           Deflation is possible.
 !
          Z( J ) = TAU
-         Z( JLAM ) = ZERO
+         Z( JLAM ) = 0.0E+0
 !
 !           Record the appropriate Givens rotation
 !
@@ -465,16 +450,15 @@
       JP = INDXP( J )
       DLAMBDA( J ) = D( JP )
       PERM( J ) = INDXQ( INDX( JP ) )
-      CALL CCOPY( QSIZ, Q( 1, PERM( J ) ), 1, Q2( 1, J ), 1 )
-      ENDDO
+      Q2(1:QSIZ,J) = Q(1:QSIZ,PERM(J))
+   ENDDO
 !
 !     The deflated eigenvalues and their corresponding vectors go back
 !     into the last N - K slots of D and Q respectively.
 !
    IF( K < N ) THEN
-      CALL SCOPY( N-K, DLAMBDA( K+1 ), 1, D( K+1 ), 1 )
-      CALL CLACPY( 'A', QSIZ, N-K, Q2( 1, K+1 ), LDQ2, Q( 1, K+1 ), &
-                   LDQ )
+      D(K+1:N) = DLAMBDA(K+1:N)
+      Q(1,1:N) = Q2(1,1:N)
    END IF
 !
    RETURN
@@ -482,5 +466,3 @@
 !     End of CLAED8
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

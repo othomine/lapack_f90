@@ -293,12 +293,6 @@
       Z( LDZ, * ), ALPHA( * ), BETA( * ), WORK( * )
    REAL, INTENT( OUT ) :: RWORK( * )
 
-!     Parameters
-   COMPLEX         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0, 0.0 ), CONE = ( 1.0, 0.0 ) )
-   REAL :: ZERO, ONE, HALF
-   PARAMETER( ZERO = 0.0, ONE = 1.0, HALF = 0.5 )
-
 !     Local scalars
    REAL :: SMLNUM, ULP, SAFMIN, SAFMAX, C1, TEMPR, BNORM, BTOL
    COMPLEX :: ESHIFT, S1, TEMP
@@ -455,14 +449,14 @@
 !
 !     Initialize Q and Z
 !
-   IF( IWANTQ == 3 ) CALL CLASET( 'FULL', N, N, CZERO, CONE, Q, &
+   IF( IWANTQ == 3 ) CALL CLASET( 'FULL', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Q, &
        LDQ )
-   IF( IWANTZ == 3 ) CALL CLASET( 'FULL', N, N, CZERO, CONE, Z, &
+   IF( IWANTZ == 3 ) CALL CLASET( 'FULL', N, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), Z, &
        LDZ )
 
 !     Get machine constants
    SAFMIN = SLAMCH( 'SAFE MINIMUM' )
-   SAFMAX = ONE/SAFMIN
+   SAFMAX = 1.0E+0/SAFMIN
    ULP = SLAMCH( 'PRECISION' )
    SMLNUM = SAFMIN*( REAL( N )/ULP )
 
@@ -488,31 +482,29 @@
       IF ( ABS( A( ISTOP, ISTOP-1 ) )  <=  MAX( SMLNUM, &
          ULP*( ABS( A( ISTOP, ISTOP ) )+ABS( A( ISTOP-1, &
          ISTOP-1 ) ) ) ) ) THEN
-         A( ISTOP, ISTOP-1 ) = CZERO
+         A( ISTOP, ISTOP-1 ) = (0.0E+0,0.0E+0)
          ISTOP = ISTOP-1
          LD = 0
-         ESHIFT = CZERO
+         ESHIFT = (0.0E+0,0.0E+0)
       END IF
 !        Check deflations at the start
       IF ( ABS( A( ISTART+1, ISTART ) )  <=  MAX( SMLNUM, &
          ULP*( ABS( A( ISTART, ISTART ) )+ABS( A( ISTART+1, &
          ISTART+1 ) ) ) ) ) THEN
-         A( ISTART+1, ISTART ) = CZERO
+         A( ISTART+1, ISTART ) = (0.0E+0,0.0E+0)
          ISTART = ISTART+1
          LD = 0
-         ESHIFT = CZERO
+         ESHIFT = (0.0E+0,0.0E+0)
       END IF
 
-      IF ( ISTART+1  >=  ISTOP ) THEN
-         EXIT
-      END IF
+      IF ( ISTART+1  >=  ISTOP ) EXIT
 
 !        Check interior deflations
       ISTART2 = ISTART
       DO K = ISTOP, ISTART+1, -1
          IF ( ABS( A( K, K-1 ) )  <=  MAX( SMLNUM, ULP*( ABS( A( K, &
             K ) )+ABS( A( K-1, K-1 ) ) ) ) ) THEN
-            A( K, K-1 ) = CZERO
+            A( K, K-1 ) = (0.0E+0,0.0E+0)
             ISTART2 = K
             EXIT
          END IF
@@ -540,7 +532,7 @@
                CALL CLARTG( B( K2-1, K2 ), B( K2-1, K2-1 ), C1, S1, &
                             TEMP )
                B( K2-1, K2 ) = TEMP
-               B( K2-1, K2-1 ) = CZERO
+               B( K2-1, K2-1 ) = (0.0E+0,0.0E+0)
 
                CALL CROT( K2-2-ISTARTM+1, B( ISTARTM, K2 ), 1, &
                           B( ISTARTM, K2-1 ), 1, C1, S1 )
@@ -555,7 +547,7 @@
                   CALL CLARTG( A( K2, K2-1 ), A( K2+1, K2-1 ), C1, &
                                S1, TEMP )
                   A( K2, K2-1 ) = TEMP
-                  A( K2+1, K2-1 ) = CZERO
+                  A( K2+1, K2-1 ) = (0.0E+0,0.0E+0)
 
                   CALL CROT( ISTOPM-K2+1, A( K2, K2 ), LDA, A( K2+1, &
                              K2 ), LDA, C1, S1 )
@@ -573,7 +565,7 @@
                CALL CLARTG( A( ISTART2, ISTART2 ), A( ISTART2+1, &
                             ISTART2 ), C1, S1, TEMP )
                A( ISTART2, ISTART2 ) = TEMP
-               A( ISTART2+1, ISTART2 ) = CZERO
+               A( ISTART2+1, ISTART2 ) = (0.0E+0,0.0E+0)
 
                CALL CROT( ISTOPM-( ISTART2+1 )+1, A( ISTART2, &
                           ISTART2+1 ), LDA, A( ISTART2+1, &
@@ -598,7 +590,7 @@
       IF ( ISTART2  >=  ISTOP ) THEN
          ISTOP = ISTART2-1
          LD = 0
-         ESHIFT = CZERO
+         ESHIFT = (0.0E+0,0.0E+0)
          CYCLE
       END IF
 
@@ -630,7 +622,7 @@
       IF ( N_DEFLATED > 0 ) THEN
          ISTOP = ISTOP-N_DEFLATED
          LD = 0
-         ESHIFT = CZERO
+         ESHIFT = (0.0E+0,0.0E+0)
       END IF
 
       IF ( 100*N_DEFLATED > NIBBLE*( N_DEFLATED+N_UNDEFLATED ) .OR. &
@@ -654,9 +646,9 @@
             ISTOP-1 ) ) < ABS( A( ISTOP-1, ISTOP-1 ) ) ) THEN
             ESHIFT = A( ISTOP, ISTOP-1 )/B( ISTOP-1, ISTOP-1 )
          ELSE
-            ESHIFT = ESHIFT+CONE/( SAFMIN*REAL( MAXIT ) )
+            ESHIFT = ESHIFT+(1.0E+0,0.0E+0)/( SAFMIN*REAL( MAXIT ) )
          END IF
-         ALPHA( SHIFTPOS ) = CONE
+         ALPHA( SHIFTPOS ) = (1.0E+0,0.0E+0)
          BETA( SHIFTPOS ) = ESHIFT
          NS = 1
       END IF
@@ -685,5 +677,3 @@
    INFO = NORM_INFO
 
 END SUBROUTINE
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

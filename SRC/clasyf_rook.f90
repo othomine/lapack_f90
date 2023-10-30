@@ -211,8 +211,12 @@
    LOGICAL            DONE
    INTEGER            IMAX, ITEMP, J, JB, JJ, JMAX, JP1, JP2, K, KK, &
                       KW, KKW, KP, KSTEP, P, II
-   REAL               ABSAKK, ALPHA, COLMAX, ROWMAX, STEMP, SFMIN
+   REAL               ABSAKK, COLMAX, ROWMAX, STEMP, SFMIN
    COMPLEX            D11, D12, D21, D22, R1, T, Z
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -223,9 +227,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEMM, CGEMV, CSCAL, CSWAP
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, SQRT, AIMAG, REAL
-!     ..
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..
@@ -235,10 +236,6 @@
 !     .. Executable Statements ..
 !
    INFO = 0
-!
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
 !
 !     Compute machine safe minimum
 !
@@ -261,8 +258,7 @@
 !
 !        Exit from loop
 !
-      IF( ( K <= N-NB+1 .AND. NB < N ) .OR. K < 1 ) &
-         GO TO 30
+      IF( ( K <= N-NB+1 .AND. NB < N ) .OR. K < 1 ) GO TO 30
 !
       KSTEP = 1
       P = K
@@ -271,8 +267,8 @@
 !
       CALL CCOPY( K, A( 1, K ), 1, W( 1, KW ), 1 )
       IF( K < N ) &
-         CALL CGEMV( 'No transpose', K, N-K, -CONE, A( 1, K+1 ), &
-                     LDA, W( K, KW+1 ), LDW, CONE, W( 1, KW ), 1 )
+         CALL CGEMV( 'No transpose', K, N-K, -(1.0E+0,0.0E+0), A( 1, K+1 ), &
+                     LDA, W( K, KW+1 ), LDW, (1.0E+0,0.0E+0), W( 1, KW ), 1 )
 !
 !        Determine rows and columns to be interchanged and whether
 !        a 1-by-1 or 2-by-2 pivot block will be used
@@ -287,15 +283,14 @@
          IMAX = ICAMAX( K-1, W( 1, KW ), 1 )
          COLMAX = CABS1( W( IMAX, KW ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
          CALL CCOPY( K, W( 1, KW ), 1, A( 1, K ), 1 )
       ELSE
@@ -319,7 +314,7 @@
 !
 !              Loop until pivot found
 !
-12          CONTINUE
+            DO WHILE (.NOT.DONE)
 !
 !                 Begin pivot search loop body
 !
@@ -331,9 +326,9 @@
                            W( IMAX+1, KW-1 ), 1 )
 !
                IF( K < N ) &
-                  CALL CGEMV( 'No transpose', K, N-K, -CONE, &
+                  CALL CGEMV( 'No transpose', K, N-K, -(1.0E+0,0.0E+0), &
                               A( 1, K+1 ), LDA, W( IMAX, KW+1 ), LDW, &
-                              CONE, W( 1, KW-1 ), 1 )
+                              (1.0E+0,0.0E+0), W( 1, KW-1 ), 1 )
 !
 !                 JMAX is the column-index of the largest off-diagonal
 !                 element in row IMAX, and ROWMAX is its absolute value.
@@ -344,7 +339,7 @@
                                         1 )
                   ROWMAX = CABS1( W( JMAX, KW-1 ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX > 1 ) THEN
@@ -360,8 +355,7 @@
 !                 CABS1( W( IMAX, KW-1 ) ) >= ALPHA*ROWMAX
 !                 (used to handle NaN and Inf)
 !
-               IF( .NOT.(CABS1( W( IMAX, KW-1 ) ) < ALPHA*ROWMAX ) ) &
-               THEN
+               IF( .NOT.(CABS1( W( IMAX, KW-1 ) ) < ALPHA*ROWMAX ) ) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -377,8 +371,7 @@
 !                 Equivalent to testing for ROWMAX == COLMAX,
 !                 (used to handle NaN and Inf)
 !
-               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) &
-               THEN
+               ELSE IF( ( P == JMAX ) .OR. ( ROWMAX <= COLMAX ) ) THEN
 !
 !                    interchange rows and columns K-1 and IMAX,
 !                    use 2-by-2 pivot block
@@ -402,7 +395,7 @@
 !
 !                 End pivot search loop body
 !
-            IF( .NOT. DONE ) GOTO 12
+            ENDDO
 !
          END IF
 !
@@ -460,9 +453,9 @@
             CALL CCOPY( K, W( 1, KW ), 1, A( 1, K ), 1 )
             IF( K > 1 ) THEN
                IF( CABS1( A( K, K ) ) >= SFMIN ) THEN
-                  R1 = CONE / A( K, K )
+                  R1 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSCAL( K-1, R1, A( 1, K ), 1 )
-               ELSE IF( A( K, K ) /= CZERO ) THEN
+               ELSE IF( A( K, K ) /= (0.0E+0,0.0E+0) ) THEN
                   DO II = 1, K - 1
                      A( II, K ) = A( II, K ) / A( K, K )
                   ENDDO
@@ -486,7 +479,7 @@
                D12 = W( K-1, KW )
                D11 = W( K, KW ) / D12
                D22 = W( K-1, KW-1 ) / D12
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
                DO J = 1, K - 2
                   A( J, K-1 ) = T*( (D11*W( J, KW-1 )-W( J, KW ) ) / &
                                 D12 )
@@ -531,8 +524,8 @@
 !           Update the upper triangle of the diagonal block
 !
          DO JJ = J, J + JB - 1
-            CALL CGEMV( 'No transpose', JJ-J+1, N-K, -CONE, &
-                        A( J, K+1 ), LDA, W( JJ, KW+1 ), LDW, CONE, &
+            CALL CGEMV( 'No transpose', JJ-J+1, N-K, -(1.0E+0,0.0E+0), &
+                        A( J, K+1 ), LDA, W( JJ, KW+1 ), LDW, (1.0E+0,0.0E+0), &
                         A( J, JJ ), 1 )
          ENDDO
 !
@@ -540,8 +533,8 @@
 !
          IF( J >= 2 ) &
             CALL CGEMM( 'No transpose', 'Transpose', J-1, JB, &
-                     N-K, -CONE, A( 1, K+1 ), LDA, W( J, KW+1 ), LDW, &
-                     CONE, A( 1, J ), LDA )
+                     N-K, -(1.0E+0,0.0E+0), A( 1, K+1 ), LDA, W( J, KW+1 ), LDW, &
+                     (1.0E+0,0.0E+0), A( 1, J ), LDA )
       ENDDO
 !
 !        Put U12 in standard form by partially undoing the interchanges
@@ -597,8 +590,8 @@
 !
       CALL CCOPY( N-K+1, A( K, K ), 1, W( K, K ), 1 )
       IF( K > 1 ) &
-         CALL CGEMV( 'No transpose', N-K+1, K-1, -CONE, A( K, 1 ), &
-                     LDA, W( K, 1 ), LDW, CONE, W( K, K ), 1 )
+         CALL CGEMV( 'No transpose', N-K+1, K-1, -(1.0E+0,0.0E+0), A( K, 1 ), &
+                     LDA, W( K, 1 ), LDW, (1.0E+0,0.0E+0), W( K, K ), 1 )
 !
 !        Determine rows and columns to be interchanged and whether
 !        a 1-by-1 or 2-by-2 pivot block will be used
@@ -613,10 +606,10 @@
          IMAX = K + ICAMAX( N-K, W( K+1, K ), 1 )
          COLMAX = CABS1( W( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
@@ -656,9 +649,9 @@
                CALL CCOPY( N-IMAX+1, A( IMAX, IMAX ), 1, &
                            W( IMAX, K+1 ), 1 )
                IF( K > 1 ) &
-                  CALL CGEMV( 'No transpose', N-K+1, K-1, -CONE, &
+                  CALL CGEMV( 'No transpose', N-K+1, K-1, -(1.0E+0,0.0E+0), &
                               A( K, 1 ), LDA, W( IMAX, 1 ), LDW, &
-                              CONE, W( K, K+1 ), 1 )
+                              (1.0E+0,0.0E+0), W( K, K+1 ), 1 )
 !
 !                 JMAX is the column-index of the largest off-diagonal
 !                 element in row IMAX, and ROWMAX is its absolute value.
@@ -668,7 +661,7 @@
                   JMAX = K - 1 + ICAMAX( IMAX-K, W( K, K+1 ), 1 )
                   ROWMAX = CABS1( W( JMAX, K+1 ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX < N ) THEN
@@ -777,9 +770,9 @@
             CALL CCOPY( N-K+1, W( K, K ), 1, A( K, K ), 1 )
             IF( K < N ) THEN
                IF( CABS1( A( K, K ) ) >= SFMIN ) THEN
-                  R1 = CONE / A( K, K )
+                  R1 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSCAL( N-K, R1, A( K+1, K ), 1 )
-               ELSE IF( A( K, K ) /= CZERO ) THEN
+               ELSE IF( A( K, K ) /= (0.0E+0,0.0E+0) ) THEN
                   DO II = K + 1, N
                      A( II, K ) = A( II, K ) / A( K, K )
                   ENDDO
@@ -802,7 +795,7 @@
                D21 = W( K+1, K )
                D11 = W( K+1, K+1 ) / D21
                D22 = W( K, K ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
                DO J = K + 2, N
                   A( J, K ) = T*( ( D11*W( J, K )-W( J, K+1 ) ) / &
                               D21 )
@@ -847,8 +840,8 @@
 !           Update the lower triangle of the diagonal block
 !
          DO JJ = J, J + JB - 1
-            CALL CGEMV( 'No transpose', J+JB-JJ, K-1, -CONE, &
-                        A( JJ, 1 ), LDA, W( JJ, 1 ), LDW, CONE, &
+            CALL CGEMV( 'No transpose', J+JB-JJ, K-1, -(1.0E+0,0.0E+0), &
+                        A( JJ, 1 ), LDA, W( JJ, 1 ), LDW, (1.0E+0,0.0E+0), &
                         A( JJ, JJ ), 1 )
             ENDDO
 !
@@ -856,8 +849,8 @@
 !
          IF( J+JB <= N ) &
             CALL CGEMM( 'No transpose', 'Transpose', N-J-JB+1, JB, &
-                       K-1, -CONE, A( J+JB, 1 ), LDA, W( J, 1 ), LDW, &
-                       CONE, A( J+JB, J ), LDA )
+                       K-1, -(1.0E+0,0.0E+0), A( J+JB, 1 ), LDA, W( J, 1 ), LDW, &
+                       (1.0E+0,0.0E+0), A( J+JB, J ), LDA )
          ENDDO
 !
 !        Put L21 in standard form by partially undoing the interchanges
@@ -896,5 +889,4 @@
 !     End of CLASYF_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 

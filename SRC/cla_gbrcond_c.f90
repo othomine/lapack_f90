@@ -193,9 +193,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACN2, CGBTRS, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
-!     ..
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..
@@ -284,9 +281,7 @@
 !
 !           Multiply by R.
 !
-         DO I = 1, N
-            WORK( I ) = WORK( I ) * RWORK( I )
-         END DO
+         WORK(1:N) = WORK(1:N) * RWORK(1:N)
 !
          IF ( NOTRANS ) THEN
             CALL CGBTRS( 'No transpose', N, KL, KU, 1, AFB, LDAFB, &
@@ -298,20 +293,12 @@
 !
 !           Multiply by inv(C).
 !
-         IF ( CAPPLY ) THEN
-            DO I = 1, N
-               WORK( I ) = WORK( I ) * C( I )
-            END DO
-         END IF
+         IF ( CAPPLY ) WORK(1:N) = WORK(1:N) * C(1:N)
       ELSE
 !
 !           Multiply by inv(C**H).
 !
-         IF ( CAPPLY ) THEN
-            DO I = 1, N
-               WORK( I ) = WORK( I ) * C( I )
-            END DO
-         END IF
+         IF ( CAPPLY ) WORK(1:N) = WORK(1:N) * C(1:N)
 !
          IF ( NOTRANS ) THEN
             CALL CGBTRS( 'Conjugate transpose', N, KL, KU, 1, AFB, &
@@ -323,22 +310,17 @@
 !
 !           Multiply by R.
 !
-         DO I = 1, N
-            WORK( I ) = WORK( I ) * RWORK( I )
-         END DO
+         WORK(1:N) = WORK(1:N) * RWORK(1:N)
       END IF
       GO TO 10
    END IF
 !
 !     Compute the estimate of the reciprocal condition number.
 !
-   IF( AINVNM  /=  0.0E+0 ) &
-      CLA_GBRCOND_C = 1.0E+0 / AINVNM
+   IF( AINVNM  /=  0.0E+0 ) CLA_GBRCOND_C = 1.0E+0 / AINVNM
 !
    RETURN
 !
 !     End of CLA_GBRCOND_C
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

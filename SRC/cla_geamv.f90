@@ -191,10 +191,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            SYMB_ZERO
@@ -209,9 +205,6 @@
 !     .. External Functions ..
    EXTERNAL           ILATRANS
    INTEGER            ILATRANS
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, ABS, REAL, AIMAG, SIGN
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -246,8 +239,7 @@
 !
 !     Quick return if possible.
 !
-   IF( ( M == 0 ).OR.( N == 0 ).OR. &
-       ( ( ALPHA == ZERO ).AND.( BETA == ONE ) ) ) &
+   IF( ( M == 0 ).OR.( N == 0 ).OR. ( ( ALPHA == 0.0E+0 ).AND.( BETA == 1.0E+0 ) ) ) &
       RETURN
 !
 !     Set  LENX  and  LENY, the lengths of the vectors x and y, and set
@@ -300,14 +292,13 @@
                DO J = 1, LENX
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
             END IF
 
-            IF ( .NOT.SYMB_ZERO ) Y( IY ) = &
-                 Y( IY ) + SIGN( SAFE1, Y( IY ) )
+            IF ( .NOT.SYMB_ZERO ) Y( IY ) = Y( IY ) + SIGN( SAFE1, Y( IY ) )
 
             IY = IY + INCY
          END DO
@@ -326,14 +317,13 @@
                DO J = 1, LENX
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
             END IF
 
-            IF ( .NOT.SYMB_ZERO ) Y( IY ) = &
-                 Y( IY ) + SIGN( SAFE1, Y( IY ) )
+            IF ( .NOT.SYMB_ZERO ) Y( IY ) = Y( IY ) + SIGN( SAFE1, Y( IY ) )
 
             IY = IY + INCY
          END DO
@@ -355,16 +345,13 @@
                DO J = 1, LENX
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( JX )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( JX )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
                END DO
             END IF
-
-            IF ( .NOT.SYMB_ZERO ) Y( IY ) = &
-                 Y( IY ) + SIGN( SAFE1, Y( IY ) )
-
+            IF ( .NOT.SYMB_ZERO ) Y( IY ) = Y( IY ) + SIGN( SAFE1, Y( IY ) )
             IY = IY + INCY
          END DO
       ELSE
@@ -383,7 +370,7 @@
                DO J = 1, LENX
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( JX )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( JX )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
@@ -404,5 +391,3 @@
 !     End of CLA_GEAMV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

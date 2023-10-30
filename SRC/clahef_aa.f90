@@ -159,13 +159,10 @@
 !     ..
 !
 !  =====================================================================
-!     .. Parameters ..
-   COMPLEX      ZERO, ONE
-   PARAMETER    ( ZERO = (0.0E+0, 0.0E+0), ONE = (1.0E+0, 0.0E+0) )
 !
 !     .. Local Scalars ..
    INTEGER      J, K, K1, I1, I2, MJ
-   COMPLEX      PIV, ALPHA
+   COMPLEX      PIV, ALPHA, A_TMP( LDA ), H_TMP( NB )
 !     ..
 !     .. External Functions ..
    LOGICAL      LSAME
@@ -173,11 +170,7 @@
    EXTERNAL     LSAME, ILAENV, ICAMAX
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL     CLACGV, CGEMV, CSCAL, CAXPY, CCOPY, CSWAP, CLASET, &
-                XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC    REAL, CONJG, MAX
+   EXTERNAL     CLACGV, CGEMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -195,8 +188,7 @@
 !        .....................................................
 !
  10      CONTINUE
-      IF ( J > MIN(M, NB) ) &
-         GO TO 20
+      IF ( J > MIN(M, NB) ) GO TO 20
 !
 !        K is the column to be factorized
 !         when being called from CHETRF_AA,
@@ -226,15 +218,15 @@
 !
          CALL CLACGV( J-K1, A( 1, J ), 1 )
          CALL CGEMV( 'No transpose', MJ, J-K1, &
-                    -ONE, H( J, K1 ), LDH, &
+                    -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
                           A( 1, J ), 1, &
-                     ONE, H( J, J ), 1 )
+                     (1.0E+0,0.0E+0), H( J, J ), 1 )
          CALL CLACGV( J-K1, A( 1, J ), 1 )
       END IF
 !
 !        Copy H(i:n, i) into WORK
 !
-      CALL CCOPY( MJ, H( J, J ), 1, WORK( 1 ), 1 )
+      WORK(1:MJ) = H(J:J+MJ-1,J)
 !
       IF( J > K1 ) THEN
 !
@@ -242,7 +234,7 @@
 !            where A(J-1, J) stores T(J-1, J) and A(J-2, J:N) stores U(J-1, J:N)
 !
          ALPHA = -CONJG( A( K-1, J ) )
-         CALL CAXPY( MJ, ALPHA, A( K-2, J ), LDA, WORK( 1 ), 1 )
+         WORK(1:MJ) = WORK(1:MJ) + ALPHA*A(K-2,J:J+MJ-1)
       END IF
 !
 !        Set A(J, J) = T(J, J)
@@ -256,8 +248,7 @@
 !
          IF( K > 1 ) THEN
             ALPHA = -A( K, J )
-            CALL CAXPY( M-J, ALPHA, A( K-1, J+1 ), LDA, &
-                                    WORK( 2 ), 1 )
+            WORK(2:1+M-J) = WORK(2:1+M-J) + ALPHA*A(K-1,J+1:M)
          ENDIF
 !
 !           Find max(|WORK(2:n)|)
@@ -279,16 +270,19 @@
 !
             I1 = I1+J-1
             I2 = I2+J-1
-            CALL CSWAP( I2-I1-1, A( J1+I1-1, I1+1 ), LDA, &
-                                 A( J1+I1, I2 ), 1 )
+            A_TMP(1:I2-I1-1) = A(J1+I1-1,I1+1:I2-1)
+            A(J1+I1-1,I1+1:I2-1) = A(J1+I1:J1+I2-2,I2)
+            A(J1+I1:J1+I2-2,I2) = A_TMP(1:I2-I1-1)
             CALL CLACGV( I2-I1, A( J1+I1-1, I1+1 ), LDA )
             CALL CLACGV( I2-I1-1, A( J1+I1, I2 ), 1 )
 !
 !              Swap A(I1, I2+1:N) with A(I2, I2+1:N)
 !
-            IF( I2 < M ) &
-               CALL CSWAP( M-I2, A( J1+I1-1, I2+1 ), LDA, &
-                                 A( J1+I2-1, I2+1 ), LDA )
+            IF( I2 < M ) THEN
+               A_TMP(1:M-I2) = A(J1+I1-1,I2+1:M)
+               A(J1+I1-1,I2+1:M) = A(J1+I2-1,I2+1:M)
+               A(J1+I2-1,I2+1:M) = A_TMP(1:M-I2)
+            ENDIF
 !
 !              Swap A(I1, I1) with A(I2,I2)
 !
@@ -298,7 +292,9 @@
 !
 !              Swap H(I1, 1:J1) with H(I2, 1:J1)
 !
-            CALL CSWAP( I1-1, H( I1, 1 ), LDH, H( I2, 1 ), LDH )
+            H_TMP(1:I1-1) = H(I1,1:I1-1)
+            H(I1,1:I1-1) = H(I2,1:I1-1)
+            H(I2,1:I1-1) = H_TMP(1:I1-1)
             IPIV( I1 ) = I2
 !
             IF( I1 > (K1-1) ) THEN
@@ -306,8 +302,9 @@
 !                 Swap L(1:I1-1, I1) with L(1:I1-1, I2),
 !                  skipping the first column
 !
-               CALL CSWAP( I1-K1+1, A( 1, I1 ), 1, &
-                                    A( 1, I2 ), 1 )
+               A_TMP(1:I1-K1+1) = A(1:1+I1-K1,I1)
+               A(1:1+I1-K1,I1) = A(1:1+I1-K1,I2)
+               A(1:1+I1-K1,I2) = A_TMP(1:I1-K1+1)
             END IF
          ELSE
             IPIV( J+1 ) = J+1
@@ -317,25 +314,21 @@
 !
          A( K, J+1 ) = WORK( 2 )
 !
-         IF( J < NB ) THEN
 !
 !              Copy A(J+1:N, J+1) into H(J:N, J),
 !
-            CALL CCOPY( M-J, A( K+1, J+1 ), LDA, &
-                             H( J+1, J+1 ), 1 )
-         END IF
+         IF( J < NB ) H(J+1:M,J+1) = A(K+1,J+1:M)
 !
 !           Compute L(J+2, J+1) = WORK( 3:N ) / T(J, J+1),
 !            where A(J, J+1) = T(J, J+1) and A(J+2:N, J) = L(J+2:N, J+1)
 !
          IF( J < (M-1) ) THEN
-            IF( A( K, J+1 ) /= ZERO ) THEN
-               ALPHA = ONE / A( K, J+1 )
-               CALL CCOPY( M-J-1, WORK( 3 ), 1, A( K, J+2 ), LDA )
-               CALL CSCAL( M-J-1, ALPHA, A( K, J+2 ), LDA )
+            IF( A( K, J+1 ) /= (0.0E+0,0.0E+0) ) THEN
+               ALPHA = (1.0E+0,0.0E+0) / A( K, J+1 )
+               A(K,J+2:M) = WORK(3:1+M-J)
+               A(K,J+2:M) = ALPHA*A(K,J+2:M)
             ELSE
-               CALL CLASET( 'Full', 1, M-J-1, ZERO, ZERO, &
-                            A( K, J+2 ), LDA)
+               A(K,J+2:M) = (0.0E+0,0.0E+0)
             END IF
          END IF
       END IF
@@ -350,8 +343,7 @@
 !        .....................................................
 !
  30      CONTINUE
-      IF( J > MIN( M, NB ) ) &
-         GO TO 40
+      IF( J > MIN( M, NB ) ) GO TO 40
 !
 !        K is the column to be factorized
 !         when being called from CHETRF_AA,
@@ -381,15 +373,15 @@
 !
          CALL CLACGV( J-K1, A( J, 1 ), LDA )
          CALL CGEMV( 'No transpose', MJ, J-K1, &
-                    -ONE, H( J, K1 ), LDH, &
+                    -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
                           A( J, 1 ), LDA, &
-                     ONE, H( J, J ), 1 )
+                     (1.0E+0,0.0E+0), H( J, J ), 1 )
          CALL CLACGV( J-K1, A( J, 1 ), LDA )
       END IF
 !
 !        Copy H(J:N, J) into WORK
 !
-      CALL CCOPY( MJ, H( J, J ), 1, WORK( 1 ), 1 )
+      WORK(1:MJ) = H(J:J+MJ-1,J)
 !
       IF( J > K1 ) THEN
 !
@@ -397,7 +389,7 @@
 !            where A(J-1, J) = T(J-1, J) and A(J, J-2) = L(J, J-1)
 !
          ALPHA = -CONJG( A( J, K-1 ) )
-         CALL CAXPY( MJ, ALPHA, A( J, K-2 ), 1, WORK( 1 ), 1 )
+         WORK(1:MJ) = WORK(1:MJ) + ALPHA*A(J:J+MJ-1,K-2)
       END IF
 !
 !        Set A(J, J) = T(J, J)
@@ -411,8 +403,7 @@
 !
          IF( K > 1 ) THEN
             ALPHA = -A( J, K )
-            CALL CAXPY( M-J, ALPHA, A( J+1, K-1 ), 1, &
-                                    WORK( 2 ), 1 )
+            WORK(2:1+M-J) = WORK(2:1+M-J) + -A(J,K)*A(J+1:M,K-1)
          ENDIF
 !
 !           Find max(|WORK(2:n)|)
@@ -434,16 +425,19 @@
 !
             I1 = I1+J-1
             I2 = I2+J-1
-            CALL CSWAP( I2-I1-1, A( I1+1, J1+I1-1 ), 1, &
-                                 A( I2, J1+I1 ), LDA )
+            A_TMP(1:I2-I1-1) = A(I1+1:I2-1,J1+I1-1)
+            A(I1+1:I2-1,J1+I1-1) = A(I2,J1+I1:J1+I2-2)
+            A(I2,J1+I1:J1+I2-2) = A_TMP(1:I2-I1-1)
             CALL CLACGV( I2-I1, A( I1+1, J1+I1-1 ), 1 )
             CALL CLACGV( I2-I1-1, A( I2, J1+I1 ), LDA )
 !
 !              Swap A(I2+1:N, I1) with A(I2+1:N, I2)
 !
-            IF( I2 < M ) &
-               CALL CSWAP( M-I2, A( I2+1, J1+I1-1 ), 1, &
-                                 A( I2+1, J1+I2-1 ), 1 )
+            IF( I2 < M ) THEN
+               A_TMP(1:M-I2) = A(I2+1:M,J1+I1-1)
+               A(I2+1:M,J1+I1-1) = A(I2+1:M,J1+I2-1)
+               A(I2+1:M,J1+I2-1) = A_TMP(1:M-I2)
+            ENDIF
 !
 !              Swap A(I1, I1) with A(I2, I2)
 !
@@ -453,7 +447,9 @@
 !
 !              Swap H(I1, I1:J1) with H(I2, I2:J1)
 !
-            CALL CSWAP( I1-1, H( I1, 1 ), LDH, H( I2, 1 ), LDH )
+            H_TMP(1:I1-1) = H(I1,1:I1-1)
+            H(I1,1:I1-1) = H(I2,1:I1-1)
+            H(I2,1:I1-1) = H_TMP(1:I1-1)
             IPIV( I1 ) = I2
 !
             IF( I1 > (K1-1) ) THEN
@@ -461,8 +457,9 @@
 !                 Swap L(1:I1-1, I1) with L(1:I1-1, I2),
 !                  skipping the first column
 !
-               CALL CSWAP( I1-K1+1, A( I1, 1 ), LDA, &
-                                    A( I2, 1 ), LDA )
+               A_TMP(1:I1-K1+1) = A(I1,1:1+I1-K1)
+               A(I1,1:I1-K1+1) = A(I2,1:I1-K1+1)
+               A(I2,1:I1-K1+1) = A_TMP(1:I1-K1+1)
             END IF
          ELSE
             IPIV( J+1 ) = J+1
@@ -472,25 +469,21 @@
 !
          A( J+1, K ) = WORK( 2 )
 !
-         IF( J < NB ) THEN
 !
 !              Copy A(J+1:N, J+1) into H(J+1:N, J),
 !
-            CALL CCOPY( M-J, A( J+1, K+1 ), 1, &
-                             H( J+1, J+1 ), 1 )
-         END IF
+         IF( J < NB ) H(J+1:M,J+1) = A(J+1:M,K+1)
 !
 !           Compute L(J+2, J+1) = WORK( 3:N ) / T(J, J+1),
 !            where A(J, J+1) = T(J, J+1) and A(J+2:N, J) = L(J+2:N, J+1)
 !
          IF( J < (M-1) ) THEN
-            IF( A( J+1, K ) /= ZERO ) THEN
-               ALPHA = ONE / A( J+1, K )
-               CALL CCOPY( M-J-1, WORK( 3 ), 1, A( J+2, K ), 1 )
-               CALL CSCAL( M-J-1, ALPHA, A( J+2, K ), 1 )
+            IF( A( J+1, K ) /= (0.0E+0,0.0E+0) ) THEN
+               ALPHA = (1.0E+0,0.0E+0) / A( J+1, K )
+               A(J+2:M,K) = WORK(3:1+M-J)
+               A(J+2:M,K) = ALPHA*A(J+2:M,K)
             ELSE
-               CALL CLASET( 'Full', M-J-1, 1, ZERO, ZERO, &
-                            A( J+2, K ), LDA )
+               A(J+2:M,K) = (0.0E+0,0.0E+0)
             END IF
          END IF
       END IF
@@ -503,5 +496,3 @@
 !     End of CLAHEF_AA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

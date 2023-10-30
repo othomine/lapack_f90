@@ -164,30 +164,21 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, TENTH
-   PARAMETER          ( ONE = 1.0E+0, TENTH = 1.0E-1 )
-   COMPLEX            ZERO
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          NORMIN, TRANS
    INTEGER            I, IERR, ITS, J
    REAL               GROWTO, NRMSML, ROOTN, RTEMP, SCALE, VNORM
-   COMPLEX            CDUM, EI, EJ, TEMP, X
+   COMPLEX            CDUM, EI, EJ, TEMP, X, B_TMP( LDB )
 !     ..
 !     .. External Functions ..
    INTEGER            ICAMAX
-   REAL               SCASUM, SCNRM2
+   REAL               SCNRM2
    COMPLEX            CLADIV
-   EXTERNAL           ICAMAX, SCASUM, SCNRM2, CLADIV
+   EXTERNAL           ICAMAX, SCNRM2, CLADIV
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLATRS, CSSCAL
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL, SQRT
+   EXTERNAL           CLATRS
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -203,16 +194,14 @@
 !     eigenvector.
 !
    ROOTN = SQRT( REAL( N ) )
-   GROWTO = TENTH / ROOTN
-   NRMSML = MAX( ONE, EPS3*ROOTN )*SMLNUM
+   GROWTO = 0.1E+0 / ROOTN
+   NRMSML = MAX( 1.0E+0, EPS3*ROOTN )*SMLNUM
 !
 !     Form B = H - W*I (except that the subdiagonal elements are not
 !     stored).
 !
    DO J = 1, N
-      DO I = 1, J - 1
-         B( I, J ) = H( I, J )
-      ENDDO
+      B(1:J-1,J) = H(1:J-1,J)
       B( J, J ) = H( J, J ) - W
    ENDDO
 !
@@ -220,15 +209,13 @@
 !
 !        Initialize V.
 !
-      DO I = 1, N
-         V( I ) = EPS3
-      ENDDO
+      V(1:N) = EPS3
    ELSE
 !
 !        Scale supplied initial vector.
 !
       VNORM = SCNRM2( N, V, 1 )
-      CALL CSSCAL( N, ( EPS3*ROOTN ) / MAX( VNORM, NRMSML ), V, 1 )
+      V(1:N) = V(1:N)*( EPS3*ROOTN ) / MAX( VNORM, NRMSML )
    END IF
 !
    IF( RIGHTV ) THEN
@@ -244,27 +231,19 @@
 !
             X = CLADIV( B( I, I ), EI )
             B( I, I ) = EI
-            DO J = I + 1, N
-               TEMP = B( I+1, J )
-               B( I+1, J ) = B( I, J ) - X*TEMP
-               B( I, J ) = TEMP
-            ENDDO
+            B_TMP(I+1:N) = B(I+1,I+1:N)
+            B(I+1,I+1:N) = B(I,I+1:N) - X*B_TMP(I+1:N)
+            B(I,I+1:N) = B_TMP(I+1:N)
          ELSE
 !
 !              Eliminate without interchange.
 !
-            IF( B( I, I ) == ZERO ) &
-               B( I, I ) = EPS3
+            IF( B( I, I ) == (0.0E+0,0.0E+0) ) B( I, I ) = EPS3
             X = CLADIV( EI, B( I, I ) )
-            IF( X /= ZERO ) THEN
-               DO J = I + 1, N
-                  B( I+1, J ) = B( I+1, J ) - X*B( I, J )
-               ENDDO
-            END IF
+            IF( X /= (0.0E+0,0.0E+0) ) B(I+1,I+1:N) = B( I+1,I+1:N) - X*B( I,I+1:N)
          END IF
       ENDDO
-      IF( B( N, N ) == ZERO ) &
-         B( N, N ) = EPS3
+      IF( B( N, N ) == (0.0E+0,0.0E+0) ) B( N, N ) = EPS3
 !
       TRANS = 'N'
 !
@@ -281,27 +260,19 @@
 !
             X = CLADIV( B( J, J ), EJ )
             B( J, J ) = EJ
-            DO I = 1, J - 1
-               TEMP = B( I, J-1 )
-               B( I, J-1 ) = B( I, J ) - X*TEMP
-               B( I, J ) = TEMP
-            ENDDO
+            B_TMP(1:J-1) = B(1:J-1, J-1 )
+            B(1:J-1, J-1 ) = B(1:J-1, J ) - X*B_TMP(1:J-1)
+            B(1:J-1, J ) = B_TMP(1:J-1)
          ELSE
 !
 !              Eliminate without interchange.
 !
-            IF( B( J, J ) == ZERO ) &
-               B( J, J ) = EPS3
+            IF( B( J, J ) == (0.0E+0,0.0E+0) ) B( J, J ) = EPS3
             X = CLADIV( EJ, B( J, J ) )
-            IF( X /= ZERO ) THEN
-               DO I = 1, J - 1
-                  B( I, J-1 ) = B( I, J-1 ) - X*B( I, J )
-               ENDDO
-            END IF
+            IF( X /= (0.0E+0,0.0E+0) ) B(1:J-1,J-1) = B(1:J-1,J-1) - X*B(1:J-1,J)
          END IF
       ENDDO
-      IF( B( 1, 1 ) == ZERO ) &
-         B( 1, 1 ) = EPS3
+      IF( B( 1, 1 ) == (0.0E+0,0.0E+0) ) B( 1, 1 ) = EPS3
 !
       TRANS = 'C'
 !
@@ -320,19 +291,16 @@
 !
 !        Test for sufficient growth in the norm of v.
 !
-      VNORM = SCASUM( N, V, 1 )
-      IF( VNORM >= GROWTO*SCALE ) &
-         GO TO 120
+      VNORM = sum(ABS(REAL(V(1:N))) + ABS(AIMAG(V(1:N))))
+      IF( VNORM >= GROWTO*SCALE ) GO TO 120
 !
 !        Choose new orthogonal starting vector and try again.
 !
-      RTEMP = EPS3 / ( ROOTN+ONE )
+      RTEMP = EPS3 / ( ROOTN+1.0E+0 )
       V( 1 ) = EPS3
-      DO I = 2, N
-         V( I ) = RTEMP
-         ENDDO
+      V(2:N) = RTEMP
       V( N-ITS+1 ) = V( N-ITS+1 ) - EPS3*ROOTN
-      ENDDO
+   ENDDO
 !
 !     Failure to find eigenvector in N iterations.
 !
@@ -343,12 +311,10 @@
 !     Normalize eigenvector.
 !
    I = ICAMAX( N, V, 1 )
-   CALL CSSCAL( N, ONE / CABS1( V( I ) ), V, 1 )
+   V(1:N) = V(1:N) / CABS1(V(I))
 !
    RETURN
 !
 !     End of CLAEIN
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

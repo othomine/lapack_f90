@@ -162,7 +162,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CGERU, CLACGV, CSWAP, CTBSV, XERBLA
+   EXTERNAL           CGEMV, CGERU, CTBSV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -276,11 +276,11 @@
       IF( LNOTI ) THEN
          DO J = N - 1, 1, -1
             LM = MIN( KL, N-J )
-            CALL CLACGV( NRHS, B( J, 1 ), LDB )
+            B(J,1:NRHS) = CONJG(B(J,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', LM, NRHS, -(1.0E+0,0.0E+0), &
                         B( J+1, 1 ), LDB, AB( KD+1, J ), 1, (1.0E+0,0.0E+0), &
                         B( J, 1 ), LDB )
-            CALL CLACGV( NRHS, B( J, 1 ), LDB )
+            B(J,1:NRHS) = CONJG(B(J,1:NRHS))
             L = IPIV( J )
             IF( L /= J ) THEN
                B_TMP(1:NRHS) = B(L,1:NRHS)

@@ -272,12 +272,6 @@
 !     ..
 !
 !  ================================================================
-!     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0e0, 0.0e0 ), &
-                      ONE = ( 1.0e0, 0.0e0 ) )
-   REAL               RZERO, RONE
-   PARAMETER          ( RZERO = 0.0e0, RONE = 1.0e0 )
 !     ..
 !     .. Local Scalars ..
    COMPLEX            ALPHA, BETA, CDUM, REFSUM, T1, T2, T3
@@ -292,10 +286,6 @@
 !     .. External Functions ..
    REAL               SLAMCH
    EXTERNAL           SLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-!
-   INTRINSIC          ABS, AIMAG, CONJG, MAX, MIN, MOD, REAL
 !     ..
 !     .. Local Arrays ..
    COMPLEX            VT( 3 )
@@ -313,14 +303,12 @@
 !
 !     ==== If there are no shifts, then there is nothing to do. ====
 !
-   IF( NSHFTS < 2 ) &
-      RETURN
+   IF( NSHFTS < 2 ) RETURN
 !
 !     ==== If the active block is empty or 1-by-1, then there
 !     .    is nothing to do. ====
 !
-   IF( KTOP >= KBOT ) &
-      RETURN
+   IF( KTOP >= KBOT ) RETURN
 !
 !     ==== NSHFTS is supposed to be even, but if it is odd,
 !     .    then simply reduce it by one.  ====
@@ -330,7 +318,7 @@
 !     ==== Machine constants for deflation ====
 !
    SAFMIN = SLAMCH( 'SAFE MINIMUM' )
-   SAFMAX = RONE / SAFMIN
+   SAFMAX = 1.0E+0 / SAFMIN
    ULP = SLAMCH( 'PRECISION' )
    SMLNUM = SAFMIN*( REAL( N ) / ULP )
 !
@@ -341,8 +329,7 @@
 !
 !     ==== clear trash ====
 !
-   IF( KTOP+2 <= KBOT ) &
-      H( KTOP+2, KTOP ) = ZERO
+   IF( KTOP+2 <= KBOT ) H( KTOP+2, KTOP ) = (0.0E+0,0.0E+0)
 !
 !     ==== NBMPS = number of 2-shift bulges in the chain ====
 !
@@ -368,7 +355,7 @@
 !
       NDCOL = INCOL + KDU
       IF( ACCUM ) &
-         CALL CLASET( 'ALL', KDU, KDU, ZERO, ONE, U, LDU )
+         CALL CLASET( 'ALL', KDU, KDU, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), U, LDU )
 !
 !        ==== Near-the-diagonal bulge chase.  The following loop
 !        .    performs the near-the-diagonal part of a small bulge
@@ -416,7 +403,7 @@
                V( 2, M22 ) = H( K+2, K )
                CALL CLARFG( 2, BETA, V( 2, M22 ), 1, V( 1, M22 ) )
                H( K+1, K ) = BETA
-               H( K+2, K ) = ZERO
+               H( K+2, K ) = (0.0E+0,0.0E+0)
             END IF
 
 !
@@ -460,9 +447,9 @@
 !              .    unnecessary. ====
 !
             IF( K >= KTOP) THEN
-               IF( H( K+1, K ) /= ZERO ) THEN
+               IF( H( K+1, K ) /= (0.0E+0,0.0E+0) ) THEN
                   TST1 = CABS1( H( K, K ) ) + CABS1( H( K+1, K+1 ) )
-                  IF( TST1 == RZERO ) THEN
+                  IF( TST1 == 0.0E+0 ) THEN
                      IF( K >= KTOP+1 ) &
                         TST1 = TST1 + CABS1( H( K, K-1 ) )
                      IF( K >= KTOP+2 ) &
@@ -489,8 +476,8 @@
                      SCL = H11 + H12
                      TST2 = H22*( H11 / SCL )
 !
-                     IF( TST2 == RZERO .OR. H21*( H12 / SCL ) <= &
-                         MAX( SMLNUM, ULP*TST2 ) )H( K+1, K ) = ZERO
+                     IF( TST2 == 0.0E+0 .OR. H21*( H12 / SCL ) <= &
+                         MAX( SMLNUM, ULP*TST2 ) )H( K+1, K ) = (0.0E+0,0.0E+0)
                   END IF
                END IF
             END IF
@@ -505,7 +492,7 @@
                   U( J, KMS+1 ) = U( J, KMS+1 ) - REFSUM
                   U( J, KMS+2 ) = U( J, KMS+2 ) - &
                                   REFSUM*CONJG( V( 2, M22 ) )
-                     ENDDO
+               ENDDO
             ELSE IF( WANTZ ) THEN
                DO J = ILOZ, IHIZ
                   REFSUM = V( 1, M22 )*( Z( J, K+1 )+V( 2, M22 )* &
@@ -513,7 +500,7 @@
                   Z( J, K+1 ) = Z( J, K+1 ) - REFSUM
                   Z( J, K+2 ) = Z( J, K+2 ) - &
                                 REFSUM*CONJG( V( 2, M22 ) )
-                  ENDDO
+               ENDDO
             END IF
          END IF
 !
@@ -553,14 +540,14 @@
 !                 .    underflow case, try the two-small-subdiagonals
 !                 .    trick to try to reinflate the bulge.  ====
 !
-               IF( H( K+3, K ) /= ZERO .OR. H( K+3, K+1 ) /= &
-                   ZERO .OR. H( K+3, K+2 ) == ZERO ) THEN
+               IF( H( K+3, K ) /= (0.0E+0,0.0E+0) .OR. H( K+3, K+1 ) /= &
+                   (0.0E+0,0.0E+0) .OR. H( K+3, K+2 ) == (0.0E+0,0.0E+0) ) THEN
 !
 !                    ==== Typical case: not collapsed (yet). ====
 !
                   H( K+1, K ) = BETA
-                  H( K+2, K ) = ZERO
-                  H( K+3, K ) = ZERO
+                  H( K+2, K ) = (0.0E+0,0.0E+0)
+                  H( K+3, K ) = (0.0E+0,0.0E+0)
                ELSE
 !
 !                    ==== Atypical case: collapsed.  Attempt to
@@ -588,8 +575,7 @@
 !                       .    the old one with trepidation. ====
 !
                      H( K+1, K ) = BETA
-                     H( K+2, K ) = ZERO
-                     H( K+3, K ) = ZERO
+                     H( K+2:K+3, K ) = (0.0E+0,0.0E+0)
                   ELSE
 !
 !                       ==== Starting a new bulge here would
@@ -598,11 +584,8 @@
 !                       .    the new one. ====
 !
                      H( K+1, K ) = H( K+1, K ) - REFSUM*T1
-                     H( K+2, K ) = ZERO
-                     H( K+3, K ) = ZERO
-                     V( 1, M ) = VT( 1 )
-                     V( 2, M ) = VT( 2 )
-                     V( 3, M ) = VT( 3 )
+                     H( K+2:K+3, K ) = (0.0E+0,0.0E+0)
+                     V( 1:3, M ) = VT( 1:3 )
                   END IF
                END IF
             END IF
@@ -645,39 +628,28 @@
 !              .    is zero (as done here) is traditional but probably
 !              .    unnecessary. ====
 !
-            IF( K < KTOP) &
-                 CYCLE
-            IF( H( K+1, K ) /= ZERO ) THEN
+            IF( K < KTOP) CYCLE
+            IF( H( K+1, K ) /= (0.0E+0,0.0E+0) ) THEN
                TST1 = CABS1( H( K, K ) ) + CABS1( H( K+1, K+1 ) )
-               IF( TST1 == RZERO ) THEN
-                  IF( K >= KTOP+1 ) &
-                     TST1 = TST1 + CABS1( H( K, K-1 ) )
-                  IF( K >= KTOP+2 ) &
-                     TST1 = TST1 + CABS1( H( K, K-2 ) )
-                  IF( K >= KTOP+3 ) &
-                     TST1 = TST1 + CABS1( H( K, K-3 ) )
-                  IF( K <= KBOT-2 ) &
-                     TST1 = TST1 + CABS1( H( K+2, K+1 ) )
-                  IF( K <= KBOT-3 ) &
-                     TST1 = TST1 + CABS1( H( K+3, K+1 ) )
-                  IF( K <= KBOT-4 ) &
-                     TST1 = TST1 + CABS1( H( K+4, K+1 ) )
+               IF( TST1 == 0.0E+0 ) THEN
+                  IF( K >= KTOP+1 ) TST1 = TST1 + CABS1( H( K, K-1 ) )
+                  IF( K >= KTOP+2 ) TST1 = TST1 + CABS1( H( K, K-2 ) )
+                  IF( K >= KTOP+3 ) TST1 = TST1 + CABS1( H( K, K-3 ) )
+                  IF( K <= KBOT-2 ) TST1 = TST1 + CABS1( H( K+2, K+1 ) )
+                  IF( K <= KBOT-3 ) TST1 = TST1 + CABS1( H( K+3, K+1 ) )
+                  IF( K <= KBOT-4 ) TST1 = TST1 + CABS1( H( K+4, K+1 ) )
                END IF
                IF( CABS1( H( K+1, K ) ) <= MAX( SMLNUM, ULP*TST1 ) ) &
                     THEN
-                  H12 = MAX( CABS1( H( K+1, K ) ), &
-                        CABS1( H( K, K+1 ) ) )
-                  H21 = MIN( CABS1( H( K+1, K ) ), &
-                        CABS1( H( K, K+1 ) ) )
-                  H11 = MAX( CABS1( H( K+1, K+1 ) ), &
-                        CABS1( H( K, K )-H( K+1, K+1 ) ) )
-                  H22 = MIN( CABS1( H( K+1, K+1 ) ), &
-                        CABS1( H( K, K )-H( K+1, K+1 ) ) )
+                  H12 = MAX( CABS1( H( K+1, K ) ), CABS1( H( K, K+1 ) ) )
+                  H21 = MIN( CABS1( H( K+1, K ) ), CABS1( H( K, K+1 ) ) )
+                  H11 = MAX( CABS1( H( K+1, K+1 ) ), CABS1( H( K, K )-H( K+1, K+1 ) ) )
+                  H22 = MIN( CABS1( H( K+1, K+1 ) ), CABS1( H( K, K )-H( K+1, K+1 ) ) )
                   SCL = H11 + H12
                   TST2 = H22*( H11 / SCL )
 !
-                  IF( TST2 == RZERO .OR. H21*( H12 / SCL ) <= &
-                      MAX( SMLNUM, ULP*TST2 ) )H( K+1, K ) = ZERO
+                  IF( TST2 == 0.0E+0 .OR. H21*( H12 / SCL ) <= &
+                      MAX( SMLNUM, ULP*TST2 ) )H( K+1, K ) = (0.0E+0,0.0E+0)
                END IF
             END IF
          ENDDO
@@ -704,7 +676,7 @@
                H( K+2, J ) = H( K+2, J ) - REFSUM*T2
                H( K+3, J ) = H( K+3, J ) - REFSUM*T3
             ENDDO
-            ENDDO
+         ENDDO
 !
 !           ==== Accumulate orthogonal transformations. ====
 !
@@ -729,8 +701,8 @@
                   U( J, KMS+1 ) = U( J, KMS+1 ) - REFSUM*T1
                   U( J, KMS+2 ) = U( J, KMS+2 ) - REFSUM*T2
                   U( J, KMS+3 ) = U( J, KMS+3 ) - REFSUM*T3
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE IF( WANTZ ) THEN
 !
 !              ==== U is not accumulated, so update Z
@@ -748,8 +720,8 @@
                   Z( J, K+1 ) = Z( J, K+1 ) - REFSUM*T1
                   Z( J, K+2 ) = Z( J, K+2 ) - REFSUM*T2
                   Z( J, K+3 ) = Z( J, K+3 ) - REFSUM*T3
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
 !
 !           ==== End of near-the-diagonal bulge chase. ====
@@ -775,41 +747,38 @@
 !
          DO JCOL = MIN( NDCOL, KBOT ) + 1, JBOT, NH
             JLEN = MIN( NH, JBOT-JCOL+1 )
-            CALL CGEMM( 'C', 'N', NU, JLEN, NU, ONE, U( K1, K1 ), &
-                        LDU, H( INCOL+K1, JCOL ), LDH, ZERO, WH, &
+            CALL CGEMM( 'C', 'N', NU, JLEN, NU, (1.0E+0,0.0E+0), U( K1, K1 ), &
+                        LDU, H( INCOL+K1, JCOL ), LDH, (0.0E+0,0.0E+0), WH, &
                         LDWH )
-            CALL CLACPY( 'ALL', NU, JLEN, WH, LDWH, &
-                         H( INCOL+K1, JCOL ), LDH )
+            CALL CLACPY( 'ALL', NU, JLEN, WH, LDWH, H( INCOL+K1, JCOL ), LDH )
             ENDDO
 !
 !           ==== Vertical multiply ====
 !
          DO JROW = JTOP, MAX( KTOP, INCOL ) - 1, NV
             JLEN = MIN( NV, MAX( KTOP, INCOL )-JROW )
-            CALL CGEMM( 'N', 'N', JLEN, NU, NU, ONE, &
+            CALL CGEMM( 'N', 'N', JLEN, NU, NU, (1.0E+0,0.0E+0), &
                         H( JROW, INCOL+K1 ), LDH, U( K1, K1 ), &
-                        LDU, ZERO, WV, LDWV )
+                        LDU, (0.0E+0,0.0E+0), WV, LDWV )
             CALL CLACPY( 'ALL', JLEN, NU, WV, LDWV, &
                          H( JROW, INCOL+K1 ), LDH )
-            ENDDO
+         ENDDO
 !
 !           ==== Z multiply (also vertical) ====
 !
          IF( WANTZ ) THEN
             DO JROW = ILOZ, IHIZ, NV
                JLEN = MIN( NV, IHIZ-JROW+1 )
-               CALL CGEMM( 'N', 'N', JLEN, NU, NU, ONE, &
+               CALL CGEMM( 'N', 'N', JLEN, NU, NU, (1.0E+0,0.0E+0), &
                            Z( JROW, INCOL+K1 ), LDZ, U( K1, K1 ), &
-                           LDU, ZERO, WV, LDWV )
+                           LDU, (0.0E+0,0.0E+0), WV, LDWV )
                CALL CLACPY( 'ALL', JLEN, NU, WV, LDWV, &
                             Z( JROW, INCOL+K1 ), LDZ )
-               ENDDO
+            ENDDO
          END IF
       END IF
-      ENDDO
+   ENDDO
 !
 !     ==== End of CLAQR5 ====
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

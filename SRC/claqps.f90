@@ -191,24 +191,14 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, &
-                      CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            ITEMP, J, K, LASTRK, LSTICC, PVT, RK
    REAL               TEMP, TEMP2, TOL3Z
-   COMPLEX            AKK
+   COMPLEX            AKK, A_TMP( LDA ), F_TMP( NB )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMM, CGEMV, CLARFG, CSWAP
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN, NINT, REAL, SQRT
+   EXTERNAL           CGEMM, CGEMV, CLARFG
 !     ..
 !     .. External Functions ..
    INTEGER            ISAMAX
@@ -233,8 +223,12 @@
 !
       PVT = ( K-1 ) + ISAMAX( N-K+1, VN1( K ), 1 )
       IF( PVT /= K ) THEN
-         CALL CSWAP( M, A( 1, PVT ), 1, A( 1, K ), 1 )
-         CALL CSWAP( K-1, F( PVT, 1 ), LDF, F( K, 1 ), LDF )
+         A_TMP(1:M) = A(1:M,PVT)
+         A(1:M,PVT) = A(1:M,K)
+         A(1:M,K) = A_TMP(1:M)
+         F_TMP(1:K-1) = F(PVT,1:K-1)
+         F(PVT,1:K-1) = F(K,1:K-1)
+         F(K,1:K-1) = F_TMP(1:K-1)
          ITEMP = JPVT( PVT )
          JPVT( PVT ) = JPVT( K )
          JPVT( K ) = ITEMP
@@ -249,8 +243,8 @@
          DO J = 1, K - 1
             F( K, J ) = CONJG( F( K, J ) )
          ENDDO
-         CALL CGEMV( 'No transpose', M-RK+1, K-1, -CONE, A( RK, 1 ), &
-                     LDA, F( K, 1 ), LDF, CONE, A( RK, K ), 1 )
+         CALL CGEMV( 'No transpose', M-RK+1, K-1, -(1.0E+0,0.0E+0), A( RK, 1 ), &
+                     LDA, F( K, 1 ), LDF, (1.0E+0,0.0E+0), A( RK, K ), 1 )
          DO J = 1, K - 1
             F( K, J ) = CONJG( F( K, J ) )
          ENDDO
@@ -265,7 +259,7 @@
       END IF
 !
       AKK = A( RK, K )
-      A( RK, K ) = CONE
+      A( RK, K ) = (1.0E+0,0.0E+0)
 !
 !        Compute Kth column of F:
 !
@@ -273,14 +267,14 @@
 !
       IF( K < N ) THEN
          CALL CGEMV( 'Conjugate transpose', M-RK+1, N-K, TAU( K ), &
-                     A( RK, K+1 ), LDA, A( RK, K ), 1, CZERO, &
+                     A( RK, K+1 ), LDA, A( RK, K ), 1, (0.0E+0,0.0E+0), &
                      F( K+1, K ), 1 )
       END IF
 !
 !        Padding F(1:K,K) with zeros.
 !
       DO J = 1, K
-         F( J, K ) = CZERO
+         F( J, K ) = (0.0E+0,0.0E+0)
       ENDDO
 !
 !        Incremental updating of F:
@@ -289,11 +283,11 @@
 !
       IF( K > 1 ) THEN
          CALL CGEMV( 'Conjugate transpose', M-RK+1, K-1, -TAU( K ), &
-                     A( RK, 1 ), LDA, A( RK, K ), 1, CZERO, &
+                     A( RK, 1 ), LDA, A( RK, K ), 1, (0.0E+0,0.0E+0), &
                      AUXV( 1 ), 1 )
 !
-         CALL CGEMV( 'No transpose', N, K-1, CONE, F( 1, 1 ), LDF, &
-                     AUXV( 1 ), 1, CONE, F( 1, K ), 1 )
+         CALL CGEMV( 'No transpose', N, K-1, (1.0E+0,0.0E+0), F( 1, 1 ), LDF, &
+                     AUXV( 1 ), 1, (1.0E+0,0.0E+0), F( 1, K ), 1 )
       END IF
 !
 !        Update the current row of A:
@@ -301,21 +295,21 @@
 !
       IF( K < N ) THEN
          CALL CGEMM( 'No transpose', 'Conjugate transpose', 1, N-K, &
-                     K, -CONE, A( RK, 1 ), LDA, F( K+1, 1 ), LDF, &
-                     CONE, A( RK, K+1 ), LDA )
+                     K, -(1.0E+0,0.0E+0), A( RK, 1 ), LDA, F( K+1, 1 ), LDF, &
+                     (1.0E+0,0.0E+0), A( RK, K+1 ), LDA )
       END IF
 !
 !        Update partial column norms.
 !
       IF( RK < LASTRK ) THEN
          DO J = K + 1, N
-            IF( VN1( J ) /= ZERO ) THEN
+            IF( VN1( J ) /= 0.0E+0 ) THEN
 !
 !                 NOTE: The following 4 lines follow from the analysis in
 !                 Lapack Working Note 176.
 !
                TEMP = ABS( A( RK, J ) ) / VN1( J )
-               TEMP = MAX( ZERO, ( ONE+TEMP )*( ONE-TEMP ) )
+               TEMP = MAX( 0.0E+0, ( 1.0E+0+TEMP )*( 1.0E+0-TEMP ) )
                TEMP2 = TEMP*( VN1( J ) / VN2( J ) )**2
                IF( TEMP2  <=  TOL3Z ) THEN
                   VN2( J ) = REAL( LSTICC )
@@ -342,8 +336,8 @@
 !
    IF( KB < MIN( N, M-OFFSET ) ) THEN
       CALL CGEMM( 'No transpose', 'Conjugate transpose', M-RK, N-KB, &
-                  KB, -CONE, A( RK+1, 1 ), LDA, F( KB+1, 1 ), LDF, &
-                  CONE, A( RK+1, KB+1 ), LDA )
+                  KB, -(1.0E+0,0.0E+0), A( RK+1, 1 ), LDA, F( KB+1, 1 ), LDF, &
+                  (1.0E+0,0.0E+0), A( RK+1, KB+1 ), LDA )
    END IF
 !
 !     Recomputation of difficult columns.
@@ -367,5 +361,4 @@
 !     End of CLAQPS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 

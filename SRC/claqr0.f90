@@ -276,11 +276,6 @@
 !     .    shifts. ====
    REAL               WILK1
    PARAMETER          ( WILK1 = 0.75e0 )
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0e0, 0.0e0 ), &
-                      ONE = ( 1.0e0, 0.0e0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0e0 )
 !     ..
 !     .. Local Scalars ..
    COMPLEX            AA, BB, CC, CDUM, DD, DET, RTDISC, SWAP, TR2
@@ -302,10 +297,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACPY, CLAHQR, CLAQR3, CLAQR4, CLAQR5
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, INT, MAX, MIN, MOD, REAL, &
-                      SQRT
-!     ..
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..
@@ -318,7 +309,7 @@
 !     ==== Quick return for N = 0: nothing to do. ====
 !
    IF( N == 0 ) THEN
-      WORK( 1 ) = ONE
+      WORK( 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -437,14 +428,12 @@
 !
 !           ==== Done when KBOT falls below ILO ====
 !
-         IF( KBOT < ILO ) &
-            GO TO 80
+         IF( KBOT < ILO ) GO TO 80
 !
 !           ==== Locate active block ====
 !
          DO K = KBOT, ILO + 1, -1
-            IF( H( K, K-1 ) == ZERO ) &
-               GO TO 20
+            IF( H( K, K-1 ) == (0.0E+0,0.0E+0) ) GO TO 20
          ENDDO
          K = ILO
 20       CONTINUE
@@ -486,8 +475,7 @@
             NDEC = -1
          ELSE IF( NDEC >= 0 .OR. NW >= NWUPBD ) THEN
             NDEC = NDEC + 1
-            IF( NW-NDEC < 2 ) &
-               NDEC = 0
+            IF( NW-NDEC < 2 ) NDEC = 0
             NW = NW - NDEC
          END IF
 !
@@ -592,7 +580,7 @@
                      CC = H( KBOT, KBOT-1 ) / S
                      BB = H( KBOT-1, KBOT ) / S
                      DD = H( KBOT, KBOT ) / S
-                     TR2 = ( AA+DD ) / TWO
+                     TR2 = ( AA+DD ) / 2.0E+0
                      DET = ( AA-TR2 )*( DD-TR2 ) - BB*CC
                      RTDISC = SQRT( -DET )
                      W( KBOT-1 ) = ( TR2+RTDISC )*S
@@ -608,12 +596,10 @@
 !
                   SORTED = .false.
                   DO K = KBOT, KS + 1, -1
-                     IF( SORTED ) &
-                        GO TO 60
+                     IF( SORTED ) GO TO 60
                      SORTED = .true.
                      DO I = KS, K - 1
-                        IF( CABS1( W( I ) ) < CABS1( W( I+1 ) ) ) &
-                             THEN
+                        IF( CABS1( W( I ) ) < CABS1( W( I+1 ) ) ) THEN
                            SORTED = .false.
                            SWAP = W( I )
                            W( I ) = W( I+1 )
@@ -697,5 +683,3 @@
 !     ==== End of CLAQR0 ====
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

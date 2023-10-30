@@ -138,8 +138,7 @@
 !> \ingroup lantr
 !
 !  =====================================================================
-   REAL             FUNCTION CLANTR( NORM, UPLO, DIAG, M, N, A, LDA, &
-                    WORK )
+   REAL             FUNCTION CLANTR( NORM, UPLO, DIAG, M, N, A, LDA, WORK )
 !
 !  -- LAPACK auxiliary routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -155,15 +154,11 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UDIAG
    INTEGER            I, J
-   REAL               SCALE, SUM, VALUE
+   REAL               SCALE, SOMME, VALUE
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, SISNAN
@@ -172,48 +167,45 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MIN, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    IF( MIN( M, N ) == 0 ) THEN
-      VALUE = ZERO
+      VALUE = 0.0E+0
    ELSE IF( LSAME( NORM, 'M' ) ) THEN
 !
 !        Find max(abs(A(i,j))).
 !
       IF( LSAME( DIAG, 'U' ) ) THEN
-         VALUE = ONE
+         VALUE = 1.0E+0
          IF( LSAME( UPLO, 'U' ) ) THEN
             DO J = 1, N
                DO I = 1, MIN( M, J-1 )
-                  SUM = ABS( A( I, J ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( A( I, J ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
             ENDDO
          ELSE
             DO J = 1, N
                DO I = J + 1, M
-                  SUM = ABS( A( I, J ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( A( I, J ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
             ENDDO
          END IF
       ELSE
-         VALUE = ZERO
+         VALUE = 0.0E+0
          IF( LSAME( UPLO, 'U' ) ) THEN
             DO J = 1, N
                DO I = 1, MIN( M, J )
-                  SUM = ABS( A( I, J ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( A( I, J ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
             ENDDO
          ELSE
             DO J = 1, N
                DO I = J, M
-                  SUM = ABS( A( I, J ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( A( I, J ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
             ENDDO
          END IF
@@ -222,38 +214,26 @@
 !
 !        Find norm1(A).
 !
-      VALUE = ZERO
+      VALUE = 0.0E+0
       UDIAG = LSAME( DIAG, 'U' )
       IF( LSAME( UPLO, 'U' ) ) THEN
          DO J = 1, N
             IF( ( UDIAG ) .AND. ( J <= M ) ) THEN
-               SUM = ONE
-               DO I = 1, J - 1
-                  SUM = SUM + ABS( A( I, J ) )
-               ENDDO
+               SOMME = 1.0E+0 + SUM(ABS(A(1:J-1,J)))
             ELSE
-               SUM = ZERO
-               DO I = 1, MIN( M, J )
-                  SUM = SUM + ABS( A( I, J ) )
-                  ENDDO
+               SOMME = SUM(ABS(A(1:MIN(M,J),J)))
             END IF
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-            ENDDO
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+         ENDDO
       ELSE
          DO J = 1, N
             IF( UDIAG ) THEN
-               SUM = ONE
-               DO I = J + 1, M
-                  SUM = SUM + ABS( A( I, J ) )
-                  ENDDO
+               SOMME = 1.0E+0 + SUM(ABS(A(J+1:M,J)))
             ELSE
-               SUM = ZERO
-               DO I = J, M
-                  SUM = SUM + ABS( A( I, J ) )
-                  ENDDO
+               SOMME = SUM(ABS(A(J:M,J)))
             END IF
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-            ENDDO
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+         ENDDO
       END IF
    ELSE IF( LSAME( NORM, 'I' ) ) THEN
 !
@@ -261,88 +241,71 @@
 !
       IF( LSAME( UPLO, 'U' ) ) THEN
          IF( LSAME( DIAG, 'U' ) ) THEN
-            DO I = 1, M
-               WORK( I ) = ONE
-               ENDDO
+            WORK(1:M) = 1.0E+0
             DO J = 1, N
-               DO I = 1, MIN( M, J-1 )
-                  WORK( I ) = WORK( I ) + ABS( A( I, J ) )
-                  ENDDO
-               ENDDO
+               WORK(1:MIN(M,J-1)) = WORK(1:MIN(M,J-1)) + ABS(A(1:MIN(M,J-1),J))
+            ENDDO
          ELSE
-            DO I = 1, M
-               WORK( I ) = ZERO
-               ENDDO
+            WORK(1:M) = 0.0E+0
             DO J = 1, N
-               DO I = 1, MIN( M, J )
-                  WORK( I ) = WORK( I ) + ABS( A( I, J ) )
-                  ENDDO
-               ENDDO
+               WORK(1:MIN(M,J)) = WORK(1:MIN(M,J)) + ABS(A(1:MIN(M,J),J))
+            ENDDO
          END IF
       ELSE
          IF( LSAME( DIAG, 'U' ) ) THEN
             DO I = 1, MIN( M, N )
-               WORK( I ) = ONE
-               ENDDO
-            DO I = N + 1, M
-               WORK( I ) = ZERO
-               ENDDO
+               WORK( I ) = 1.0E+0
+            ENDDO
+            WORK(N+1:M) = 0.0E+0
             DO J = 1, N
-               DO I = J + 1, M
-                  WORK( I ) = WORK( I ) + ABS( A( I, J ) )
-                  ENDDO
-               ENDDO
+               WORK(J+1:M) = WORK(J+1:M) + ABS( A(J+1:M, J ) )
+            ENDDO
          ELSE
-            DO I = 1, M
-               WORK( I ) = ZERO
-               ENDDO
+            WORK(1:M) = 0.0E+0
             DO J = 1, N
-               DO I = J, M
-                  WORK( I ) = WORK( I ) + ABS( A( I, J ) )
-                  ENDDO
-               ENDDO
+               WORK(J:M) = WORK(J:M) + ABS( A(J:M, J ) )
+            ENDDO
          END IF
       END IF
-      VALUE = ZERO
+      VALUE = 0.0E+0
       DO I = 1, M
-         SUM = WORK( I )
-         IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-         ENDDO
+         SOMME = WORK( I )
+         IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+      ENDDO
    ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
 !
 !        Find normF(A).
 !
       IF( LSAME( UPLO, 'U' ) ) THEN
          IF( LSAME( DIAG, 'U' ) ) THEN
-            SCALE = ONE
-            SUM = MIN( M, N )
+            SCALE = 1.0E+0
+            SOMME = MIN( M, N )
             DO J = 2, N
-               CALL CLASSQ( MIN( M, J-1 ), A( 1, J ), 1, SCALE, SUM )
-               ENDDO
+               CALL CLASSQ( MIN( M, J-1 ), A( 1, J ), 1, SCALE, SOMME )
+            ENDDO
          ELSE
-            SCALE = ZERO
-            SUM = ONE
+            SCALE = 0.0E+0
+            SOMME = 1.0E+0
             DO J = 1, N
-               CALL CLASSQ( MIN( M, J ), A( 1, J ), 1, SCALE, SUM )
-               ENDDO
+               CALL CLASSQ( MIN( M, J ), A( 1, J ), 1, SCALE, SOMME )
+            ENDDO
          END IF
       ELSE
          IF( LSAME( DIAG, 'U' ) ) THEN
-            SCALE = ONE
-            SUM = MIN( M, N )
+            SCALE = 1.0E+0
+            SOMME = MIN( M, N )
             DO J = 1, N
-               CALL CLASSQ( M-J, A( MIN( M, J+1 ), J ), 1, SCALE, &
-                            SUM )
-               ENDDO
+               CALL CLASSQ( M-J, A( MIN( M, J+1 ), J ), 1, SCALE, SOMME )
+            ENDDO
          ELSE
-            SCALE = ZERO
-            SUM = ONE
+            SCALE = 0.0E+0
+            SOMME = 1.0E+0
             DO J = 1, N
-               CALL CLASSQ( M-J+1, A( J, J ), 1, SCALE, SUM )
-               ENDDO
+               CALL CLASSQ( M-J+1, A( J, J ), 1, SCALE, SOMME )
+            ENDDO
          END IF
       END IF
-      VALUE = SCALE*SQRT( SUM )
+      VALUE = SCALE*SQRT( SOMME )
    END IF
 !
    CLANTR = VALUE
@@ -351,5 +314,3 @@
 !     End of CLANTR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

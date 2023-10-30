@@ -208,7 +208,7 @@
    COMPLEX            ALPHA
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACGV, CLARF, CLARFG, XERBLA
+   EXTERNAL           CLARF, CLARFG, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -253,7 +253,7 @@
 !              Generate elementary reflector G(i) to annihilate
 !              A(i,i+2:n)
 !
-            CALL CLACGV( N-I, A( I, I+1 ), LDA )
+            A(I,I+1:N) = CONJG(A(I,I+1:N))
             ALPHA = A( I, I+1 )
             CALL CLARFG( N-I, ALPHA, A( I, MIN( I+2, N ) ), &
                          LDA, TAUP( I ) )
@@ -264,7 +264,7 @@
 !
             CALL CLARF( 'Right', M-I, N-I, A( I, I+1 ), LDA, &
                         TAUP( I ), A( I+1, I+1 ), LDA, WORK )
-            CALL CLACGV( N-I, A( I, I+1 ), LDA )
+            A(I,I+1:N) = CONJG(A(I,I+1:N))
             A( I, I+1 ) = E( I )
          ELSE
             TAUP( I ) = 0.0E+0
@@ -278,7 +278,7 @@
 !
 !           Generate elementary reflector G(i) to annihilate A(i,i+1:n)
 !
-         CALL CLACGV( N-I+1, A( I, I ), LDA )
+         A(I,I:N) = CONJG(A(I,I:N))
          ALPHA = A( I, I )
          CALL CLARFG( N-I+1, ALPHA, A( I, MIN( I+1, N ) ), LDA, &
                       TAUP( I ) )
@@ -290,7 +290,7 @@
          IF( I < M ) &
             CALL CLARF( 'Right', M-I, N-I+1, A( I, I ), LDA, &
                         TAUP( I ), A( I+1, I ), LDA, WORK )
-         CALL CLACGV( N-I+1, A( I, I ), LDA )
+         A(I,I+1:N) = CONJG(A(I,I+1:N))
          A( I, I ) = D( I )
 !
          IF( I < M ) THEN

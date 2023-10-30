@@ -140,7 +140,7 @@
    COMPLEX            ALPHA
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACGV, CLARF, CLARFG, XERBLA
+   EXTERNAL           CLARF, CLARFG, XERBLA
 !     ..
 !     .. Executable Statements ..
 !

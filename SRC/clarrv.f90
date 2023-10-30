@@ -306,12 +306,6 @@
 !     .. Parameters ..
    INTEGER            MAXITR
    PARAMETER          ( MAXITR = 10 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ) )
-   REAL               ZERO, ONE, TWO, THREE, FOUR, HALF
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, &
-                        TWO = 2.0E0, THREE = 3.0E0, &
-                        FOUR = 4.0E0, HALF = 0.5E0)
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ESKIP, NEEDBS, STP2II, TRYRQC, USEDBS, USEDRQ
@@ -335,12 +329,7 @@
    EXTERNAL           SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLAR1V, CLASET, CSSCAL, SCOPY, SLARRB, &
-                      SLARRF
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC ABS, REAL, MAX, MIN
-   INTRINSIC CMPLX
+   EXTERNAL           CLAR1V, SLARRB, SLARRF
 !     ..
 !     .. Executable Statements ..
 !     ..
@@ -349,9 +338,7 @@
 !
 !     Quick return if possible
 !
-   IF( (N <= 0).OR.(M <= 0) ) THEN
-      RETURN
-   END IF
+   IF( (N <= 0).OR.(M <= 0) ) RETURN
 !
 !     The first N entries of WORK are reserved for the eigenvalues
    INDLD = N+1
@@ -361,9 +348,7 @@
    INDWRK = 5*N + 1
    MINWSIZE = 12 * N
 
-   DO I= 1,MINWSIZE
-      WORK( I ) = ZERO
-      ENDDO
+   WORK(1:MINWSIZE) = 0.0E+0
 
 !     IWORK(IINDR+1:IINDR+N) hold the twist indices R for the
 !     factorization used to compute the FP vector
@@ -375,9 +360,7 @@
    IINDWK = 3*N + 1
 
    MINIWSIZE = 7 * N
-   DO I= 1,MINIWSIZE
-      IWORK( I ) = 0
-      ENDDO
+   IWORK(1:MINIWSIZE) = 0
 
    ZUSEDL = 1
    IF(DOL > 1) THEN
@@ -392,23 +375,20 @@
 !     The width of the part of Z that is used
    ZUSEDW = ZUSEDU - ZUSEDL + 1
 
-
-   CALL CLASET( 'Full', N, ZUSEDW, CZERO, CZERO, &
-                       Z(1,ZUSEDL), LDZ )
+   Z(1:N,ZUSEDL:ZUSEDL+ZUSEDW-1) = (0.0E+0,0.0E+0)
 
    EPS = SLAMCH( 'Precision' )
-   RQTOL = TWO * EPS
+   RQTOL = 2.0E+0 * EPS
 !
 !     Set expert flags for standard code.
    TRYRQC = .TRUE.
 
-   IF((DOL == 1).AND.(DOU == M)) THEN
-   ELSE
+   IF((DOL /= 1).OR.(DOU /= M)) THEN
 !        Only selected eigenpairs are computed. Since the other evalues
 !        are not refined by RQ iteration, bisection has to compute to full
 !        accuracy.
-      RTOL1 = FOUR * EPS
-      RTOL2 = FOUR * EPS
+      RTOL1 = 4.0E+0 * EPS
+      RTOL2 = 4.0E+0 * EPS
    ENDIF
 
 !     The entries WBEGIN:WEND in W, WERR, WGAP correspond to the
@@ -449,7 +429,7 @@
       DO I = IBEGIN+1 , IEND
          GL = MIN( GERS( 2*I-1 ), GL )
          GU = MAX( GERS( 2*I ), GU )
-         ENDDO
+      ENDDO
       SPDIAM = GU - GL
 
 !        OLDIEN is the last index of the previous block
@@ -462,7 +442,7 @@
 !        This is for a 1x1 block
       IF( IBEGIN == IEND ) THEN
          DONE = DONE+1
-         Z( IBEGIN, WBEGIN ) = CMPLX( ONE, ZERO )
+         Z( IBEGIN, WBEGIN ) = CMPLX( 1.0E+0, 0.0E+0 )
          ISUPPZ( 2*WBEGIN-1 ) = IBEGIN
          ISUPPZ( 2*WBEGIN ) = IBEGIN
          W( WBEGIN ) = W( WBEGIN ) + SIGMA
@@ -478,14 +458,11 @@
 !        The eigenvalue approximations will be refined when necessary as
 !        high relative accuracy is required for the computation of the
 !        corresponding eigenvectors.
-      CALL SCOPY( IM, W( WBEGIN ), 1, &
-                      WORK( WBEGIN ), 1 )
+      WORK(WBEGIN:WBEGIN+IM-1) = W(WBEGIN:WBEGIN+IM-1)
 
 !        We store in W the eigenvalue approximations w.r.t. the original
 !        matrix T.
-      DO I=1,IM
-         W(WBEGIN+I-1) = W(WBEGIN+I-1)+SIGMA
-         ENDDO
+      W(WBEGIN:WBEGIN-1+IM) = W(WBEGIN:WBEGIN-1+IM)+SIGMA
 
 
 !        NDEPTH is the current depth of the representation tree
@@ -555,17 +532,14 @@
                   ENDIF
                ENDIF
                DO K = 1, IN - 1
-                  D( IBEGIN+K-1 ) = REAL( Z( IBEGIN+K-1, &
-                                    J ) )
-                  L( IBEGIN+K-1 ) = REAL( Z( IBEGIN+K-1, &
-                                    J+1 ) )
+                  D( IBEGIN+K-1 ) = REAL( Z( IBEGIN+K-1, J ) )
+                  L( IBEGIN+K-1 ) = REAL( Z( IBEGIN+K-1, J+1 ) )
                ENDDO
                D( IEND ) = REAL( Z( IEND, J ) )
                SIGMA = REAL( Z( IEND, J+1 ) )
 
 !                 Set the corresponding entries in Z to zero
-               CALL CLASET( 'Full', IN, 2, CZERO, CZERO, &
-                            Z( IBEGIN, J), LDZ )
+               Z(IBEGIN:IBEGIN+IN-1,J:J+1) = (0.0E+0,0.0E+0)
             END IF
 
 !              Compute DL and DLL of current RRR
@@ -617,9 +591,7 @@
                ENDIF
 !                 Each time the eigenvalues in WORK get refined, we store
 !                 the newly found approximation with all shifts applied in W
-               DO J=OLDFST,OLDLST
-                  W(WBEGIN+J-1) = WORK(WBEGIN+J-1)+SIGMA
-                  ENDDO
+               W(WBEGIN-1+OLDFST:WBEGIN-1+OLDLST) = WORK(WBEGIN-1+OLDFST:WBEGIN-1+OLDLST)+SIGMA
             END IF
 
 !              Process the current node.
@@ -677,9 +649,9 @@
 !                    in W might be of the same order so that gaps are not
 !                    exhibited correctly for very close eigenvalues.
                   IF( NEWFST == 1 ) THEN
-                     LGAP = MAX( ZERO, &
+                     LGAP = MAX( 0.0E+0, &
                           W(WBEGIN)-WERR(WBEGIN) - VL )
-                 ELSE
+                  ELSE
                      LGAP = WGAP( WBEGIN+NEWFST-2 )
                   ENDIF
                   RGAP = WGAP( WBEGIN+NEWLST-1 )
@@ -733,30 +705,23 @@
 !                    the new RRR directly into Z and needs an intermediate
 !                    workspace
                   DO K = 1, IN-1
-                     Z( IBEGIN+K-1, NEWFTT ) = &
-                        CMPLX( WORK( INDIN1+K-1 ), ZERO )
-                     Z( IBEGIN+K-1, NEWFTT+1 ) = &
-                        CMPLX( WORK( INDIN2+K-1 ), ZERO )
+                     Z( IBEGIN+K-1, NEWFTT ) = CMPLX( WORK( INDIN1+K-1 ), 0.0E+0 )
+                     Z( IBEGIN+K-1, NEWFTT+1 ) = CMPLX( WORK( INDIN2+K-1 ), 0.0E+0 )
                   ENDDO
-                  Z( IEND, NEWFTT ) = &
-                     CMPLX( WORK( INDIN1+IN-1 ), ZERO )
+                  Z( IEND, NEWFTT ) = CMPLX( WORK( INDIN1+IN-1 ), 0.0E+0 )
                   IF( IINFO == 0 ) THEN
 !                       a new RRR for the cluster was found by SLARRF
 !                       update shift and store it
                      SSIGMA = SIGMA + TAU
-                     Z( IEND, NEWFTT+1 ) = CMPLX( SSIGMA, ZERO )
+                     Z( IEND, NEWFTT+1 ) = CMPLX( SSIGMA, 0.0E+0 )
 !                       WORK() are the midpoints and WERR() the semi-width
 !                       Note that the entries in W are unchanged.
                      DO K = NEWFST, NEWLST
-                        FUDGE = &
-                             THREE*EPS*ABS(WORK(WBEGIN+K-1))
-                        WORK( WBEGIN + K - 1 ) = &
-                             WORK( WBEGIN + K - 1) - TAU
-                        FUDGE = FUDGE + &
-                             FOUR*EPS*ABS(WORK(WBEGIN+K-1))
+                        FUDGE = 3.0E+0*EPS*ABS(WORK(WBEGIN+K-1))
+                        WORK( WBEGIN + K - 1 ) = WORK( WBEGIN + K - 1) - TAU
+                        FUDGE = FUDGE + 4.0E+0*EPS*ABS(WORK(WBEGIN+K-1))
 !                          Fudge errors
-                        WERR( WBEGIN + K - 1 ) = &
-                             WERR( WBEGIN + K - 1 ) + FUDGE
+                        WERR( WBEGIN + K - 1 ) = WERR( WBEGIN + K - 1 ) + FUDGE
 !                          Gaps are not fudged. Provided that WERR is small
 !                          when eigenvalues are close, a zero gap indicates
 !                          that a new representation is needed for resolving
@@ -780,7 +745,7 @@
 !
                   ITER = 0
 !
-                  TOL = FOUR * LOG(REAL(IN)) * EPS
+                  TOL = 4.0E+0 * LOG(REAL(IN)) * EPS
 !
                   K = NEWFST
                   WINDEX = WBEGIN + K - 1
@@ -789,8 +754,7 @@
                   LAMBDA = WORK( WINDEX )
                   DONE = DONE + 1
 !                    Check if eigenvector computation is to be skipped
-                  IF((WINDEX < DOL).OR. &
-                     (WINDEX > DOU)) THEN
+                  IF((WINDEX < DOL).OR. (WINDEX > DOU)) THEN
                      ESKIP = .TRUE.
                      GOTO 125
                   ELSE
@@ -809,7 +773,7 @@
                   IF( K  ==  1) THEN
 !                       In the case RANGE='I' and with not much initial
 !                       accuracy in LAMBDA and VL, the formula
-!                       LGAP = MAX( ZERO, (SIGMA - VL) + LAMBDA )
+!                       LGAP = MAX( 0.0E+0, (SIGMA - VL) + LAMBDA )
 !                       can lead to an overestimation of the left gap and
 !                       thus to inadequately early RQI 'convergence'.
 !                       Prevent this by forcing a small left gap.
@@ -832,7 +796,7 @@
 !                       The eigenvector support can become wrong
 !                       because significant entries could be cut off due to a
 !                       large GAPTOL parameter in LAR1V. Prevent this.
-                     GAPTOL = ZERO
+                     GAPTOL = 0.0E+0
                   ELSE
                      GAPTOL = GAP * EPS
                   ENDIF
@@ -864,7 +828,7 @@
                      OFFSET = INDEXW( WBEGIN ) - 1
                      CALL SLARRB( IN, D(IBEGIN), &
                           WORK(INDLLD+IBEGIN-1),INDEIG,INDEIG, &
-                          ZERO, TWO*EPS, OFFSET, &
+                          0.0E+0, 2.0E+0*EPS, OFFSET, &
                           WORK(WBEGIN),WGAP(WBEGIN), &
                           WERR(WBEGIN),WORK( INDWRK ), &
                           IWORK( IINDWK ), PIVMIN, SPDIAM, &
@@ -914,20 +878,20 @@
 !                       towards a neighbor. -> protection with bisection
                      IF(INDEIG <= NEGCNT) THEN
 !                          The wanted eigenvalue lies to the left
-                        SGNDEF = -ONE
+                        SGNDEF = -1.0E+0
                      ELSE
 !                          The wanted eigenvalue lies to the right
-                        SGNDEF = ONE
+                        SGNDEF = 1.0E+0
                      ENDIF
 !                       We only use the RQCORR if it improves the
 !                       the iterate reasonably.
-                     IF( ( RQCORR*SGNDEF >= ZERO ) &
+                     IF( ( RQCORR*SGNDEF >= 0.0E+0 ) &
                           .AND.( LAMBDA + RQCORR <=  RIGHT) &
                           .AND.( LAMBDA + RQCORR >=  LEFT) &
                           ) THEN
                         USEDRQ = .TRUE.
 !                          Store new midpoint of bisection interval in WORK
-                        IF(SGNDEF == ONE) THEN
+                        IF(SGNDEF == 1.0E+0) THEN
 !                             The current LAMBDA is on the left of the true
 !                             eigenvalue
                            LEFT = LAMBDA
@@ -945,14 +909,12 @@
 !                             correct above.
 !                              LEFT = MIN(LEFT, LAMBDA + RQCORR)
                         ENDIF
-                        WORK( WINDEX ) = &
-                          HALF * (RIGHT + LEFT)
+                        WORK( WINDEX ) = 0.5E+0 * (RIGHT + LEFT)
 !                          Take RQCORR since it has the correct sign and
 !                          improves the iterate reasonably
                         LAMBDA = LAMBDA + RQCORR
 !                          Update width of error interval
-                        WERR( WINDEX ) = &
-                                HALF * (RIGHT-LEFT)
+                        WERR( WINDEX ) = 0.5E+0 * (RIGHT-LEFT)
                      ELSE
                         NEEDBS = .TRUE.
                      ENDIF
@@ -1001,18 +963,9 @@
                   ISUPMN = ISUPMN + OLDIEN
                   ISUPMX = ISUPMX + OLDIEN
 !                    Ensure vector is ok if support in the RQI has changed
-                  IF(ISUPMN < ZFROM) THEN
-                     DO II = ISUPMN,ZFROM-1
-                        Z( II, WINDEX ) = ZERO
-                        ENDDO
-                  ENDIF
-                  IF(ISUPMX > ZTO) THEN
-                     DO II = ZTO+1,ISUPMX
-                        Z( II, WINDEX ) = ZERO
-                        ENDDO
-                  ENDIF
-                  CALL CSSCAL( ZTO-ZFROM+1, NRMINV, &
-                          Z( ZFROM, WINDEX ), 1 )
+                  IF(ISUPMN < ZFROM) Z(ISUPMN:ZFROM-1, WINDEX ) = 0.0E+0
+                  IF(ISUPMX > ZTO) Z(ZTO+1:ISUPMX,WINDEX) = 0.0E+0
+                  Z(ZFROM:ZTO,WINDEX) = NRMINV*Z(ZFROM:ZTO,WINDEX)
  125                 CONTINUE
 !                    Update W
                   W( WINDEX ) = LAMBDA+SIGMA
@@ -1042,15 +995,15 @@
 !                 Proceed to any remaining child nodes
                NEWFST = J + 1
  140           CONTINUE
-               ENDDO
             ENDDO
+         ENDDO
          NDEPTH = NDEPTH + 1
          GO TO 40
       END IF
       IBEGIN = IEND + 1
       WBEGIN = WEND + 1
  170  CONTINUE
-      ENDDO
+   ENDDO
 !
 
    RETURN
@@ -1058,5 +1011,3 @@
 !     End of CLARRV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -191,10 +191,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            SYMB_ZERO
@@ -209,9 +205,6 @@
 !     .. External Functions ..
    EXTERNAL           ILAUPLO
    INTEGER            ILAUPLO
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, ABS, SIGN, REAL, AIMAG
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -243,8 +236,7 @@
 !
 !     Quick return if possible.
 !
-   IF( ( N == 0 ).OR.( ( ALPHA == ZERO ).AND.( BETA == ONE ) ) ) &
-      RETURN
+   IF( ( N == 0 ).OR.( ( ALPHA == 0.0E+0 ).AND.( BETA == 1.0E+0 ) ) ) RETURN
 !
 !     Set up the start points in  X  and  Y.
 !
@@ -275,27 +267,27 @@
    IF ( INCX == 1 ) THEN
       IF ( UPLO  ==  ILAUPLO( 'U' ) ) THEN
          DO I = 1, N
-            IF ( BETA  ==  ZERO ) THEN
+            IF ( BETA  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
                Y( IY ) = 0.0
-            ELSE IF ( Y( IY )  ==  ZERO ) THEN
+            ELSE IF ( Y( IY )  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
             ELSE
                SYMB_ZERO = .FALSE.
                Y( IY ) = BETA * ABS( Y( IY ) )
             END IF
-            IF ( ALPHA  /=  ZERO ) THEN
+            IF ( ALPHA  /=  0.0E+0 ) THEN
                DO J = 1, I
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
                DO J = I+1, N
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
@@ -308,27 +300,26 @@
          END DO
       ELSE
          DO I = 1, N
-            IF ( BETA  ==  ZERO ) THEN
+            IF ( BETA  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
                Y( IY ) = 0.0
-            ELSE IF ( Y( IY )  ==  ZERO ) THEN
+            ELSE IF ( Y( IY )  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
             ELSE
                SYMB_ZERO = .FALSE.
                Y( IY ) = BETA * ABS( Y( IY ) )
             END IF
-            IF ( ALPHA  /=  ZERO ) THEN
+            IF ( ALPHA  /=  0.0E+0 ) THEN
                DO J = 1, I
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
-
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
                DO J = I+1, N
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( J ) )*TEMP
                END DO
@@ -343,21 +334,21 @@
    ELSE
       IF ( UPLO  ==  ILAUPLO( 'U' ) ) THEN
          DO I = 1, N
-            IF ( BETA  ==  ZERO ) THEN
+            IF ( BETA  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
                Y( IY ) = 0.0
-            ELSE IF ( Y( IY )  ==  ZERO ) THEN
+            ELSE IF ( Y( IY )  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
             ELSE
                SYMB_ZERO = .FALSE.
                Y( IY ) = BETA * ABS( Y( IY ) )
             END IF
             JX = KX
-            IF ( ALPHA  /=  ZERO ) THEN
+            IF ( ALPHA  /=  0.0E+0 ) THEN
                DO J = 1, I
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
@@ -365,7 +356,7 @@
                DO J = I+1, N
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
@@ -379,21 +370,21 @@
          END DO
       ELSE
          DO I = 1, N
-            IF ( BETA  ==  ZERO ) THEN
+            IF ( BETA  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
                Y( IY ) = 0.0
-            ELSE IF ( Y( IY )  ==  ZERO ) THEN
+            ELSE IF ( Y( IY )  ==  0.0E+0 ) THEN
                SYMB_ZERO = .TRUE.
             ELSE
                SYMB_ZERO = .FALSE.
                Y( IY ) = BETA * ABS( Y( IY ) )
             END IF
             JX = KX
-            IF ( ALPHA  /=  ZERO ) THEN
+            IF ( ALPHA  /=  0.0E+0 ) THEN
                DO J = 1, I
                   TEMP = CABS1( A( I, J ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
@@ -401,7 +392,7 @@
                DO J = I+1, N
                   TEMP = CABS1( A( J, I ) )
                   SYMB_ZERO = SYMB_ZERO .AND. &
-                       ( X( J )  ==  ZERO .OR. TEMP  ==  ZERO )
+                       ( X( J )  ==  0.0E+0 .OR. TEMP  ==  0.0E+0 )
 
                   Y( IY ) = Y( IY ) + ALPHA*CABS1( X( JX ) )*TEMP
                   JX = JX + INCX
@@ -422,5 +413,3 @@
 !     End of CLA_HEAMV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

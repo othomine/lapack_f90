@@ -148,20 +148,11 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0 )
-   REAL               HALF, FOUR
-   PARAMETER          ( HALF = 0.5E0, FOUR = 4.0E0 )
 !     ..
 !     .. Local Scalars ..
    REAL               ABSALP, ABSEST, ABSGAM, B, EPS, NORMA, S1, S2, &
                       SCL, T, TEST, TMP, ZETA1, ZETA2
    COMPLEX            ALPHA, COSINE, SINE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, SQRT
 !     ..
 !     .. External Functions ..
    REAL               SLAMCH
@@ -183,12 +174,12 @@
 !
 !        special cases
 !
-      IF( SEST == ZERO ) THEN
+      IF( SEST == 0.0E+0 ) THEN
          S1 = MAX( ABSGAM, ABSALP )
-         IF( S1 == ZERO ) THEN
-            S = ZERO
-            C = ONE
-            SESTPR = ZERO
+         IF( S1 == 0.0E+0 ) THEN
+            S = 0.0E+0
+            C = 1.0E+0
+            SESTPR = 0.0E+0
          ELSE
             S = ALPHA / S1
             C = GAMMA / S1
@@ -199,8 +190,8 @@
          END IF
          RETURN
       ELSE IF( ABSGAM <= EPS*ABSEST ) THEN
-         S = ONE
-         C = ZERO
+         S = 1.0E+0
+         C = 0.0E+0
          TMP = MAX( ABSEST, ABSALP )
          S1 = ABSEST / TMP
          S2 = ABSALP / TMP
@@ -210,12 +201,12 @@
          S1 = ABSGAM
          S2 = ABSEST
          IF( S1 <= S2 ) THEN
-            S = ONE
-            C = ZERO
+            S = 1.0E+0
+            C = 0.0E+0
             SESTPR = S2
          ELSE
-            S = ZERO
-            C = ONE
+            S = 0.0E+0
+            C = 1.0E+0
             SESTPR = S1
          END IF
          RETURN
@@ -224,13 +215,13 @@
          S2 = ABSALP
          IF( S1 <= S2 ) THEN
             TMP = S1 / S2
-            SCL = SQRT( ONE+TMP*TMP )
+            SCL = SQRT( 1.0E+0+TMP*TMP )
             SESTPR = S2*SCL
             S = ( ALPHA / S2 ) / SCL
             C = ( GAMMA / S2 ) / SCL
          ELSE
             TMP = S2 / S1
-            SCL = SQRT( ONE+TMP*TMP )
+            SCL = SQRT( 1.0E+0+TMP*TMP )
             SESTPR = S1*SCL
             S = ( ALPHA / S1 ) / SCL
             C = ( GAMMA / S1 ) / SCL
@@ -243,21 +234,20 @@
          ZETA1 = ABSALP / ABSEST
          ZETA2 = ABSGAM / ABSEST
 !
-         B = ( ONE-ZETA1*ZETA1-ZETA2*ZETA2 )*HALF
+         B = ( 1.0E+0-ZETA1*ZETA1-ZETA2*ZETA2 )*0.5E+0
          C = ZETA1*ZETA1
-         IF( B > ZERO ) THEN
+         IF( B > 0.0E+0 ) THEN
             T = REAL( C / ( B+SQRT( B*B+C ) ) )
          ELSE
             T = REAL( SQRT( B*B+C ) - B )
          END IF
 !
          SINE = -( ALPHA / ABSEST ) / T
-         COSINE = -( GAMMA / ABSEST ) / ( ONE+T )
-         TMP = REAL( SQRT( SINE * CONJG( SINE ) &
-           + COSINE * CONJG( COSINE ) ) )
+         COSINE = -( GAMMA / ABSEST ) / ( 1.0E+0+T )
+         TMP = REAL( SQRT( SINE * CONJG( SINE ) + COSINE * CONJG( COSINE ) ) )
          S = SINE / TMP
          C = COSINE / TMP
-         SESTPR = SQRT( T+ONE )*ABSEST
+         SESTPR = SQRT( T+1.0E+0 )*ABSEST
          RETURN
       END IF
 !
@@ -267,11 +257,11 @@
 !
 !        special cases
 !
-      IF( SEST == ZERO ) THEN
-         SESTPR = ZERO
-         IF( MAX( ABSGAM, ABSALP ) == ZERO ) THEN
-            SINE = ONE
-            COSINE = ZERO
+      IF( SEST == 0.0E+0 ) THEN
+         SESTPR = 0.0E+0
+         IF( MAX( ABSGAM, ABSALP ) == 0.0E+0 ) THEN
+            SINE = 1.0E+0
+            COSINE = 0.0E+0
          ELSE
             SINE = -CONJG( GAMMA )
             COSINE = CONJG( ALPHA )
@@ -284,20 +274,20 @@
          C = C / TMP
          RETURN
       ELSE IF( ABSGAM <= EPS*ABSEST ) THEN
-         S = ZERO
-         C = ONE
+         S = 0.0E+0
+         C = 1.0E+0
          SESTPR = ABSGAM
          RETURN
       ELSE IF( ABSALP <= EPS*ABSEST ) THEN
          S1 = ABSGAM
          S2 = ABSEST
          IF( S1 <= S2 ) THEN
-            S = ZERO
-            C = ONE
+            S = 0.0E+0
+            C = 1.0E+0
             SESTPR = S1
          ELSE
-            S = ONE
-            C = ZERO
+            S = 1.0E+0
+            C = 0.0E+0
             SESTPR = S2
          END IF
          RETURN
@@ -306,13 +296,13 @@
          S2 = ABSALP
          IF( S1 <= S2 ) THEN
             TMP = S1 / S2
-            SCL = SQRT( ONE+TMP*TMP )
+            SCL = SQRT( 1.0E+0+TMP*TMP )
             SESTPR = ABSEST*( TMP / SCL )
             S = -( CONJG( GAMMA ) / S2 ) / SCL
             C = ( CONJG( ALPHA ) / S2 ) / SCL
          ELSE
             TMP = S2 / S1
-            SCL = SQRT( ONE+TMP*TMP )
+            SCL = SQRT( 1.0E+0+TMP*TMP )
             SESTPR = ABSEST / SCL
             S = -( CONJG( GAMMA ) / S1 ) / SCL
             C = ( CONJG( ALPHA ) / S1 ) / SCL
@@ -325,36 +315,36 @@
          ZETA1 = ABSALP / ABSEST
          ZETA2 = ABSGAM / ABSEST
 !
-         NORMA = MAX( ONE+ZETA1*ZETA1+ZETA1*ZETA2, &
+         NORMA = MAX( 1.0E+0+ZETA1*ZETA1+ZETA1*ZETA2, &
                  ZETA1*ZETA2+ZETA2*ZETA2 )
 !
-!           See if root is closer to zero or to ONE
+!           See if root is closer to zero or to 1.0E+0
 !
-         TEST = ONE + TWO*( ZETA1-ZETA2 )*( ZETA1+ZETA2 )
-         IF( TEST >= ZERO ) THEN
+         TEST = 1.0E+0 + 2.0E+0*( ZETA1-ZETA2 )*( ZETA1+ZETA2 )
+         IF( TEST >= 0.0E+0 ) THEN
 !
 !              root is close to zero, compute directly
 !
-            B = ( ZETA1*ZETA1+ZETA2*ZETA2+ONE )*HALF
+            B = ( ZETA1*ZETA1+ZETA2*ZETA2+1.0E+0 )*0.5E+0
             C = ZETA2*ZETA2
             T = REAL( C / ( B+SQRT( ABS( B*B-C ) ) ) )
-            SINE = ( ALPHA / ABSEST ) / ( ONE-T )
+            SINE = ( ALPHA / ABSEST ) / ( 1.0E+0-T )
             COSINE = -( GAMMA / ABSEST ) / T
-            SESTPR = SQRT( T+FOUR*EPS*EPS*NORMA )*ABSEST
+            SESTPR = SQRT( T+4.0E+0*EPS*EPS*NORMA )*ABSEST
          ELSE
 !
-!              root is closer to ONE, shift by that amount
+!              root is closer to 1.0E+0, shift by that amount
 !
-            B = ( ZETA2*ZETA2+ZETA1*ZETA1-ONE )*HALF
+            B = ( ZETA2*ZETA2+ZETA1*ZETA1-1.0E+0 )*0.5E+0
             C = ZETA1*ZETA1
-            IF( B >= ZERO ) THEN
+            IF( B >= 0.0E+0 ) THEN
                T = REAL( -C / ( B+SQRT( B*B+C ) ) )
             ELSE
                T = REAL( B - SQRT( B*B+C ) )
             END IF
             SINE = -( ALPHA / ABSEST ) / T
-            COSINE = -( GAMMA / ABSEST ) / ( ONE+T )
-            SESTPR = SQRT( ONE+T+FOUR*EPS*EPS*NORMA )*ABSEST
+            COSINE = -( GAMMA / ABSEST ) / ( 1.0E+0+T )
+            SESTPR = SQRT( 1.0E+0+T+4.0E+0*EPS*EPS*NORMA )*ABSEST
          END IF
          TMP = REAL( SQRT( SINE * CONJG( SINE ) &
            + COSINE * CONJG( COSINE ) ) )
@@ -369,5 +359,3 @@
 !     End of CLAIC1
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

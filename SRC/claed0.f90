@@ -141,8 +141,7 @@
 !> \ingroup laed0
 !
 !  =====================================================================
-   SUBROUTINE CLAED0( QSIZ, N, D, E, Q, LDQ, QSTORE, LDQS, RWORK, &
-                      IWORK, INFO )
+   SUBROUTINE CLAED0( QSIZ, N, D, E, Q, LDQ, QSTORE, LDQS, RWORK, IWORK, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -160,10 +159,6 @@
 !  =====================================================================
 !
 !  Warning:      N could be as big as QSIZ!
-!
-!     .. Parameters ..
-   REAL               TWO
-   PARAMETER          ( TWO = 2.E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            CURLVL, CURPRB, CURR, I, IGIVCL, IGIVNM, &
@@ -178,9 +173,6 @@
 !     .. External Functions ..
    INTEGER            ILAENV
    EXTERNAL           ILAENV
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, INT, LOG, MAX, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -208,8 +200,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    SMLSIZ = ILAENV( 9, 'CLAED0', ' ', 0, 0, 0, 0 )
 !
@@ -249,12 +240,10 @@
 !     Set up workspaces for eigenvalues only/accumulate new vectors
 !     routine
 !
-   TEMP = LOG( REAL( N ) ) / LOG( TWO )
+   TEMP = LOG( REAL( N ) ) / LOG( 2.0E+0 )
    LGN = INT( TEMP )
-   IF( 2**LGN < N ) &
-      LGN = LGN + 1
-   IF( 2**LGN < N ) &
-      LGN = LGN + 1
+   IF( 2**LGN < N ) LGN = LGN + 1
+   IF( 2**LGN < N ) LGN = LGN + 1
    IPRMPT = INDXQ + N + 1
    IPERM = IPRMPT + N*LGN
    IQPTR = IPERM + N*LGN
@@ -265,10 +254,8 @@
    IQ = IGIVNM + 2*N*LGN
    IWREM = IQ + N**2 + 1
 !     Initialize pointers
-   DO I = 0, SUBPBS
-      IWORK( IPRMPT+I ) = 1
-      IWORK( IGIVPT+I ) = 1
-   ENDDO
+   IWORK( IPRMPT:IGIVPT+SUBPBS ) = 1
+   IWORK( IGIVPT:IGIVPT+SUBPBS ) = 1
    IWORK( IQPTR ) = 1
 !
 !     Solve each submatrix eigenproblem at the bottom of the divide and
@@ -358,14 +345,12 @@
    DO I = 1, N
       J = IWORK( INDXQ+I )
       RWORK( I ) = D( J )
-      CALL CCOPY( QSIZ, QSTORE( 1, J ), 1, Q( 1, I ), 1 )
-      ENDDO
-   CALL SCOPY( N, RWORK, 1, D, 1 )
+      Q(1:QSIZ,I) = QSTORE(1:QSIZ,J)
+   ENDDO
+   D(1:N) = RWORK(1:N)
 !
    RETURN
 !
 !     End of CLAED0
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

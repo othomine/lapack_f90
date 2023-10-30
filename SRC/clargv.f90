@@ -134,12 +134,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               TWO, ONE, ZERO
-   PARAMETER          ( TWO = 2.0E+0, ONE = 1.0E+0, ZERO = 0.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
 !     LOGICAL            FIRST
@@ -151,10 +145,6 @@
 !     .. External Functions ..
    REAL               SLAMCH, SLAPY2
    EXTERNAL           SLAMCH, SLAPY2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, INT, LOG, MAX, REAL, &
-                      SQRT
 !     ..
 !     .. Statement Functions ..
    REAL               ABS1, ABSSQ
@@ -176,8 +166,8 @@
       SAFMIN = SLAMCH( 'S' )
       EPS = SLAMCH( 'E' )
       SAFMN2 = SLAMCH( 'B' )**INT( LOG( SAFMIN / EPS ) / &
-               LOG( SLAMCH( 'B' ) ) / TWO )
-      SAFMX2 = ONE / SAFMN2
+               LOG( SLAMCH( 'B' ) ) / 2.0E+0 )
+      SAFMX2 = 1.0E+0 / SAFMN2
 !     END IF
    IX = 1
    IY = 1
@@ -198,12 +188,11 @@
          FS = FS*SAFMN2
          GS = GS*SAFMN2
          SCALE = SCALE*SAFMN2
-         IF( SCALE >= SAFMX2 .AND. COUNT  <  20 ) &
-            GO TO 10
+         IF( SCALE >= SAFMX2 .AND. COUNT  <  20 ) GO TO 10
       ELSE IF( SCALE <= SAFMN2 ) THEN
-         IF( G == CZERO ) THEN
-            CS = ONE
-            SN = CZERO
+         IF( G == (0.0E+0,0.0E+0) ) THEN
+            CS = 1.0E+0
+            SN = (0.0E+0,0.0E+0)
             R = F
             GO TO 50
          END IF
@@ -212,17 +201,16 @@
          FS = FS*SAFMX2
          GS = GS*SAFMX2
          SCALE = SCALE*SAFMX2
-         IF( SCALE <= SAFMN2 ) &
-            GO TO 20
+         IF( SCALE <= SAFMN2 ) GO TO 20
       END IF
       F2 = ABSSQ( FS )
       G2 = ABSSQ( GS )
-      IF( F2 <= MAX( G2, ONE )*SAFMIN ) THEN
+      IF( F2 <= MAX( G2, 1.0E+0 )*SAFMIN ) THEN
 !
 !           This is a rare case: F is very small.
 !
-         IF( F == CZERO ) THEN
-            CS = ZERO
+         IF( F == (0.0E+0,0.0E+0) ) THEN
+            CS = 0.0E+0
             R = SLAPY2( REAL( G ), AIMAG( G ) )
 !              Do complex/real division explicitly with two real
 !              divisions
@@ -236,15 +224,15 @@
          G2S = SQRT( G2 )
 !           Error in CS from underflow in F2S is at most
 !           UNFL / SAFMN2 .lt. sqrt(UNFL*EPS) .lt. EPS
-!           If MAX(G2,ONE)=G2, then F2 .lt. G2*SAFMIN,
+!           If MAX(G2,1.0E+0)=G2, then F2 .lt. G2*SAFMIN,
 !           and so CS .lt. sqrt(SAFMIN)
-!           If MAX(G2,ONE)=ONE, then F2 .lt. SAFMIN
+!           If MAX(G2,1.0E+0)=1.0E+0, then F2 .lt. SAFMIN
 !           and so CS .lt. sqrt(SAFMIN)/SAFMN2 = sqrt(EPS)
 !           Therefore, CS = F2S/G2S / sqrt( 1 + (F2S/G2S)**2 ) = F2S/G2S
          CS = F2S / G2S
 !           Make sure abs(FF) = 1
 !           Do complex/real division explicitly with 2 real divisions
-         IF( ABS1( F ) > ONE ) THEN
+         IF( ABS1( F ) > 1.0E+0 ) THEN
             D = SLAPY2( REAL( F ), AIMAG( F ) )
             FF = CMPLX( REAL( F ) / D, AIMAG( F ) / D )
          ELSE
@@ -261,11 +249,11 @@
 !           Neither F2 nor F2/G2 are less than SAFMIN
 !           F2S cannot overflow, and it is accurate
 !
-         F2S = SQRT( ONE+G2 / F2 )
+         F2S = SQRT( 1.0E+0+G2 / F2 )
 !           Do the F2S(real)*FS(complex) multiply with two real
 !           multiplies
          R = CMPLX( F2S*REAL( FS ), F2S*AIMAG( FS ) )
-         CS = ONE / F2S
+         CS = 1.0E+0 / F2S
          D = F2 + G2
 !           Do complex/real division explicitly with two real divisions
          SN = CMPLX( REAL( R ) / D, AIMAG( R ) / D )
@@ -295,5 +283,3 @@
 !     End of CLARGV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

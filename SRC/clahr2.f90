@@ -193,29 +193,19 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ), &
-                        ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I
    COMPLEX            EI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CGEMM, CGEMV, CLACPY, &
-                      CLARFG, CSCAL, CTRMM, CTRMV, CLACGV
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN
+   EXTERNAL           CGEMM, CGEMV, CLARFG, CTRMM, CTRMV, CLACGV
 !     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
-   IF( N <= 1 ) &
-      RETURN
+   IF( N <= 1 ) RETURN
 !
    DO I = 1, NB
       IF( I > 1 ) THEN
@@ -225,8 +215,8 @@
 !           Update I-th column of A - Y * V**H
 !
          CALL CLACGV( I-1, A( K+I-1, 1 ), LDA )
-         CALL CGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE, Y(K+1,1), LDY, &
-                     A( K+I-1, 1 ), LDA, ONE, A( K+1, I ), 1 )
+         CALL CGEMV( 'NO TRANSPOSE', N-K, I-1, -(1.0E+0,0.0E+0), Y(K+1,1), LDY, &
+                     A( K+I-1, 1 ), LDA, (1.0E+0,0.0E+0), A( K+1, I ), 1 )
          CALL CLACGV( I-1, A( K+I-1, 1 ), LDA )
 !
 !           Apply I - V * T**H * V**H to this column (call it b) from the
@@ -239,35 +229,31 @@
 !
 !           w := V1**H * b1
 !
-         CALL CCOPY( I-1, A( K+1, I ), 1, T( 1, NB ), 1 )
+         T(1:I-1,NB) = A(K+1:K+I-1,I)
          CALL CTRMV( 'Lower', 'Conjugate transpose', 'UNIT', &
-                     I-1, A( K+1, 1 ), &
-                     LDA, T( 1, NB ), 1 )
+                     I-1, A( K+1, 1 ), LDA, T( 1, NB ), 1 )
 !
 !           w := w + V2**H * b2
 !
          CALL CGEMV( 'Conjugate transpose', N-K-I+1, I-1, &
-                     ONE, A( K+I, 1 ), &
-                     LDA, A( K+I, I ), 1, ONE, T( 1, NB ), 1 )
+                     (1.0E+0,0.0E+0), A( K+I, 1 ), &
+                     LDA, A( K+I, I ), 1, (1.0E+0,0.0E+0), T( 1, NB ), 1 )
 !
 !           w := T**H * w
 !
          CALL CTRMV( 'Upper', 'Conjugate transpose', 'NON-UNIT', &
-                     I-1, T, LDT, &
-                     T( 1, NB ), 1 )
+                     I-1, T, LDT, T( 1, NB ), 1 )
 !
 !           b2 := b2 - V2*w
 !
-         CALL CGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -ONE, &
-                     A( K+I, 1 ), &
-                     LDA, T( 1, NB ), 1, ONE, A( K+I, I ), 1 )
+         CALL CGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -(1.0E+0,0.0E+0), &
+                     A( K+I, 1 ), LDA, T( 1, NB ), 1, (1.0E+0,0.0E+0), A( K+I, I ), 1 )
 !
 !           b1 := b1 - V1*w
 !
          CALL CTRMV( 'Lower', 'NO TRANSPOSE', &
-                     'UNIT', I-1, &
-                     A( K+1, 1 ), LDA, T( 1, NB ), 1 )
-         CALL CAXPY( I-1, -ONE, T( 1, NB ), 1, A( K+1, I ), 1 )
+                     'UNIT', I-1, A( K+1, 1 ), LDA, T( 1, NB ), 1 )
+         A(K+1:K+I-1,I) = A(K+1:K+I-1,I) - T(1:I-1,NB)
 !
          A( K+I-1, I-1 ) = EI
       END IF
@@ -278,27 +264,26 @@
       CALL CLARFG( N-K-I+1, A( K+I, I ), A( MIN( K+I+1, N ), I ), 1, &
                    TAU( I ) )
       EI = A( K+I, I )
-      A( K+I, I ) = ONE
+      A( K+I, I ) = (1.0E+0,0.0E+0)
 !
 !        Compute  Y(K+1:N,I)
 !
       CALL CGEMV( 'NO TRANSPOSE', N-K, N-K-I+1, &
-                  ONE, A( K+1, I+1 ), &
-                  LDA, A( K+I, I ), 1, ZERO, Y( K+1, I ), 1 )
+                  (1.0E+0,0.0E+0), A( K+1, I+1 ), &
+                  LDA, A( K+I, I ), 1, (0.0E+0,0.0E+0), Y( K+1, I ), 1 )
       CALL CGEMV( 'Conjugate transpose', N-K-I+1, I-1, &
-                  ONE, A( K+I, 1 ), LDA, &
-                  A( K+I, I ), 1, ZERO, T( 1, I ), 1 )
-      CALL CGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE, &
+                  (1.0E+0,0.0E+0), A( K+I, 1 ), LDA, &
+                  A( K+I, I ), 1, (0.0E+0,0.0E+0), T( 1, I ), 1 )
+      CALL CGEMV( 'NO TRANSPOSE', N-K, I-1, -(1.0E+0,0.0E+0), &
                   Y( K+1, 1 ), LDY, &
-                  T( 1, I ), 1, ONE, Y( K+1, I ), 1 )
-      CALL CSCAL( N-K, TAU( I ), Y( K+1, I ), 1 )
+                  T( 1, I ), 1, (1.0E+0,0.0E+0), Y( K+1, I ), 1 )
+      Y(K+1:N,I) = TAU(I)*Y(K+1:N,I)
 !
 !        Compute T(1:I,I)
 !
-      CALL CSCAL( I-1, -TAU( I ), T( 1, I ), 1 )
+      T(1:I-1,I) = -TAU(I)*T(1:I-1,I)
       CALL CTRMV( 'Upper', 'No Transpose', 'NON-UNIT', &
-                  I-1, T, LDT, &
-                  T( 1, I ), 1 )
+                  I-1, T, LDT, T( 1, I ), 1 )
       T( I, I ) = TAU( I )
 !
    ENDDO
@@ -306,23 +291,18 @@
 !
 !     Compute Y(1:K,1:NB)
 !
-   CALL CLACPY( 'ALL', K, NB, A( 1, 2 ), LDA, Y, LDY )
+   Y(1:K,1:NB) = A(1:K,2:NB+1)
    CALL CTRMM( 'RIGHT', 'Lower', 'NO TRANSPOSE', &
-               'UNIT', K, NB, &
-               ONE, A( K+1, 1 ), LDA, Y, LDY )
+               'UNIT', K, NB, (1.0E+0,0.0E+0), A( K+1, 1 ), LDA, Y, LDY )
    IF( N > K+NB ) &
       CALL CGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', K, &
-                  NB, N-K-NB, ONE, &
-                  A( 1, 2+NB ), LDA, A( K+1+NB, 1 ), LDA, ONE, Y, &
-                  LDY )
+                  NB, N-K-NB, (1.0E+0,0.0E+0), &
+                  A( 1, 2+NB ), LDA, A( K+1+NB, 1 ), LDA, (1.0E+0,0.0E+0), Y, LDY )
    CALL CTRMM( 'RIGHT', 'Upper', 'NO TRANSPOSE', &
-               'NON-UNIT', K, NB, &
-               ONE, T, LDT, Y, LDY )
+               'NON-UNIT', K, NB, (1.0E+0,0.0E+0), T, LDT, Y, LDY )
 !
    RETURN
 !
 !     End of CLAHR2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

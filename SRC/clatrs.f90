@@ -253,11 +253,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, HALF, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E+0, HALF = 0.5E+0, ONE = 1.0E+0, &
-                      TWO = 2.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN, NOUNIT, UPPER
@@ -275,10 +270,7 @@
                       CDOTU, CLADIV
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CSSCAL, CTRSV, SSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, MIN, REAL
+   EXTERNAL           CTRSV, XERBLA
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1, CABS2
@@ -319,14 +311,13 @@
 !
 !     Quick return if possible
 !
-   SCALE = ONE
-   IF( N == 0 ) &
-      RETURN
+   SCALE = 1.0E+0
+   IF( N == 0 ) RETURN
 !
 !     Determine machine dependent parameters to control overflow.
 !
    SMLNUM = SLAMCH( 'Safe minimum' ) / SLAMCH( 'Precision' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
    IF( LSAME( NORMIN, 'N' ) ) THEN
 !
@@ -346,7 +337,7 @@
          DO J = 1, N - 1
             CNORM( J ) = SCASUM( N-J, A( J+1, J ), 1 )
          ENDDO
-         CNORM( N ) = ZERO
+         CNORM( N ) = 0.0E+0
       END IF
    END IF
 !
@@ -355,8 +346,8 @@
 !
    IMAX = ISAMAX( N, CNORM, 1 )
    TMAX = CNORM( IMAX )
-   IF( TMAX <= BIGNUM*HALF ) THEN
-      TSCAL = ONE
+   IF( TMAX <= BIGNUM*0.5E+0 ) THEN
+      TSCAL = 1.0E+0
    ELSE
 !
 !        Avoid NaN generation if entries in CNORM exceed the
@@ -364,15 +355,15 @@
 !
       IF ( TMAX <= SLAMCH('Overflow') ) THEN
 !           Case 1: All entries in CNORM are valid floating-point numbers
-         TSCAL = HALF / ( SMLNUM*TMAX )
-         CALL SSCAL( N, TSCAL, CNORM, 1 )
+         TSCAL = 0.5E+0 / ( SMLNUM*TMAX )
+         CNORM(1:N) = TSCAL*CNORM(1:N)
       ELSE
 !           Case 2: At least one column norm of A cannot be
 !           represented as a floating-point number. Find the
 !           maximum offdiagonal absolute value
 !           max( |Re(A(I,J))|, |Im(A(I,J)| ). If this entry is
 !           not +/- Infinity, use this value as TSCAL.
-         TMAX = ZERO
+         TMAX = 0.0E+0
          IF( UPPER ) THEN
 !
 !              A is upper triangular.
@@ -396,15 +387,15 @@
          END IF
 !
          IF( TMAX <= SLAMCH('Overflow') ) THEN
-            TSCAL = ONE / ( SMLNUM*TMAX )
+            TSCAL = 1.0E+0 / ( SMLNUM*TMAX )
             DO J = 1, N
                IF( CNORM( J ) <= SLAMCH('Overflow') ) THEN
                   CNORM( J ) = CNORM( J )*TSCAL
                ELSE
 !                    Recompute the 1-norm of each column without
 !                    introducing Infinity in the summation.
-                  TSCAL = TWO * TSCAL
-                  CNORM( J ) = ZERO
+                  TSCAL = 2.0E+0 * TSCAL
+                  CNORM( J ) = 0.0E+0
                   IF( UPPER ) THEN
                      DO I = 1, J - 1
                         CNORM( J ) = CNORM( J ) + &
@@ -416,7 +407,7 @@
                                      TSCAL * CABS2( A( I, J ) )
                      END DO
                   END IF
-                  TSCAL = TSCAL * HALF
+                  TSCAL = TSCAL * 0.5E+0
                END IF
             END DO
          ELSE
@@ -431,7 +422,7 @@
 !     Compute a bound on the computed solution vector to see if the
 !     Level 2 BLAS routine CTRSV can be used.
 !
-   XMAX = ZERO
+   XMAX = 0.0E+0
    DO J = 1, N
       XMAX = MAX( XMAX, CABS2( X( J ) ) )
    ENDDO
@@ -451,8 +442,8 @@
          JINC = 1
       END IF
 !
-      IF( TSCAL /= ONE ) THEN
-         GROW = ZERO
+      IF( TSCAL /= 1.0E+0 ) THEN
+         GROW = 0.0E+0
          GO TO 60
       END IF
 !
@@ -463,14 +454,13 @@
 !           Compute GROW = 1/G(j) and XBND = 1/M(j).
 !           Initially, G(0) = max{x(i), i=1,...,n}.
 !
-         GROW = HALF / MAX( XBND, SMLNUM )
+         GROW = 0.5E+0 / MAX( XBND, SMLNUM )
          XBND = GROW
          DO J = JFIRST, JLAST, JINC
 !
 !              Exit the loop if the growth factor is too small.
 !
-            IF( GROW <= SMLNUM ) &
-               GO TO 60
+            IF( GROW <= SMLNUM ) GO TO 60
 !
             TJJS = A( J, J )
             TJJ = CABS1( TJJS )
@@ -479,12 +469,12 @@
 !
 !                 M(j) = G(j-1) / abs(A(j,j))
 !
-               XBND = MIN( XBND, MIN( ONE, TJJ )*GROW )
+               XBND = MIN( XBND, MIN( 1.0E+0, TJJ )*GROW )
             ELSE
 !
 !                 M(j) could overflow, set XBND to 0.
 !
-               XBND = ZERO
+               XBND = 0.0E+0
             END IF
 !
             IF( TJJ+CNORM( J ) >= SMLNUM ) THEN
@@ -496,7 +486,7 @@
 !
 !                 G(j) could overflow, set GROW to 0.
 !
-               GROW = ZERO
+               GROW = 0.0E+0
             END IF
          ENDDO
          GROW = XBND
@@ -506,17 +496,16 @@
 !
 !           Compute GROW = 1/G(j), where G(0) = max{x(i), i=1,...,n}.
 !
-         GROW = MIN( ONE, HALF / MAX( XBND, SMLNUM ) )
+         GROW = MIN( 1.0E+0, 0.5E+0 / MAX( XBND, SMLNUM ) )
          DO J = JFIRST, JLAST, JINC
 !
 !              Exit the loop if the growth factor is too small.
 !
-            IF( GROW <= SMLNUM ) &
-               GO TO 60
+            IF( GROW <= SMLNUM ) GO TO 60
 !
 !              G(j) = G(j-1)*( 1 + CNORM(j) )
 !
-            GROW = GROW*( ONE / ( ONE+CNORM( J ) ) )
+            GROW = GROW*( 1.0E+0 / ( 1.0E+0+CNORM( J ) ) )
          ENDDO
       END IF
 60    CONTINUE
@@ -535,8 +524,8 @@
          JINC = -1
       END IF
 !
-      IF( TSCAL /= ONE ) THEN
-         GROW = ZERO
+      IF( TSCAL /= 1.0E+0 ) THEN
+         GROW = 0.0E+0
          GO TO 90
       END IF
 !
@@ -547,18 +536,17 @@
 !           Compute GROW = 1/G(j) and XBND = 1/M(j).
 !           Initially, M(0) = max{x(i), i=1,...,n}.
 !
-         GROW = HALF / MAX( XBND, SMLNUM )
+         GROW = 0.5E+0 / MAX( XBND, SMLNUM )
          XBND = GROW
          DO J = JFIRST, JLAST, JINC
 !
 !              Exit the loop if the growth factor is too small.
 !
-            IF( GROW <= SMLNUM ) &
-               GO TO 90
+            IF( GROW <= SMLNUM ) GO TO 90
 !
 !              G(j) = max( G(j-1), M(j-1)*( 1 + CNORM(j) ) )
 !
-            XJ = ONE + CNORM( J )
+            XJ = 1.0E+0 + CNORM( J )
             GROW = MIN( GROW, XBND / XJ )
 !
             TJJS = A( J, J )
@@ -568,13 +556,12 @@
 !
 !                 M(j) = M(j-1)*( 1 + CNORM(j) ) / abs(A(j,j))
 !
-               IF( XJ > TJJ ) &
-                  XBND = XBND*( TJJ / XJ )
+               IF( XJ > TJJ ) XBND = XBND*( TJJ / XJ )
             ELSE
 !
 !                 M(j) could overflow, set XBND to 0.
 !
-               XBND = ZERO
+               XBND = 0.0E+0
             END IF
          ENDDO
          GROW = MIN( GROW, XBND )
@@ -584,17 +571,16 @@
 !
 !           Compute GROW = 1/G(j), where G(0) = max{x(i), i=1,...,n}.
 !
-         GROW = MIN( ONE, HALF / MAX( XBND, SMLNUM ) )
+         GROW = MIN( 1.0E+0, 0.5E+0 / MAX( XBND, SMLNUM ) )
          DO J = JFIRST, JLAST, JINC
 !
 !              Exit the loop if the growth factor is too small.
 !
-            IF( GROW <= SMLNUM ) &
-               GO TO 90
+            IF( GROW <= SMLNUM ) GO TO 90
 !
 !              G(j) = ( 1 + CNORM(j) )*G(j-1)
 !
-            XJ = ONE + CNORM( J )
+            XJ = 1.0E+0 + CNORM( J )
             GROW = GROW / XJ
          ENDDO
       END IF
@@ -611,16 +597,16 @@
 !
 !        Use a Level 1 BLAS solve, scaling intermediate results.
 !
-      IF( XMAX > BIGNUM*HALF ) THEN
+      IF( XMAX > BIGNUM*0.5E+0 ) THEN
 !
 !           Scale X so that its components are less than or equal to
 !           BIGNUM in absolute value.
 !
-         SCALE = ( BIGNUM*HALF ) / XMAX
-         CALL CSSCAL( N, SCALE, X, 1 )
+         SCALE = ( BIGNUM*0.5E+0 ) / XMAX
+         X(1:N) = SCALE*X(1:N)
          XMAX = BIGNUM
       ELSE
-         XMAX = XMAX*TWO
+         XMAX = XMAX*2.0E+0
       END IF
 !
       IF( NOTRAN ) THEN
@@ -636,28 +622,27 @@
                TJJS = A( J, J )*TSCAL
             ELSE
                TJJS = TSCAL
-               IF( TSCAL == ONE ) &
-                  GO TO 105
+               IF( TSCAL == 1.0E+0 ) GO TO 105
             END IF
                TJJ = CABS1( TJJS )
                IF( TJJ > SMLNUM ) THEN
 !
 !                    abs(A(j,j)) > SMLNUM:
 !
-                  IF( TJJ < ONE ) THEN
+                  IF( TJJ < 1.0E+0 ) THEN
                      IF( XJ > TJJ*BIGNUM ) THEN
 !
 !                          Scale x by 1/b(j).
 !
-                        REC = ONE / XJ
-                        CALL CSSCAL( N, REC, X, 1 )
+                        REC = 1.0E+0 / XJ
+                        X(1:N) = REC*X(1:N)
                         SCALE = SCALE*REC
                         XMAX = XMAX*REC
                      END IF
                   END IF
                   X( J ) = CLADIV( X( J ), TJJS )
                   XJ = CABS1( X( J ) )
-               ELSE IF( TJJ > ZERO ) THEN
+               ELSE IF( TJJ > 0.0E+0 ) THEN
 !
 !                    0 < abs(A(j,j)) <= SMLNUM:
 !
@@ -667,14 +652,14 @@
 !                       to avoid overflow when dividing by A(j,j).
 !
                      REC = ( TJJ*BIGNUM ) / XJ
-                     IF( CNORM( J ) > ONE ) THEN
+                     IF( CNORM( J ) > 1.0E+0 ) THEN
 !
 !                          Scale by 1/CNORM(j) to avoid overflow when
 !                          multiplying x(j) times column j.
 !
                         REC = REC / CNORM( J )
                      END IF
-                     CALL CSSCAL( N, REC, X, 1 )
+                     X(1:N) = REC*X(1:N)
                      SCALE = SCALE*REC
                      XMAX = XMAX*REC
                   END IF
@@ -685,35 +670,33 @@
 !                    A(j,j) = 0:  Set x(1:n) = 0, x(j) = 1, and
 !                    scale = 0, and compute a solution to A*x = 0.
 !
-                  DO I = 1, N
-                     X( I ) = ZERO
-                     ENDDO
-                  X( J ) = ONE
-                  XJ = ONE
-                  SCALE = ZERO
-                  XMAX = ZERO
+                  X(1:N) = 0.0E+0
+                  X( J ) = 1.0E+0
+                  XJ = 1.0E+0
+                  SCALE = 0.0E+0
+                  XMAX = 0.0E+0
                END IF
   105          CONTINUE
 !
 !              Scale x if necessary to avoid overflow when adding a
 !              multiple of column j of A.
 !
-            IF( XJ > ONE ) THEN
-               REC = ONE / XJ
+            IF( XJ > 1.0E+0 ) THEN
+               REC = 1.0E+0 / XJ
                IF( CNORM( J ) > ( BIGNUM-XMAX )*REC ) THEN
 !
 !                    Scale x by 1/(2*abs(x(j))).
 !
-                  REC = REC*HALF
-                  CALL CSSCAL( N, REC, X, 1 )
+                  REC = REC*0.5E+0
+                  X(1:N) = REC*X(1:N)
                   SCALE = SCALE*REC
                END IF
             ELSE IF( XJ*CNORM( J ) > ( BIGNUM-XMAX ) ) THEN
 !
 !                 Scale x by 1/2.
 !
-               CALL CSSCAL( N, HALF, X, 1 )
-               SCALE = SCALE*HALF
+               X(1:N) = 0.5E+0*X(1:N)
+               SCALE = SCALE*0.5E+0
             END IF
 !
             IF( UPPER ) THEN
@@ -722,8 +705,7 @@
 !                    Compute the update
 !                       x(1:j-1) := x(1:j-1) - x(j) * A(1:j-1,j)
 !
-                  CALL CAXPY( J-1, -X( J )*TSCAL, A( 1, J ), 1, X, &
-                              1 )
+                  X(1:J-1) = X(1:J-1)-X( J )*TSCAL*A(1:J-1,J)
                   I = ICAMAX( J-1, X, 1 )
                   XMAX = CABS1( X( I ) )
                END IF
@@ -733,8 +715,7 @@
 !                    Compute the update
 !                       x(j+1:n) := x(j+1:n) - x(j) * A(j+1:n,j)
 !
-                  CALL CAXPY( N-J, -X( J )*TSCAL, A( J+1, J ), 1, &
-                              X( J+1 ), 1 )
+                  X(J+1:N) = X(J+1:N)-X( J )*TSCAL*A(J+1:N,J)
                   I = J + ICAMAX( N-J, X( J+1 ), 1 )
                   XMAX = CABS1( X( I ) )
                END IF
@@ -752,34 +733,34 @@
 !
             XJ = CABS1( X( J ) )
             USCAL = TSCAL
-            REC = ONE / MAX( XMAX, ONE )
+            REC = 1.0E+0 / MAX( XMAX, 1.0E+0 )
             IF( CNORM( J ) > ( BIGNUM-XJ )*REC ) THEN
 !
 !                 If x(j) could overflow, scale x by 1/(2*XMAX).
 !
-               REC = REC*HALF
+               REC = REC*0.5E+0
                IF( NOUNIT ) THEN
                   TJJS = A( J, J )*TSCAL
                ELSE
                   TJJS = TSCAL
                END IF
                   TJJ = CABS1( TJJS )
-                  IF( TJJ > ONE ) THEN
+                  IF( TJJ > 1.0E+0 ) THEN
 !
 !                       Divide by A(j,j) when scaling x if A(j,j) > 1.
 !
-                     REC = MIN( ONE, REC*TJJ )
+                     REC = MIN( 1.0E+0, REC*TJJ )
                      USCAL = CLADIV( USCAL, TJJS )
                   END IF
-               IF( REC < ONE ) THEN
-                  CALL CSSCAL( N, REC, X, 1 )
+               IF( REC < 1.0E+0 ) THEN
+                  X(1:N) = REC*X(1:N)
                   SCALE = SCALE*REC
                   XMAX = XMAX*REC
                END IF
             END IF
 !
-            CSUMJ = ZERO
-            IF( USCAL == CMPLX( ONE ) ) THEN
+            CSUMJ = 0.0E+0
+            IF( USCAL == CMPLX( 1.0E+0 ) ) THEN
 !
 !                 If the scaling needed for A in the dot product is 1,
 !                 call CDOTU to perform the dot product.
@@ -794,13 +775,9 @@
 !                 Otherwise, use in-line code for the dot product.
 !
                IF( UPPER ) THEN
-                  DO I = 1, J - 1
-                     CSUMJ = CSUMJ + ( A( I, J )*USCAL )*X( I )
-                     ENDDO
+                  CSUMJ = CSUMJ + USCAL*SUM(A(1:J-1,J)*X(1:J-1))
                ELSE IF( J < N ) THEN
-                  DO I = J + 1, N
-                     CSUMJ = CSUMJ + ( A( I, J )*USCAL )*X( I )
-                     ENDDO
+                  CSUMJ = CSUMJ + USCAL*SUM(A(J+1:N,J)*X(J+1:N))
                END IF
             END IF
 !
@@ -815,8 +792,7 @@
                   TJJS = A( J, J )*TSCAL
                ELSE
                   TJJS = TSCAL
-                  IF( TSCAL == ONE ) &
-                     GO TO 145
+                  IF( TSCAL == 1.0E+0 ) GO TO 145
                END IF
 !
 !                    Compute x(j) = x(j) / A(j,j), scaling if necessary.
@@ -826,19 +802,19 @@
 !
 !                       abs(A(j,j)) > SMLNUM:
 !
-                     IF( TJJ < ONE ) THEN
+                     IF( TJJ < 1.0E+0 ) THEN
                         IF( XJ > TJJ*BIGNUM ) THEN
 !
 !                             Scale X by 1/abs(x(j)).
 !
-                           REC = ONE / XJ
-                           CALL CSSCAL( N, REC, X, 1 )
+                           REC = 1.0E+0 / XJ
+                           X(1:N) = REC*X(1:N)
                            SCALE = SCALE*REC
                            XMAX = XMAX*REC
                         END IF
                      END IF
                      X( J ) = CLADIV( X( J ), TJJS )
-                  ELSE IF( TJJ > ZERO ) THEN
+                  ELSE IF( TJJ > 0.0E+0 ) THEN
 !
 !                       0 < abs(A(j,j)) <= SMLNUM:
 !
@@ -847,7 +823,7 @@
 !                          Scale x by (1/abs(x(j)))*abs(A(j,j))*BIGNUM.
 !
                         REC = ( TJJ*BIGNUM ) / XJ
-                        CALL CSSCAL( N, REC, X, 1 )
+                        X(1:N) = REC*X(1:N)
                         SCALE = SCALE*REC
                         XMAX = XMAX*REC
                      END IF
@@ -857,12 +833,10 @@
 !                       A(j,j) = 0:  Set x(1:n) = 0, x(j) = 1, and
 !                       scale = 0 and compute a solution to A**T *x = 0.
 !
-                     DO I = 1, N
-                        X( I ) = ZERO
-                        ENDDO
-                     X( J ) = ONE
-                     SCALE = ZERO
-                     XMAX = ZERO
+                     X(1:N) = 0.0E+0
+                     X( J ) = 1.0E+0
+                     SCALE = 0.0E+0
+                     XMAX = 0.0E+0
                   END IF
   145             CONTINUE
             ELSE
@@ -886,34 +860,34 @@
 !
             XJ = CABS1( X( J ) )
             USCAL = TSCAL
-            REC = ONE / MAX( XMAX, ONE )
+            REC = 1.0E+0 / MAX( XMAX, 1.0E+0 )
             IF( CNORM( J ) > ( BIGNUM-XJ )*REC ) THEN
 !
 !                 If x(j) could overflow, scale x by 1/(2*XMAX).
 !
-               REC = REC*HALF
+               REC = REC*0.5E+0
                IF( NOUNIT ) THEN
                   TJJS = CONJG( A( J, J ) )*TSCAL
                ELSE
                   TJJS = TSCAL
                END IF
                   TJJ = CABS1( TJJS )
-                  IF( TJJ > ONE ) THEN
+                  IF( TJJ > 1.0E+0 ) THEN
 !
 !                       Divide by A(j,j) when scaling x if A(j,j) > 1.
 !
-                     REC = MIN( ONE, REC*TJJ )
+                     REC = MIN( 1.0E+0, REC*TJJ )
                      USCAL = CLADIV( USCAL, TJJS )
                   END IF
-               IF( REC < ONE ) THEN
-                  CALL CSSCAL( N, REC, X, 1 )
+               IF( REC < 1.0E+0 ) THEN
+                  X(1:N) = REC*X(1:N)
                   SCALE = SCALE*REC
                   XMAX = XMAX*REC
                END IF
             END IF
 !
-            CSUMJ = ZERO
-            IF( USCAL == CMPLX( ONE ) ) THEN
+            CSUMJ = 0.0E+0
+            IF( USCAL == CMPLX( 1.0E+0 ) ) THEN
 !
 !                 If the scaling needed for A in the dot product is 1,
 !                 call CDOTC to perform the dot product.
@@ -928,15 +902,9 @@
 !                 Otherwise, use in-line code for the dot product.
 !
                IF( UPPER ) THEN
-                  DO I = 1, J - 1
-                     CSUMJ = CSUMJ + ( CONJG( A( I, J ) )*USCAL )* &
-                             X( I )
-                     ENDDO
+                  CSUMJ = CSUMJ + USCAL*SUM(CONJG(A(1:J-1,J))*X(1:J-1))
                ELSE IF( J < N ) THEN
-                  DO I = J + 1, N
-                     CSUMJ = CSUMJ + ( CONJG( A( I, J ) )*USCAL )* &
-                             X( I )
-                     ENDDO
+                  CSUMJ = CSUMJ + USCAL*SUM(CONJG(A(J+1:N,J))*X(J+1:N))
                END IF
             END IF
 !
@@ -951,8 +919,7 @@
                   TJJS = CONJG( A( J, J ) )*TSCAL
                ELSE
                   TJJS = TSCAL
-                  IF( TSCAL == ONE ) &
-                     GO TO 185
+                  IF( TSCAL == 1.0E+0 ) GO TO 185
                END IF
 !
 !                    Compute x(j) = x(j) / A(j,j), scaling if necessary.
@@ -962,19 +929,19 @@
 !
 !                       abs(A(j,j)) > SMLNUM:
 !
-                     IF( TJJ < ONE ) THEN
+                     IF( TJJ < 1.0E+0 ) THEN
                         IF( XJ > TJJ*BIGNUM ) THEN
 !
 !                             Scale X by 1/abs(x(j)).
 !
-                           REC = ONE / XJ
-                           CALL CSSCAL( N, REC, X, 1 )
+                           REC = 1.0E+0 / XJ
+                           X(1:N) = REC*X(1:N)
                            SCALE = SCALE*REC
                            XMAX = XMAX*REC
                         END IF
                      END IF
                      X( J ) = CLADIV( X( J ), TJJS )
-                  ELSE IF( TJJ > ZERO ) THEN
+                  ELSE IF( TJJ > 0.0E+0 ) THEN
 !
 !                       0 < abs(A(j,j)) <= SMLNUM:
 !
@@ -983,7 +950,7 @@
 !                          Scale x by (1/abs(x(j)))*abs(A(j,j))*BIGNUM.
 !
                         REC = ( TJJ*BIGNUM ) / XJ
-                        CALL CSSCAL( N, REC, X, 1 )
+                        X(1:N) = REC*X(1:N)
                         SCALE = SCALE*REC
                         XMAX = XMAX*REC
                      END IF
@@ -993,12 +960,10 @@
 !                       A(j,j) = 0:  Set x(1:n) = 0, x(j) = 1, and
 !                       scale = 0 and compute a solution to A**H *x = 0.
 !
-                     DO I = 1, N
-                        X( I ) = ZERO
-                        ENDDO
-                     X( J ) = ONE
-                     SCALE = ZERO
-                     XMAX = ZERO
+                     X(1:N) = 0.0E+0
+                     X( J ) = 1.0E+0
+                     SCALE = 0.0E+0
+                     XMAX = 0.0E+0
                   END IF
   185             CONTINUE
             ELSE
@@ -1009,21 +974,17 @@
                X( J ) = CLADIV( X( J ), TJJS ) - CSUMJ
             END IF
             XMAX = MAX( XMAX, CABS1( X( J ) ) )
-            ENDDO
+         ENDDO
       END IF
       SCALE = SCALE / TSCAL
    END IF
 !
 !     Scale the column norms by 1/TSCAL for return.
 !
-   IF( TSCAL /= ONE ) THEN
-      CALL SSCAL( N, ONE / TSCAL, CNORM, 1 )
-   END IF
+   IF( TSCAL /= 1.0E+0 ) CNORM(1:N) = CNORM(1:N) / TSCAL
 !
    RETURN
 !
 !     End of CLATRS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -196,10 +196,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          TRANST
@@ -216,8 +212,7 @@
 !
 !     Quick return if possible
 !
-   IF( M <= 0 .OR. N <= 0 ) &
-      RETURN
+   IF( M <= 0 .OR. N <= 0 ) RETURN
 !
 !     Check for currently supported options
 !
@@ -245,7 +240,7 @@
 !        W( 1:n, 1:k ) = C( 1:k, 1:n )**H
 !
       DO J = 1, K
-         CALL CCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
+         WORK(1:N,J) = C(J,1:N)
       ENDDO
 !
 !        W( 1:n, 1:k ) = W( 1:n, 1:k ) + ...
@@ -253,28 +248,26 @@
 !
       IF( L > 0 ) &
          CALL CGEMM( 'Transpose', 'Conjugate transpose', N, K, L, &
-                     ONE, C( M-L+1, 1 ), LDC, V, LDV, ONE, WORK, &
+                     (1.0E+0,0.0E+0), C( M-L+1, 1 ), LDC, V, LDV, (1.0E+0,0.0E+0), WORK, &
                      LDWORK )
 !
 !        W( 1:n, 1:k ) = W( 1:n, 1:k ) * T**T  or  W( 1:m, 1:k ) * T
 !
-      CALL CTRMM( 'Right', 'Lower', TRANST, 'Non-unit', N, K, ONE, T, &
+      CALL CTRMM( 'Right', 'Lower', TRANST, 'Non-unit', N, K, (1.0E+0,0.0E+0), T, &
                   LDT, WORK, LDWORK )
 !
 !        C( 1:k, 1:n ) = C( 1:k, 1:n ) - W( 1:n, 1:k )**H
 !
       DO J = 1, N
-         DO I = 1, K
-            C( I, J ) = C( I, J ) - WORK( J, I )
-         ENDDO
+         C(1:K,J) = C(1:K,J) - WORK( J,1:K)
       ENDDO
 !
 !        C( m-l+1:m, 1:n ) = C( m-l+1:m, 1:n ) - ...
 !                            V( 1:k, 1:l )**H * W( 1:n, 1:k )**H
 !
       IF( L > 0 ) &
-         CALL CGEMM( 'Transpose', 'Transpose', L, N, K, -ONE, V, LDV, &
-                     WORK, LDWORK, ONE, C( M-L+1, 1 ), LDC )
+         CALL CGEMM( 'Transpose', 'Transpose', L, N, K, -(1.0E+0,0.0E+0), V, LDV, &
+                     WORK, LDWORK, (1.0E+0,0.0E+0), C( M-L+1, 1 ), LDC )
 !
    ELSE IF( LSAME( SIDE, 'R' ) ) THEN
 !
@@ -283,48 +276,44 @@
 !        W( 1:m, 1:k ) = C( 1:m, 1:k )
 !
       DO J = 1, K
-         CALL CCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+         WORK(1:M,J) = C(1:M,J)
       ENDDO
 !
 !        W( 1:m, 1:k ) = W( 1:m, 1:k ) + ...
 !                        C( 1:m, n-l+1:n ) * V( 1:k, 1:l )**H
 !
       IF( L > 0 ) &
-         CALL CGEMM( 'No transpose', 'Transpose', M, K, L, ONE, &
-                     C( 1, N-L+1 ), LDC, V, LDV, ONE, WORK, LDWORK )
+         CALL CGEMM( 'No transpose', 'Transpose', M, K, L, (1.0E+0,0.0E+0), &
+                     C( 1, N-L+1 ), LDC, V, LDV, (1.0E+0,0.0E+0), WORK, LDWORK )
 !
 !        W( 1:m, 1:k ) = W( 1:m, 1:k ) * conjg( T )  or
 !                        W( 1:m, 1:k ) * T**H
 !
       DO J = 1, K
-         CALL CLACGV( K-J+1, T( J, J ), 1 )
+         T(J:K,J) = CONJG(T(J:K,J))
       ENDDO
-      CALL CTRMM( 'Right', 'Lower', TRANS, 'Non-unit', M, K, ONE, T, &
+      CALL CTRMM( 'Right', 'Lower', TRANS, 'Non-unit', M, K, (1.0E+0,0.0E+0), T, &
                   LDT, WORK, LDWORK )
       DO J = 1, K
-         CALL CLACGV( K-J+1, T( J, J ), 1 )
+         T(J:K,J) = CONJG(T(J:K,J))
       ENDDO
 !
 !        C( 1:m, 1:k ) = C( 1:m, 1:k ) - W( 1:m, 1:k )
 !
-      DO J = 1, K
-         DO I = 1, M
-            C( I, J ) = C( I, J ) - WORK( I, J )
-         ENDDO
-      ENDDO
+      C(1:M,1:K) = C(1:M,1:K) - WORK(1:M,1:K)
 !
 !        C( 1:m, n-l+1:n ) = C( 1:m, n-l+1:n ) - ...
 !                            W( 1:m, 1:k ) * conjg( V( 1:k, 1:l ) )
 !
       DO J = 1, L
-         CALL CLACGV( K, V( 1, J ), 1 )
+         V(1:K,J) = CONJG(V(1:K,J))
       ENDDO
       IF( L > 0 ) &
-         CALL CGEMM( 'No transpose', 'No transpose', M, L, K, -ONE, &
-                     WORK, LDWORK, V, LDV, ONE, C( 1, N-L+1 ), LDC )
+         CALL CGEMM( 'No transpose', 'No transpose', M, L, K, -(1.0E+0,0.0E+0), &
+                     WORK, LDWORK, V, LDV, (1.0E+0,0.0E+0), C( 1, N-L+1 ), LDC )
       DO J = 1, L
-         CALL CLACGV( K, V( 1, J ), 1 )
-         ENDDO
+         V(1:K,J) = CONJG(V(1:K,J))
+      ENDDO
 !
    END IF
 !
@@ -333,5 +322,3 @@
 !     End of CLARZB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

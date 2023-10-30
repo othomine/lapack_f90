@@ -275,13 +275,10 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    IF( N == 0 ) THEN
-      CLANHF = ZERO
+      CLANHF = 0.0E+0
       RETURN
    ELSE IF( N == 1 ) THEN
       CLANHF = ABS(REAL(A(0)))
@@ -291,20 +288,17 @@
 !     set noe = 1 if n is odd. if n is even set noe=0
 !
    NOE = 1
-   IF( MOD( N, 2 ) == 0 ) &
-      NOE = 0
+   IF( MOD( N, 2 ) == 0 ) NOE = 0
 !
 !     set ifm = 0 when form='C' or 'c' and 1 otherwise
 !
    IFM = 1
-   IF( LSAME( TRANSR, 'C' ) ) &
-      IFM = 0
+   IF( LSAME( TRANSR, 'C' ) ) IFM = 0
 !
 !     set ilu = 0 when uplo='U or 'u' and 1 otherwise
 !
    ILU = 1
-   IF( LSAME( UPLO, 'U' ) ) &
-      ILU = 0
+   IF( LSAME( UPLO, 'U' ) ) ILU = 0
 !
 !     set lda = (n+1)/2 when ifm = 0
 !     set lda = n when ifm = 1 and noe = 1
@@ -327,7 +321,7 @@
 !       Find max(abs(A(i,j))).
 !
       K = ( N+1 ) / 2
-      VALUE = ZERO
+      VALUE = 0.0E+0
       IF( NOE == 1 ) THEN
 !           n is odd & n = k + k - 1
          IF( IFM == 1 ) THEN
@@ -337,33 +331,27 @@
                J = 0
 !                 -> L(0,0)
                TEMP = ABS( REAL( A( J+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO I = 1, N - 1
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                DO J = 1, K - 1
                   DO I = 0, J - 2
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J - 1
 !                    L(k+j,k+j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J
 !                    -> L(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J + 1, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
             ELSE
@@ -371,35 +359,29 @@
                DO J = 0, K - 2
                   DO I = 0, K + J - 2
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = K + J - 1
 !                    -> U(i,i)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = I + 1
 !                    =k+j; i -> U(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = K + J + 1, N - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                DO I = 0, N - 2
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
 !                    j=k-1
                END DO
 !                 i=n-1 -> U(n-1,n-1)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
             END IF
          ELSE
 !              xpose case; A is k by n
@@ -408,41 +390,34 @@
                DO J = 0, K - 2
                   DO I = 0, J - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J
 !                    L(i,i)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J + 1
 !                    L(j+k,j+k)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J + 2, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                J = K - 1
                DO I = 0, K - 2
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                I = K - 1
 !                 -> L(i,i) is at A(i,j)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO J = K, N - 1
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
             ELSE
@@ -450,40 +425,33 @@
                DO J = 0, K - 2
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                J = K - 1
 !                 -> U(j,j) is at A(0,j)
                TEMP = ABS( REAL( A( 0+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO I = 1, K - 1
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                DO J = K, N - 1
                   DO I = 0, J - K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J - K
 !                    -> U(i,i) at A(i,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J - K + 1
 !                    U(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J - K + 2, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
             END IF
@@ -497,36 +465,29 @@
                J = 0
 !                 -> L(k,k) & j=1 -> L(0,0)
                TEMP = ABS( REAL( A( J+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                TEMP = ABS( REAL( A( J+1+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO I = 2, N
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                DO J = 1, K - 1
                   DO I = 0, J - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J
 !                    L(k+j,k+j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J + 1
 !                    -> L(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J + 2, N
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
             ELSE
@@ -534,40 +495,33 @@
                DO J = 0, K - 2
                   DO I = 0, K + J - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = K + J
 !                    -> U(i,i)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = I + 1
 !                    =k+j+1; i -> U(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = K + J + 2, N
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                DO I = 0, N - 2
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
 !                 j=k-1
                END DO
 !                 i=n-1 -> U(n-1,n-1)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                I = N
 !                 -> U(k-1,k-1)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
             END IF
          ELSE
 !              xpose case; A is k by n+1
@@ -576,51 +530,42 @@
                J = 0
 !                 -> L(k,k) at A(0,0)
                TEMP = ABS( REAL( A( J+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO I = 1, K - 1
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                DO J = 1, K - 1
                   DO I = 0, J - 2
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J - 1
 !                    L(i,i)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J
 !                    L(j+k,j+k)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J + 1, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                J = K
                DO I = 0, K - 2
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                I = K - 1
 !                 -> L(i,i) is at A(i,j)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO J = K + 1, N
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
             ELSE
@@ -628,58 +573,48 @@
                DO J = 0, K - 1
                   DO I = 0, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                J = K
 !                 -> U(j,j) is at A(0,j)
                TEMP = ABS( REAL( A( 0+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                DO I = 1, K - 1
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                DO J = K + 1, N - 1
                   DO I = 0, J - K - 2
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                   I = J - K - 1
 !                    -> U(i,i) at A(i,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   I = J - K
 !                    U(j,j)
                   TEMP = ABS( REAL( A( I+J*LDA ) ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   DO I = J - K + 1, K - 1
                      TEMP = ABS( A( I+J*LDA ) )
-                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                          VALUE = TEMP
+                     IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                   END DO
                END DO
                J = N
                DO I = 0, K - 2
                   TEMP = ABS( A( I+J*LDA ) )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
                I = K - 1
 !                 U(k,k) at A(i,j)
                TEMP = ABS( REAL( A( I+J*LDA ) ) )
-               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                    VALUE = TEMP
+               IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
             END IF
          END IF
       END IF
-   ELSE IF( ( LSAME( NORM, 'I' ) ) .OR. ( LSAME( NORM, 'O' ) ) .OR. &
-            ( NORM == '1' ) ) THEN
+   ELSE IF( ( LSAME( NORM, 'I' ) ) .OR. ( LSAME( NORM, 'O' ) ) .OR. ( NORM == '1' ) ) THEN
 !
 !       Find normI(A) ( = norm1(A), since A is Hermitian).
 !
@@ -691,26 +626,22 @@
             IF( ILU == 0 ) THEN
 !                 uplo = 'U'
                DO I = 0, K - 1
-                  WORK( I ) = ZERO
+                  WORK( I ) = 0.0E+0
                END DO
                DO J = 0, K
-                  S = ZERO
-                  DO I = 0, K + J - 1
-                     AA = ABS( A( I+J*LDA ) )
-!                       -> A(i,j+k)
-                     S = S + AA
-                     WORK( I ) = WORK( I ) + AA
-                  END DO
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)+K-1)))
+!                 -> A(i,j+k)
+                  WORK(0:K+J-1) = WORK(0:K+J-1) + ABS(A(J*LDA:J*(LDA+1)+K-1))
+                  I = K + J
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    -> A(j+k,j+k)
                   WORK( J+K ) = S + AA
-                  IF( I == K+K ) &
-                     GO TO 10
+                  IF( I == K+K ) EXIT
                   I = I + 1
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    -> A(j,j)
                   WORK( J ) = WORK( J ) + AA
-                  S = ZERO
+                  S = 0.0E+0
                   DO L = J + 1, K - 1
                      I = I + 1
                      AA = ABS( A( I+J*LDA ) )
@@ -720,28 +651,21 @@
                   END DO
                   WORK( J ) = WORK( J ) + S
                END DO
-10             CONTINUE
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             ELSE
 !                 ilu = 1 & uplo = 'L'
                K = K + 1
 !                 k=(n+1)/2 for n odd and ilu=1
-               DO I = K, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(K:N-1) = 0.0E+0
                DO J = K - 1, 0, -1
-                  S = ZERO
-                  DO I = 0, J - 2
-                     AA = ABS( A( I+J*LDA ) )
+                  WORK(K:K+J-2) = WORK(K:K+J-2) + ABS(A(J*LDA:J*(LDA+1)-2))
 !                       -> A(j+k,i+k)
-                     S = S + AA
-                     WORK( I+K ) = WORK( I+K ) + AA
-                  END DO
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-2)))
+                  I = MAX(0, J - 1)
                   IF( J > 0 ) THEN
                      AA = ABS( REAL( A( I+J*LDA ) ) )
 !                       -> A(j+k,j+k)
@@ -753,7 +677,7 @@
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    -> A(j,j)
                   WORK( J ) = AA
-                  S = ZERO
+                  S = 0.0E+0
                   DO L = J + 1, N - 1
                      I = I + 1
                      AA = ABS( A( I+J*LDA ) )
@@ -766,8 +690,7 @@
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             END IF
          ELSE
@@ -775,24 +698,19 @@
             IF( ILU == 0 ) THEN
 !                 uplo = 'U'
                DO I = 0, K - 1
-                  WORK( I ) = ZERO
+                  WORK( I ) = 0.0E+0
                END DO
                DO J = 0, K - 1
-                  S = ZERO
-                  DO I = 0, K + J - 1
-                     AA = ABS( A( I+J*LDA ) )
 !                       -> A(i,j+k)
-                     S = S + AA
-                     WORK( I ) = WORK( I ) + AA
-                  END DO
-                  AA = ABS( REAL( A( I+J*LDA ) ) )
+                  WORK(0:K+J-1) = WORK(0:K+J-1) + ABS(A(J*LDA:K-1+J*(LDA+1)))
 !                    -> A(j+k,j+k)
-                  WORK( J+K ) = S + AA
+                  I = K + J
+                  WORK(J+K) = SUM(ABS(A(J*LDA:K-1+J*(LDA+1)))) + ABS( REAL( A( I+J*LDA ) ) )
                   I = I + 1
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    -> A(j,j)
                   WORK( J ) = WORK( J ) + AA
-                  S = ZERO
+                  S = 0.0E+0
                   DO L = J + 1, K - 1
                      I = I + 1
                      AA = ABS( A( I+J*LDA ) )
@@ -810,27 +728,20 @@
                END DO
             ELSE
 !                 ilu = 1 & uplo = 'L'
-               DO I = K, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(K:N-1) = 0.0E+0
                DO J = K - 1, 0, -1
-                  S = ZERO
-                  DO I = 0, J - 1
-                     AA = ABS( A( I+J*LDA ) )
 !                       -> A(j+k,i+k)
-                     S = S + AA
-                     WORK( I+K ) = WORK( I+K ) + AA
-                  END DO
-                  AA = ABS( REAL( A( I+J*LDA ) ) )
+                  WORK(K:K+J-1) = WORK(K:K+J-1) + ABS(A(J*LDA:J*(LDA+1)-1))
 !                    -> A(j+k,j+k)
-                  S = S + AA
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-1))) + ABS(REAL(A(J*(LDA+1))))
+                  I = J 
                   WORK( I+K ) = WORK( I+K ) + S
 !                    i=j
                   I = I + 1
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    -> A(j,j)
                   WORK( J ) = AA
-                  S = ZERO
+                  S = 0.0E+0
                   DO L = J + 1, N - 1
                      I = I + 1
                      AA = ABS( A( I+J*LDA ) )
@@ -859,38 +770,24 @@
 !                 n/2
                K = K + 1
 !                 k is the row size and lda
-               DO I = N1, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(N1:N-1) = 0.0E+0
                DO J = 0, N1 - 1
-                  S = ZERO
-                  DO I = 0, K - 1
-                     AA = ABS( A( I+J*LDA ) )
 !                       A(j,n1+i)
-                     WORK( I+N1 ) = WORK( I+N1 ) + AA
-                     S = S + AA
-                  END DO
-                  WORK( J ) = S
+                  WORK(N1:N1+K-1) = WORK(N1:N1+K-1) + ABS(A(J*LDA:J*LDA+K-1))
+                  WORK( J ) = SUM(ABS(A(J*LDA:J*LDA+K-1)))
                END DO
 !                 j=n1=k-1 is special
                S = ABS( REAL( A( 0+J*LDA ) ) )
 !                 A(k-1,k-1)
-               DO I = 1, K - 1
-                  AA = ABS( A( I+J*LDA ) )
-!                    A(k-1,i+n1)
-                  WORK( I+N1 ) = WORK( I+N1 ) + AA
-                  S = S + AA
-               END DO
-               WORK( J ) = WORK( J ) + S
+!                 A(k-1,i+n1)
+               WORK(N1+1:N1+K-1) = WORK(N1+1:N1+K-1) + ABS(A(J*LDA+1:J*LDA+K-1))
+               WORK( J ) = WORK( J ) + ABS(REAL(A(0+J*LDA))) + SUM(ABS(A(J*LDA+1:J*LDA+K-1)))
                DO J = K, N - 1
-                  S = ZERO
-                  DO I = 0, J - K - 1
-                     AA = ABS( A( I+J*LDA ) )
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-K-1)))
 !                       A(i,j-k)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(0:J-K-1) = WORK(0:J-K-1) + ABS(A(J*LDA:J*(LDA+1)-K-1))
 !                    i=j-k
+                  I = J-K
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    A(j-k,j-k)
                   S = S + AA
@@ -910,25 +807,19 @@
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             ELSE
 !                 ilu=1 & uplo = 'L'
                K = K + 1
 !                 k=(n+1)/2 for n odd and ilu=1
-               DO I = K, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(K:N-1) = 0.0E+0
                DO J = 0, K - 2
 !                    process
-                  S = ZERO
-                  DO I = 0, J - 1
-                     AA = ABS( A( I+J*LDA ) )
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-1)))
 !                       A(j,i)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(0:J-1) = WORK(0:J-1) + ABS(A(J*LDA:J*(LDA+1)-1))
+                  I = J
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    i=j so process of A(j,j)
                   S = S + AA
@@ -948,14 +839,11 @@
                   WORK( K+J ) = WORK( K+J ) + S
                END DO
 !                 j=k-1 is special :process col A(k-1,0:k-1)
-               S = ZERO
-               DO I = 0, K - 2
-                  AA = ABS( A( I+J*LDA ) )
+               S = SUM(ABS(A(J*LDA:J*LDA+K-2)))
 !                    A(k,i)
-                  WORK( I ) = WORK( I ) + AA
-                  S = S + AA
-               END DO
+               WORK(0:K-2) = WORK(0:K-2) + ABS(A(J*LDA:J*LDA+K-2))
 !                 i=k-1
+               I = K - 1
                AA = ABS( REAL( A( I+J*LDA ) ) )
 !                 A(k-1,k-1)
                S = S + AA
@@ -963,62 +851,42 @@
 !                 done with col j=k+1
                DO J = K, N - 1
 !                    process col j of A = A(j,0:k-1)
-                  S = ZERO
-                  DO I = 0, K - 1
-                     AA = ABS( A( I+J*LDA ) )
+                  S = SUM(ABS(A(J*LDA:J*LDA+K-1)))
 !                       A(j,i)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(0:K-1) = WORK(0:K-1) + ABS(A(J*LDA:J*LDA+K-1))
                   WORK( J ) = WORK( J ) + S
                END DO
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             END IF
          ELSE
 !              n is even & A is k=n/2 by n+1
             IF( ILU == 0 ) THEN
 !                 uplo = 'U'
-               DO I = K, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(K:N-1) = 0.0E+0
                DO J = 0, K - 1
-                  S = ZERO
-                  DO I = 0, K - 1
-                     AA = ABS( A( I+J*LDA ) )
+                  S = SUM(ABS(A(J*LDA:J*LDA+K-1)))
 !                       A(j,i+k)
-                     WORK( I+K ) = WORK( I+K ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(K:2*K-1) = WORK(K:2*K-1) + ABS(A(J*LDA:J*LDA+K-1))
                   WORK( J ) = S
                END DO
 !                 j=k
-               AA = ABS( REAL( A( 0+J*LDA ) ) )
 !                 A(k,k)
-               S = AA
-               DO I = 1, K - 1
-                  AA = ABS( A( I+J*LDA ) )
+               S = ABS(REAL(A(0+J*LDA))) + SUM(ABS(A(J*LDA+1:J*LDA+K-1)))
 !                    A(k,k+i)
-                  WORK( I+K ) = WORK( I+K ) + AA
-                  S = S + AA
-               END DO
+               WORK(K+1:2*K-1) = WORK(K+1:2*K-1) + ABS(A(J*LDA+1:J*LDA+K-1))
                WORK( J ) = WORK( J ) + S
                DO J = K + 1, N - 1
-                  S = ZERO
-                  DO I = 0, J - 2 - K
-                     AA = ABS( A( I+J*LDA ) )
 !                       A(i,j-k-1)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(0:J-2-K) = WORK(0:J-2-K) + ABS(A(J*LDA:J*(LDA+1)-2-K))
 !                    i=j-1-k
+                  I=J-1-K
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    A(j-k-1,j-k-1)
-                  S = S + AA
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-2-K))) + AA
                   WORK( J-K-1 ) = WORK( J-K-1 ) + S
                   I = I + 1
                   AA = ABS( REAL( A( I+J*LDA ) ) )
@@ -1034,48 +902,34 @@
                   WORK( J ) = WORK( J ) + S
                END DO
 !                 j=n
-               S = ZERO
-               DO I = 0, K - 2
-                  AA = ABS( A( I+J*LDA ) )
 !                    A(i,k-1)
-                  WORK( I ) = WORK( I ) + AA
-                  S = S + AA
-               END DO
+               WORK(0:K-2) = WORK(0:K-2) + ABS(A(J*LDA:J*LDA+K-2))
 !                 i=k-1
+               I=K-1
                AA = ABS( REAL( A( I+J*LDA ) ) )
 !                 A(k-1,k-1)
-               S = S + AA
+               S = SUM(ABS(A(J*LDA:J*LDA+K-2))) + AA
                WORK( I ) = WORK( I ) + S
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             ELSE
 !                 ilu=1 & uplo = 'L'
-               DO I = K, N - 1
-                  WORK( I ) = ZERO
-               END DO
+               WORK(K:N-1) = 0.0E+0
 !                 j=0 is special :process col A(k:n-1,k)
-               S = ABS( REAL( A( 0 ) ) )
 !                 A(k,k)
-               DO I = 1, K - 1
-                  AA = ABS( A( I ) )
 !                    A(k+i,k)
-                  WORK( I+K ) = WORK( I+K ) + AA
-                  S = S + AA
-               END DO
+               WORK(K+1:2*K-1) = WORK(K+1:2*K-1) + ABS(A(1:K-1))
+               S = ABS(REAL(A(0))) + SUM(ABS(A(1:K-1)))
                WORK( K ) = WORK( K ) + S
                DO J = 1, K - 1
 !                    process
-                  S = ZERO
-                  DO I = 0, J - 2
-                     AA = ABS( A( I+J*LDA ) )
+                  S = SUM(ABS(A(J*LDA:J*(LDA+1)-2)))
 !                       A(j-1,i)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
+                  WORK(0:J-2) = WORK(0:J-2) + ABS(A(J*LDA:J*(LDA+1)-2))
+                  I=J-1
                   AA = ABS( REAL( A( I+J*LDA ) ) )
 !                    i=j-1 so process of A(j-1,j-1)
                   S = S + AA
@@ -1095,15 +949,12 @@
                   WORK( K+J ) = WORK( K+J ) + S
                END DO
 !                 j=k is special :process col A(k,0:k-1)
-               S = ZERO
-               DO I = 0, K - 2
-                  AA = ABS( A( I+J*LDA ) )
+               S = SUM(ABS(A(J*LDA:J*LDA+K-2)))
 !                    A(k,i)
-                  WORK( I ) = WORK( I ) + AA
-                  S = S + AA
-               END DO
+               WORK(0:K-2) = WORK(0:K-2) + ABS(A(J*LDA:J*LDA+K-2))
 !
 !                 i=k-1
+               I=K-1
                AA = ABS( REAL( A( I+J*LDA ) ) )
 !                 A(k-1,k-1)
                S = S + AA
@@ -1112,20 +963,14 @@
                DO J = K + 1, N
 !
 !                    process col j-1 of A = A(j-1,0:k-1)
-                  S = ZERO
-                  DO I = 0, K - 1
-                     AA = ABS( A( I+J*LDA ) )
 !                       A(j-1,i)
-                     WORK( I ) = WORK( I ) + AA
-                     S = S + AA
-                  END DO
-                  WORK( J-1 ) = WORK( J-1 ) + S
+                  WORK(0:K-1) = WORK(0:K-1) + ABS(A(J*LDA:J*LDA+K-1))
+                  WORK( J-1 ) = WORK( J-1 ) + SUM(ABS(A(J*LDA:J*LDA+K-1)))
                END DO
                VALUE = WORK( 0 )
                DO I = 1, N-1
                   TEMP = WORK( I )
-                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) &
-                       VALUE = TEMP
+                  IF( VALUE  <  TEMP .OR. SISNAN( TEMP ) ) VALUE = TEMP
                END DO
             END IF
          END IF
@@ -1135,8 +980,8 @@
 !       Find normF(A).
 !
       K = ( N+1 ) / 2
-      SCALE = ZERO
-      S = ONE
+      SCALE = 0.0E+0
+      S = 1.0E+0
       IF( NOE == 1 ) THEN
 !           n is odd
          IF( IFM == 1 ) THEN
@@ -1158,9 +1003,9 @@
                DO I = 0, K - 2
                   AA = REAL( A( L ) )
 !                    U(k+i,k+i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1168,9 +1013,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    U(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1180,9 +1025,9 @@
                END DO
                AA = REAL( A( L ) )
 !                 U(n-1,n-1)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1202,9 +1047,9 @@
 !                 double s for the off diagonal elements
                AA = REAL( A( 0 ) )
 !                 L(0,0) at A(0,0)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1215,9 +1060,9 @@
                DO I = 1, K - 1
                   AA = REAL( A( L ) )
 !                    L(k-1+i,k-1+i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1225,9 +1070,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    L(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1259,9 +1104,9 @@
 !                 -> U(k-1,k-1) at A(0,k-1)
                AA = REAL( A( L ) )
 !                 U(k-1,k-1)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1272,9 +1117,9 @@
                DO J = K, N - 1
                   AA = REAL( A( L ) )
 !                    -> U(j-k,j-k)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1282,9 +1127,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    -> U(j,j)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1313,9 +1158,9 @@
                DO I = 0, K - 2
                   AA = REAL( A( L ) )
 !                    L(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1323,9 +1168,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    L(k+i,k+i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1336,9 +1181,9 @@
 !                 L-> k-1 + (k-1)*lda or L(k-1,k-1) at A(k-1,k-1)
                AA = REAL( A( L ) )
 !                 L(k-1,k-1) at A(k-1,k-1)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1367,9 +1212,9 @@
                DO I = 0, K - 1
                   AA = REAL( A( L ) )
 !                    U(k+i,k+i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1377,9 +1222,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    U(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1404,9 +1249,9 @@
                DO I = 0, K - 1
                   AA = REAL( A( L ) )
 !                    L(k-1+i,k-1+i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1414,9 +1259,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    L(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1438,8 +1283,7 @@
 !                 k by k rect. at A(0,0)
                END DO
                DO J = 0, K - 2
-                  CALL CLASSQ( K-J-1, A( J+1+( J+K )*LDA ), 1, SCALE, &
-                               S )
+                  CALL CLASSQ( K-J-1, A( J+1+( J+K )*LDA ), 1, SCALE, S )
 !                 L at A(0,k)
                END DO
                S = S + S
@@ -1448,9 +1292,9 @@
 !                 -> U(k,k) at A(0,k)
                AA = REAL( A( L ) )
 !                 U(k,k)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1461,9 +1305,9 @@
                DO J = K + 1, N - 1
                   AA = REAL( A( L ) )
 !                    -> U(j-k-1,j-k-1)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1471,9 +1315,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    -> U(j,j)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1485,9 +1329,9 @@
 !                 -> U(k-1,k-1) at A(k-1,n)
                AA = REAL( A( L ) )
 !                 U(k,k)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1513,9 +1357,9 @@
 !                 -> L(k,k) at A(0,0)
                AA = REAL( A( L ) )
 !                 L(k,k) at A(0,0)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1526,9 +1370,9 @@
                DO I = 0, K - 2
                   AA = REAL( A( L ) )
 !                    L(i,i)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1536,9 +1380,9 @@
                   END IF
                   AA = REAL( A( L+1 ) )
 !                    L(k+i+1,k+i+1)
-                  IF( AA /= ZERO ) THEN
+                  IF( AA /= 0.0E+0 ) THEN
                      IF( SCALE < AA ) THEN
-                        S = ONE + S*( SCALE / AA )**2
+                        S = 1.0E+0 + S*( SCALE / AA )**2
                         SCALE = AA
                      ELSE
                         S = S + ( AA / SCALE )**2
@@ -1549,9 +1393,9 @@
 !                 L-> k - 1 + k*lda or L(k-1,k-1) at A(k-1,k)
                AA = REAL( A( L ) )
 !                 L(k-1,k-1) at A(k-1,k)
-               IF( AA /= ZERO ) THEN
+               IF( AA /= 0.0E+0 ) THEN
                   IF( SCALE < AA ) THEN
-                     S = ONE + S*( SCALE / AA )**2
+                     S = 1.0E+0 + S*( SCALE / AA )**2
                      SCALE = AA
                   ELSE
                      S = S + ( AA / SCALE )**2
@@ -1569,5 +1413,3 @@
 !     End of CLANHF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -156,10 +156,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            DONE
@@ -170,9 +166,6 @@
    LOGICAL            LSAME, SISNAN
    REAL               SLAMCH
    EXTERNAL           LSAME, SLAMCH, SISNAN
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA
@@ -203,7 +196,7 @@
 !
    IF( ITYPE == -1 ) THEN
       INFO = -1
-   ELSE IF( CFROM == ZERO .OR. SISNAN(CFROM) ) THEN
+   ELSE IF( CFROM == 0.0E+0 .OR. SISNAN(CFROM) ) THEN
       INFO = -4
    ELSE IF( SISNAN(CTO) ) THEN
       INFO = -5
@@ -235,18 +228,18 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. M == 0 ) &
-      RETURN
+   IF( N == 0 .OR. M == 0 ) RETURN
 !
 !     Get machine parameters
 !
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
    CFROMC = CFROM
    CTOC = CTO
 !
-10 CONTINUE
+   DONE = .FALSE.
+   DO WHILE (.NOT.DONE)
    CFROM1 = CFROMC*SMLNUM
    IF( CFROM1 == CFROMC ) THEN
 !        CFROMC is an inf.  Multiply by a correctly signed zero for
@@ -261,8 +254,8 @@
 !           serves as the correct multiplication factor.
          MUL = CTOC
          DONE = .TRUE.
-         CFROMC = ONE
-      ELSE IF( ABS( CFROM1 ) > ABS( CTOC ) .AND. CTOC /= ZERO ) THEN
+         CFROMC = 1.0E+0
+      ELSE IF( ABS( CFROM1 ) > ABS( CTOC ) .AND. CTOC /= 0.0E+0 ) THEN
          MUL = SMLNUM
          DONE = .FALSE.
          CFROMC = CFROM1
@@ -273,8 +266,7 @@
       ELSE
          MUL = CTOC / CFROMC
          DONE = .TRUE.
-         IF (MUL  ==  ONE) &
-            RETURN
+         IF (MUL  ==  1.0E+0) RETURN
       END IF
    END IF
 !
@@ -282,20 +274,14 @@
 !
 !        Full matrix
 !
-      DO J = 1, N
-         DO I = 1, M
-            A( I, J ) = A( I, J )*MUL
-         ENDDO
-      ENDDO
+      A(1:M,1:N) = A(1:M,1:N)*MUL
 !
    ELSE IF( ITYPE == 1 ) THEN
 !
 !        Lower triangular matrix
 !
       DO J = 1, N
-         DO I = J, M
-            A( I, J ) = A( I, J )*MUL
-         ENDDO
+         A(J:M,J) = A(J:M,J)*MUL
       ENDDO
 !
    ELSE IF( ITYPE == 2 ) THEN
@@ -303,9 +289,7 @@
 !        Upper triangular matrix
 !
       DO J = 1, N
-         DO I = 1, MIN( J, M )
-            A( I, J ) = A( I, J )*MUL
-         ENDDO
+         A(1:MIN(J,M),J) = A(1:MIN(J,M),J)*MUL
       ENDDO
 !
    ELSE IF( ITYPE == 3 ) THEN
@@ -313,9 +297,7 @@
 !        Upper Hessenberg matrix
 !
       DO J = 1, N
-         DO I = 1, MIN( J+1, M )
-            A( I, J ) = A( I, J )*MUL
-         ENDDO
+         A(1:MIN(J+1,M),J) = A(1:MIN(J+1,M),J)*MUL
       ENDDO
 !
    ELSE IF( ITYPE == 4 ) THEN
@@ -325,10 +307,8 @@
       K3 = KL + 1
       K4 = N + 1
       DO J = 1, N
-         DO I = 1, MIN( K3, K4-J )
-            A( I, J ) = A( I, J )*MUL
-            ENDDO
-         ENDDO
+         A(1:MIN(K3,K4-J),J) = A(1:MIN(K3,K4-J),J)*MUL
+      ENDDO
 !
    ELSE IF( ITYPE == 5 ) THEN
 !
@@ -337,10 +317,8 @@
       K1 = KU + 2
       K3 = KU + 1
       DO J = 1, N
-         DO I = MAX( K1-J, 1 ), K3
-            A( I, J ) = A( I, J )*MUL
-            ENDDO
-         ENDDO
+         A(MAX(K1-J,1):K3,J) = A(MAX(K1-J,1):K3,J)*MUL
+      ENDDO
 !
    ELSE IF( ITYPE == 6 ) THEN
 !
@@ -351,20 +329,15 @@
       K3 = 2*KL + KU + 1
       K4 = KL + KU + 1 + M
       DO J = 1, N
-         DO I = MAX( K1-J, K2 ), MIN( K3, K4-J )
-            A( I, J ) = A( I, J )*MUL
-            ENDDO
-         ENDDO
+         A(MAX(K1-J,K2):MIN(K3,K4-J),J) = A(MAX(K1-J,K2):MIN(K3,K4-J),J)*MUL
+      ENDDO
 !
    END IF
 !
-   IF( .NOT.DONE ) &
-      GO TO 10
+   ENDDO
 !
    RETURN
 !
 !     End of CLASCL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

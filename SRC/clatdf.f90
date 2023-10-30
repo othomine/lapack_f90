@@ -186,10 +186,6 @@
 !     .. Parameters ..
    INTEGER            MAXDIM
    PARAMETER          ( MAXDIM = 2 )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, J, K
@@ -201,16 +197,12 @@
    COMPLEX            WORK( 4*MAXDIM ), XM( MAXDIM ), XP( MAXDIM )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CGECON, CGESC2, CLASSQ, CLASWP, &
-                      CSCAL
+   EXTERNAL           CGECON, CGESC2, CLASSQ, CLASWP
 !     ..
 !     .. External Functions ..
    REAL               SCASUM
    COMPLEX            CDOTC
    EXTERNAL           SCASUM, CDOTC
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -222,11 +214,11 @@
 !
 !        Solve for L-part choosing RHS either to +1 or -1.
 !
-      PMONE = -CONE
+      PMONE = -(1.0E+0,0.0E+0)
       DO J = 1, N - 1
-         BP = RHS( J ) + CONE
-         BM = RHS( J ) - CONE
-         SPLUS = ONE
+         BP = RHS( J ) + (1.0E+0,0.0E+0)
+         BM = RHS( J ) - (1.0E+0,0.0E+0)
+         SPLUS = 1.0E+0
 !
 !           Look-ahead for L- part RHS(1:N-1) = +-1
 !           SPLUS and SMIN computed more efficiently than in BSOLVE[1].
@@ -248,13 +240,12 @@
 !              (see [1]). (Not done in BSOLVE.)
 !
             RHS( J ) = RHS( J ) + PMONE
-            PMONE = CONE
+            PMONE = (1.0E+0,0.0E+0)
          END IF
 !
 !           Compute the remaining r.h.s.
 !
-         TEMP = -RHS( J )
-         CALL CAXPY( N-J, TEMP, Z( J+1, J ), 1, RHS( J+1 ), 1 )
+         RHS(J+1:N) = RHS(J+1:N)-RHS(J)*Z(J+1:N,J)
       ENDDO
 !
 !        Solve for U- part, lockahead for RHS(N) = +-1. This is not done
@@ -262,24 +253,19 @@
 !        any ill-conditioning of the original matrix is transferred to U
 !        and not to L. U(N, N) is an approximation to sigma_min(LU).
 !
-      CALL CCOPY( N-1, RHS, 1, WORK, 1 )
-      WORK( N ) = RHS( N ) + CONE
-      RHS( N ) = RHS( N ) - CONE
-      SPLUS = ZERO
-      SMINU = ZERO
+      WORK(1:N-1) = RHS(1:N-1)
+      WORK( N ) = RHS( N ) + (1.0E+0,0.0E+0)
+      RHS( N ) = RHS( N ) - (1.0E+0,0.0E+0)
+      SPLUS = 0.0E+0
+      SMINU = 0.0E+0
       DO I = N, 1, -1
-         TEMP = CONE / Z( I, I )
-         WORK( I ) = WORK( I )*TEMP
-         RHS( I ) = RHS( I )*TEMP
-         DO K = I + 1, N
-            WORK( I ) = WORK( I ) - WORK( K )*( Z( I, K )*TEMP )
-            RHS( I ) = RHS( I ) - RHS( K )*( Z( I, K )*TEMP )
-         ENDDO
+         TEMP = (1.0E+0,0.0E+0) / Z( I, I )
+         WORK(I) = TEMP*(WORK(I) - SUM(WORK(I+1:N)*Z(I,I+1:N)))
+         RHS(I) = TEMP*(RHS(I) - SUM(RHS(I+1:N)*Z(I,I+1:N)))
          SPLUS = SPLUS + ABS( WORK( I ) )
          SMINU = SMINU + ABS( RHS( I ) )
       ENDDO
-      IF( SPLUS > SMINU ) &
-         CALL CCOPY( N, WORK, 1, RHS, 1 )
+      IF( SPLUS > SMINU ) RHS(1:N) = WORK(1:N)
 !
 !        Apply the permutations JPIV to the computed solution (RHS)
 !
@@ -295,21 +281,20 @@
 !
 !     Compute approximate nullvector XM of Z
 !
-   CALL CGECON( 'I', N, Z, LDZ, ONE, RTEMP, WORK, RWORK, INFO )
-   CALL CCOPY( N, WORK( N+1 ), 1, XM, 1 )
+   CALL CGECON( 'I', N, Z, LDZ, 1.0E+0, RTEMP, WORK, RWORK, INFO )
+   XM(1:N) = WORK(N+1:2*N)
 !
 !     Compute RHS
 !
    CALL CLASWP( 1, XM, LDZ, 1, N-1, IPIV, -1 )
-   TEMP = CONE / SQRT( CDOTC( N, XM, 1, XM, 1 ) )
-   CALL CSCAL( N, TEMP, XM, 1 )
-   CALL CCOPY( N, XM, 1, XP, 1 )
-   CALL CAXPY( N, CONE, RHS, 1, XP, 1 )
-   CALL CAXPY( N, -CONE, XM, 1, RHS, 1 )
+   TEMP = (1.0E+0,0.0E+0) / SQRT( CDOTC( N, XM, 1, XM, 1 ) )
+   XM(1:N) = TEMP*XM(1:N)
+   XP(1:N) = XM(1:N)
+   XP(1:N) = XP(1:N) + RHS(1:N)
+   RHS(1:N) = RHS(1:N) - XM(1:N)
    CALL CGESC2( N, Z, LDZ, RHS, IPIV, JPIV, SCALE )
    CALL CGESC2( N, Z, LDZ, XP, IPIV, JPIV, SCALE )
-   IF( SCASUM( N, XP, 1 ) > SCASUM( N, RHS, 1 ) ) &
-      CALL CCOPY( N, XP, 1, RHS, 1 )
+   IF( SCASUM( N, XP, 1 ) > SCASUM( N, RHS, 1 ) ) RHS(1:N) = XP(1:N)
 !
 !     Compute the sum of squares
 !
@@ -319,5 +304,3 @@
 !     End of CLATDF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

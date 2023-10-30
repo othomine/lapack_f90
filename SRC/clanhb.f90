@@ -128,8 +128,7 @@
 !> \ingroup lanhb
 !
 !  =====================================================================
-   REAL             FUNCTION CLANHB( NORM, UPLO, N, K, AB, LDAB, &
-                    WORK )
+   REAL             FUNCTION CLANHB( NORM, UPLO, N, K, AB, LDAB, WORK )
 !
 !  -- LAPACK auxiliary routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -145,14 +144,10 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J, L
-   REAL               ABSA, SCALE, SUM, VALUE
+   REAL               ABSA, SCALE, SOMME, VALUE
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, SISNAN
@@ -161,34 +156,31 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN, REAL, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    IF( N == 0 ) THEN
-      VALUE = ZERO
+      VALUE = 0.0E+0
    ELSE IF( LSAME( NORM, 'M' ) ) THEN
 !
 !        Find max(abs(A(i,j))).
 !
-      VALUE = ZERO
+      VALUE = 0.0E+0
       IF( LSAME( UPLO, 'U' ) ) THEN
          DO J = 1, N
             DO I = MAX( K+2-J, 1 ), K
-               SUM = ABS( AB( I, J ) )
-               IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+               SOMME = ABS( AB( I, J ) )
+               IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
             ENDDO
-            SUM = ABS( REAL( AB( K+1, J ) ) )
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+            SOMME = ABS( REAL( AB( K+1, J ) ) )
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
          ENDDO
       ELSE
          DO J = 1, N
-            SUM = ABS( REAL( AB( 1, J ) ) )
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+            SOMME = ABS( REAL( AB( 1, J ) ) )
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
             DO I = 2, MIN( N+1-J, K+1 )
-               SUM = ABS( AB( I, J ) )
-               IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+               SOMME = ABS( AB( I, J ) )
+               IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
             ENDDO
          ENDDO
       END IF
@@ -197,73 +189,70 @@
 !
 !        Find normI(A) ( = norm1(A), since A is hermitian).
 !
-      VALUE = ZERO
+      VALUE = 0.0E+0
       IF( LSAME( UPLO, 'U' ) ) THEN
          DO J = 1, N
-            SUM = ZERO
+            SOMME = 0.0E+0
             L = K + 1 - J
             DO I = MAX( 1, J-K ), J - 1
                ABSA = ABS( AB( L+I, J ) )
-               SUM = SUM + ABSA
+               SOMME = SOMME + ABSA
                WORK( I ) = WORK( I ) + ABSA
             ENDDO
-            WORK( J ) = SUM + ABS( REAL( AB( K+1, J ) ) )
+            WORK( J ) = SOMME + ABS( REAL( AB( K+1, J ) ) )
          ENDDO
          DO I = 1, N
-            SUM = WORK( I )
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+            IF( VALUE  <  WORK( I ) .OR. SISNAN( WORK( I ) ) ) VALUE = WORK( I )
          ENDDO
       ELSE
          DO I = 1, N
-            WORK( I ) = ZERO
+            WORK( I ) = 0.0E+0
          ENDDO
          DO J = 1, N
-            SUM = WORK( J ) + ABS( REAL( AB( 1, J ) ) )
+            SOMME = WORK( J ) + ABS( REAL( AB( 1, J ) ) )
             L = 1 - J
             DO I = J + 1, MIN( N, J+K )
                ABSA = ABS( AB( L+I, J ) )
-               SUM = SUM + ABSA
+               SOMME = SOMME + ABSA
                WORK( I ) = WORK( I ) + ABSA
             ENDDO
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
             ENDDO
       END IF
    ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
 !
 !        Find normF(A).
 !
-      SCALE = ZERO
-      SUM = ONE
+      SCALE = 0.0E+0
+      SOMME = 1.0E+0
       IF( K > 0 ) THEN
          IF( LSAME( UPLO, 'U' ) ) THEN
             DO J = 2, N
-               CALL CLASSQ( MIN( J-1, K ), AB( MAX( K+2-J, 1 ), J ), &
-                            1, SCALE, SUM )
+               CALL CLASSQ( MIN( J-1, K ), AB( MAX( K+2-J, 1 ), J ), 1, SCALE, SOMME )
                ENDDO
             L = K + 1
          ELSE
             DO J = 1, N - 1
-               CALL CLASSQ( MIN( N-J, K ), AB( 2, J ), 1, SCALE, &
-                            SUM )
+               CALL CLASSQ( MIN( N-J, K ), AB( 2, J ), 1, SCALE, SOMME )
                ENDDO
             L = 1
          END IF
-         SUM = 2*SUM
+         SOMME = 2*SOMME
       ELSE
          L = 1
       END IF
       DO J = 1, N
-         IF( REAL( AB( L, J ) ) /= ZERO ) THEN
+         IF( REAL( AB( L, J ) ) /= 0.0E+0 ) THEN
             ABSA = ABS( REAL( AB( L, J ) ) )
             IF( SCALE < ABSA ) THEN
-               SUM = ONE + SUM*( SCALE / ABSA )**2
+               SOMME = 1.0E+0 + SOMME*( SCALE / ABSA )**2
                SCALE = ABSA
             ELSE
-               SUM = SUM + ( ABSA / SCALE )**2
+               SOMME = SOMME + ( ABSA / SCALE )**2
             END IF
          END IF
          ENDDO
-      VALUE = SCALE*SQRT( SUM )
+      VALUE = SCALE*SQRT( SOMME )
    END IF
 !
    CLANHB = VALUE
@@ -272,5 +261,3 @@
 !     End of CLANHB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

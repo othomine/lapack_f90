@@ -138,15 +138,11 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UDIAG
    INTEGER            I, J, K
-   REAL               SCALE, SUM, VALUE
+   REAL               SCALE, SOMME, VALUE
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME, SISNAN
@@ -155,52 +151,49 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    IF( N == 0 ) THEN
-      VALUE = ZERO
+      VALUE = 0.0E+0
    ELSE IF( LSAME( NORM, 'M' ) ) THEN
 !
 !        Find max(abs(A(i,j))).
 !
       K = 1
       IF( LSAME( DIAG, 'U' ) ) THEN
-         VALUE = ONE
+         VALUE = 1.0E+0
          IF( LSAME( UPLO, 'U' ) ) THEN
             DO J = 1, N
                DO I = K, K + J - 2
-                  SUM = ABS( AP( I ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( AP( I ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
                K = K + J
             ENDDO
          ELSE
             DO J = 1, N
                DO I = K + 1, K + N - J
-                  SUM = ABS( AP( I ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( AP( I ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
                K = K + N - J + 1
             ENDDO
          END IF
       ELSE
-         VALUE = ZERO
+         VALUE = 0.0E+0
          IF( LSAME( UPLO, 'U' ) ) THEN
             DO J = 1, N
                DO I = K, K + J - 1
-                  SUM = ABS( AP( I ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( AP( I ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
                K = K + J
             ENDDO
          ELSE
             DO J = 1, N
                DO I = K, K + N - J
-                  SUM = ABS( AP( I ) )
-                  IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
+                  SOMME = ABS( AP( I ) )
+                  IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
                ENDDO
                K = K + N - J + 1
             ENDDO
@@ -210,41 +203,29 @@
 !
 !        Find norm1(A).
 !
-      VALUE = ZERO
+      VALUE = 0.0E+0
       K = 1
       UDIAG = LSAME( DIAG, 'U' )
       IF( LSAME( UPLO, 'U' ) ) THEN
          DO J = 1, N
             IF( UDIAG ) THEN
-               SUM = ONE
-               DO I = K, K + J - 2
-                  SUM = SUM + ABS( AP( I ) )
-               ENDDO
+               SOMME = 1.0E+0 + SUM(ABS(AP(K:K+J-2)))
             ELSE
-               SUM = ZERO
-               DO I = K, K + J - 1
-                  SUM = SUM + ABS( AP( I ) )
-                  ENDDO
+               SOMME = SUM(ABS(AP(K:K+J-1)))
             END IF
             K = K + J
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-            ENDDO
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+         ENDDO
       ELSE
          DO J = 1, N
             IF( UDIAG ) THEN
-               SUM = ONE
-               DO I = K + 1, K + N - J
-                  SUM = SUM + ABS( AP( I ) )
-                  ENDDO
+               SOMME = 1.0E+0 + SUM(ABS(AP(K+1:K+N-J)))
             ELSE
-               SUM = ZERO
-               DO I = K, K + N - J
-                  SUM = SUM + ABS( AP( I ) )
-                  ENDDO
+               SOMME = SUM(ABS(AP(K:K+N-J)))
             END IF
             K = K + N - J + 1
-            IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-            ENDDO
+            IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+         ENDDO
       END IF
    ELSE IF( LSAME( NORM, 'I' ) ) THEN
 !
@@ -253,98 +234,90 @@
       K = 1
       IF( LSAME( UPLO, 'U' ) ) THEN
          IF( LSAME( DIAG, 'U' ) ) THEN
-            DO I = 1, N
-               WORK( I ) = ONE
-               ENDDO
+            WORK(1:N) = 1.0E+0
             DO J = 1, N
                DO I = 1, J - 1
                   WORK( I ) = WORK( I ) + ABS( AP( K ) )
                   K = K + 1
-                  ENDDO
+               ENDDO
                K = K + 1
-               ENDDO
+            ENDDO
          ELSE
-            DO I = 1, N
-               WORK( I ) = ZERO
-               ENDDO
+            WORK(1:N) = 0.0E+0
             DO J = 1, N
                DO I = 1, J
                   WORK( I ) = WORK( I ) + ABS( AP( K ) )
                   K = K + 1
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
       ELSE
          IF( LSAME( DIAG, 'U' ) ) THEN
-            DO I = 1, N
-               WORK( I ) = ONE
-               ENDDO
+            WORK(1:N) = 1.0E+0
             DO J = 1, N
                K = K + 1
                DO I = J + 1, N
                   WORK( I ) = WORK( I ) + ABS( AP( K ) )
                   K = K + 1
-                  ENDDO
                ENDDO
+            ENDDO
          ELSE
-            DO I = 1, N
-               WORK( I ) = ZERO
-               ENDDO
+            WORK(1:N) = 0.0E+0
             DO J = 1, N
                DO I = J, N
                   WORK( I ) = WORK( I ) + ABS( AP( K ) )
                   K = K + 1
-                  ENDDO
                ENDDO
+            ENDDO
          END IF
       END IF
-      VALUE = ZERO
+      VALUE = 0.0E+0
       DO I = 1, N
-         SUM = WORK( I )
-         IF( VALUE  <  SUM .OR. SISNAN( SUM ) ) VALUE = SUM
-         ENDDO
+         SOMME = WORK( I )
+         IF( VALUE  <  SOMME .OR. SISNAN( SOMME ) ) VALUE = SOMME
+      ENDDO
    ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
 !
 !        Find normF(A).
 !
       IF( LSAME( UPLO, 'U' ) ) THEN
          IF( LSAME( DIAG, 'U' ) ) THEN
-            SCALE = ONE
-            SUM = N
+            SCALE = 1.0E+0
+            SOMME = N
             K = 2
             DO J = 2, N
-               CALL CLASSQ( J-1, AP( K ), 1, SCALE, SUM )
+               CALL CLASSQ( J-1, AP( K ), 1, SCALE, SOMME )
                K = K + J
-               ENDDO
+            ENDDO
          ELSE
-            SCALE = ZERO
-            SUM = ONE
+            SCALE = 0.0E+0
+            SOMME = 1.0E+0
             K = 1
             DO J = 1, N
-               CALL CLASSQ( J, AP( K ), 1, SCALE, SUM )
+               CALL CLASSQ( J, AP( K ), 1, SCALE, SOMME )
                K = K + J
-               ENDDO
+            ENDDO
          END IF
       ELSE
          IF( LSAME( DIAG, 'U' ) ) THEN
-            SCALE = ONE
-            SUM = N
+            SCALE = 1.0E+0
+            SOMME = N
             K = 2
             DO J = 1, N - 1
-               CALL CLASSQ( N-J, AP( K ), 1, SCALE, SUM )
+               CALL CLASSQ( N-J, AP( K ), 1, SCALE, SOMME )
                K = K + N - J + 1
-               ENDDO
+            ENDDO
          ELSE
-            SCALE = ZERO
-            SUM = ONE
+            SCALE = 0.0E+0
+            SOMME = 1.0E+0
             K = 1
             DO J = 1, N
-               CALL CLASSQ( N-J+1, AP( K ), 1, SCALE, SUM )
+               CALL CLASSQ( N-J+1, AP( K ), 1, SCALE, SOMME )
                K = K + N - J + 1
-               ENDDO
+            ENDDO
          END IF
       END IF
-      VALUE = SCALE*SQRT( SUM )
+      VALUE = SCALE*SQRT( SOMME )
    END IF
 !
    CLANTP = VALUE
@@ -353,5 +326,3 @@
 !     End of CLANTP
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

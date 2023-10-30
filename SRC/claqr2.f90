@@ -283,13 +283,6 @@
 !     ..
 !
 !  ================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO, ONE
-   PARAMETER          ( ZERO = ( 0.0e0, 0.0e0 ), &
-                      ONE = ( 1.0e0, 0.0e0 ) )
-   REAL               RZERO, RONE
-   PARAMETER          ( RZERO = 0.0e0, RONE = 1.0e0 )
 !     ..
 !     .. Local Scalars ..
    COMPLEX            BETA, CDUM, S, TAU
@@ -304,9 +297,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEHRD, CGEMM, CLACPY, CLAHQR, CLARF, &
                       CLARFG, CLASET, CTREXC, CUNMHR
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, INT, MAX, MIN, REAL
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -350,17 +340,15 @@
 !     ... for an empty active block ... ====
    NS = 0
    ND = 0
-   WORK( 1 ) = ONE
-   IF( KTOP > KBOT ) &
-      RETURN
+   WORK( 1 ) = (1.0E+0,0.0E+0)
+   IF( KTOP > KBOT ) RETURN
 !     ... nor for an empty deflation window. ====
-   IF( NW < 1 ) &
-      RETURN
+   IF( NW < 1 ) RETURN
 !
 !     ==== Machine constants ====
 !
    SAFMIN = SLAMCH( 'SAFE MINIMUM' )
-   SAFMAX = RONE / SAFMIN
+   SAFMAX = 1.0E+0 / SAFMIN
    ULP = SLAMCH( 'PRECISION' )
    SMLNUM = SAFMIN*( REAL( N ) / ULP )
 !
@@ -369,7 +357,7 @@
    JW = MIN( NW, KBOT-KTOP+1 )
    KWTOP = KBOT - JW + 1
    IF( KWTOP == KTOP ) THEN
-      S = ZERO
+      S = (0.0E+0,0.0E+0)
    ELSE
       S = H( KWTOP, KWTOP-1 )
    END IF
@@ -385,10 +373,9 @@
           KWTOP ) ) ) ) THEN
          NS = 0
          ND = 1
-         IF( KWTOP > KTOP ) &
-            H( KWTOP, KWTOP-1 ) = ZERO
+         IF( KWTOP > KTOP ) H( KWTOP, KWTOP-1 ) = (0.0E+0,0.0E+0)
       END IF
-      WORK( 1 ) = ONE
+      WORK( 1 ) = (1.0E+0,0.0E+0)
       RETURN
    END IF
 !
@@ -401,7 +388,7 @@
    CALL CLACPY( 'U', JW, JW, H( KWTOP, KWTOP ), LDH, T, LDT )
    CALL CCOPY( JW-1, H( KWTOP+1, KWTOP ), LDH+1, T( 2, 1 ), LDT+1 )
 !
-   CALL CLASET( 'A', JW, JW, ZERO, ONE, V, LDV )
+   CALL CLASET( 'A', JW, JW, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), V, LDV )
    CALL CLAHQR( .true., .true., JW, 1, JW, T, LDT, SH( KWTOP ), 1, &
                 JW, V, LDV, INFQR )
 !
@@ -414,10 +401,8 @@
 !        ==== Small spike tip deflation test ====
 !
       FOO = CABS1( T( NS, NS ) )
-      IF( FOO == RZERO ) &
-         FOO = CABS1( S )
-      IF( CABS1( S )*CABS1( V( 1, NS ) ) <= MAX( SMLNUM, ULP*FOO ) ) &
-           THEN
+      IF( FOO == 0.0E+0 ) FOO = CABS1( S )
+      IF( CABS1( S )*CABS1( V( 1, NS ) ) <= MAX( SMLNUM, ULP*FOO ) ) THEN
 !
 !           ==== One more converged eigenvalue ====
 !
@@ -435,8 +420,7 @@
 !
 !        ==== Return to Hessenberg form ====
 !
-   IF( NS == 0 ) &
-      S = ZERO
+   IF( NS == 0 ) S = (0.0E+0,0.0E+0)
 !
    IF( NS < JW ) THEN
 !
@@ -457,25 +441,22 @@
 !
 !     ==== Restore shift/eigenvalue array from T ====
 !
-   DO I = INFQR + 1, JW
+   DO I = INFQR+1, JW
       SH( KWTOP+I-1 ) = T( I, I )
    ENDDO
 !
 !
-   IF( NS < JW .OR. S == ZERO ) THEN
-      IF( NS > 1 .AND. S /= ZERO ) THEN
+   IF( NS < JW .OR. S == (0.0E+0,0.0E+0) ) THEN
+      IF( NS > 1 .AND. S /= (0.0E+0,0.0E+0) ) THEN
 !
 !           ==== Reflect spike back into lower triangle ====
 !
-         CALL CCOPY( NS, V, LDV, WORK, 1 )
-         DO I = 1, NS
-            WORK( I ) = CONJG( WORK( I ) )
-         ENDDO
+         WORK(1:NS) = CONJG(V(1,1:NS))
          BETA = WORK( 1 )
          CALL CLARFG( NS, BETA, WORK( 2 ), 1, TAU )
-         WORK( 1 ) = ONE
+         WORK( 1 ) = (1.0E+0,0.0E+0)
 !
-         CALL CLASET( 'L', JW-2, JW-2, ZERO, ZERO, T( 3, 1 ), LDT )
+         CALL CLASET( 'L', JW-2, JW-2, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), T( 3, 1 ), LDT )
 !
          CALL CLARF( 'L', NS, JW, WORK, 1, CONJG( TAU ), T, LDT, &
                      WORK( JW+1 ) )
@@ -493,13 +474,12 @@
       IF( KWTOP > 1 ) &
          H( KWTOP, KWTOP-1 ) = S*CONJG( V( 1, 1 ) )
       CALL CLACPY( 'U', JW, JW, T, LDT, H( KWTOP, KWTOP ), LDH )
-      CALL CCOPY( JW-1, T( 2, 1 ), LDT+1, H( KWTOP+1, KWTOP ), &
-                  LDH+1 )
+      CALL CCOPY( JW-1, T( 2, 1 ), LDT+1, H( KWTOP+1, KWTOP ), LDH+1 )
 !
 !        ==== Accumulate orthogonal matrix in order update
 !        .    H and Z, if requested.  ====
 !
-      IF( NS > 1 .AND. S /= ZERO ) &
+      IF( NS > 1 .AND. S /= (0.0E+0,0.0E+0) ) &
          CALL CUNMHR( 'R', 'N', JW, NS, 1, NS, T, LDT, WORK, V, LDV, &
                       WORK( JW+1 ), LWORK-JW, INFO )
 !
@@ -512,8 +492,8 @@
       END IF
       DO KROW = LTOP, KWTOP - 1, NV
          KLN = MIN( NV, KWTOP-KROW )
-         CALL CGEMM( 'N', 'N', KLN, JW, JW, ONE, H( KROW, KWTOP ), &
-                     LDH, V, LDV, ZERO, WV, LDWV )
+         CALL CGEMM( 'N', 'N', KLN, JW, JW, (1.0E+0,0.0E+0), H( KROW, KWTOP ), &
+                     LDH, V, LDV, (0.0E+0,0.0E+0), WV, LDWV )
          CALL CLACPY( 'A', KLN, JW, WV, LDWV, H( KROW, KWTOP ), LDH )
       ENDDO
 !
@@ -522,8 +502,8 @@
       IF( WANTT ) THEN
          DO KCOL = KBOT + 1, N, NH
             KLN = MIN( NH, N-KCOL+1 )
-            CALL CGEMM( 'C', 'N', JW, KLN, JW, ONE, V, LDV, &
-                        H( KWTOP, KCOL ), LDH, ZERO, T, LDT )
+            CALL CGEMM( 'C', 'N', JW, KLN, JW, (1.0E+0,0.0E+0), V, LDV, &
+                        H( KWTOP, KCOL ), LDH, (0.0E+0,0.0E+0), T, LDT )
             CALL CLACPY( 'A', JW, KLN, T, LDT, H( KWTOP, KCOL ), &
                          LDH )
          ENDDO
@@ -534,8 +514,8 @@
       IF( WANTZ ) THEN
          DO KROW = ILOZ, IHIZ, NV
             KLN = MIN( NV, IHIZ-KROW+1 )
-            CALL CGEMM( 'N', 'N', KLN, JW, JW, ONE, Z( KROW, KWTOP ), &
-                        LDZ, V, LDV, ZERO, WV, LDWV )
+            CALL CGEMM( 'N', 'N', KLN, JW, JW, (1.0E+0,0.0E+0), Z( KROW, KWTOP ), &
+                        LDZ, V, LDV, (0.0E+0,0.0E+0), WV, LDWV )
             CALL CLACPY( 'A', KLN, JW, WV, LDWV, Z( KROW, KWTOP ), &
                          LDZ )
          ENDDO
@@ -561,5 +541,3 @@
 !     ==== End of CLAQR2 ====
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

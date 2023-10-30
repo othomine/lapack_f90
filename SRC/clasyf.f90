@@ -190,20 +190,16 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            IMAX, J, JB, JJ, JMAX, JP, K, KK, KKW, KP, &
                       KSTEP, KW
-   REAL               ABSAKK, ALPHA, COLMAX, ROWMAX
-   COMPLEX            D11, D21, D22, R1, T, Z
+   REAL               ABSAKK, COLMAX, ROWMAX
+   COMPLEX            D11, D21, D22, R1, T, Z, A_TMP( LDA ), W_TMP( NB )
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -211,10 +207,7 @@
    EXTERNAL           LSAME, ICAMAX
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMM, CGEMV, CSCAL, CSWAP
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, MIN, REAL, SQRT
+   EXTERNAL           CGEMM, CGEMV
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -225,10 +218,6 @@
 !     .. Executable Statements ..
 !
    INFO = 0
-!
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
 !
    IF( LSAME( UPLO, 'U' ) ) THEN
 !
@@ -246,15 +235,14 @@
 !
 !        Exit from loop
 !
-      IF( ( K <= N-NB+1 .AND. NB < N ) .OR. K < 1 ) &
-         GO TO 30
+      IF( ( K <= N-NB+1 .AND. NB < N ) .OR. K < 1 ) GO TO 30
 !
 !        Copy column K of A to column KW of W and update it
 !
-      CALL CCOPY( K, A( 1, K ), 1, W( 1, KW ), 1 )
+      W(1:K,KW) = A(1:K,K)
       IF( K < N ) &
-         CALL CGEMV( 'No transpose', K, N-K, -CONE, A( 1, K+1 ), LDA, &
-                     W( K, KW+1 ), LDW, CONE, W( 1, KW ), 1 )
+         CALL CGEMV( 'No transpose', K, N-K, -(1.0E+0,0.0E+0), A( 1, K+1 ), LDA, &
+                     W( K, KW+1 ), LDW, (1.0E+0,0.0E+0), W( 1, KW ), 1 )
 !
       KSTEP = 1
 !
@@ -271,15 +259,14 @@
          IMAX = ICAMAX( K-1, W( 1, KW ), 1 )
          COLMAX = CABS1( W( IMAX, KW ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -291,13 +278,12 @@
 !
 !              Copy column IMAX to column KW-1 of W and update it
 !
-            CALL CCOPY( IMAX, A( 1, IMAX ), 1, W( 1, KW-1 ), 1 )
-            CALL CCOPY( K-IMAX, A( IMAX, IMAX+1 ), LDA, &
-                        W( IMAX+1, KW-1 ), 1 )
+            W(1:IMAX,KW-1) = A(1:IMAX,IMAX)
+            W(IMAX+1:K,KW-1) = A(IMAX,IMAX+1:K)
             IF( K < N ) &
-               CALL CGEMV( 'No transpose', K, N-K, -CONE, &
+               CALL CGEMV( 'No transpose', K, N-K, -(1.0E+0,0.0E+0), &
                            A( 1, K+1 ), LDA, W( IMAX, KW+1 ), LDW, &
-                           CONE, W( 1, KW-1 ), 1 )
+                           (1.0E+0,0.0E+0), W( 1, KW-1 ), 1 )
 !
 !              JMAX is the column-index of the largest off-diagonal
 !              element in row IMAX, and ROWMAX is its absolute value
@@ -323,7 +309,7 @@
 !
 !                 copy column KW-1 of W to column KW of W
 !
-               CALL CCOPY( K, W( 1, KW-1 ), 1, W( 1, KW ), 1 )
+               W(1:K,KW) = W(1:K,KW-1)
             ELSE
 !
 !                 interchange rows and columns K-1 and IMAX, use 2-by-2
@@ -355,21 +341,22 @@
 !              will be later overwritten.
 !
             A( KP, KP ) = A( KK, KK )
-            CALL CCOPY( KK-1-KP, A( KP+1, KK ), 1, A( KP, KP+1 ), &
-                        LDA )
-            IF( KP > 1 ) &
-               CALL CCOPY( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
+            A(KP,KP+1:KK-1) = A(KP+1:KK-1,KK)
+            IF( KP > 1 ) A(1:KP-1,KP) = A(1:KP-1,KK)
 !
 !              Interchange rows KK and KP in last K+1 to N columns of A
 !              (columns K (or K and K-1 for 2-by-2 pivot) of A will be
 !              later overwritten). Interchange rows KK and KP
 !              in last KKW to NB columns of W.
 !
-            IF( K < N ) &
-               CALL CSWAP( N-K, A( KK, K+1 ), LDA, A( KP, K+1 ), &
-                           LDA )
-            CALL CSWAP( N-KK+1, W( KK, KKW ), LDW, W( KP, KKW ), &
-                        LDW )
+            IF( K < N ) THEN
+               A_TMP(1:N-K) = A(KK,K+1:N)
+               A(KK,K+1:N) = A(KP,K+1:N)
+               A(KP,K+1:N) = A_TMP(1:N-K)
+            ENDIF
+            W_TMP(1:N-KK+1) = W(KK,KKW:KKW+N-KK)
+            W(KK,KKW:KKW+N-KK) = W(KP,KKW:KKW+N-KK)
+            W(KP,KKW:KKW+N-KK) = W_TMP(1:N-KK+1)
          END IF
 !
          IF( KSTEP == 1 ) THEN
@@ -387,9 +374,8 @@
 !                 A(k,k) := D(k,k) = W(k,kw)
 !                 A(1:k-1,k) := U(1:k-1,k) = W(1:k-1,kw)/D(k,k)
 !
-            CALL CCOPY( K, W( 1, KW ), 1, A( 1, K ), 1 )
-            R1 = CONE / A( K, K )
-            CALL CSCAL( K-1, R1, A( 1, K ), 1 )
+            A(1:K,K) = W(1:K,KW)
+            A(1:K-1,K) = A(1:K-1,K) / A( K, K )
 !
          ELSE
 !
@@ -438,7 +424,7 @@
                D21 = W( K-1, KW )
                D11 = W( K, KW ) / D21
                D22 = W( K-1, KW-1 ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
 !
 !                 Update elements in columns A(k-1) and A(k) as
 !                 dot products of rows of ( W(kw-1) W(kw) ) and columns
@@ -489,16 +475,16 @@
 !           Update the upper triangle of the diagonal block
 !
          DO JJ = J, J + JB - 1
-            CALL CGEMV( 'No transpose', JJ-J+1, N-K, -CONE, &
-                        A( J, K+1 ), LDA, W( JJ, KW+1 ), LDW, CONE, &
+            CALL CGEMV( 'No transpose', JJ-J+1, N-K, -(1.0E+0,0.0E+0), &
+                        A( J, K+1 ), LDA, W( JJ, KW+1 ), LDW, (1.0E+0,0.0E+0), &
                         A( J, JJ ), 1 )
          ENDDO
 !
 !           Update the rectangular superdiagonal block
 !
          CALL CGEMM( 'No transpose', 'Transpose', J-1, JB, N-K, &
-                     -CONE, A( 1, K+1 ), LDA, W( J, KW+1 ), LDW, &
-                     CONE, A( 1, J ), LDA )
+                     -(1.0E+0,0.0E+0), A( 1, K+1 ), LDA, W( J, KW+1 ), LDW, &
+                     (1.0E+0,0.0E+0), A( 1, J ), LDA )
       ENDDO
 !
 !        Put U12 in standard form by partially undoing the interchanges
@@ -521,10 +507,12 @@
 !           (NOTE: Here, J is used to determine row length. Length N-J+1
 !           of the rows to swap back doesn't include diagonal element)
          J = J + 1
-         IF( JP /= JJ .AND. J <= N ) &
-            CALL CSWAP( N-J+1, A( JP, J ), LDA, A( JJ, J ), LDA )
-      IF( J < N ) &
-         GO TO 60
+         IF( JP /= JJ .AND. J <= N ) THEN
+            A_TMP(1:N-J+1) = A(JP,J:N)
+            A(JP,J:N) = A(JJ,J:N)
+            A(JJ,J:N) = A_TMP(1:N-J+1)
+         END IF
+      IF( J < N ) GO TO 60
 !
 !        Set KB to the number of columns factorized
 !
@@ -543,14 +531,13 @@
 !
 !        Exit from loop
 !
-      IF( ( K >= NB .AND. NB < N ) .OR. K > N ) &
-         GO TO 90
+      IF( ( K >= NB .AND. NB < N ) .OR. K > N ) GO TO 90
 !
 !        Copy column K of A to column K of W and update it
 !
-      CALL CCOPY( N-K+1, A( K, K ), 1, W( K, K ), 1 )
-      CALL CGEMV( 'No transpose', N-K+1, K-1, -CONE, A( K, 1 ), LDA, &
-                  W( K, 1 ), LDW, CONE, W( K, K ), 1 )
+      W(K:N,K) = A(K:N,K)
+      CALL CGEMV( 'No transpose', N-K+1, K-1, -(1.0E+0,0.0E+0), A( K, 1 ), LDA, &
+                  W( K, 1 ), LDW, (1.0E+0,0.0E+0), W( K, K ), 1 )
 !
       KSTEP = 1
 !
@@ -567,15 +554,14 @@
          IMAX = K + ICAMAX( N-K, W( K+1, K ), 1 )
          COLMAX = CABS1( W( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -587,11 +573,10 @@
 !
 !              Copy column IMAX to column K+1 of W and update it
 !
-            CALL CCOPY( IMAX-K, A( IMAX, K ), LDA, W( K, K+1 ), 1 )
-            CALL CCOPY( N-IMAX+1, A( IMAX, IMAX ), 1, W( IMAX, K+1 ), &
-                        1 )
-            CALL CGEMV( 'No transpose', N-K+1, K-1, -CONE, A( K, 1 ), &
-                        LDA, W( IMAX, 1 ), LDW, CONE, W( K, K+1 ), &
+            W(K:IMAX-1,K+1) = A(IMAX,K:IMAX-1)
+            W(IMAX:N,K+1) = A(IMAX:N,IMAX)
+            CALL CGEMV( 'No transpose', N-K+1, K-1, -(1.0E+0,0.0E+0), A( K, 1 ), &
+                        LDA, W( IMAX, 1 ), LDW, (1.0E+0,0.0E+0), W( K, K+1 ), &
                         1 )
 !
 !              JMAX is the column-index of the largest off-diagonal
@@ -618,7 +603,7 @@
 !
 !                 copy column K+1 of W to column K of W
 !
-               CALL CCOPY( N-K+1, W( K, K+1 ), 1, W( K, K ), 1 )
+               W(K:N,K) = W(K:N,K+1)
             ELSE
 !
 !                 interchange rows and columns K+1 and IMAX, use 2-by-2
@@ -646,19 +631,22 @@
 !              will be later overwritten.
 !
             A( KP, KP ) = A( KK, KK )
-            CALL CCOPY( KP-KK-1, A( KK+1, KK ), 1, A( KP, KK+1 ), &
-                        LDA )
-            IF( KP < N ) &
-               CALL CCOPY( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
+            A(KP,KK+1:KP-1) = A(KK+1:KP-1,KK)
+            IF( KP < N ) A(KP+1:N,KP) = A(KP+1:N,KK)
 !
 !              Interchange rows KK and KP in first K-1 columns of A
 !              (columns K (or K and K+1 for 2-by-2 pivot) of A will be
 !              later overwritten). Interchange rows KK and KP
 !              in first KK columns of W.
 !
-            IF( K > 1 ) &
-               CALL CSWAP( K-1, A( KK, 1 ), LDA, A( KP, 1 ), LDA )
-            CALL CSWAP( KK, W( KK, 1 ), LDW, W( KP, 1 ), LDW )
+            IF( K > 1 ) THEN
+               A_TMP(1:K-1) = A(KK,1:K-1)
+               A(KK,1:K-1) = A(KP,1:K-1)
+               A(KP,1:K-1) = A_TMP(1:K-1)
+            ENDIF
+            W_TMP(1:KK) = W(KK,1:KK)
+            W(KK,1:KK) = W(KP,1:KK)
+            W(KP,1:KK) = W_TMP(1:KK)
          END IF
 !
          IF( KSTEP == 1 ) THEN
@@ -676,11 +664,8 @@
 !                 A(k,k) := D(k,k) = W(k,k)
 !                 A(k+1:N,k) := L(k+1:N,k) = W(k+1:N,k)/D(k,k)
 !
-            CALL CCOPY( N-K+1, W( K, K ), 1, A( K, K ), 1 )
-            IF( K < N ) THEN
-               R1 = CONE / A( K, K )
-               CALL CSCAL( N-K, R1, A( K+1, K ), 1 )
-            END IF
+            A(K:N,K) = W(K:N,K)
+            IF( K < N ) A(K+1:N,K) = A(K+1:N,K) / A( K, K )
 !
          ELSE
 !
@@ -729,7 +714,7 @@
                D21 = W( K+1, K )
                D11 = W( K+1, K+1 ) / D21
                D22 = W( K, K ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
                D21 = T / D21
 !
 !                 Update elements in columns A(k) and A(k+1) as
@@ -780,17 +765,17 @@
 !           Update the lower triangle of the diagonal block
 !
          DO JJ = J, J + JB - 1
-            CALL CGEMV( 'No transpose', J+JB-JJ, K-1, -CONE, &
-                        A( JJ, 1 ), LDA, W( JJ, 1 ), LDW, CONE, &
+            CALL CGEMV( 'No transpose', J+JB-JJ, K-1, -(1.0E+0,0.0E+0), &
+                        A( JJ, 1 ), LDA, W( JJ, 1 ), LDW, (1.0E+0,0.0E+0), &
                         A( JJ, JJ ), 1 )
-            ENDDO
+         ENDDO
 !
 !           Update the rectangular subdiagonal block
 !
          IF( J+JB <= N ) &
             CALL CGEMM( 'No transpose', 'Transpose', N-J-JB+1, JB, &
-                        K-1, -CONE, A( J+JB, 1 ), LDA, W( J, 1 ), &
-                        LDW, CONE, A( J+JB, J ), LDA )
+                        K-1, -(1.0E+0,0.0E+0), A( J+JB, 1 ), LDA, W( J, 1 ), &
+                        LDW, (1.0E+0,0.0E+0), A( J+JB, J ), LDA )
          ENDDO
 !
 !        Put L21 in standard form by partially undoing the interchanges
@@ -813,10 +798,12 @@
 !           (NOTE: Here, J is used to determine row length. Length J
 !           of the rows to swap back doesn't include diagonal element)
          J = J - 1
-         IF( JP /= JJ .AND. J >= 1 ) &
-            CALL CSWAP( J, A( JP, 1 ), LDA, A( JJ, 1 ), LDA )
-      IF( J > 1 ) &
-         GO TO 120
+         IF( JP /= JJ .AND. J >= 1 ) THEN
+            A_TMP(1:J) = A(JP,1:J)
+            A(JP,1:J) = A(JJ,1:J)
+            A(JJ,1:J) = A_TMP(1:J)
+         ENDIF
+      IF( J > 1 ) GO TO 120
 !
 !        Set KB to the number of columns factorized
 !
@@ -828,5 +815,3 @@
 !     End of CLASYF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

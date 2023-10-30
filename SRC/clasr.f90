@@ -217,7 +217,7 @@
 !     .. Local Scalars ..
    INTEGER            I, INFO, J
    REAL               CTEMP, STEMP
-   COMPLEX            TEMP
+   COMPLEX            TEMP, TMP1( M ), TMP2( N )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -264,11 +264,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J+1, I )
-                     A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
-                     A( J, I ) = STEMP*TEMP + CTEMP*A( J, I )
-                  ENDDO
+                  TMP2(1:N) = A(J+1,1:N)
+                  A(J+1,1:N) = CTEMP*TMP2(1:N) - STEMP*A(J,1:N)
+                  A(J,1:N) = STEMP*TMP2(1:N) + CTEMP*A(J,1:N)
                END IF
             ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
@@ -276,11 +274,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J+1, I )
-                     A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
-                     A( J, I ) = STEMP*TEMP + CTEMP*A( J, I )
-                  ENDDO
+                  TMP2(1:N) = A(J+1,1:N)
+                  A(J+1,1:N) = CTEMP*TMP2(1:N) - STEMP*A(J,1:N)
+                  A(J,1:N) = STEMP*TMP2(1:N) + CTEMP*A(J,1:N)
                END IF
             ENDDO
          END IF
@@ -290,11 +286,9 @@
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J, I )
-                     A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
-                     A( 1, I ) = STEMP*TEMP + CTEMP*A( 1, I )
-                  ENDDO
+                  TMP2(1:N) = A(J,1:N)
+                  A(J,1:N) = CTEMP*TMP2(1:N) - STEMP*A(1,1:N)
+                  A(1,1:N) = STEMP*TMP2(1:N) + CTEMP*A(1,1:N)
                END IF
             ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
@@ -302,11 +296,9 @@
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J, I )
-                     A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
-                     A( 1, I ) = STEMP*TEMP + CTEMP*A( 1, I )
-                  ENDDO
+                  TMP2(1:N) = A(J,1:N)
+                  A(J,1:N) = CTEMP*TMP2(1:N) - STEMP*A(1,1:N)
+                  A(1,1:N) = STEMP*TMP2(1:N) + CTEMP*A(1,1:N)
                END IF
             ENDDO
          END IF
@@ -316,11 +308,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J, I )
-                     A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
-                     A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
-               ENDDO
+                  TMP2(1:N) = A(J,1:N)
+                  A(J,1:N) = STEMP*A(M,1:N) + CTEMP*TMP2(1:N)
+                  A(M,1:N) = CTEMP*A(M,1:N) - STEMP*TMP2(1:N)
                END IF
             ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
@@ -328,11 +318,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, N
-                     TEMP = A( J, I )
-                     A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
-                     A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
-                  ENDDO
+                  TMP2(1:N) = A(J,1:N)
+                  A(J,1:N) = STEMP*A(M,1:N) + CTEMP*TMP2(1:N)
+                  A(M,1:N) = CTEMP*A(M,1:N) - STEMP*TMP2(1:N)
                END IF
             ENDDO
          END IF
@@ -347,11 +335,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J+1 )
-                     A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
-                     A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
-                  ENDDO
+                  TMP1(1:M) = A(1:M,J+1)
+                  A(1:M,J+1) = CTEMP*TMP1(1:M) - STEMP*A(1:M,J)
+                  A(1:M,J) = STEMP*TMP1(1:M) + CTEMP*A(1:M,J)
                END IF
             ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
@@ -359,11 +345,9 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J+1 )
-                     A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
-                     A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
-                  ENDDO
+                  TMP1(1:M) = A(1:M,J+1)
+                  A(1:M,J+1) = CTEMP*TMP1(1:M) - STEMP*A(1:M,J)
+                  A(1:M,J) = STEMP*TMP1(1:M) + CTEMP*A(1:M,J)
                END IF
             ENDDO
          END IF
@@ -373,11 +357,9 @@
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J )
-                     A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
-                     A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
-                  ENDDO
+                  TMP1(1:M) = A(1:M,J)
+                  A(1:M,J) = CTEMP*TMP1(1:M) - STEMP*A(1:M,1)
+                  A(1:M,1) = STEMP*TMP1(1:M) + CTEMP*A(1:M,1)
                END IF
             ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
@@ -385,11 +367,9 @@
                CTEMP = C( J-1 )
                STEMP = S( J-1 )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J )
-                     A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
-                     A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
-                  ENDDO
+                  TMP1(1:M) = A(1:M,J)
+                  A(1:M,J) = CTEMP*TMP1(1:M) - STEMP*A(1:M,1)
+                  A(1:M,1) = STEMP*TMP1(1:M) + CTEMP*A(1:M,1)
                END IF
             ENDDO
          END IF
@@ -399,25 +379,21 @@
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J )
-                     A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
-                     A( I, N ) = CTEMP*A( I, N ) - STEMP*TEMP
-                     ENDDO
+                  TMP1(1:M) = A(1:M,J)
+                  A(1:M,J) = STEMP*A(1:M,N) + CTEMP*TMP1(1:M)
+                  A(1:M,N) = CTEMP*A(1:M,N) - STEMP*TMP1(1:M)
                END IF
-               ENDDO
+            ENDDO
          ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
             DO J = N - 1, 1, -1
                CTEMP = C( J )
                STEMP = S( J )
                IF( ( CTEMP /= 1.0E+0 ) .OR. ( STEMP /= 0.0E+0 ) ) THEN
-                  DO I = 1, M
-                     TEMP = A( I, J )
-                     A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
-                     A( I, N ) = CTEMP*A( I, N ) - STEMP*TEMP
-                     ENDDO
+                  TMP1(1:M) = A(1:M,J)
+                  A(1:M,J) = STEMP*A(1:M,N) + CTEMP*TMP1(1:M)
+                  A(1:M,N) = CTEMP*A(1:M,N) - STEMP*TMP1(1:M)
                END IF
-               ENDDO
+            ENDDO
          END IF
       END IF
    END IF

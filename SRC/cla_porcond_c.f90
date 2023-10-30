@@ -162,9 +162,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACN2, CPOTRS, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, REAL, AIMAG
-!     ..
 !     .. Statement Functions ..
    REAL CABS1
 !     ..
@@ -261,61 +258,42 @@
 !
 !           Multiply by R.
 !
-         DO I = 1, N
-            WORK( I ) = WORK( I ) * RWORK( I )
-         END DO
+         WORK(1:N) = WORK(1:N) * RWORK(1:N)
 !
          IF ( UP ) THEN
-            CALL CPOTRS( 'U', N, 1, AF, LDAF, &
-               WORK, N, INFO )
+            CALL CPOTRS( 'U', N, 1, AF, LDAF, WORK, N, INFO )
          ELSE
-            CALL CPOTRS( 'L', N, 1, AF, LDAF, &
-               WORK, N, INFO )
+            CALL CPOTRS( 'L', N, 1, AF, LDAF, WORK, N, INFO )
          ENDIF
 !
 !           Multiply by inv(C).
 !
-         IF ( CAPPLY ) THEN
-            DO I = 1, N
-               WORK( I ) = WORK( I ) * C( I )
-            END DO
-         END IF
+         IF ( CAPPLY ) WORK(1:N) = WORK(1:N) * C(1:N)
       ELSE
 !
 !           Multiply by inv(C**H).
 !
-         IF ( CAPPLY ) THEN
-            DO I = 1, N
-               WORK( I ) = WORK( I ) * C( I )
-            END DO
-         END IF
+         IF ( CAPPLY ) WORK(1:N) = WORK(1:N) * C(1:N)
 !
          IF ( UP ) THEN
-            CALL CPOTRS( 'U', N, 1, AF, LDAF, &
-               WORK, N, INFO )
+            CALL CPOTRS( 'U', N, 1, AF, LDAF, WORK, N, INFO )
          ELSE
-            CALL CPOTRS( 'L', N, 1, AF, LDAF, &
-               WORK, N, INFO )
+            CALL CPOTRS( 'L', N, 1, AF, LDAF, WORK, N, INFO )
          END IF
 !
 !           Multiply by R.
 !
-         DO I = 1, N
-            WORK( I ) = WORK( I ) * RWORK( I )
-         END DO
+         WORK(1:N) = WORK(1:N) * RWORK(1:N)
       END IF
       GO TO 10
    END IF
 !
 !     Compute the estimate of the reciprocal condition number.
 !
-   IF( AINVNM  /=  0.0E+0 ) &
-      CLA_PORCOND_C = 1.0E+0 / AINVNM
+   IF( AINVNM  /=  0.0E+0 ) CLA_PORCOND_C = 1.0E+0 / AINVNM
 !
    RETURN
 !
 !     End of CLA_PORCOND_C
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

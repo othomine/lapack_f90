@@ -195,12 +195,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E0, 0.0E0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            BX, BXST, C, DIFL, DIFR, GIVCOL, GIVNUM, &
@@ -220,9 +214,6 @@
    EXTERNAL           CCOPY, CLACPY, CLALSA, CLASCL, CLASET, CSROT, &
                       SGEMM, SLARTG, SLASCL, SLASDA, SLASDQ, SLASET, &
                       SLASRT, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, INT, LOG, REAL, SIGN
 !     ..
 !     .. Executable Statements ..
 !
@@ -246,7 +237,7 @@
 !
 !     Set up the tolerance.
 !
-   IF( ( RCOND <= ZERO ) .OR. ( RCOND >= ONE ) ) THEN
+   IF( ( RCOND <= 0.0E+0 ) .OR. ( RCOND >= 1.0E+0 ) ) THEN
       RCND = EPS
    ELSE
       RCND = RCOND
@@ -259,11 +250,11 @@
    IF( N == 0 ) THEN
       RETURN
    ELSE IF( N == 1 ) THEN
-      IF( D( 1 ) == ZERO ) THEN
-         CALL CLASET( 'A', 1, NRHS, CZERO, CZERO, B, LDB )
+      IF( D( 1 ) == 0.0E+0 ) THEN
+         B(1,1:NRHS) = (0.0E+0,0.0E+0)
       ELSE
          RANK = 1
-         CALL CLASCL( 'G', 0, 0, D( 1 ), ONE, 1, NRHS, B, LDB, INFO )
+         CALL CLASCL( 'G', 0, 0, D( 1 ), 1.0E+0, 1, NRHS, B, LDB, INFO )
          D( 1 ) = ABS( D( 1 ) )
       END IF
       RETURN
@@ -299,13 +290,13 @@
 !
    NM1 = N - 1
    ORGNRM = SLANST( 'M', N, D, E )
-   IF( ORGNRM == ZERO ) THEN
-      CALL CLASET( 'A', N, NRHS, CZERO, CZERO, B, LDB )
+   IF( ORGNRM == 0.0E+0 ) THEN
+      B(1:N,1:NRHS) = (0.0E+0,0.0E+0)
       RETURN
    END IF
 !
-   CALL SLASCL( 'G', 0, 0, ORGNRM, ONE, N, 1, D, N, INFO )
-   CALL SLASCL( 'G', 0, 0, ORGNRM, ONE, NM1, 1, E, NM1, INFO )
+   CALL SLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, N, 1, D, N, INFO )
+   CALL SLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, NM1, 1, E, NM1, INFO )
 !
 !     If N is smaller than the minimum divide size SMLSIZ, then solve
 !     the problem with another solver.
@@ -317,14 +308,12 @@
       IRWRB = IRWWRK
       IRWIB = IRWRB + N*NRHS
       IRWB = IRWIB + N*NRHS
-      CALL SLASET( 'A', N, N, ZERO, ONE, RWORK( IRWU ), N )
-      CALL SLASET( 'A', N, N, ZERO, ONE, RWORK( IRWVT ), N )
+      CALL SLASET( 'A', N, N, 0.0E+0, 1.0E+0, RWORK( IRWU ), N )
+      CALL SLASET( 'A', N, N, 0.0E+0, 1.0E+0, RWORK( IRWVT ), N )
       CALL SLASDQ( 'U', 0, N, N, N, 0, D, E, RWORK( IRWVT ), N, &
                    RWORK( IRWU ), N, RWORK( IRWWRK ), 1, &
                    RWORK( IRWWRK ), INFO )
-      IF( INFO /= 0 ) THEN
-         RETURN
-      END IF
+      IF( INFO /= 0 ) RETURN
 !
 !        In the real version, B is passed to SLASDQ and multiplied
 !        internally by Q**H. Here B is complex and that product is
@@ -337,8 +326,8 @@
             RWORK( J ) = REAL( B( JROW, JCOL ) )
          ENDDO
       ENDDO
-      CALL SGEMM( 'T', 'N', N, NRHS, N, ONE, RWORK( IRWU ), N, &
-                  RWORK( IRWB ), N, ZERO, RWORK( IRWRB ), N )
+      CALL SGEMM( 'T', 'N', N, NRHS, N, 1.0E+0, RWORK( IRWU ), N, &
+                  RWORK( IRWB ), N, 0.0E+0, RWORK( IRWRB ), N )
       J = IRWB - 1
       DO JCOL = 1, NRHS
          DO JROW = 1, N
@@ -346,8 +335,8 @@
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
          ENDDO
       ENDDO
-      CALL SGEMM( 'T', 'N', N, NRHS, N, ONE, RWORK( IRWU ), N, &
-                  RWORK( IRWB ), N, ZERO, RWORK( IRWIB ), N )
+      CALL SGEMM( 'T', 'N', N, NRHS, N, 1.0E+0, RWORK( IRWU ), N, &
+                  RWORK( IRWB ), N, 0.0E+0, RWORK( IRWIB ), N )
       JREAL = IRWRB - 1
       JIMAG = IRWIB - 1
       DO JCOL = 1, NRHS
@@ -361,19 +350,18 @@
       TOL = RCND*ABS( D( ISAMAX( N, D, 1 ) ) )
       DO I = 1, N
          IF( D( I ) <= TOL ) THEN
-            CALL CLASET( 'A', 1, NRHS, CZERO, CZERO, B( I, 1 ), LDB )
+            B(1,1:NRHS) = (0.0E+0,0.0E+0)
          ELSE
-            CALL CLASCL( 'G', 0, 0, D( I ), ONE, 1, NRHS, B( I, 1 ), &
-                         LDB, INFO )
+            CALL CLASCL( 'G', 0, 0, D( I ), 1.0E+0, 1, NRHS, B( I, 1 ), LDB, INFO )
             RANK = RANK + 1
          END IF
-         ENDDO
+      ENDDO
 !
 !        Since B is complex, the following call to SGEMM is performed
 !        in two steps (real and imaginary parts). That is for V * B
 !        (in the real version of the code V**H is stored in WORK).
 !
-!        CALL SGEMM( 'T', 'N', N, NRHS, N, ONE, WORK, N, B, LDB, ZERO,
+!        CALL SGEMM( 'T', 'N', N, NRHS, N, 1.0E+0, WORK, N, B, LDB, 0.0E+0,
 !    $               WORK( NWORK ), N )
 !
       J = IRWB - 1
@@ -381,19 +369,19 @@
          DO JROW = 1, N
             J = J + 1
             RWORK( J ) = REAL( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', N, NRHS, N, ONE, RWORK( IRWVT ), N, &
-                  RWORK( IRWB ), N, ZERO, RWORK( IRWRB ), N )
+      ENDDO
+      CALL SGEMM( 'T', 'N', N, NRHS, N, 1.0E+0, RWORK( IRWVT ), N, &
+                  RWORK( IRWB ), N, 0.0E+0, RWORK( IRWRB ), N )
       J = IRWB - 1
       DO JCOL = 1, NRHS
          DO JROW = 1, N
             J = J + 1
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', N, NRHS, N, ONE, RWORK( IRWVT ), N, &
-                  RWORK( IRWB ), N, ZERO, RWORK( IRWIB ), N )
+      ENDDO
+      CALL SGEMM( 'T', 'N', N, NRHS, N, 1.0E+0, RWORK( IRWVT ), N, &
+                  RWORK( IRWB ), N, 0.0E+0, RWORK( IRWIB ), N )
       JREAL = IRWRB - 1
       JIMAG = IRWIB - 1
       DO JCOL = 1, NRHS
@@ -401,21 +389,21 @@
             JREAL = JREAL + 1
             JIMAG = JIMAG + 1
             B( JROW, JCOL ) = CMPLX( RWORK( JREAL ), RWORK( JIMAG ) )
-            ENDDO
          ENDDO
+      ENDDO
 !
 !        Unscale.
 !
-      CALL SLASCL( 'G', 0, 0, ONE, ORGNRM, N, 1, D, N, INFO )
+      CALL SLASCL( 'G', 0, 0, 1.0E+0, ORGNRM, N, 1, D, N, INFO )
       CALL SLASRT( 'D', N, D, INFO )
-      CALL CLASCL( 'G', 0, 0, ORGNRM, ONE, N, NRHS, B, LDB, INFO )
+      CALL CLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, N, NRHS, B, LDB, INFO )
 !
       RETURN
    END IF
 !
 !     Book-keeping and setting up some constants.
 !
-   NLVL = INT( LOG( REAL( N ) / REAL( SMLSIZ+1 ) ) / LOG( TWO ) ) + 1
+   NLVL = INT( LOG( REAL( N ) / REAL( SMLSIZ+1 ) ) / LOG( 2.0E+0 ) ) + 1
 !
    SMLSZP = SMLSIZ + 1
 !
@@ -448,11 +436,9 @@
    ICMPQ2 = 0
    NSUB = 0
 !
-   DO I = 1, N
-      IF( ABS( D( I ) ) < EPS ) THEN
-         D( I ) = SIGN( EPS, D( I ) )
-      END IF
-      ENDDO
+   WHERE (ABS( D( 1:N ) ) < EPS )
+      D( 1:N ) = SIGN( EPS, D( 1:N ) )
+   END WHERE
 !
    DO I = 1, NM1
       IF( ( ABS( E( I ) ) < EPS ) .OR. ( I == NM1 ) ) THEN
@@ -498,17 +484,15 @@
 !
 !              This is a small subproblem and is solved by SLASDQ.
 !
-            CALL SLASET( 'A', NSIZE, NSIZE, ZERO, ONE, &
+            CALL SLASET( 'A', NSIZE, NSIZE, 0.0E+0, 1.0E+0, &
                          RWORK( VT+ST1 ), N )
-            CALL SLASET( 'A', NSIZE, NSIZE, ZERO, ONE, &
+            CALL SLASET( 'A', NSIZE, NSIZE, 0.0E+0, 1.0E+0, &
                          RWORK( U+ST1 ), N )
             CALL SLASDQ( 'U', 0, NSIZE, NSIZE, NSIZE, 0, D( ST ), &
                          E( ST ), RWORK( VT+ST1 ), N, RWORK( U+ST1 ), &
                          N, RWORK( NRWORK ), 1, RWORK( NRWORK ), &
                          INFO )
-            IF( INFO /= 0 ) THEN
-               RETURN
-            END IF
+            IF( INFO /= 0 ) RETURN
 !
 !              In the real version, B is passed to SLASDQ and multiplied
 !              internally by Q**H. Here B is complex and that product is
@@ -519,21 +503,21 @@
                DO JROW = ST, ST + NSIZE - 1
                   J = J + 1
                   RWORK( J ) = REAL( B( JROW, JCOL ) )
-                  ENDDO
                ENDDO
-            CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, ONE, &
+            ENDDO
+            CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, 1.0E+0, &
                         RWORK( U+ST1 ), N, RWORK( IRWB ), NSIZE, &
-                        ZERO, RWORK( IRWRB ), NSIZE )
+                        0.0E+0, RWORK( IRWRB ), NSIZE )
             J = IRWB - 1
             DO JCOL = 1, NRHS
                DO JROW = ST, ST + NSIZE - 1
                   J = J + 1
                   RWORK( J ) = AIMAG( B( JROW, JCOL ) )
-                  ENDDO
                ENDDO
-            CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, ONE, &
+            ENDDO
+            CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, 1.0E+0, &
                         RWORK( U+ST1 ), N, RWORK( IRWB ), NSIZE, &
-                        ZERO, RWORK( IRWIB ), NSIZE )
+                        0.0E+0, RWORK( IRWIB ), NSIZE )
             JREAL = IRWRB - 1
             JIMAG = IRWIB - 1
             DO JCOL = 1, NRHS
@@ -542,8 +526,8 @@
                   JIMAG = JIMAG + 1
                   B( JROW, JCOL ) = CMPLX( RWORK( JREAL ), &
                                     RWORK( JIMAG ) )
-                  ENDDO
                ENDDO
+            ENDDO
 !
             CALL CLACPY( 'A', NSIZE, NRHS, B( ST, 1 ), LDB, &
                          WORK( BX+ST1 ), N )
@@ -560,9 +544,7 @@
                          RWORK( GIVNUM+ST1 ), RWORK( C+ST1 ), &
                          RWORK( S+ST1 ), RWORK( NRWORK ), &
                          IWORK( IWK ), INFO )
-            IF( INFO /= 0 ) THEN
-               RETURN
-            END IF
+            IF( INFO /= 0 ) RETURN
             BXST = BX + ST1
             CALL CLALSA( ICMPQ2, SMLSIZ, NSIZE, NRHS, B( ST, 1 ), &
                          LDB, WORK( BXST ), N, RWORK( U+ST1 ), N, &
@@ -573,13 +555,11 @@
                          IWORK( PERM+ST1 ), RWORK( GIVNUM+ST1 ), &
                          RWORK( C+ST1 ), RWORK( S+ST1 ), &
                          RWORK( NRWORK ), IWORK( IWK ), INFO )
-            IF( INFO /= 0 ) THEN
-               RETURN
-            END IF
+            IF( INFO /= 0 ) RETURN
          END IF
          ST = I + 1
       END IF
-      ENDDO
+   ENDDO
 !
 !     Apply the singular values and treat the tiny ones as zero.
 !
@@ -591,14 +571,13 @@
 !        subproblems were not solved explicitly.
 !
       IF( ABS( D( I ) ) <= TOL ) THEN
-         CALL CLASET( 'A', 1, NRHS, CZERO, CZERO, WORK( BX+I-1 ), N )
+         CALL CLASET( 'A', 1, NRHS, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK( BX+I-1 ), N )
       ELSE
          RANK = RANK + 1
-         CALL CLASCL( 'G', 0, 0, D( I ), ONE, 1, NRHS, &
-                      WORK( BX+I-1 ), N, INFO )
+         CALL CLASCL( 'G', 0, 0, D( I ), 1.0E+0, 1, NRHS, WORK( BX+I-1 ), N, INFO )
       END IF
       D( I ) = ABS( D( I ) )
-      ENDDO
+   ENDDO
 !
 !     Now apply back the right singular vectors.
 !
@@ -615,8 +594,8 @@
 !           Since B and BX are complex, the following call to SGEMM
 !           is performed in two steps (real and imaginary parts).
 !
-!           CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, ONE,
-!    $                  RWORK( VT+ST1 ), N, RWORK( BXST ), N, ZERO,
+!           CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, 1.0E+0,
+!    $                  RWORK( VT+ST1 ), N, RWORK( BXST ), N, 0.0E+0,
 !    $                  B( ST, 1 ), LDB )
 !
          J = BXST - N - 1
@@ -626,10 +605,10 @@
             DO JROW = 1, NSIZE
                JREAL = JREAL + 1
                RWORK( JREAL ) = REAL( WORK( J+JROW ) )
-               ENDDO
             ENDDO
-         CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, ONE, &
-                     RWORK( VT+ST1 ), N, RWORK( IRWB ), NSIZE, ZERO, &
+         ENDDO
+         CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, 1.0E+0, &
+                     RWORK( VT+ST1 ), N, RWORK( IRWB ), NSIZE, 0.0E+0, &
                      RWORK( IRWRB ), NSIZE )
          J = BXST - N - 1
          JIMAG = IRWB - 1
@@ -638,10 +617,10 @@
             DO JROW = 1, NSIZE
                JIMAG = JIMAG + 1
                RWORK( JIMAG ) = AIMAG( WORK( J+JROW ) )
-               ENDDO
             ENDDO
-         CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, ONE, &
-                     RWORK( VT+ST1 ), N, RWORK( IRWB ), NSIZE, ZERO, &
+         ENDDO
+         CALL SGEMM( 'T', 'N', NSIZE, NRHS, NSIZE, 1.0E+0, &
+                     RWORK( VT+ST1 ), N, RWORK( IRWB ), NSIZE, 0.0E+0, &
                      RWORK( IRWIB ), NSIZE )
          JREAL = IRWRB - 1
          JIMAG = IRWIB - 1
@@ -651,8 +630,8 @@
                JIMAG = JIMAG + 1
                B( JROW, JCOL ) = CMPLX( RWORK( JREAL ), &
                                  RWORK( JIMAG ) )
-               ENDDO
             ENDDO
+         ENDDO
       ELSE
          CALL CLALSA( ICMPQ2, SMLSIZ, NSIZE, NRHS, WORK( BXST ), N, &
                       B( ST, 1 ), LDB, RWORK( U+ST1 ), N, &
@@ -663,22 +642,18 @@
                       IWORK( PERM+ST1 ), RWORK( GIVNUM+ST1 ), &
                       RWORK( C+ST1 ), RWORK( S+ST1 ), &
                       RWORK( NRWORK ), IWORK( IWK ), INFO )
-         IF( INFO /= 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO /= 0 ) RETURN
       END IF
-      ENDDO
+   ENDDO
 !
 !     Unscale and sort the singular values.
 !
-   CALL SLASCL( 'G', 0, 0, ONE, ORGNRM, N, 1, D, N, INFO )
+   CALL SLASCL( 'G', 0, 0, 1.0E+0, ORGNRM, N, 1, D, N, INFO )
    CALL SLASRT( 'D', N, D, INFO )
-   CALL CLASCL( 'G', 0, 0, ORGNRM, ONE, N, NRHS, B, LDB, INFO )
+   CALL CLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, N, NRHS, B, LDB, INFO )
 !
    RETURN
 !
 !     End of CLALSD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -284,10 +284,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, I1, IC, IM1, INODE, J, JCOL, JIMAG, JREAL, &
@@ -295,10 +291,7 @@
                       NDIMR, NL, NLF, NLP1, NLVL, NR, NRF, NRP1, SQRE
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLALS0, SGEMM, SLASDT, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          AIMAG, CMPLX, REAL
+   EXTERNAL           CLALS0, SGEMM, SLASDT, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -340,9 +333,7 @@
 !     The following code applies back the left singular vector factors.
 !     For applying back the right singular vector factors, go to 170.
 !
-   IF( ICOMPQ == 1 ) THEN
-      GO TO 170
-   END IF
+   IF( ICOMPQ == 1 ) GO TO 170
 !
 !     The nodes on the bottom level of the tree were solved
 !     by SLASDQ. The corresponding left and right singular vector
@@ -368,8 +359,8 @@
 !        Since B and BX are complex, the following call to SGEMM
 !        is performed in two steps (real and imaginary parts).
 !
-!        CALL SGEMM( 'T', 'N', NL, NRHS, NL, ONE, U( NLF, 1 ), LDU,
-!     $               B( NLF, 1 ), LDB, ZERO, BX( NLF, 1 ), LDBX )
+!        CALL SGEMM( 'T', 'N', NL, NRHS, NL, 1.0E+0, U( NLF, 1 ), LDU,
+!     $               B( NLF, 1 ), LDB, 0.0E+0, BX( NLF, 1 ), LDBX )
 !
       J = NL*NRHS*2
       DO JCOL = 1, NRHS
@@ -378,8 +369,8 @@
             RWORK( J ) = REAL( B( JROW, JCOL ) )
          ENDDO
       ENDDO
-      CALL SGEMM( 'T', 'N', NL, NRHS, NL, ONE, U( NLF, 1 ), LDU, &
-                  RWORK( 1+NL*NRHS*2 ), NL, ZERO, RWORK( 1 ), NL )
+      CALL SGEMM( 'T', 'N', NL, NRHS, NL, 1.0E+0, U( NLF, 1 ), LDU, &
+                  RWORK( 1+NL*NRHS*2 ), NL, 0.0E+0, RWORK( 1 ), NL )
       J = NL*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NLF, NLF + NL - 1
@@ -387,8 +378,8 @@
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
          ENDDO
       ENDDO
-      CALL SGEMM( 'T', 'N', NL, NRHS, NL, ONE, U( NLF, 1 ), LDU, &
-                  RWORK( 1+NL*NRHS*2 ), NL, ZERO, RWORK( 1+NL*NRHS ), &
+      CALL SGEMM( 'T', 'N', NL, NRHS, NL, 1.0E+0, U( NLF, 1 ), LDU, &
+                  RWORK( 1+NL*NRHS*2 ), NL, 0.0E+0, RWORK( 1+NL*NRHS ), &
                   NL )
       JREAL = 0
       JIMAG = NL*NRHS
@@ -404,8 +395,8 @@
 !        Since B and BX are complex, the following call to SGEMM
 !        is performed in two steps (real and imaginary parts).
 !
-!        CALL SGEMM( 'T', 'N', NR, NRHS, NR, ONE, U( NRF, 1 ), LDU,
-!    $               B( NRF, 1 ), LDB, ZERO, BX( NRF, 1 ), LDBX )
+!        CALL SGEMM( 'T', 'N', NR, NRHS, NR, 1.0E+0, U( NRF, 1 ), LDU,
+!    $               B( NRF, 1 ), LDB, 0.0E+0, BX( NRF, 1 ), LDBX )
 !
       J = NR*NRHS*2
       DO JCOL = 1, NRHS
@@ -414,17 +405,17 @@
             RWORK( J ) = REAL( B( JROW, JCOL ) )
          ENDDO
       ENDDO
-      CALL SGEMM( 'T', 'N', NR, NRHS, NR, ONE, U( NRF, 1 ), LDU, &
-                  RWORK( 1+NR*NRHS*2 ), NR, ZERO, RWORK( 1 ), NR )
+      CALL SGEMM( 'T', 'N', NR, NRHS, NR, 1.0E+0, U( NRF, 1 ), LDU, &
+                  RWORK( 1+NR*NRHS*2 ), NR, 0.0E+0, RWORK( 1 ), NR )
       J = NR*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NRF, NRF + NR - 1
             J = J + 1
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
          ENDDO
-         ENDDO
-      CALL SGEMM( 'T', 'N', NR, NRHS, NR, ONE, U( NRF, 1 ), LDU, &
-                  RWORK( 1+NR*NRHS*2 ), NR, ZERO, RWORK( 1+NR*NRHS ), &
+      ENDDO
+      CALL SGEMM( 'T', 'N', NR, NRHS, NR, 1.0E+0, U( NRF, 1 ), LDU, &
+                  RWORK( 1+NR*NRHS*2 ), NR, 0.0E+0, RWORK( 1+NR*NRHS ), &
                   NR )
       JREAL = 0
       JIMAG = NR*NRHS
@@ -434,18 +425,18 @@
             JIMAG = JIMAG + 1
             BX( JROW, JCOL ) = CMPLX( RWORK( JREAL ), &
                                RWORK( JIMAG ) )
-            ENDDO
          ENDDO
-!
       ENDDO
+!
+   ENDDO
 !
 !     Next copy the rows of B that correspond to unchanged rows
 !     in the bidiagonal matrix to BX.
 !
    DO I = 1, ND
       IC = IWORK( INODE+I-1 )
-      CALL CCOPY( NRHS, B( IC, 1 ), LDB, BX( IC, 1 ), LDBX )
-      ENDDO
+      BX( IC, 1:NRHS ) = B( IC, 1:NRHS )
+   ENDDO
 !
 !     Finally go through the left singular vector matrices of all
 !     the other subproblems bottom-up on the tree.
@@ -481,8 +472,8 @@
                       DIFL( NLF, LVL ), DIFR( NLF, LVL2 ), &
                       Z( NLF, LVL ), K( J ), C( J ), S( J ), RWORK, &
                       INFO )
-         ENDDO
       ENDDO
+   ENDDO
    GO TO 330
 !
 !     ICOMPQ = 1: applying back the right singular vector factors.
@@ -526,8 +517,8 @@
                       DIFL( NLF, LVL ), DIFR( NLF, LVL2 ), &
                       Z( NLF, LVL ), K( J ), C( J ), S( J ), RWORK, &
                       INFO )
-         ENDDO
       ENDDO
+   ENDDO
 !
 !     The nodes on the bottom level of the tree were solved
 !     by SLASDQ. The corresponding right singular vector
@@ -551,28 +542,28 @@
 !        Since B and BX are complex, the following call to SGEMM is
 !        performed in two steps (real and imaginary parts).
 !
-!        CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, ONE, VT( NLF, 1 ), LDU,
-!    $               B( NLF, 1 ), LDB, ZERO, BX( NLF, 1 ), LDBX )
+!        CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, 1.0E+0, VT( NLF, 1 ), LDU,
+!    $               B( NLF, 1 ), LDB, 0.0E+0, BX( NLF, 1 ), LDBX )
 !
       J = NLP1*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NLF, NLF + NLP1 - 1
             J = J + 1
             RWORK( J ) = REAL( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, ONE, VT( NLF, 1 ), LDU, &
-                  RWORK( 1+NLP1*NRHS*2 ), NLP1, ZERO, RWORK( 1 ), &
+      ENDDO
+      CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, 1.0E+0, VT( NLF, 1 ), LDU, &
+                  RWORK( 1+NLP1*NRHS*2 ), NLP1, 0.0E+0, RWORK( 1 ), &
                   NLP1 )
       J = NLP1*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NLF, NLF + NLP1 - 1
             J = J + 1
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, ONE, VT( NLF, 1 ), LDU, &
-                  RWORK( 1+NLP1*NRHS*2 ), NLP1, ZERO, &
+      ENDDO
+      CALL SGEMM( 'T', 'N', NLP1, NRHS, NLP1, 1.0E+0, VT( NLF, 1 ), LDU, &
+                  RWORK( 1+NLP1*NRHS*2 ), NLP1, 0.0E+0, &
                   RWORK( 1+NLP1*NRHS ), NLP1 )
       JREAL = 0
       JIMAG = NLP1*NRHS
@@ -580,36 +571,35 @@
          DO JROW = NLF, NLF + NLP1 - 1
             JREAL = JREAL + 1
             JIMAG = JIMAG + 1
-            BX( JROW, JCOL ) = CMPLX( RWORK( JREAL ), &
-                               RWORK( JIMAG ) )
-            ENDDO
+            BX( JROW, JCOL ) = CMPLX( RWORK( JREAL ), RWORK( JIMAG ) )
          ENDDO
+      ENDDO
 !
 !        Since B and BX are complex, the following call to SGEMM is
 !        performed in two steps (real and imaginary parts).
 !
-!        CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, ONE, VT( NRF, 1 ), LDU,
-!    $               B( NRF, 1 ), LDB, ZERO, BX( NRF, 1 ), LDBX )
+!        CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, 1.0E+0, VT( NRF, 1 ), LDU,
+!    $               B( NRF, 1 ), LDB, 0.0E+0, BX( NRF, 1 ), LDBX )
 !
       J = NRP1*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NRF, NRF + NRP1 - 1
             J = J + 1
             RWORK( J ) = REAL( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, ONE, VT( NRF, 1 ), LDU, &
-                  RWORK( 1+NRP1*NRHS*2 ), NRP1, ZERO, RWORK( 1 ), &
+      ENDDO
+      CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, 1.0E+0, VT( NRF, 1 ), LDU, &
+                  RWORK( 1+NRP1*NRHS*2 ), NRP1, 0.0E+0, RWORK( 1 ), &
                   NRP1 )
       J = NRP1*NRHS*2
       DO JCOL = 1, NRHS
          DO JROW = NRF, NRF + NRP1 - 1
             J = J + 1
             RWORK( J ) = AIMAG( B( JROW, JCOL ) )
-            ENDDO
          ENDDO
-      CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, ONE, VT( NRF, 1 ), LDU, &
-                  RWORK( 1+NRP1*NRHS*2 ), NRP1, ZERO, &
+      ENDDO
+      CALL SGEMM( 'T', 'N', NRP1, NRHS, NRP1, 1.0E+0, VT( NRF, 1 ), LDU, &
+                  RWORK( 1+NRP1*NRHS*2 ), NRP1, 0.0E+0, &
                   RWORK( 1+NRP1*NRHS ), NRP1 )
       JREAL = 0
       JIMAG = NRP1*NRHS
@@ -617,10 +607,9 @@
          DO JROW = NRF, NRF + NRP1 - 1
             JREAL = JREAL + 1
             JIMAG = JIMAG + 1
-            BX( JROW, JCOL ) = CMPLX( RWORK( JREAL ), &
-                               RWORK( JIMAG ) )
-            ENDDO
+            BX( JROW, JCOL ) = CMPLX( RWORK( JREAL ), RWORK( JIMAG ) )
          ENDDO
+   ENDDO
 !
       ENDDO
 !
@@ -631,5 +620,3 @@
 !     End of CLALSA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

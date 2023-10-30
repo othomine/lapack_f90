@@ -242,11 +242,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            NBMAX, NBMIN, NBRHS, NRHSMIN
    PARAMETER          ( NRHSMIN = 2, NBRHS = 32 )
    PARAMETER          ( NBMIN = 8, NBMAX = 64 )
@@ -270,9 +265,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLATRS, CSSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -339,14 +331,11 @@
 !
 !     Initialize scaling factors
 !
-   DO KK = 1, NRHS
-      SCALE( KK ) = ONE
-   END DO
+   SCALE(1:NRHS) = 1.0E+0
 !
 !     Quick return if possible
 !
-   IF( MIN( N, NRHS ) == 0 ) &
-      RETURN
+   IF( MIN( N, NRHS ) == 0 ) RETURN
 !
 !     Determine machine dependent constant to control overflow.
 !
@@ -368,7 +357,7 @@
 !     Compute norms of blocks of A excluding diagonal blocks and find
 !     the block with the largest norm TMAX.
 !
-   TMAX = ZERO
+   TMAX = 0.0E+0
    DO J = 1, NBA
       J1 = (J-1)*NB + 1
       J2 = MIN( J*NB, N ) + 1
@@ -428,9 +417,7 @@
 !        Initialize local scaling factors of current block column X( J, K )
 !
       DO KK = 1, K2-K1
-         DO I = 1, NBA
-            WORK( I+KK*LDS ) = ONE
-         END DO
+         WORK(KK*LDS+1:KK*LDS+NBA ) = 1.0E+0
       END DO
 !
       IF( NOTRAN ) THEN
@@ -488,24 +475,18 @@
             XNRM( KK ) = CLANGE( 'I', J2-J1, 1, X( J1, RHS ), &
                                  LDX, W )
 !
-            IF( SCALOC  ==  ZERO ) THEN
+            IF( SCALOC  ==  0.0E+0 ) THEN
 !                 LATRS found that A is singular through A(j,j) = 0.
 !                 Reset the computation x(1:n) = 0, x(j) = 1, SCALE = 0
 !                 and compute op(A)*x = 0. Note that X(J1:J2-1, KK) is
 !                 set by LATRS.
-               SCALE( RHS ) = ZERO
-               DO II = 1, J1-1
-                  X( II, KK ) = CZERO
-               END DO
-               DO II = J2, N
-                  X( II, KK ) = CZERO
-               END DO
+               SCALE( RHS ) = 0.0E+0
+               X(1:J1-1,KK) = (0.0E+0,0.0E+0)
+               X(J2:N,KK) = (0.0E+0,0.0E+0)
 !                 Discard the local scale factors.
-               DO II = 1, NBA
-                  WORK( II+KK*LDS ) = ONE
-               END DO
-               SCALOC = ONE
-            ELSE IF( SCALOC*WORK( J+KK*LDS )  ==  ZERO ) THEN
+               WORK(KK*LDS+1:KK*LDS+NBA ) = 1.0E+0
+               SCALOC = 1.0E+0
+            ELSE IF( SCALOC*WORK( J+KK*LDS )  ==  0.0E+0 ) THEN
 !                 LATRS computed a valid scale factor, but combined with
 !                 the current scaling the solution does not have a
 !                 scale factor > 0.
@@ -518,26 +499,22 @@
 !                 If LATRS overestimated the growth, x may be
 !                 rescaled to preserve a valid combined scale
 !                 factor WORK( J, KK ) > 0.
-               RSCAL = ONE / SCALOC
+               RSCAL = 1.0E+0 / SCALOC
                IF( XNRM( KK )*RSCAL  <=  BIGNUM ) THEN
                   XNRM( KK ) = XNRM( KK ) * RSCAL
                   CALL CSSCAL( J2-J1, RSCAL, X( J1, RHS ), 1 )
-                  SCALOC = ONE
+                  SCALOC = 1.0E+0
                ELSE
 !                    The system op(A) * x = b is badly scaled and its
 !                    solution cannot be represented as (1/scale) * x.
 !                    Set x to zero. This approach deviates from LATRS
 !                    where a completely meaningless non-zero vector
 !                    is returned that is not a solution to op(A) * x = b.
-                  SCALE( RHS ) = ZERO
-                  DO II = 1, N
-                     X( II, KK ) = CZERO
-                  END DO
+                  SCALE( RHS ) = 0.0E+0
+                  X(1:N,KK) = (0.0E+0,0.0E+0)
 !                    Discard the local scale factors.
-                  DO II = 1, NBA
-                     WORK( II+KK*LDS ) = ONE
-                  END DO
-                  SCALOC = ONE
+                  WORK(KK*LDS+1:KK*LDS+NBA) = 1.0E+0
+                  SCALOC = 1.0E+0
                END IF
             END IF
             SCALOC = SCALOC * WORK( J+KK*LDS )
@@ -599,14 +576,14 @@
 !                 consistency scaling factor to X( I, KK ) and X( J, KK ).
 !
                SCAL = ( SCAMIN / WORK( I+KK*LDS) )*SCALOC
-               IF( SCAL /= ONE ) THEN
-                  CALL CSSCAL( I2-I1, SCAL, X( I1, RHS ), 1 )
+               IF( SCAL /= 1.0E+0 ) THEN
+                  X(I1:I2-1,RHS) = SCAL*X(I1:I2-1,RHS)
                   WORK( I+KK*LDS ) = SCAMIN*SCALOC
                END IF
 !
                SCAL = ( SCAMIN / WORK( J+KK*LDS ) )*SCALOC
-               IF( SCAL /= ONE ) THEN
-                  CALL CSSCAL( J2-J1, SCAL, X( J1, RHS ), 1 )
+               IF( SCAL /= 1.0E+0 ) THEN
+                  X(J1:J2-1,RHS) = SCAL*X(J1:J2-1,RHS)
                   WORK( J+KK*LDS ) = SCAMIN*SCALOC
                END IF
             END DO
@@ -615,23 +592,23 @@
 !
 !                 B( I, K ) := B( I, K ) - A( I, J ) * X( J, K )
 !
-               CALL CGEMM( 'N', 'N', I2-I1, K2-K1, J2-J1, -CONE, &
+               CALL CGEMM( 'N', 'N', I2-I1, K2-K1, J2-J1, -(1.0E+0,0.0E+0), &
                            A( I1, J1 ), LDA, X( J1, K1 ), LDX, &
-                           CONE, X( I1, K1 ), LDX )
+                           (1.0E+0,0.0E+0), X( I1, K1 ), LDX )
             ELSE IF( LSAME( TRANS, 'T' ) ) THEN
 !
 !                 B( I, K ) := B( I, K ) - A( I, J )**T * X( J, K )
 !
-               CALL CGEMM( 'T', 'N', I2-I1, K2-K1, J2-J1, -CONE, &
+               CALL CGEMM( 'T', 'N', I2-I1, K2-K1, J2-J1, -(1.0E+0,0.0E+0), &
                            A( J1, I1 ), LDA, X( J1, K1 ), LDX, &
-                           CONE, X( I1, K1 ), LDX )
+                           (1.0E+0,0.0E+0), X( I1, K1 ), LDX )
             ELSE
 !
 !                 B( I, K ) := B( I, K ) - A( I, J )**H * X( J, K )
 !
-               CALL CGEMM( 'C', 'N', I2-I1, K2-K1, J2-J1, -CONE, &
+               CALL CGEMM( 'C', 'N', I2-I1, K2-K1, J2-J1, -(1.0E+0,0.0E+0), &
                            A( J1, I1 ), LDA, X( J1, K1 ), LDX, &
-                           CONE, X( I1, K1 ), LDX )
+                           (1.0E+0,0.0E+0), X( I1, K1 ), LDX )
             END IF
          END DO
       END DO
@@ -649,13 +626,12 @@
 !
       DO KK = 1, K2-K1
          RHS = K1 + KK - 1
-         IF( SCALE( RHS ) /= ONE .AND. SCALE( RHS ) /=  ZERO ) THEN
+         IF( SCALE( RHS ) /= 1.0E+0 .AND. SCALE( RHS ) /=  0.0E+0 ) THEN
             DO I = 1, NBA
                I1 = (I-1)*NB + 1
                I2 = MIN( I*NB, N ) + 1
                SCAL = SCALE( RHS ) / WORK( I+KK*LDS )
-               IF( SCAL /= ONE ) &
-                  CALL CSSCAL( I2-I1, SCAL, X( I1, RHS ), 1 )
+               IF( SCAL /= 1.0E+0 ) X(I1:I2-1,RHS) = SCAL*X(I1:I2-1,RHS)
             END DO
          END IF
       END DO
@@ -665,5 +641,3 @@
 !     End of CLATRS3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

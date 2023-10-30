@@ -246,12 +246,6 @@
    COMPLEX :: QC( LDQC, * ), ZC( LDZC, * ), WORK( * )
    REAL :: RWORK( * )
 
-!     Parameters
-   COMPLEX         CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0, 0.0 ), CONE = ( 1.0, 0.0 ) )
-   REAL :: ZERO, ONE, HALF
-   PARAMETER( ZERO = 0.0, ONE = 1.0, HALF = 0.5 )
-
 !     Local Scalars
    INTEGER :: JW, KWTOP, KWBOT, ISTOPM, ISTARTM, K, K2, CTGEXC_INFO, &
               IFST, ILST, LWORKREQ, QZ_SMALL_INFO
@@ -269,7 +263,7 @@
    JW = MIN( NW, IHI-ILO+1 )
    KWTOP = IHI-JW+1
    IF ( KWTOP  ==  ILO ) THEN
-      S = CZERO
+      S = (0.0E+0,0.0E+0)
    ELSE
       S = A( KWTOP, KWTOP-1 )
    END IF
@@ -297,7 +291,7 @@
 
 !     Get machine constants
    SAFMIN = SLAMCH( 'SAFE MINIMUM' )
-   SAFMAX = ONE/SAFMIN
+   SAFMAX = 1.0E+0/SAFMIN
    ULP = SLAMCH( 'PRECISION' )
    SMLNUM = SAFMIN*( REAL( N )/ULP )
 
@@ -307,12 +301,11 @@
       BETA( KWTOP ) = B( KWTOP, KWTOP )
       NS = 1
       ND = 0
-      IF ( ABS( S )  <=  MAX( SMLNUM, ULP*ABS( A( KWTOP, &
-         KWTOP ) ) ) ) THEN
+      IF ( ABS( S )  <=  MAX( SMLNUM, ULP*ABS( A( KWTOP, KWTOP ) ) ) ) THEN
          NS = 0
          ND = 1
          IF ( KWTOP  >  ILO ) THEN
-            A( KWTOP, KWTOP-1 ) = CZERO
+            A( KWTOP, KWTOP-1 ) = (0.0E+0,0.0E+0)
          END IF
       END IF
    END IF
@@ -324,8 +317,8 @@
                 1 ), JW )
 
 !     Transform window to real schur form
-   CALL CLASET( 'FULL', JW, JW, CZERO, CONE, QC, LDQC )
-   CALL CLASET( 'FULL', JW, JW, CZERO, CONE, ZC, LDZC )
+   CALL CLASET( 'FULL', JW, JW, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), QC, LDQC )
+   CALL CLASET( 'FULL', JW, JW, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), ZC, LDZC )
    CALL CLAQZ0( 'S', 'V', 'V', JW, 1, JW, A( KWTOP, KWTOP ), LDA, &
                 B( KWTOP, KWTOP ), LDB, ALPHA, BETA, QC, LDQC, ZC, &
                 LDZC, WORK( 2*JW**2+1 ), LWORK-2*JW**2, RWORK, &
@@ -336,13 +329,12 @@
       ND = 0
       NS = JW-QZ_SMALL_INFO
       CALL CLACPY( 'ALL', JW, JW, WORK, JW, A( KWTOP, KWTOP ), LDA )
-      CALL CLACPY( 'ALL', JW, JW, WORK( JW**2+1 ), JW, B( KWTOP, &
-                   KWTOP ), LDB )
+      CALL CLACPY( 'ALL', JW, JW, WORK( JW**2+1 ), JW, B( KWTOP, KWTOP ), LDB )
       RETURN
    END IF
 
 !     Deflation detection loop
-   IF ( KWTOP  ==  ILO .OR. S  ==  CZERO ) THEN
+   IF ( KWTOP  ==  ILO .OR. S  ==  (0.0E+0,0.0E+0) ) THEN
       KWBOT = KWTOP-1
    ELSE
       KWBOT = IHI
@@ -351,11 +343,10 @@
       DO WHILE ( K  <=  JW )
 !              Try to deflate eigenvalue
             TEMPR = ABS( A( KWBOT, KWBOT ) )
-            IF( TEMPR  ==  ZERO ) THEN
+            IF( TEMPR  ==  0.0E+0 ) THEN
                TEMPR = ABS( S )
             END IF
-            IF ( ( ABS( S*QC( 1, KWBOT-KWTOP+1 ) ) )  <=  MAX( ULP* &
-               TEMPR, SMLNUM ) ) THEN
+            IF ( ( ABS( S*QC( 1, KWBOT-KWTOP+1 ) ) )  <=  MAX( ULP* TEMPR, SMLNUM ) ) THEN
 !                 Deflatable
                KWBOT = KWBOT-1
             ELSE
@@ -382,22 +373,17 @@
       K = K+1
    END DO
 
-   IF ( KWTOP  /=  ILO .AND. S  /=  CZERO ) THEN
+   IF ( KWTOP  /=  ILO .AND. S  /=  (0.0E+0,0.0E+0) ) THEN
 !        Reflect spike back, this will create optimally packed bulges
-      A( KWTOP:KWBOT, KWTOP-1 ) = A( KWTOP, KWTOP-1 ) *CONJG( QC( 1, &
-         1:JW-ND ) )
+      A( KWTOP:KWBOT, KWTOP-1 ) = A( KWTOP, KWTOP-1 ) *CONJG( QC( 1, 1:JW-ND ) )
       DO K = KWBOT-1, KWTOP, -1
-         CALL CLARTG( A( K, KWTOP-1 ), A( K+1, KWTOP-1 ), C1, S1, &
-                      TEMP )
+         CALL CLARTG( A( K, KWTOP-1 ), A( K+1, KWTOP-1 ), C1, S1, TEMP )
          A( K, KWTOP-1 ) = TEMP
-         A( K+1, KWTOP-1 ) = CZERO
+         A( K+1, KWTOP-1 ) = (0.0E+0,0.0E+0)
          K2 = MAX( KWTOP, K-1 )
-         CALL CROT( IHI-K2+1, A( K, K2 ), LDA, A( K+1, K2 ), LDA, C1, &
-                    S1 )
-         CALL CROT( IHI-( K-1 )+1, B( K, K-1 ), LDB, B( K+1, K-1 ), &
-                    LDB, C1, S1 )
-         CALL CROT( JW, QC( 1, K-KWTOP+1 ), 1, QC( 1, K+1-KWTOP+1 ), &
-                    1, C1, CONJG( S1 ) )
+         CALL CROT( IHI-K2+1, A( K, K2 ), LDA, A( K+1, K2 ), LDA, C1, S1 )
+         CALL CROT( IHI-( K-1 )+1, B( K, K-1 ), LDB, B( K+1, K-1 ), LDB, C1, S1 )
+         CALL CROT( JW, QC( 1, K-KWTOP+1 ), 1, QC( 1, K+1-KWTOP+1 ), 1, C1, CONJG( S1 ) )
       END DO
 
 !        Chase bulges down
@@ -428,39 +414,37 @@
    END IF
 
    IF ( ISTOPM-IHI > 0 ) THEN
-      CALL CGEMM( 'C', 'N', JW, ISTOPM-IHI, JW, CONE, QC, LDQC, &
-                  A( KWTOP, IHI+1 ), LDA, CZERO, WORK, JW )
+      CALL CGEMM( 'C', 'N', JW, ISTOPM-IHI, JW, (1.0E+0,0.0E+0), QC, LDQC, &
+                  A( KWTOP, IHI+1 ), LDA, (0.0E+0,0.0E+0), WORK, JW )
       CALL CLACPY( 'ALL', JW, ISTOPM-IHI, WORK, JW, A( KWTOP, &
                    IHI+1 ), LDA )
-      CALL CGEMM( 'C', 'N', JW, ISTOPM-IHI, JW, CONE, QC, LDQC, &
-                  B( KWTOP, IHI+1 ), LDB, CZERO, WORK, JW )
+      CALL CGEMM( 'C', 'N', JW, ISTOPM-IHI, JW, (1.0E+0,0.0E+0), QC, LDQC, &
+                  B( KWTOP, IHI+1 ), LDB, (0.0E+0,0.0E+0), WORK, JW )
       CALL CLACPY( 'ALL', JW, ISTOPM-IHI, WORK, JW, B( KWTOP, &
                    IHI+1 ), LDB )
    END IF
    IF ( ILQ ) THEN
-      CALL CGEMM( 'N', 'N', N, JW, JW, CONE, Q( 1, KWTOP ), LDQ, QC, &
-                  LDQC, CZERO, WORK, N )
+      CALL CGEMM( 'N', 'N', N, JW, JW, (1.0E+0,0.0E+0), Q( 1, KWTOP ), LDQ, QC, &
+                  LDQC, (0.0E+0,0.0E+0), WORK, N )
       CALL CLACPY( 'ALL', N, JW, WORK, N, Q( 1, KWTOP ), LDQ )
    END IF
 
    IF ( KWTOP-1-ISTARTM+1 > 0 ) THEN
-      CALL CGEMM( 'N', 'N', KWTOP-ISTARTM, JW, JW, CONE, A( ISTARTM, &
-                  KWTOP ), LDA, ZC, LDZC, CZERO, WORK, &
+      CALL CGEMM( 'N', 'N', KWTOP-ISTARTM, JW, JW, (1.0E+0,0.0E+0), A( ISTARTM, &
+                  KWTOP ), LDA, ZC, LDZC, (0.0E+0,0.0E+0), WORK, &
                   KWTOP-ISTARTM )
      CALL CLACPY( 'ALL', KWTOP-ISTARTM, JW, WORK, KWTOP-ISTARTM, &
                   A( ISTARTM, KWTOP ), LDA )
-      CALL CGEMM( 'N', 'N', KWTOP-ISTARTM, JW, JW, CONE, B( ISTARTM, &
-                  KWTOP ), LDB, ZC, LDZC, CZERO, WORK, &
+      CALL CGEMM( 'N', 'N', KWTOP-ISTARTM, JW, JW, (1.0E+0,0.0E+0), B( ISTARTM, &
+                  KWTOP ), LDB, ZC, LDZC, (0.0E+0,0.0E+0), WORK, &
                   KWTOP-ISTARTM )
      CALL CLACPY( 'ALL', KWTOP-ISTARTM, JW, WORK, KWTOP-ISTARTM, &
                   B( ISTARTM, KWTOP ), LDB )
    END IF
    IF ( ILZ ) THEN
-      CALL CGEMM( 'N', 'N', N, JW, JW, CONE, Z( 1, KWTOP ), LDZ, ZC, &
-                  LDZC, CZERO, WORK, N )
+      CALL CGEMM( 'N', 'N', N, JW, JW, (1.0E+0,0.0E+0), Z( 1, KWTOP ), LDZ, ZC, &
+                  LDZC, (0.0E+0,0.0E+0), WORK, N )
       CALL CLACPY( 'ALL', N, JW, WORK, N, Z( 1, KWTOP ), LDZ )
    END IF
 
 END SUBROUTINE
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

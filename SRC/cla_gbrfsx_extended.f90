@@ -473,9 +473,6 @@
    REAL               SLAMCH
    CHARACTER          CHLA_TRANSTYPE
 !     ..
-!     .. Intrinsic Functions..
-   INTRINSIC          ABS, MAX, MIN
-!     ..
 !     .. Statement Functions ..
    REAL               CABS1
 !     ..
@@ -496,11 +493,7 @@
 
    DO J = 1, NRHS
       Y_PREC_STATE = EXTRA_RESIDUAL
-      IF ( Y_PREC_STATE  ==  EXTRA_Y ) then
-         DO I = 1, N
-            Y_TAIL( I ) = 0.0
-         END DO
-      END IF
+      IF ( Y_PREC_STATE  ==  EXTRA_Y ) Y_TAIL(1:N) = 0.0
 
       DXRAT = 0.0E+0
       DXRATMAX = 0.0E+0
@@ -522,7 +515,7 @@
 !        Compute residual RES = B_s - op(A_s) * Y,
 !            op(A) = A, A**T, or A**H depending on TRANS (and type).
 !
-         CALL CCOPY( N, B( 1, J ), 1, RES, 1 )
+         RES(1:N) = B(1:N,J)
          IF ( Y_PREC_STATE  ==  BASE_RESIDUAL ) THEN
             CALL CGBMV( TRANS, M, N, KL, KU, (-1.0E+0,0.0E+0), AB, &
                  LDAB, Y( 1, J ), 1, (1.0E+0,0.0E+0), RES, 1 )
@@ -537,9 +530,8 @@
          END IF
 
 !        XXX: RES is no longer needed.
-         CALL CCOPY( N, RES, 1, DY, 1 )
-         CALL CGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, DY, N, &
-              INFO )
+         DY(1:N) = RES(1:N,J)
+         CALL CGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, DY, N, INFO )
 !
 !         Calculate relative changes DX_X, DZ_Z and ratios DXRAT, DZRAT.
 !
@@ -644,9 +636,7 @@
          IF ( INCR_PREC ) THEN
             INCR_PREC = .FALSE.
             Y_PREC_STATE = Y_PREC_STATE + 1
-            DO I = 1, N
-               Y_TAIL( I ) = 0.0
-            END DO
+            Y_TAIL(1:N) = 0.0
          END IF
 
          PREVNORMDX = NORMDX
@@ -655,7 +645,7 @@
 !           Update solution.
 !
          IF ( Y_PREC_STATE  <  EXTRA_Y ) THEN
-            CALL CAXPY( N, (1.0E+0,0.0E+0), DY, 1, Y(1,J), 1 )
+            Y(1:N,J) = Y(1:N,J) + DY(1:N)
          ELSE
             CALL CLA_WWADDW( N, Y(1,J), Y_TAIL, DY )
          END IF
@@ -688,7 +678,7 @@
 !        Compute residual RES = B_s - op(A_s) * Y,
 !            op(A) = A, A**T, or A**H depending on TRANS (and type).
 !
-      CALL CCOPY( N, B( 1, J ), 1, RES, 1 )
+      RES(1:N) = B(1:N,J)
       CALL CGBMV( TRANS, N, N, KL, KU, (-1.0E+0,0.0E+0), AB, LDAB, &
            Y(1,J), 1, (1.0E+0,0.0E+0), RES, 1 )
 
@@ -712,5 +702,3 @@
 !     End of CLA_GBRFSX_EXTENDED
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

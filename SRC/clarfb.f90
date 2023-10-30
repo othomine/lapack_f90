@@ -210,10 +210,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          TRANST
@@ -226,15 +222,11 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGEMM, CLACGV, CTRMM
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG
-!     ..
 !     .. Executable Statements ..
 !
 !     Quick return if possible
 !
-   IF( M <= 0 .OR. N <= 0 ) &
-      RETURN
+   IF( M <= 0 .OR. N <= 0 ) RETURN
 !
    IF( LSAME( TRANS, 'N' ) ) THEN
       TRANST = 'C'
@@ -260,27 +252,26 @@
 !              W := C1**H
 !
             DO J = 1, K
-               CALL CCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
-               CALL CLACGV( N, WORK( 1, J ), 1 )
+               WORK(1:N,J) = CONJG(C(J,1:N))
             ENDDO
 !
 !              W := W * V1
 !
             CALL CTRMM( 'Right', 'Lower', 'No transpose', 'Unit', N, &
-                        K, ONE, V, LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
             IF( M > K ) THEN
 !
 !                 W := W + C2**H *V2
 !
                CALL CGEMM( 'Conjugate transpose', 'No transpose', N, &
-                           K, M-K, ONE, C( K+1, 1 ), LDC, &
-                           V( K+1, 1 ), LDV, ONE, WORK, LDWORK )
+                           K, M-K, (1.0E+0,0.0E+0), C( K+1, 1 ), LDC, &
+                           V( K+1, 1 ), LDV, (1.0E+0,0.0E+0), WORK, LDWORK )
             END IF
 !
 !              W := W * T**H  or  W * T
 !
             CALL CTRMM( 'Right', 'Upper', TRANST, 'Non-unit', N, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - V * W**H
 !
@@ -289,21 +280,19 @@
 !                 C2 := C2 - V2 * W**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', &
-                           M-K, N, K, -ONE, V( K+1, 1 ), LDV, WORK, &
-                           LDWORK, ONE, C( K+1, 1 ), LDC )
+                           M-K, N, K, -(1.0E+0,0.0E+0), V( K+1, 1 ), LDV, WORK, &
+                           LDWORK, (1.0E+0,0.0E+0), C( K+1, 1 ), LDC )
             END IF
 !
 !              W := W * V1**H
 !
             CALL CTRMM( 'Right', 'Lower', 'Conjugate transpose', &
-                        'Unit', N, K, ONE, V, LDV, WORK, LDWORK )
+                        'Unit', N, K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
 !
 !              C1 := C1 - W**H
 !
             DO J = 1, K
-               DO I = 1, N
-                  C( J, I ) = C( J, I ) - CONJG( WORK( I, J ) )
-               ENDDO
+               C(J,1:N) = C(J,1:N) - CONJG(WORK(1:N,J))
             ENDDO
 !
          ELSE IF( LSAME( SIDE, 'R' ) ) THEN
@@ -315,26 +304,26 @@
 !              W := C1
 !
             DO J = 1, K
-               CALL CCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+               WORK(1:M,J) = C(1:M,J)
             ENDDO
 !
 !              W := W * V1
 !
             CALL CTRMM( 'Right', 'Lower', 'No transpose', 'Unit', M, &
-                        K, ONE, V, LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
             IF( N > K ) THEN
 !
 !                 W := W + C2 * V2
 !
                CALL CGEMM( 'No transpose', 'No transpose', M, K, N-K, &
-                           ONE, C( 1, K+1 ), LDC, V( K+1, 1 ), LDV, &
-                           ONE, WORK, LDWORK )
+                           (1.0E+0,0.0E+0), C( 1, K+1 ), LDC, V( K+1, 1 ), LDV, &
+                           (1.0E+0,0.0E+0), WORK, LDWORK )
             END IF
 !
 !              W := W * T  or  W * T**H
 !
             CALL CTRMM( 'Right', 'Upper', TRANS, 'Non-unit', M, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - W * V**H
 !
@@ -343,22 +332,18 @@
 !                 C2 := C2 - W * V2**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', M, &
-                           N-K, K, -ONE, WORK, LDWORK, V( K+1, 1 ), &
-                           LDV, ONE, C( 1, K+1 ), LDC )
+                           N-K, K, -(1.0E+0,0.0E+0), WORK, LDWORK, V( K+1, 1 ), &
+                           LDV, (1.0E+0,0.0E+0), C( 1, K+1 ), LDC )
             END IF
 !
 !              W := W * V1**H
 !
             CALL CTRMM( 'Right', 'Lower', 'Conjugate transpose', &
-                        'Unit', M, K, ONE, V, LDV, WORK, LDWORK )
+                        'Unit', M, K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
 !
 !              C1 := C1 - W
 !
-            DO J = 1, K
-               DO I = 1, M
-                  C( I, J ) = C( I, J ) - WORK( I, J )
-               ENDDO
-            ENDDO
+            C(1:M,1:K) = C(1:M,1:K) - WORK(1:M,1:K)
          END IF
 !
       ELSE
@@ -377,27 +362,26 @@
 !              W := C2**H
 !
             DO J = 1, K
-               CALL CCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
-               CALL CLACGV( N, WORK( 1, J ), 1 )
+               WORK(1:N,J) = CONJG(C(M-K+J,1:N))
             ENDDO
 !
 !              W := W * V2
 !
             CALL CTRMM( 'Right', 'Upper', 'No transpose', 'Unit', N, &
-                        K, ONE, V( M-K+1, 1 ), LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V( M-K+1, 1 ), LDV, WORK, LDWORK )
             IF( M > K ) THEN
 !
 !                 W := W + C1**H * V1
 !
                CALL CGEMM( 'Conjugate transpose', 'No transpose', N, &
-                           K, M-K, ONE, C, LDC, V, LDV, ONE, WORK, &
+                           K, M-K, (1.0E+0,0.0E+0), C, LDC, V, LDV, (1.0E+0,0.0E+0), WORK, &
                            LDWORK )
             END IF
 !
 !              W := W * T**H  or  W * T
 !
             CALL CTRMM( 'Right', 'Lower', TRANST, 'Non-unit', N, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - V * W**H
 !
@@ -406,23 +390,20 @@
 !                 C1 := C1 - V1 * W**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', &
-                           M-K, N, K, -ONE, V, LDV, WORK, LDWORK, &
-                           ONE, C, LDC )
+                           M-K, N, K, -(1.0E+0,0.0E+0), V, LDV, WORK, LDWORK, &
+                           (1.0E+0,0.0E+0), C, LDC )
             END IF
 !
 !              W := W * V2**H
 !
             CALL CTRMM( 'Right', 'Upper', 'Conjugate transpose', &
-                        'Unit', N, K, ONE, V( M-K+1, 1 ), LDV, WORK, &
+                        'Unit', N, K, (1.0E+0,0.0E+0), V( M-K+1, 1 ), LDV, WORK, &
                         LDWORK )
 !
 !              C2 := C2 - W**H
 !
             DO J = 1, K
-               DO I = 1, N
-                  C( M-K+J, I ) = C( M-K+J, I ) - &
-                                  CONJG( WORK( I, J ) )
-               ENDDO
+               C(M-K+J,1:N) = C(M-K+J,1:N) - CONJG(WORK(1:N,J))
             ENDDO
 !
          ELSE IF( LSAME( SIDE, 'R' ) ) THEN
@@ -434,25 +415,25 @@
 !              W := C2
 !
             DO J = 1, K
-               CALL CCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
-               ENDDO
+               WORK(1:M,J) = C(1:M,N-K+J)
+            ENDDO
 !
 !              W := W * V2
 !
             CALL CTRMM( 'Right', 'Upper', 'No transpose', 'Unit', M, &
-                        K, ONE, V( N-K+1, 1 ), LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V( N-K+1, 1 ), LDV, WORK, LDWORK )
             IF( N > K ) THEN
 !
 !                 W := W + C1 * V1
 !
                CALL CGEMM( 'No transpose', 'No transpose', M, K, N-K, &
-                           ONE, C, LDC, V, LDV, ONE, WORK, LDWORK )
+                           (1.0E+0,0.0E+0), C, LDC, V, LDV, (1.0E+0,0.0E+0), WORK, LDWORK )
             END IF
 !
 !              W := W * T  or  W * T**H
 !
             CALL CTRMM( 'Right', 'Lower', TRANS, 'Non-unit', M, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - W * V**H
 !
@@ -461,23 +442,19 @@
 !                 C1 := C1 - W * V1**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', M, &
-                           N-K, K, -ONE, WORK, LDWORK, V, LDV, ONE, &
+                           N-K, K, -(1.0E+0,0.0E+0), WORK, LDWORK, V, LDV, (1.0E+0,0.0E+0), &
                            C, LDC )
             END IF
 !
 !              W := W * V2**H
 !
             CALL CTRMM( 'Right', 'Upper', 'Conjugate transpose', &
-                        'Unit', M, K, ONE, V( N-K+1, 1 ), LDV, WORK, &
+                        'Unit', M, K, (1.0E+0,0.0E+0), V( N-K+1, 1 ), LDV, WORK, &
                         LDWORK )
 !
 !              C2 := C2 - W
 !
-            DO J = 1, K
-               DO I = 1, M
-                  C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
-                  ENDDO
-               ENDDO
+            C(1:M,N-K+1:N ) = C(1:M,N-K+1:N) - WORK(1:M,1:K)
          END IF
       END IF
 !
@@ -498,28 +475,27 @@
 !              W := C1**H
 !
             DO J = 1, K
-               CALL CCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
-               CALL CLACGV( N, WORK( 1, J ), 1 )
-               ENDDO
+               WORK(1:N,J) = CONJG(C(J,1:N))
+            ENDDO
 !
 !              W := W * V1**H
 !
             CALL CTRMM( 'Right', 'Upper', 'Conjugate transpose', &
-                        'Unit', N, K, ONE, V, LDV, WORK, LDWORK )
+                        'Unit', N, K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
             IF( M > K ) THEN
 !
 !                 W := W + C2**H * V2**H
 !
                CALL CGEMM( 'Conjugate transpose', &
-                           'Conjugate transpose', N, K, M-K, ONE, &
-                           C( K+1, 1 ), LDC, V( 1, K+1 ), LDV, ONE, &
+                           'Conjugate transpose', N, K, M-K, (1.0E+0,0.0E+0), &
+                           C( K+1, 1 ), LDC, V( 1, K+1 ), LDV, (1.0E+0,0.0E+0), &
                            WORK, LDWORK )
             END IF
 !
 !              W := W * T**H  or  W * T
 !
             CALL CTRMM( 'Right', 'Upper', TRANST, 'Non-unit', N, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - V**H * W**H
 !
@@ -528,23 +504,21 @@
 !                 C2 := C2 - V2**H * W**H
 !
                CALL CGEMM( 'Conjugate transpose', &
-                           'Conjugate transpose', M-K, N, K, -ONE, &
-                           V( 1, K+1 ), LDV, WORK, LDWORK, ONE, &
+                           'Conjugate transpose', M-K, N, K, -(1.0E+0,0.0E+0), &
+                           V( 1, K+1 ), LDV, WORK, LDWORK, (1.0E+0,0.0E+0), &
                            C( K+1, 1 ), LDC )
             END IF
 !
 !              W := W * V1
 !
             CALL CTRMM( 'Right', 'Upper', 'No transpose', 'Unit', N, &
-                        K, ONE, V, LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
 !
 !              C1 := C1 - W**H
 !
             DO J = 1, K
-               DO I = 1, N
-                  C( J, I ) = C( J, I ) - CONJG( WORK( I, J ) )
-                  ENDDO
-               ENDDO
+               C(J,1:N) = C(J,1:N) - CONJG(WORK(1:N,J))
+            ENDDO
 !
          ELSE IF( LSAME( SIDE, 'R' ) ) THEN
 !
@@ -555,26 +529,26 @@
 !              W := C1
 !
             DO J = 1, K
-               CALL CCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
-               ENDDO
+               WORK(1:M,J) = C(1:M,J)
+            ENDDO
 !
 !              W := W * V1**H
 !
             CALL CTRMM( 'Right', 'Upper', 'Conjugate transpose', &
-                        'Unit', M, K, ONE, V, LDV, WORK, LDWORK )
+                        'Unit', M, K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
             IF( N > K ) THEN
 !
 !                 W := W + C2 * V2**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', M, &
-                           K, N-K, ONE, C( 1, K+1 ), LDC, &
-                           V( 1, K+1 ), LDV, ONE, WORK, LDWORK )
+                           K, N-K, (1.0E+0,0.0E+0), C( 1, K+1 ), LDC, &
+                           V( 1, K+1 ), LDV, (1.0E+0,0.0E+0), WORK, LDWORK )
             END IF
 !
 !              W := W * T  or  W * T**H
 !
             CALL CTRMM( 'Right', 'Upper', TRANS, 'Non-unit', M, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - W * V
 !
@@ -583,22 +557,18 @@
 !                 C2 := C2 - W * V2
 !
                CALL CGEMM( 'No transpose', 'No transpose', M, N-K, K, &
-                           -ONE, WORK, LDWORK, V( 1, K+1 ), LDV, ONE, &
+                           -(1.0E+0,0.0E+0), WORK, LDWORK, V( 1, K+1 ), LDV, (1.0E+0,0.0E+0), &
                            C( 1, K+1 ), LDC )
             END IF
 !
 !              W := W * V1
 !
             CALL CTRMM( 'Right', 'Upper', 'No transpose', 'Unit', M, &
-                        K, ONE, V, LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V, LDV, WORK, LDWORK )
 !
 !              C1 := C1 - W
 !
-            DO J = 1, K
-               DO I = 1, M
-                  C( I, J ) = C( I, J ) - WORK( I, J )
-                  ENDDO
-               ENDDO
+            C(1:M,1:K) = C(1:M,1:K) - WORK(1:M,1:K)
 !
          END IF
 !
@@ -617,28 +587,27 @@
 !              W := C2**H
 !
             DO J = 1, K
-               CALL CCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
-               CALL CLACGV( N, WORK( 1, J ), 1 )
-               ENDDO
+               WORK(1:N,J) = CONJG(C(M-K+J,1:N))
+            ENDDO
 !
 !              W := W * V2**H
 !
             CALL CTRMM( 'Right', 'Lower', 'Conjugate transpose', &
-                        'Unit', N, K, ONE, V( 1, M-K+1 ), LDV, WORK, &
+                        'Unit', N, K, (1.0E+0,0.0E+0), V( 1, M-K+1 ), LDV, WORK, &
                         LDWORK )
             IF( M > K ) THEN
 !
 !                 W := W + C1**H * V1**H
 !
                CALL CGEMM( 'Conjugate transpose', &
-                           'Conjugate transpose', N, K, M-K, ONE, C, &
-                           LDC, V, LDV, ONE, WORK, LDWORK )
+                           'Conjugate transpose', N, K, M-K, (1.0E+0,0.0E+0), C, &
+                           LDC, V, LDV, (1.0E+0,0.0E+0), WORK, LDWORK )
             END IF
 !
 !              W := W * T**H  or  W * T
 !
             CALL CTRMM( 'Right', 'Lower', TRANST, 'Non-unit', N, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - V**H * W**H
 !
@@ -647,23 +616,20 @@
 !                 C1 := C1 - V1**H * W**H
 !
                CALL CGEMM( 'Conjugate transpose', &
-                           'Conjugate transpose', M-K, N, K, -ONE, V, &
-                           LDV, WORK, LDWORK, ONE, C, LDC )
+                           'Conjugate transpose', M-K, N, K, -(1.0E+0,0.0E+0), V, &
+                           LDV, WORK, LDWORK, (1.0E+0,0.0E+0), C, LDC )
             END IF
 !
 !              W := W * V2
 !
             CALL CTRMM( 'Right', 'Lower', 'No transpose', 'Unit', N, &
-                        K, ONE, V( 1, M-K+1 ), LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V( 1, M-K+1 ), LDV, WORK, LDWORK )
 !
 !              C2 := C2 - W**H
 !
             DO J = 1, K
-               DO I = 1, N
-                  C( M-K+J, I ) = C( M-K+J, I ) - &
-                                  CONJG( WORK( I, J ) )
-                  ENDDO
-               ENDDO
+               C(M-K+J,1:N) = C(M-K+J,1:N) - CONJG(WORK(1:N,J))
+            ENDDO
 !
          ELSE IF( LSAME( SIDE, 'R' ) ) THEN
 !
@@ -674,27 +640,27 @@
 !              W := C2
 !
             DO J = 1, K
-               CALL CCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
-               ENDDO
+               WORK(1:M,J) = C(1:M,N-K+J)
+            ENDDO
 !
 !              W := W * V2**H
 !
             CALL CTRMM( 'Right', 'Lower', 'Conjugate transpose', &
-                        'Unit', M, K, ONE, V( 1, N-K+1 ), LDV, WORK, &
+                        'Unit', M, K, (1.0E+0,0.0E+0), V( 1, N-K+1 ), LDV, WORK, &
                         LDWORK )
             IF( N > K ) THEN
 !
 !                 W := W + C1 * V1**H
 !
                CALL CGEMM( 'No transpose', 'Conjugate transpose', M, &
-                           K, N-K, ONE, C, LDC, V, LDV, ONE, WORK, &
+                           K, N-K, (1.0E+0,0.0E+0), C, LDC, V, LDV, (1.0E+0,0.0E+0), WORK, &
                            LDWORK )
             END IF
 !
 !              W := W * T  or  W * T**H
 !
             CALL CTRMM( 'Right', 'Lower', TRANS, 'Non-unit', M, K, &
-                        ONE, T, LDT, WORK, LDWORK )
+                        (1.0E+0,0.0E+0), T, LDT, WORK, LDWORK )
 !
 !              C := C - W * V
 !
@@ -703,21 +669,17 @@
 !                 C1 := C1 - W * V1
 !
                CALL CGEMM( 'No transpose', 'No transpose', M, N-K, K, &
-                           -ONE, WORK, LDWORK, V, LDV, ONE, C, LDC )
+                           -(1.0E+0,0.0E+0), WORK, LDWORK, V, LDV, (1.0E+0,0.0E+0), C, LDC )
             END IF
 !
 !              W := W * V2
 !
             CALL CTRMM( 'Right', 'Lower', 'No transpose', 'Unit', M, &
-                        K, ONE, V( 1, N-K+1 ), LDV, WORK, LDWORK )
+                        K, (1.0E+0,0.0E+0), V( 1, N-K+1 ), LDV, WORK, LDWORK )
 !
 !              C1 := C1 - W
 !
-            DO J = 1, K
-               DO I = 1, M
-                  C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
-                  ENDDO
-               ENDDO
+            C(1:M,N-K+1:N) = C(1:M,N-K+1:N) - WORK(1:M,1:K)
 !
          END IF
 !
@@ -729,5 +691,3 @@
 !     End of CLARFB
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
