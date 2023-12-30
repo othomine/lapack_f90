@@ -156,6 +156,7 @@
 !>
 !  =====================================================================
    SUBROUTINE CSPTRF( UPLO, N, AP, IPIV, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -171,20 +172,16 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, IMAX, J, JMAX, K, KC, KK, KNC, KP, KPC, &
                       KSTEP, KX, NPP
-   REAL               ABSAKK, ALPHA, COLMAX, ROWMAX
+   REAL               ABSAKK, COLMAX, ROWMAX
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
    COMPLEX            D11, D12, D21, D22, R1, T, WK, WKM1, WKP1, ZDUM
 !     ..
 !     .. External Functions ..
@@ -194,9 +191,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CSCAL, CSPR, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL, SQRT
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -220,10 +214,6 @@
       RETURN
    END IF
 !
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
-!
    IF( UPPER ) THEN
 !
 !        Factorize A as U*D*U**T using the upper triangle of A
@@ -238,8 +228,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 110
+      IF( K < 1 ) GO TO 110
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -254,15 +243,14 @@
          IMAX = ICAMAX( K-1, AP( KC ), 1 )
          COLMAX = CABS1( AP( KC+IMAX-1 ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -272,7 +260,7 @@
             KP = K
          ELSE
 !
-            ROWMAX = ZERO
+            ROWMAX = 0.0E+0
             JMAX = IMAX
             KX = IMAX*( IMAX+1 ) / 2 + IMAX
             DO J = IMAX + 1, K
@@ -310,8 +298,7 @@
          END IF
 !
          KK = K - KSTEP + 1
-         IF( KSTEP == 2 ) &
-            KNC = KNC - K + 1
+         IF( KSTEP == 2 ) KNC = KNC - K + 1
          IF( KP /= KK ) THEN
 !
 !              Interchange rows and columns KK and KP in the leading
@@ -349,12 +336,12 @@
 !
 !              A := A - U(k)*D(k)*U(k)**T = A - W(k)*1/D(k)*W(k)**T
 !
-            R1 = CONE / AP( KC+K-1 )
+            R1 = (1.0E+0,0.0E+0 ) / AP( KC+K-1 )
             CALL CSPR( UPLO, K-1, -R1, AP( KC ), 1, AP )
 !
 !              Store U(k) in column k
 !
-            CALL CSCAL( K-1, R1, AP( KC ), 1 )
+            AP(KC:KC+K-2) = R1*AP(KC:KC+K-2)
          ELSE
 !
 !              2-by-2 pivot block D(k): columns k and k-1 now hold
@@ -374,14 +361,12 @@
                D12 = AP( K-1+( K-1 )*K / 2 )
                D22 = AP( K-1+( K-2 )*( K-1 ) / 2 ) / D12
                D11 = AP( K+( K-1 )*K / 2 ) / D12
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0 ) / ( D11*D22-(1.0E+0,0.0E+0 ) )
                D12 = T / D12
 !
                DO J = K - 2, 1, -1
-                  WKM1 = D12*( D11*AP( J+( K-2 )*( K-1 ) / 2 )- &
-                         AP( J+( K-1 )*K / 2 ) )
-                  WK = D12*( D22*AP( J+( K-1 )*K / 2 )- &
-                       AP( J+( K-2 )*( K-1 ) / 2 ) )
+                  WKM1 = D12*( D11*AP( J+( K-2 )*( K-1 ) / 2 )- AP( J+( K-1 )*K / 2 ) )
+                  WK = D12*( D22*AP( J+( K-1 )*K / 2 )- AP( J+( K-2 )*( K-1 ) / 2 ) )
                   DO I = J, 1, -1
                      AP( I+( J-1 )*J / 2 ) = AP( I+( J-1 )*J / 2 ) - &
                         AP( I+( K-1 )*K / 2 )*WK - &
@@ -425,8 +410,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 110
+      IF( K > N ) GO TO 110
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -441,15 +425,14 @@
          IMAX = K + ICAMAX( N-K, AP( KC+1 ), 1 )
          COLMAX = CABS1( AP( KC+IMAX-K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !
 !           Column K is zero: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -462,7 +445,7 @@
 !              JMAX is the column-index of the largest off-diagonal
 !              element in row IMAX, and ROWMAX is its absolute value
 !
-            ROWMAX = ZERO
+            ROWMAX = 0.0E+0
             KX = KC + IMAX - K
             DO J = K, IMAX - 1
                IF( CABS1( AP( KX ) ) > ROWMAX ) THEN
@@ -499,16 +482,13 @@
          END IF
 !
          KK = K + KSTEP - 1
-         IF( KSTEP == 2 ) &
-            KNC = KNC + N - K + 1
+         IF( KSTEP == 2 ) KNC = KNC + N - K + 1
          IF( KP /= KK ) THEN
 !
 !              Interchange rows and columns KK and KP in the trailing
 !              submatrix A(k:n,k:n)
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, AP( KNC+KP-KK+1 ), 1, AP( KPC+1 ), &
-                           1 )
+            IF( KP < N ) CALL CSWAP( N-KP, AP( KNC+KP-KK+1 ), 1, AP( KPC+1 ), 1 )
             KX = KNC + KP - KK
             DO J = KK + 1, KP - 1
                KX = KX + N - J + 1
@@ -542,13 +522,13 @@
 !
 !                 A := A - L(k)*D(k)*L(k)**T = A - W(k)*(1/D(k))*W(k)**T
 !
-               R1 = CONE / AP( KC )
+               R1 = (1.0E+0,0.0E+0 ) / AP( KC )
                CALL CSPR( UPLO, N-K, -R1, AP( KC+1 ), 1, &
                           AP( KC+N-K+1 ) )
 !
 !                 Store L(k) in column K
 !
-               CALL CSCAL( N-K, R1, AP( KC+1 ), 1 )
+               AP(KC+1:KC+N-K) = R1*AP(KC+1:KC+N-K)
             END IF
          ELSE
 !
@@ -572,14 +552,12 @@
                D21 = AP( K+1+( K-1 )*( 2*N-K ) / 2 )
                D11 = AP( K+1+K*( 2*N-K-1 ) / 2 ) / D21
                D22 = AP( K+( K-1 )*( 2*N-K ) / 2 ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0 ) / ( D11*D22-(1.0E+0,0.0E+0 ) )
                D21 = T / D21
 !
                DO J = K + 2, N
-                  WK = D21*( D11*AP( J+( K-1 )*( 2*N-K ) / 2 )- &
-                       AP( J+K*( 2*N-K-1 ) / 2 ) )
-                  WKP1 = D21*( D22*AP( J+K*( 2*N-K-1 ) / 2 )- &
-                         AP( J+( K-1 )*( 2*N-K ) / 2 ) )
+                  WK = D21*( D11*AP( J+( K-1 )*( 2*N-K ) / 2 )- AP( J+K*( 2*N-K-1 ) / 2 ) )
+                  WKP1 = D21*( D22*AP( J+K*( 2*N-K-1 ) / 2 )- AP( J+( K-1 )*( 2*N-K ) / 2 ) )
                   DO I = J, N
                      AP( I+( J-1 )*( 2*N-J ) / 2 ) = AP( I+( J-1 )* &
                         ( 2*N-J ) / 2 ) - AP( I+( K-1 )*( 2*N-K ) / &
@@ -615,5 +593,3 @@
 !     End of CSPTRF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

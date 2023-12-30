@@ -275,6 +275,7 @@
 !  =====================================================================
    SUBROUTINE CSPSVX( FACT, UPLO, N, NRHS, AP, AFP, IPIV, B, LDB, X, &
                       LDX, RCOND, FERR, BERR, WORK, RWORK, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK driver routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -293,10 +294,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOFACT
@@ -308,11 +305,7 @@
    EXTERNAL           LSAME, CLANSP, SLAMCH
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLACPY, CSPCON, CSPRFS, CSPTRF, CSPTRS, &
-                      XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
+   EXTERNAL           CSPCON, CSPRFS, CSPTRF, CSPTRS, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -343,13 +336,13 @@
 !
 !        Compute the factorization A = U*D*U**T or A = L*D*L**T.
 !
-      CALL CCOPY( N*( N+1 ) / 2, AP, 1, AFP, 1 )
+      AFP(1:N*(N+1)/2) = AP(1:N*(N+1)/2)
       CALL CSPTRF( UPLO, N, AFP, IPIV, INFO )
 !
 !        Return if INFO is non-zero.
 !
       IF( INFO > 0 )THEN
-         RCOND = ZERO
+         RCOND = 0.0E+0
          RETURN
       END IF
    END IF
@@ -364,7 +357,7 @@
 !
 !     Compute the solution vectors X.
 !
-   CALL CLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL CSPTRS( UPLO, N, NRHS, AFP, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solutions and
@@ -375,13 +368,10 @@
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < SLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < SLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    RETURN
 !
 !     End of CSPSVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

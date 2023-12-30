@@ -180,6 +180,7 @@
 !  =====================================================================
    SUBROUTINE CSTEIN( N, D, E, M, W, IBLOCK, ISPLIT, Z, LDZ, WORK, &
                       IWORK, IFAIL, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -198,12 +199,6 @@
 ! =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               ZERO, ONE, TEN, ODM3, ODM1
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TEN = 1.0E+1, &
-                      ODM3 = 1.0E-3, ODM1 = 1.0E-1 )
    INTEGER            MAXITS, EXTRA
    PARAMETER          ( MAXITS = 5, EXTRA = 2 )
 !     ..
@@ -224,9 +219,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           SCOPY, SLAGTF, SLAGTS, SLARNV, SSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, MAX, REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -249,8 +241,7 @@
             INFO = -6
             GO TO 30
          END IF
-         IF( IBLOCK( J ) == IBLOCK( J-1 ) .AND. W( J ) < W( J-1 ) ) &
-              THEN
+         IF( IBLOCK( J ) == IBLOCK( J-1 ) .AND. W( J ) < W( J-1 ) ) THEN
             INFO = -5
             GO TO 30
          END IF
@@ -268,7 +259,7 @@
    IF( N == 0 .OR. M == 0 ) THEN
       RETURN
    ELSE IF( N == 1 ) THEN
-      Z( 1, 1 ) = CONE
+      Z( 1, 1 ) = (1.0E+0,0.0E+0 )
       RETURN
    END IF
 !
@@ -304,8 +295,7 @@
       END IF
       BN = ISPLIT( NBLK )
       BLKSIZ = BN - B1 + 1
-      IF( BLKSIZ == 1 ) &
-         GO TO 60
+      IF( BLKSIZ == 1 ) GO TO 60
       GPIND = J1
 !
 !        Compute reorthogonalization criterion and stopping criterion.
@@ -316,9 +306,9 @@
          ONENRM = MAX( ONENRM, ABS( D( I ) )+ABS( E( I-1 ) )+ &
                   ABS( E( I ) ) )
       ENDDO
-      ORTOL = ODM3*ONENRM
+      ORTOL = 1.0E-3*ONENRM
 !
-      STPCRT = SQRT( ODM1 / BLKSIZ )
+      STPCRT = SQRT( 1.0E-1 / BLKSIZ )
 !
 !        Loop through eigenvalues of block nblk.
 !
@@ -335,7 +325,7 @@
 !           Skip all the work if the block size is one.
 !
          IF( BLKSIZ == 1 ) THEN
-            WORK( INDRV1+1 ) = ONE
+            WORK( INDRV1+1 ) = 1.0E+0
             GO TO 140
          END IF
 !
@@ -344,10 +334,9 @@
 !
          IF( JBLK > 1 ) THEN
             EPS1 = ABS( EPS*XJ )
-            PERTOL = TEN*EPS1
+            PERTOL = 10.0E+0*EPS1
             SEP = XJ - XJM
-            IF( SEP < PERTOL ) &
-               XJ = XJM + PERTOL
+            IF( SEP < PERTOL ) XJ = XJM + PERTOL
          END IF
 !
          ITS = 0
@@ -359,13 +348,13 @@
 !
 !           Copy the matrix T so it won't be destroyed in factorization.
 !
-         CALL SCOPY( BLKSIZ, D( B1 ), 1, WORK( INDRV4+1 ), 1 )
-         CALL SCOPY( BLKSIZ-1, E( B1 ), 1, WORK( INDRV2+2 ), 1 )
-         CALL SCOPY( BLKSIZ-1, E( B1 ), 1, WORK( INDRV3+1 ), 1 )
+         WORK(INDRV4+1:INDRV4+BLKSIZ) = D(B1:B1+BLKSIZ-1)
+         WORK(INDRV2+2:INDRV2+BLKSIZ) = E(B1:B1+BLKSIZ-2)
+         WORK(INDRV3+1:INDRV3+BLKSIZ) = E(B1:B1+BLKSIZ-2)
 !
 !           Compute LU factors with partial pivoting  ( PT = LU )
 !
-         TOL = ZERO
+         TOL = 0.0E+0
          CALL SLAGTF( BLKSIZ, WORK( INDRV4+1 ), XJ, WORK( INDRV2+2 ), &
                       WORK( INDRV3+1 ), TOL, WORK( INDRV5+1 ), IWORK, &
                       IINFO )
@@ -374,16 +363,14 @@
 !
 70       CONTINUE
          ITS = ITS + 1
-         IF( ITS > MAXITS ) &
-            GO TO 120
+         IF( ITS > MAXITS ) GO TO 120
 !
 !           Normalize and scale the righthand side vector Pb.
 !
          JMAX = ISAMAX( BLKSIZ, WORK( INDRV1+1 ), 1 )
-         SCL = BLKSIZ*ONENRM*MAX( EPS, &
-               ABS( WORK( INDRV4+BLKSIZ ) ) ) / &
+         SCL = BLKSIZ*ONENRM*MAX( EPS, ABS( WORK( INDRV4+BLKSIZ ) ) ) / &
                ABS( WORK( INDRV1+JMAX ) )
-         CALL SSCAL( BLKSIZ, SCL, WORK( INDRV1+1 ), 1 )
+         WORK(INDRV1+1:INDRV1+BLKSIZ) = SCL*WORK(INDRV1+1:INDRV1+BLKSIZ)
 !
 !           Solve the system LU = Pb.
 !
@@ -394,22 +381,18 @@
 !           Reorthogonalize by modified Gram-Schmidt if eigenvalues are
 !           close enough.
 !
-         IF( JBLK == 1 ) &
-            GO TO 110
-         IF( ABS( XJ-XJM ) > ORTOL ) &
-            GPIND = J
+         IF( JBLK == 1 ) GO TO 110
+         IF( ABS( XJ-XJM ) > ORTOL ) GPIND = J
          IF( GPIND /= J ) THEN
             DO I = GPIND, J - 1
-               CTR = ZERO
+               CTR = 0.0E+0
                DO JR = 1, BLKSIZ
-                  CTR = CTR + WORK( INDRV1+JR )* &
-                        REAL( Z( B1-1+JR, I ) )
+                  CTR = CTR + WORK( INDRV1+JR )* REAL( Z( B1-1+JR, I ) )
                ENDDO
                DO JR = 1, BLKSIZ
-                  WORK( INDRV1+JR ) = WORK( INDRV1+JR ) - &
-                                      CTR*REAL( Z( B1-1+JR, I ) )
+                  WORK( INDRV1+JR ) = WORK( INDRV1+JR ) - CTR*REAL( Z( B1-1+JR, I ) )
                ENDDO
-               ENDDO
+            ENDDO
          END IF
 !
 !           Check the infinity norm of the iterate.
@@ -421,11 +404,9 @@
 !           Continue for additional iterations after norm reaches
 !           stopping criterion.
 !
-         IF( NRM < STPCRT ) &
-            GO TO 70
+         IF( NRM < STPCRT ) GO TO 70
          NRMCHK = NRMCHK + 1
-         IF( NRMCHK < EXTRA+1 ) &
-            GO TO 70
+         IF( NRMCHK < EXTRA+1 ) GO TO 70
 !
          GO TO 130
 !
@@ -439,18 +420,16 @@
 !           Accept iterate as jth eigenvector.
 !
   130       CONTINUE
-         SCL = ONE / SNRM2( BLKSIZ, WORK( INDRV1+1 ), 1 )
+         SCL = 1.0E+0 / SNRM2( BLKSIZ, WORK( INDRV1+1 ), 1 )
          JMAX = ISAMAX( BLKSIZ, WORK( INDRV1+1 ), 1 )
-         IF( WORK( INDRV1+JMAX ) < ZERO ) &
+         IF( WORK( INDRV1+JMAX ) < 0.0E+0 ) &
             SCL = -SCL
-         CALL SSCAL( BLKSIZ, SCL, WORK( INDRV1+1 ), 1 )
+         WORK(INDRV1+1:INDRV1+BLKSIZ) = SCL*WORK(INDRV1+1:INDRV1+BLKSIZ)
   140       CONTINUE
-         DO I = 1, N
-            Z( I, J ) = CZERO
-            ENDDO
+         Z(1:N,J) = (0.0E+0,0.0E+0 )
          DO I = 1, BLKSIZ
-            Z( B1+I-1, J ) = CMPLX( WORK( INDRV1+I ), ZERO )
-            ENDDO
+            Z( B1+I-1, J ) = CMPLX( WORK( INDRV1+I ), 0.0E+0 )
+         ENDDO
 !
 !           Save the shift to check eigenvalue spacing at next
 !           iteration.
@@ -466,5 +445,3 @@
 !     End of CSTEIN
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

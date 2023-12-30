@@ -178,6 +178,7 @@
 !  =====================================================================
    SUBROUTINE CSPRFS( UPLO, N, NRHS, AP, AFP, IPIV, B, LDB, X, LDX, &
                       FERR, BERR, WORK, RWORK, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -199,29 +200,18 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            COUNT, I, IK, J, K, KASE, KK, NZ
    REAL               EPS, LSTRES, S, SAFE1, SAFE2, SAFMIN, XK
-   COMPLEX            ZDUM
+   COMPLEX            ZDUM, APK
 !     ..
 !     .. Local Arrays ..
    INTEGER            ISAVE( 3 )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CCOPY, CLACN2, CSPMV, CSPTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
+   EXTERNAL           CLACN2, CSPMV, CSPTRS, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -259,10 +249,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -279,15 +267,15 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
 !
 !        Compute residual R = B - A * X
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CSPMV( UPLO, N, -ONE, AP, X( 1, J ), 1, ONE, WORK, 1 )
+      WORK(1:N) = B(1:N,J)
+      CALL CSPMV( UPLO, N, -(1.0E+0,0.0E+0 ), AP, X( 1, J ), 1, (1.0E+0,0.0E+0 ), WORK, 1 )
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -298,21 +286,20 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      DO I = 1, N
-         RWORK( I ) = CABS1( B( I, J ) )
-      ENDDO
+      RWORK(1:N) = ABS(REAL(B(1:N,J))) + ABS(AIMAG(B(1:N,J)))
 !
 !        Compute abs(A)*abs(X) + abs(B).
 !
       KK = 1
       IF( UPPER ) THEN
          DO K = 1, N
-            S = ZERO
-            XK = CABS1( X( K, J ) )
+            S = 0.0E+0
+            XK = ABS(REAL(X(K,J))) + ABS(AIMAG(X(K,J)))
             IK = KK
             DO I = 1, K - 1
-               RWORK( I ) = RWORK( I ) + CABS1( AP( IK ) )*XK
-               S = S + CABS1( AP( IK ) )*CABS1( X( I, J ) )
+               APK = CABS1( AP(IK) )
+               RWORK( I ) = RWORK( I ) + APK*XK
+               S = S + APK*CABS1( X( I, J ) )
                IK = IK + 1
             ENDDO
             RWORK( K ) = RWORK( K ) + CABS1( AP( KK+K-1 ) )*XK + S
@@ -320,20 +307,21 @@
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             XK = CABS1( X( K, J ) )
             RWORK( K ) = RWORK( K ) + CABS1( AP( KK ) )*XK
             IK = KK + 1
             DO I = K + 1, N
-               RWORK( I ) = RWORK( I ) + CABS1( AP( IK ) )*XK
-               S = S + CABS1( AP( IK ) )*CABS1( X( I, J ) )
+               APK = CABS1( AP(IK) )
+               RWORK( I ) = RWORK( I ) + APK*XK
+               S = S + APK*CABS1( X( I, J ) )
                IK = IK + 1
             ENDDO
             RWORK( K ) = RWORK( K ) + S
             KK = KK + ( N-K+1 )
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
@@ -350,13 +338,13 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. &
           COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CSPTRS( UPLO, N, 1, AFP, IPIV, WORK, N, INFO )
-         CALL CAXPY( N, ONE, WORK, 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(1:N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -402,16 +390,12 @@
 !              Multiply by diag(W)*inv(A**T).
 !
             CALL CSPTRS( UPLO, N, 1, AFP, IPIV, WORK, N, INFO )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE IF( KASE == 2 ) THEN
 !
 !              Multiply by inv(A)*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
             CALL CSPTRS( UPLO, N, 1, AFP, IPIV, WORK, N, INFO )
          END IF
          GO TO 100
@@ -419,19 +403,16 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
-!
       ENDDO
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
+!
+   ENDDO
 !
    RETURN
 !
 !     End of CSPRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

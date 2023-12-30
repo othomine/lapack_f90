@@ -332,9 +332,7 @@
 !
            IF (UPPER) THEN
                DO J = 1,N
-                   IF (ALPHA /= (1.0E+0,0.0E+0)) THEN
-                       B(1:M,J) = ALPHA*B(1:M,J)
-                   END IF
+                   IF (ALPHA /= (1.0E+0,0.0E+0)) B(1:M,J) = ALPHA*B(1:M,J)
                    DO K = 1,J - 1
                        IF (A(K,J) /= (0.0E+0,0.0E+0)) THEN
                            B(1:M,J) = B(1:M,J) - A(K,J)*B(1:M,K)

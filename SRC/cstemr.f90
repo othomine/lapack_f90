@@ -337,6 +337,7 @@
    SUBROUTINE CSTEMR( JOBZ, RANGE, N, D, E, VL, VU, IL, IU, &
                       M, W, Z, LDZ, NZC, ISUPPZ, TRYRAC, WORK, LWORK, &
                       IWORK, LIWORK, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -357,10 +358,11 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE, FOUR, MINRGP
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, &
-                        FOUR = 4.0E0, &
-                        MINRGP = 3.0E-3 )
+   REAL               MINRGP
+   PARAMETER          ( MINRGP = 3.0E-3 )
+!     ..
+!     .. Local Array ..
+   COMPLEX            Z_tmp(LDZ)
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ALLEIG, INDEIG, LQUERY, VALEIG, WANTZ, ZQUERY, &
@@ -383,9 +385,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLARRV, CSWAP, SCOPY, SLAE2, SLAEV2, SLARRC, &
                       SLARRE, SLARRJ, SLARRR, SLASRT, SSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SQRT
 
 
 !     ..
@@ -414,8 +413,8 @@
       LIWMIN = 8*N
    ENDIF
 
-   WL = ZERO
-   WU = ZERO
+   WL = 0.0E+0
+   WU = 0.0E+0
    IIL = 0
    IIU = 0
    NSPLIT = 0
@@ -458,9 +457,9 @@
    SAFMIN = SLAMCH( 'Safe minimum' )
    EPS = SLAMCH( 'Precision' )
    SMLNUM = SAFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    RMIN = SQRT( SMLNUM )
-   RMAX = MIN( SQRT( BIGNUM ), ONE / SQRT( SQRT( SAFMIN ) ) )
+   RMAX = MIN( SQRT( BIGNUM ), 1.0E+0 / SQRT( SQRT( SAFMIN ) ) )
 !
    IF( INFO == 0 ) THEN
       WORK( 1 ) = LWMIN
@@ -496,8 +495,7 @@
 !     Handle N = 0, 1, and 2 cases immediately
 !
    M = 0
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( N == 1 ) THEN
       IF( ALLEIG .OR. INDEIG ) THEN
@@ -510,7 +508,7 @@
          END IF
       END IF
       IF( WANTZ.AND.(.NOT.ZQUERY) ) THEN
-         Z( 1, 1 ) = ONE
+         Z( 1, 1 ) = 1.0E+0
          ISUPPZ(1) = 1
          ISUPPZ(2) = 1
       END IF
@@ -547,8 +545,8 @@
                Z( 2, M ) = CS
             ENDIF
 !              Note: At most one of SN and CS can be zero.
-            IF (SN /= ZERO) THEN
-               IF (CS /= ZERO) THEN
+            IF (SN /= 0.0E+0) THEN
+               IF (CS /= 0.0E+0) THEN
                   ISUPPZ(2*M-1) = 1
                   ISUPPZ(2*M) = 2
                ELSE
@@ -576,8 +574,8 @@
                Z( 2, M ) = SN
             ENDIF
 !              Note: At most one of SN and CS can be zero.
-            IF (SN /= ZERO) THEN
-               IF (CS /= ZERO) THEN
+            IF (SN /= 0.0E+0) THEN
+               IF (CS /= 0.0E+0) THEN
                   ISUPPZ(2*M-1) = 1
                   ISUPPZ(2*M) = 2
                ELSE
@@ -612,14 +610,14 @@
 !        up is heuristic; we expect users' matrices not to be close to the
 !        RMAX threshold.
 !
-      SCALE = ONE
+      SCALE = 1.0E+0
       TNRM = SLANST( 'M', N, D, E )
-      IF( TNRM > ZERO .AND. TNRM < RMIN ) THEN
+      IF( TNRM > 0.0E+0 .AND. TNRM < RMIN ) THEN
          SCALE = RMIN / TNRM
       ELSE IF( TNRM > RMAX ) THEN
          SCALE = RMAX / TNRM
       END IF
-      IF( SCALE /= ONE ) THEN
+      IF( SCALE /= 1.0E+0 ) THEN
          CALL SSCAL( N, SCALE, D, 1 )
          CALL SSCAL( N-1, SCALE, E, 1 )
          TNRM = TNRM*SCALE
@@ -657,25 +655,23 @@
 !
       IF( TRYRAC ) THEN
 !           Copy original diagonal, needed to guarantee relative accuracy
-         CALL SCOPY(N,D,1,WORK(INDD),1)
+         WORK(INDD:INDD+N-1) = D(1:N)
       ENDIF
 !        Store the squares of the offdiagonal values of T
-      DO J = 1, N-1
-         WORK( INDE2+J-1 ) = E(J)**2
-      ENDDO
+      WORK(INDE2:INDE2-2+N) = E(1:N-1)**2
 
 !        Set the tolerance parameters for bisection
       IF( .NOT.WANTZ ) THEN
 !           SLARRE computes the eigenvalues to full precision.
-         RTOL1 = FOUR * EPS
-         RTOL2 = FOUR * EPS
+         RTOL1 = 4.0E+0 * EPS
+         RTOL2 = 4.0E+0 * EPS
       ELSE
 !           SLARRE computes the eigenvalues to less than full precision.
 !           CLARRV will refine the eigenvalue approximations, and we only
 !           need less accurate initial bisection in SLARRE.
 !           Note: these settings do only affect the subset case and SLARRE
-         RTOL1 = MAX( SQRT(EPS)*5.0E-2, FOUR * EPS )
-         RTOL2 = MAX( SQRT(EPS)*5.0E-3, FOUR * EPS )
+         RTOL1 = MAX( SQRT(EPS)*5.0E-2, 4.0E+0 * EPS )
+         RTOL2 = MAX( SQRT(EPS)*5.0E-3, 4.0E+0 * EPS )
       ENDIF
       CALL SLARRE( RANGE, N, WL, WU, IIL, IIU, D, E, &
                 WORK(INDE2), RTOL1, RTOL2, THRESH, NSPLIT, &
@@ -745,7 +741,7 @@
             OFFSET = IWORK(IINDW+WBEGIN-1)-1
             IFIRST = IWORK(IINDW+WBEGIN-1)
             ILAST = IWORK(IINDW+WEND-1)
-            RTOL2 = FOUR * EPS
+            RTOL2 = 4.0E+0 * EPS
             CALL SLARRJ( IN, &
                       WORK(INDD+IBEGIN-1), WORK(INDE2+IBEGIN-1), &
                       IFIRST, ILAST, RTOL2, OFFSET, W(WBEGIN), &
@@ -760,9 +756,7 @@
 !
 !        If matrix was scaled, then rescale eigenvalues appropriately.
 !
-      IF( SCALE /= ONE ) THEN
-         CALL SSCAL( M, ONE / SCALE, W, 1 )
-      END IF
+      IF( SCALE /= 1.0E+0 ) W(1:M) = W(1:M) / SCALE
    END IF
 !
 !     If eigenvalues are not in increasing order, then sort them,
@@ -784,12 +778,14 @@
                   I = JJ
                   TMP = W( JJ )
                END IF
-               ENDDO
+            ENDDO
             IF( I /= 0 ) THEN
                W( I ) = W( J )
                W( J ) = TMP
                IF( WANTZ ) THEN
-                  CALL CSWAP( N, Z( 1, I ), 1, Z( 1, J ), 1 )
+                  Z_tmp(1:N) = Z(1:N,I)
+                  Z(1:N,I) = Z(1:N,J)
+                  Z(1:N,J) = Z_tmp(1:N)
                   ITMP = ISUPPZ( 2*I-1 )
                   ISUPPZ( 2*I-1 ) = ISUPPZ( 2*J-1 )
                   ISUPPZ( 2*J-1 ) = ITMP
@@ -810,5 +806,3 @@
 !     End of CSTEMR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -295,8 +295,8 @@
 !>       of Matrix Analysis, volume 23, pages 948--973, 2002.
 !
 !  =====================================================================
-   SUBROUTINE CHSEQR( JOB, COMPZ, N, ILO, IHI, H, LDH, W, Z, LDZ, &
-                      WORK, LWORK, INFO )
+   SUBROUTINE CHSEQR( JOB, COMPZ, N, ILO, IHI, H, LDH, W, Z, LDZ, WORK, LWORK, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --

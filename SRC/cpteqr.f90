@@ -172,9 +172,6 @@
 !     .. Local Scalars ..
    INTEGER            I, ICOMPZ, NRU
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.

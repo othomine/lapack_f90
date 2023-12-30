@@ -401,10 +401,7 @@
 !           Compute WORK(2:N) = T(J, J) L((J+1):N, J)
 !            where A(J, J) = T(J, J) and A((J+1):N, J-1) = L((J+1):N, J)
 !
-         IF( K > 1 ) THEN
-            ALPHA = -A( J, K )
-            WORK(2:1+M-J) = WORK(2:1+M-J) + -A(J,K)*A(J+1:M,K-1)
-         ENDIF
+         IF( K > 1 ) WORK(2:1+M-J) = WORK(2:1+M-J) -A(J,K)*A(J+1:M,K-1)
 !
 !           Find max(|WORK(2:n)|)
 !

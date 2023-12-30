@@ -204,6 +204,7 @@
 !  =====================================================================
    SUBROUTINE CSTEDC( COMPZ, N, D, E, Z, LDZ, WORK, LWORK, RWORK, &
                       LRWORK, IWORK, LIWORK, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -220,16 +221,15 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0E0, ONE = 1.0E0, TWO = 2.0E0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
    INTEGER            FINISH, I, ICOMPZ, II, J, K, LGN, LIWMIN, LL, &
                       LRWMIN, LWMIN, M, SMLSIZ, START
    REAL               EPS, ORGNRM, P, TINY
+!     ..
+!     .. Local Array ..
+   COMPLEX            Z_tmp(LDZ)
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -240,9 +240,6 @@
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CLACPY, CLACRM, CLAED0, CSTEQR, CSWAP, &
                       SLASCL, SLASET, SSTEDC, SSTEQR, SSTERF
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, INT, LOG, MAX, MOD, REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -264,8 +261,7 @@
       INFO = -1
    ELSE IF( N < 0 ) THEN
       INFO = -2
-   ELSE IF( ( LDZ < 1 ) .OR. &
-            ( ICOMPZ > 0 .AND. LDZ < MAX( 1, N ) ) ) THEN
+   ELSE IF( ( LDZ < 1 ) .OR. ( ICOMPZ > 0 .AND. LDZ < MAX( 1, N ) ) ) THEN
       INFO = -6
    END IF
 !
@@ -283,11 +279,9 @@
          LIWMIN = 1
          LRWMIN = 2*( N - 1 )
       ELSE IF( ICOMPZ == 1 ) THEN
-         LGN = INT( LOG( REAL( N ) ) / LOG( TWO ) )
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
-         IF( 2**LGN < N ) &
-            LGN = LGN + 1
+         LGN = INT( LOG( REAL( N ) ) / LOG( 2.0E+0 ) )
+         IF( 2**LGN < N ) LGN = LGN + 1
+         IF( 2**LGN < N ) LGN = LGN + 1
          LWMIN = N*N
          LRWMIN = 1 + 3*N + 2*N*LGN + 4*N**2
          LIWMIN = 6 + 6*N + 5*N*LGN
@@ -318,11 +312,9 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
    IF( N == 1 ) THEN
-      IF( ICOMPZ /= 0 ) &
-         Z( 1, 1 ) = ONE
+      IF( ICOMPZ /= 0 ) Z( 1, 1 ) = 1.0E+0
       RETURN
    END IF
 !
@@ -354,7 +346,7 @@
 !        If COMPZ = 'I', we simply call SSTEDC instead.
 !
       IF( ICOMPZ == 2 ) THEN
-         CALL SLASET( 'Full', N, N, ZERO, ONE, RWORK, N )
+         CALL SLASET( 'Full', N, N, 0.0E+0, 1.0E+0, RWORK, N )
          LL = N*N + 1
          CALL SSTEDC( 'I', N, D, E, RWORK, N, &
                       RWORK( LL ), LRWORK-LL+1, IWORK, LIWORK, INFO )
@@ -372,8 +364,7 @@
 !        Scale.
 !
       ORGNRM = SLANST( 'M', N, D, E )
-      IF( ORGNRM == ZERO ) &
-         GO TO 70
+      IF( ORGNRM == 0.0E+0 ) GO TO 70
 !
       EPS = SLAMCH( 'Epsilon' )
 !
@@ -393,8 +384,7 @@
          FINISH = START
 40       CONTINUE
          IF( FINISH < N ) THEN
-            TINY = EPS*SQRT( ABS( D( FINISH ) ) )* &
-                       SQRT( ABS( D( FINISH+1 ) ) )
+            TINY = EPS*SQRT( ABS( D( FINISH ) ) * ABS( D( FINISH+1 ) ) )
             IF( ABS( E( FINISH ) ) > TINY ) THEN
                FINISH = FINISH + 1
                GO TO 40
@@ -409,9 +399,9 @@
 !              Scale.
 !
             ORGNRM = SLANST( 'M', M, D( START ), E( START ) )
-            CALL SLASCL( 'G', 0, 0, ORGNRM, ONE, M, 1, D( START ), M, &
+            CALL SLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, M, 1, D( START ), M, &
                          INFO )
-            CALL SLASCL( 'G', 0, 0, ORGNRM, ONE, M-1, 1, E( START ), &
+            CALL SLASCL( 'G', 0, 0, ORGNRM, 1.0E+0, M-1, 1, E( START ), &
                          M-1, INFO )
 !
             CALL CLAED0( N, M, D( START ), E( START ), Z( 1, START ), &
@@ -424,7 +414,7 @@
 !
 !              Scale back.
 !
-            CALL SLASCL( 'G', 0, 0, ONE, ORGNRM, M, 1, D( START ), M, &
+            CALL SLASCL( 'G', 0, 0, 1.0E+0, ORGNRM, M, 1, D( START ), M, &
                          INFO )
 !
          ELSE
@@ -461,7 +451,9 @@
         IF( K /= I ) THEN
            D( K ) = D( I )
            D( I ) = P
-           CALL CSWAP( N, Z( 1, I ), 1, Z( 1, K ), 1 )
+           Z_tmp(1:N) = Z(1:N,I)
+           Z(1:N,I) = Z(1:N,K)
+           Z(1:N,K) = Z_tmp(1:N)
         END IF
       ENDDO
    END IF
@@ -476,5 +468,3 @@
 !     End of CSTEDC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

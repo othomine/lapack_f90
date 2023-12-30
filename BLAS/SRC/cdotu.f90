@@ -107,7 +107,8 @@
 !
 !        code for both increments equal to 1
 !
-      CTEMP = sum(CX(1:N)*CY(1:N))
+      CDOTU = sum(CX(1:N)*CY(1:N))
+      RETURN
    ELSE
 !
 !        code for unequal increments or equal increments
@@ -123,9 +124,9 @@
          IX = IX + INCX
          IY = IY + INCY
       END DO
+      CDOTU = CTEMP
+      RETURN
    END IF
-   CDOTU = CTEMP
-   RETURN
 !
 !     End of CDOTU
 !
