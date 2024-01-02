@@ -161,9 +161,7 @@
 !        Set the array to BETA on the diagonal and ALPHA on the
 !        offdiagonal.
 !
-      DO J = 1, N
-         A(1:M,1:N) = ALPHA
-      ENDDO
+      A(1:M,1:N) = ALPHA
       DO I = 1, MIN( M, N )
          A( I, I ) = BETA
       ENDDO

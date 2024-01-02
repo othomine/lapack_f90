@@ -233,10 +233,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LOWER, NISODD, NORMALTRANSR
@@ -248,9 +244,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CTRMM, CTRTRI
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MOD
 !     ..
 !     .. Executable Statements ..
 !
@@ -276,8 +269,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     If N is odd, set NISODD = .TRUE.
 !     If N is even, set K = N/2 and NISODD = .FALSE.
@@ -317,16 +309,13 @@
 !             T1 -> a(0), T2 -> a(n), S -> a(n1)
 !
             CALL CTRTRI( 'L', DIAG, N1, A( 0 ), N, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'L', 'N', DIAG, N2, N1, -CONE, A( 0 ), &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'L', 'N', DIAG, N2, N1, -(1.0E+0,0.0E+0), A( 0 ), &
                         N, A( N1 ), N )
             CALL CTRTRI( 'U', DIAG, N2, A( N ), N, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + N1
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'U', 'C', DIAG, N2, N1, CONE, A( N ), N, &
+            IF( INFO > 0 ) INFO = INFO + N1
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'U', 'C', DIAG, N2, N1, (1.0E+0,0.0E+0), A( N ), N, &
                         A( N1 ), N )
 !
          ELSE
@@ -336,16 +325,13 @@
 !             T1 -> a(n2), T2 -> a(n1), S -> a(0)
 !
             CALL CTRTRI( 'L', DIAG, N1, A( N2 ), N, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'L', 'C', DIAG, N1, N2, -CONE, A( N2 ), &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'L', 'C', DIAG, N1, N2, -(1.0E+0,0.0E+0), A( N2 ), &
                         N, A( 0 ), N )
             CALL CTRTRI( 'U', DIAG, N2, A( N1 ), N, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + N1
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'U', 'N', DIAG, N1, N2, CONE, A( N1 ), &
+            IF( INFO > 0 ) INFO = INFO + N1
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'U', 'N', DIAG, N1, N2, (1.0E+0,0.0E+0), A( N1 ), &
                         N, A( 0 ), N )
 !
          END IF
@@ -360,16 +346,13 @@
 !              T1 -> a(0), T2 -> a(1), S -> a(0+n1*n1)
 !
             CALL CTRTRI( 'U', DIAG, N1, A( 0 ), N1, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'U', 'N', DIAG, N1, N2, -CONE, A( 0 ), &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'U', 'N', DIAG, N1, N2, -(1.0E+0,0.0E+0), A( 0 ), &
                         N1, A( N1*N1 ), N1 )
             CALL CTRTRI( 'L', DIAG, N2, A( 1 ), N1, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + N1
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'L', 'C', DIAG, N1, N2, CONE, A( 1 ), &
+            IF( INFO > 0 ) INFO = INFO + N1
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'L', 'C', DIAG, N1, N2, (1.0E+0,0.0E+0), A( 1 ), &
                         N1, A( N1*N1 ), N1 )
 !
          ELSE
@@ -378,16 +361,13 @@
 !              T1 -> a(0+n2*n2), T2 -> a(0+n1*n2), S -> a(0)
 !
             CALL CTRTRI( 'U', DIAG, N1, A( N2*N2 ), N2, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'U', 'C', DIAG, N2, N1, -CONE, &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'U', 'C', DIAG, N2, N1, -(1.0E+0,0.0E+0), &
                         A( N2*N2 ), N2, A( 0 ), N2 )
             CALL CTRTRI( 'L', DIAG, N2, A( N1*N2 ), N2, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + N1
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'L', 'N', DIAG, N2, N1, CONE, &
+            IF( INFO > 0 ) INFO = INFO + N1
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'L', 'N', DIAG, N2, N1, (1.0E+0,0.0E+0), &
                         A( N1*N2 ), N2, A( 0 ), N2 )
          END IF
 !
@@ -408,16 +388,13 @@
 !              T1 -> a(1), T2 -> a(0), S -> a(k+1)
 !
             CALL CTRTRI( 'L', DIAG, K, A( 1 ), N+1, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'L', 'N', DIAG, K, K, -CONE, A( 1 ), &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'L', 'N', DIAG, K, K, -(1.0E+0,0.0E+0), A( 1 ), &
                         N+1, A( K+1 ), N+1 )
             CALL CTRTRI( 'U', DIAG, K, A( 0 ), N+1, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + K
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'U', 'C', DIAG, K, K, CONE, A( 0 ), N+1, &
+            IF( INFO > 0 ) INFO = INFO + K
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'U', 'C', DIAG, K, K, (1.0E+0,0.0E+0), A( 0 ), N+1, &
                         A( K+1 ), N+1 )
 !
          ELSE
@@ -427,16 +404,13 @@
 !              T1 -> a(k+1), T2 -> a(k), S -> a(0)
 !
             CALL CTRTRI( 'L', DIAG, K, A( K+1 ), N+1, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'L', 'C', DIAG, K, K, -CONE, A( K+1 ), &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'L', 'C', DIAG, K, K, -(1.0E+0,0.0E+0), A( K+1 ), &
                         N+1, A( 0 ), N+1 )
             CALL CTRTRI( 'U', DIAG, K, A( K ), N+1, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + K
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'U', 'N', DIAG, K, K, CONE, A( K ), N+1, &
+            IF( INFO > 0 ) INFO = INFO + K
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'U', 'N', DIAG, K, K, (1.0E+0,0.0E+0), A( K ), N+1, &
                         A( 0 ), N+1 )
          END IF
       ELSE
@@ -450,16 +424,13 @@
 !              T1 -> a(0+k), T2 -> a(0+0), S -> a(0+k*(k+1)); lda=k
 !
             CALL CTRTRI( 'U', DIAG, K, A( K ), K, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'U', 'N', DIAG, K, K, -CONE, A( K ), K, &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'U', 'N', DIAG, K, K, -(1.0E+0,0.0E+0), A( K ), K, &
                         A( K*( K+1 ) ), K )
             CALL CTRTRI( 'L', DIAG, K, A( 0 ), K, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + K
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'L', 'C', DIAG, K, K, CONE, A( 0 ), K, &
+            IF( INFO > 0 ) INFO = INFO + K
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'L', 'C', DIAG, K, K, (1.0E+0,0.0E+0), A( 0 ), K, &
                         A( K*( K+1 ) ), K )
          ELSE
 !
@@ -468,16 +439,13 @@
 !              T1 -> a(0+k*(k+1)), T2 -> a(0+k*k), S -> a(0+0)); lda=k
 !
             CALL CTRTRI( 'U', DIAG, K, A( K*( K+1 ) ), K, INFO )
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'R', 'U', 'C', DIAG, K, K, -CONE, &
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'R', 'U', 'C', DIAG, K, K, -(1.0E+0,0.0E+0), &
                         A( K*( K+1 ) ), K, A( 0 ), K )
             CALL CTRTRI( 'L', DIAG, K, A( K*K ), K, INFO )
-            IF( INFO > 0 ) &
-               INFO = INFO + K
-            IF( INFO > 0 ) &
-               RETURN
-            CALL CTRMM( 'L', 'L', 'N', DIAG, K, K, CONE, A( K*K ), K, &
+            IF( INFO > 0 ) INFO = INFO + K
+            IF( INFO > 0 ) RETURN
+            CALL CTRMM( 'L', 'L', 'N', DIAG, K, K, (1.0E+0,0.0E+0), A( K*K ), K, &
                         A( 0 ), K )
          END IF
       END IF
@@ -488,5 +456,3 @@
 !     End of CTFTRI
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -234,9 +234,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLASYF_ROOK, CSYTF2_ROOK, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -276,14 +273,12 @@
       IWS = LDWORK*NB
       IF( LWORK < IWS ) THEN
          NB = MAX( LWORK / LDWORK, 1 )
-         NBMIN = MAX( 2, ILAENV( 2, 'CSYTRF_ROOK', &
-                                 UPLO, N, -1, -1, -1 ) )
+         NBMIN = MAX( 2, ILAENV( 2, 'CSYTRF_ROOK', UPLO, N, -1, -1, -1 ) )
       END IF
    ELSE
       IWS = 1
    END IF
-   IF( NB < NBMIN ) &
-      NB = N
+   IF( NB < NBMIN ) NB = N
 !
    IF( UPPER ) THEN
 !
@@ -298,8 +293,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 40
+      IF( K < 1 ) GO TO 40
 !
       IF( K > NB ) THEN
 !
@@ -318,8 +312,7 @@
 !
 !        Set INFO on the first occurrence of a zero pivot
 !
-      IF( INFO == 0 .AND. IINFO > 0 ) &
-         INFO = IINFO
+      IF( INFO == 0 .AND. IINFO > 0 ) INFO = IINFO
 !
 !        No need to adjust IPIV
 !
@@ -341,8 +334,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 40
+      IF( K > N ) GO TO 40
 !
       IF( K <= N-NB ) THEN
 !
@@ -355,8 +347,7 @@
 !
 !           Use unblocked code to factorize columns k:n of A
 !
-         CALL CSYTF2_ROOK( UPLO, N-K+1, A( K, K ), LDA, IPIV( K ), &
-                      IINFO )
+         CALL CSYTF2_ROOK( UPLO, N-K+1, A( K, K ), LDA, IPIV( K ), IINFO )
          KB = N - K + 1
       END IF
 !
@@ -389,5 +380,3 @@
 !     End of CSYTRF_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

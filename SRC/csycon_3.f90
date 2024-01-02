@@ -180,12 +180,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E+0, ZERO = 0.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -202,9 +196,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACN2, CSYTRS_3, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -217,7 +208,7 @@
       INFO = -2
    ELSE IF( LDA < MAX( 1, N ) ) THEN
       INFO = -4
-   ELSE IF( ANORM < ZERO ) THEN
+   ELSE IF( ANORM < 0.0E+0 ) THEN
       INFO = -7
    END IF
    IF( INFO /= 0 ) THEN
@@ -227,11 +218,11 @@
 !
 !     Quick return if possible
 !
-   RCOND = ZERO
+   RCOND = 0.0E+0
    IF( N == 0 ) THEN
-      RCOND = ONE
+      RCOND = 1.0E+0
       RETURN
-   ELSE IF( ANORM <= ZERO ) THEN
+   ELSE IF( ANORM <= 0.0E+0 ) THEN
       RETURN
    END IF
 !
@@ -242,16 +233,14 @@
 !        Upper triangular storage: examine D from bottom to top
 !
       DO I = N, 1, -1
-         IF( IPIV( I ) > 0 .AND. A( I, I ) == CZERO ) &
-            RETURN
+         IF( IPIV( I ) > 0 .AND. A( I, I ) == (0.0E+0,0.0E+0 ) ) RETURN
       END DO
    ELSE
 !
 !        Lower triangular storage: examine D from top to bottom.
 !
       DO I = 1, N
-         IF( IPIV( I ) > 0 .AND. A( I, I ) == CZERO ) &
-            RETURN
+         IF( IPIV( I ) > 0 .AND. A( I, I ) == (0.0E+0,0.0E+0 ) ) RETURN
       END DO
    END IF
 !
@@ -270,13 +259,10 @@
 !
 !     Compute the estimate of the reciprocal condition number.
 !
-   IF( AINVNM /= ZERO ) &
-      RCOND = ( ONE / AINVNM ) / ANORM
+   IF( AINVNM /= 0.0E+0 ) RCOND = 1.0E+0 / (AINVNM * ANORM)
 !
    RETURN
 !
 !     End of CSYCON_3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

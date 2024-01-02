@@ -153,8 +153,7 @@
 !> \ingroup trsyl
 !
 !  =====================================================================
-   SUBROUTINE CTRSYL( TRANA, TRANB, ISGN, M, N, A, LDA, B, LDB, C, &
-                      LDC, SCALE, INFO )
+   SUBROUTINE CTRSYL( TRANA, TRANB, ISGN, M, N, A, LDA, B, LDB, C, LDC, SCALE, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -170,10 +169,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ONE
-   PARAMETER          ( ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRNA, NOTRNB
@@ -188,14 +183,11 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    REAL               CLANGE, SLAMCH
-   COMPLEX            CDOTC, CDOTU, CLADIV
-   EXTERNAL           LSAME, CLANGE, SLAMCH, CDOTC, CDOTU, CLADIV
+   COMPLEX            CLADIV
+   EXTERNAL           LSAME, CLANGE, SLAMCH, CLADIV
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, MIN, REAL
+   EXTERNAL           XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -229,17 +221,16 @@
 !
 !     Quick return if possible
 !
-   SCALE = ONE
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   SCALE = 1.0E+0
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Set constants to control overflow
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMLNUM = SMLNUM*REAL( M*N ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMIN = MAX( SMLNUM, EPS*CLANGE( 'M', M, M, A, LDA, DUM ), &
           EPS*CLANGE( 'M', N, N, B, LDB, DUM ) )
    SGN = ISGN
@@ -261,12 +252,15 @@
       DO L = 1, N
          DO K = M, 1, -1
 !
-            SUML = CDOTU( M-K, A( K, MIN( K+1, M ) ), LDA, &
-                   C( MIN( K+1, M ), L ), 1 )
-            SUMR = CDOTU( L-1, C( K, 1 ), LDC, B( 1, L ), 1 )
+            IF (K == M) THEN
+               SUML = (0.0E+0,0.0E+0)
+            ELSE
+               SUML = SUM(A(K,K+1:M)*C(K+1:M,L))
+            ENDIF
+            SUMR = SUM(C(K,1:L-1)*B(1:L-1,L))
             VEC = C( K, L ) - ( SUML+SGN*SUMR )
 !
-            SCALOC = ONE
+            SCALOC = 1.0E+0
             A11 = A( K, K ) + SGN*B( L, L )
             DA11 = ABS( REAL( A11 ) ) + ABS( AIMAG( A11 ) )
             IF( DA11 <= SMIN ) THEN
@@ -275,16 +269,13 @@
                INFO = 1
             END IF
             DB = ABS( REAL( VEC ) ) + ABS( AIMAG( VEC ) )
-            IF( DA11 < ONE .AND. DB > ONE ) THEN
-               IF( DB > BIGNUM*DA11 ) &
-                  SCALOC = ONE / DB
+            IF( DA11 < 1.0E+0 .AND. DB > 1.0E+0 ) THEN
+               IF( DB > BIGNUM*DA11 ) SCALOC = 1.0E+0 / DB
             END IF
             X11 = CLADIV( VEC*CMPLX( SCALOC ), A11 )
 !
-            IF( SCALOC /= ONE ) THEN
-               DO J = 1, N
-                  CALL CSSCAL( M, SCALOC, C( 1, J ), 1 )
-               ENDDO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:N) = SCALOC*C(1:M,1:N)
                SCALE = SCALE*SCALOC
             END IF
             C( K, L ) = X11
@@ -309,11 +300,11 @@
       DO L = 1, N
          DO K = 1, M
 !
-            SUML = CDOTC( K-1, A( 1, K ), 1, C( 1, L ), 1 )
-            SUMR = CDOTU( L-1, C( K, 1 ), LDC, B( 1, L ), 1 )
+            SUML = SUM(CONJG(A(1:K-1,K))*C(1:K-1,L))
+            SUMR = SUM(C(K,1:L-1)*B(1:L-1,L))
             VEC = C( K, L ) - ( SUML+SGN*SUMR )
 !
-            SCALOC = ONE
+            SCALOC = 1.0E+0
             A11 = CONJG( A( K, K ) ) + SGN*B( L, L )
             DA11 = ABS( REAL( A11 ) ) + ABS( AIMAG( A11 ) )
             IF( DA11 <= SMIN ) THEN
@@ -322,17 +313,14 @@
                INFO = 1
             END IF
             DB = ABS( REAL( VEC ) ) + ABS( AIMAG( VEC ) )
-            IF( DA11 < ONE .AND. DB > ONE ) THEN
-               IF( DB > BIGNUM*DA11 ) &
-                  SCALOC = ONE / DB
+            IF( DA11 < 1.0E+0 .AND. DB > 1.0E+0 ) THEN
+               IF( DB > BIGNUM*DA11 ) SCALOC = 1.0E+0 / DB
             END IF
 !
             X11 = CLADIV( VEC*CMPLX( SCALOC ), A11 )
 !
-            IF( SCALOC /= ONE ) THEN
-               DO J = 1, N
-                  CALL CSSCAL( M, SCALOC, C( 1, J ), 1 )
-               ENDDO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:N) = SCALOC*C(1:M,1:N)
                SCALE = SCALE*SCALOC
             END IF
             C( K, L ) = X11
@@ -360,12 +348,15 @@
       DO L = N, 1, -1
          DO K = 1, M
 !
-            SUML = CDOTC( K-1, A( 1, K ), 1, C( 1, L ), 1 )
-            SUMR = CDOTC( N-L, C( K, MIN( L+1, N ) ), LDC, &
-                   B( L, MIN( L+1, N ) ), LDB )
+            SUML = SUM(CONJG(A(1:K-1,K))*C(1:K-1,L))
+            IF (L == N) THEN
+               SUMR = (0.0E+0,0.0E+0)
+            ELSE
+               SUMR = SUM((C(K,L+1:N))*B(L,L+1:N))
+            ENDIF
             VEC = C( K, L ) - ( SUML+SGN*CONJG( SUMR ) )
 !
-            SCALOC = ONE
+            SCALOC = 1.0E+0
             A11 = CONJG( A( K, K )+SGN*B( L, L ) )
             DA11 = ABS( REAL( A11 ) ) + ABS( AIMAG( A11 ) )
             IF( DA11 <= SMIN ) THEN
@@ -374,17 +365,14 @@
                INFO = 1
             END IF
             DB = ABS( REAL( VEC ) ) + ABS( AIMAG( VEC ) )
-            IF( DA11 < ONE .AND. DB > ONE ) THEN
-               IF( DB > BIGNUM*DA11 ) &
-                  SCALOC = ONE / DB
+            IF( DA11 < 1.0E+0 .AND. DB > 1.0E+0 ) THEN
+               IF( DB > BIGNUM*DA11 ) SCALOC = 1.0E+0 / DB
             END IF
 !
             X11 = CLADIV( VEC*CMPLX( SCALOC ), A11 )
 !
-            IF( SCALOC /= ONE ) THEN
-               DO J = 1, N
-                  CALL CSSCAL( M, SCALOC, C( 1, J ), 1 )
-               ENDDO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:N) = SCALOC*C(1:M,1:N)
                SCALE = SCALE*SCALOC
             END IF
             C( K, L ) = X11
@@ -409,13 +397,19 @@
       DO L = N, 1, -1
          DO K = M, 1, -1
 !
-            SUML = CDOTU( M-K, A( K, MIN( K+1, M ) ), LDA, &
-                   C( MIN( K+1, M ), L ), 1 )
-            SUMR = CDOTC( N-L, C( K, MIN( L+1, N ) ), LDC, &
-                   B( L, MIN( L+1, N ) ), LDB )
+            IF (K == M) THEN
+               SUML = (0.0E+0,0.0E+0)
+            ELSE
+               SUML = SUM(A(K,K+1:M)*C(K+1:M,L))
+            ENDIF
+            IF (L == N) THEN
+               SUMR = (0.0E+0,0.0E+0)
+            ELSE
+               SUMR = SUM(CONJG(C(K,L+1:N))*B(L,L+1:N))
+            ENDIF
             VEC = C( K, L ) - ( SUML+SGN*CONJG( SUMR ) )
 !
-            SCALOC = ONE
+            SCALOC = 1.0E+0
             A11 = A( K, K ) + SGN*CONJG( B( L, L ) )
             DA11 = ABS( REAL( A11 ) ) + ABS( AIMAG( A11 ) )
             IF( DA11 <= SMIN ) THEN
@@ -424,17 +418,14 @@
                INFO = 1
             END IF
             DB = ABS( REAL( VEC ) ) + ABS( AIMAG( VEC ) )
-            IF( DA11 < ONE .AND. DB > ONE ) THEN
-               IF( DB > BIGNUM*DA11 ) &
-                  SCALOC = ONE / DB
+            IF( DA11 < 1.0E+0 .AND. DB > 1.0E+0 ) THEN
+               IF( DB > BIGNUM*DA11 ) SCALOC = 1.0E+0 / DB
             END IF
 !
             X11 = CLADIV( VEC*CMPLX( SCALOC ), A11 )
 !
-            IF( SCALOC /= ONE ) THEN
-               DO J = 1, N
-                  CALL CSSCAL( M, SCALOC, C( 1, J ), 1 )
-                  ENDDO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:N) = SCALOC*C(1:M,1:N)
                SCALE = SCALE*SCALOC
             END IF
             C( K, L ) = X11
@@ -449,5 +440,3 @@
 !     End of CTRSYL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

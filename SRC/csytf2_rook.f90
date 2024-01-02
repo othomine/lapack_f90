@@ -207,39 +207,27 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER, DONE
    INTEGER            I, IMAX, J, JMAX, ITEMP, K, KK, KP, KSTEP, &
                       P, II
-   REAL               ABSAKK, ALPHA, COLMAX, ROWMAX, STEMP, SFMIN
+   REAL               ABSAKK, COLMAX, ROWMAX, STEMP, SFMIN
    COMPLEX            D11, D12, D21, D22, T, WK, WKM1, WKP1, Z
+!
+!     Initialize ALPHA for use in choosing pivot block size.
+!
+   REAL, PARAMETER :: ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ICAMAX
    REAL               SLAMCH
-   EXTERNAL           LSAME, ICAMAX, SLAMCH
+   REAL               CABS1
+   EXTERNAL           LSAME, ICAMAX, SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSCAL, CSWAP, CSYR, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT, AIMAG, REAL
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
+   EXTERNAL           CSWAP, CSYR, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -259,10 +247,6 @@
       RETURN
    END IF
 !
-!     Initialize ALPHA for use in choosing pivot block size.
-!
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
-!
 !     Compute machine safe minimum
 !
    SFMIN = SLAMCH( 'S' )
@@ -279,8 +263,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 70
+      IF( K < 1 ) GO TO 70
       KSTEP = 1
       P = K
 !
@@ -297,15 +280,14 @@
          IMAX = ICAMAX( K-1, A( 1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( (MAX( ABSAKK, COLMAX ) == ZERO) ) THEN
+      IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
 !
@@ -335,11 +317,10 @@
 !                 Determine both ROWMAX and JMAX.
 !
                IF( IMAX /= K ) THEN
-                  JMAX = IMAX + ICAMAX( K-IMAX, A( IMAX, IMAX+1 ), &
-                                       LDA )
+                  JMAX = IMAX + ICAMAX( K-IMAX, A( IMAX, IMAX+1 ), LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX > 1 ) THEN
@@ -354,8 +335,7 @@
 !                 Equivalent to testing for (used to handle NaN and Inf)
 !                 CABS1( A( IMAX, IMAX ) ) >= ALPHA*ROWMAX
 !
-               IF( .NOT.( CABS1(A( IMAX, IMAX )) < ALPHA*ROWMAX ) ) &
-               THEN
+               IF( .NOT.( CABS1(A( IMAX, IMAX )) < ALPHA*ROWMAX ) ) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -398,11 +378,8 @@
 !              Interchange rows and column K and P in the leading
 !              submatrix A(1:k,1:k) if we have a 2-by-2 pivot
 !
-            IF( P > 1 ) &
-               CALL CSWAP( P-1, A( 1, K ), 1, A( 1, P ), 1 )
-            IF( P < (K-1) ) &
-               CALL CSWAP( K-P-1, A( P+1, K ), 1, A( P, P+1 ), &
-                        LDA )
+            IF( P > 1 ) CALL CSWAP( P-1, A( 1, K ), 1, A( 1, P ), 1 )
+            IF( P < (K-1) ) CALL CSWAP( K-P-1, A( P+1, K ), 1, A( P, P+1 ), LDA )
             T = A( K, K )
             A( K, K ) = A( P, P )
             A( P, P ) = T
@@ -416,11 +393,9 @@
 !              Interchange rows and columns KK and KP in the leading
 !              submatrix A(1:k,1:k)
 !
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
             IF( ( KK > 1 ) .AND. ( KP < (KK-1) ) ) &
-               CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), &
-                        LDA )
+               CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), LDA )
             T = A( KK, KK )
             A( KK, KK ) = A( KP, KP )
             A( KP, KP ) = T
@@ -452,20 +427,18 @@
 !                    A := A - U(k)*D(k)*U(k)**T
 !                       = A - W(k)*1/D(k)*W(k)**T
 !
-                  D11 = CONE / A( K, K )
+                  D11 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSYR( UPLO, K-1, -D11, A( 1, K ), 1, A, LDA )
 !
 !                    Store U(k) in column k
 !
-                  CALL CSCAL( K-1, D11, A( 1, K ), 1 )
+                  A(1:K-1,K) = D11*A(1:K-1,K)
                ELSE
 !
 !                    Store L(k) in column K
 !
                   D11 = A( K, K )
-                  DO II = 1, K - 1
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(1:K-1,K) = A(1:K-1,K)/D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - U(k)*D(k)*U(k)**T
@@ -497,17 +470,14 @@
                D12 = A( K-1, K )
                D22 = A( K-1, K-1 ) / D12
                D11 = A( K, K ) / D12
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
 !
                DO J = K - 2, 1, -1
 !
                   WKM1 = T*( D11*A( J, K-1 )-A( J, K ) )
                   WK = T*( D22*A( J, K )-A( J, K-1 ) )
 !
-                  DO I = J, 1, -1
-                     A( I, J ) = A( I, J ) - (A( I, K ) / D12 )*WK - &
-                                 ( A( I, K-1 ) / D12 )*WKM1
-                  ENDDO
+                  A(1:J,J) = A(1:J,J) - (A(1:J,K)/D12)*WK - (A(1:J,K-1)/D12)*WKM1
 !
 !                    Store U(k) and U(k-1) in cols k and k-1 for row J
 !
@@ -547,8 +517,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 70
+      IF( K > N ) GO TO 70
       KSTEP = 1
       P = K
 !
@@ -565,15 +534,14 @@
          IMAX = K + ICAMAX( N-K, A( K+1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( ( MAX( ABSAKK, COLMAX ) == ZERO ) ) THEN
+      IF( ( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
 !
@@ -605,12 +573,11 @@
                   JMAX = K - 1 + ICAMAX( IMAX-K, A( IMAX, K ), LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX < N ) THEN
-                  ITEMP = IMAX + ICAMAX( N-IMAX, A( IMAX+1, IMAX ), &
-                                        1 )
+                  ITEMP = IMAX + ICAMAX( N-IMAX, A( IMAX+1, IMAX ), 1 )
                   STEMP = CABS1( A( ITEMP, IMAX ) )
                   IF( STEMP > ROWMAX ) THEN
                      ROWMAX = STEMP
@@ -621,8 +588,7 @@
 !                 Equivalent to testing for (used to handle NaN and Inf)
 !                 CABS1( A( IMAX, IMAX ) ) >= ALPHA*ROWMAX
 !
-               IF( .NOT.( CABS1(A( IMAX, IMAX )) < ALPHA*ROWMAX ) ) &
-               THEN
+               IF( .NOT.( CABS1(A( IMAX, IMAX )) < ALPHA*ROWMAX ) ) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -665,10 +631,8 @@
 !              Interchange rows and column K and P in the trailing
 !              submatrix A(k:n,k:n) if we have a 2-by-2 pivot
 !
-            IF( P < N ) &
-               CALL CSWAP( N-P, A( P+1, K ), 1, A( P+1, P ), 1 )
-            IF( P > (K+1) ) &
-               CALL CSWAP( P-K-1, A( K+1, K ), 1, A( P, K+1 ), LDA )
+            IF( P < N ) CALL CSWAP( N-P, A( P+1, K ), 1, A( P+1, P ), 1 )
+            IF( P > (K+1) ) CALL CSWAP( P-K-1, A( K+1, K ), 1, A( P, K+1 ), LDA )
             T = A( K, K )
             A( K, K ) = A( P, P )
             A( P, P ) = T
@@ -682,11 +646,9 @@
 !              Interchange rows and columns KK and KP in the trailing
 !              submatrix A(k:n,k:n)
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
             IF( ( KK < N ) .AND. ( KP > (KK+1) ) ) &
-               CALL CSWAP( KP-KK-1, A( KK+1, KK ), 1, A( KP, KK+1 ), &
-                        LDA )
+               CALL CSWAP( KP-KK-1, A( KK+1, KK ), 1, A( KP, KK+1 ), LDA )
             T = A( KK, KK )
             A( KK, KK ) = A( KP, KP )
             A( KP, KP ) = T
@@ -718,21 +680,19 @@
 !                    A := A - L(k)*D(k)*L(k)**T
 !                       = A - W(k)*(1/D(k))*W(k)**T
 !
-                  D11 = CONE / A( K, K )
+                  D11 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSYR( UPLO, N-K, -D11, A( K+1, K ), 1, &
                              A( K+1, K+1 ), LDA )
 !
 !                    Store L(k) in column k
 !
-                  CALL CSCAL( N-K, D11, A( K+1, K ), 1 )
+                  A(K+1:N,K) = D11*A(K+1:N,K)
                ELSE
 !
 !                    Store L(k) in column k
 !
                   D11 = A( K, K )
-                  DO II = K + 1, N
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(K+1:N,K) = A(K+1:N,K)/D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - L(k)*D(k)*L(k)**T
@@ -766,7 +726,7 @@
                D21 = A( K+1, K )
                D11 = A( K+1, K+1 ) / D21
                D22 = A( K, K ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
 !
                DO J = K + 2, N
 !
@@ -777,10 +737,7 @@
 !
 !                    Perform a rank-2 update of A(k+2:n,k+2:n)
 !
-                  DO I = J, N
-                     A( I, J ) = A( I, J ) - ( A( I, K ) / D21 )*WK - &
-                                 ( A( I, K+1 ) / D21 )*WKP1
-                  ENDDO
+                  A(J:N,J) = A(J:N,J) - (A(J:N,K)/D21)*WK - (A(J:N,K+1)/D21)*WKP1
 !
 !                    Store L(k) and L(k+1) in cols k and k+1 for row J
 !
@@ -817,5 +774,3 @@
 !     End of CSYTF2_ROOK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

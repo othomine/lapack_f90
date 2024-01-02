@@ -205,11 +205,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWENTY
-   PARAMETER          ( TWENTY = 2.0E+1 )
    INTEGER            LDST
    PARAMETER          ( LDST = 2 )
    LOGICAL            WANDS
@@ -232,17 +227,13 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACPY, CLARTG, CLASSQ, CROT
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, REAL, SQRT
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
 !
 !     Quick return if possible
 !
-   IF( N <= 1 ) &
-      RETURN
+   IF( N <= 1 ) RETURN
 !
    M = LDST
    WEAK = .FALSE.
@@ -257,27 +248,27 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   SCALE = REAL( CZERO )
-   SUM = REAL( CONE )
+   SCALE = REAL( (0.0E+0,0.0E+0) )
+   SUM = REAL( (1.0E+0,0.0E+0) )
    CALL CLACPY( 'Full', M, M, S, LDST, WORK, M )
    CALL CLACPY( 'Full', M, M, T, LDST, WORK( M*M+1 ), M )
    CALL CLASSQ( M*M, WORK, 1, SCALE, SUM )
    SA = SCALE*SQRT( SUM )
-   SCALE = DBLE( CZERO )
-   SUM = DBLE( CONE )
+   SCALE = DBLE( (0.0E+0,0.0E+0) )
+   SUM = DBLE( (1.0E+0,0.0E+0) )
    CALL CLASSQ( M*M, WORK(M*M+1), 1, SCALE, SUM )
    SB = SCALE*SQRT( SUM )
 !
 !     THRES has been changed from
 !        THRESH = MAX( TEN*EPS*SA, SMLNUM )
 !     to
-!        THRESH = MAX( TWENTY*EPS*SA, SMLNUM )
+!        THRESH = MAX( 20.0E+0*EPS*SA, SMLNUM )
 !     on 04/01/10.
 !     "Bug" reported by Ondra Kamenik, confirmed by Julie Langou, fixed by
 !     Jim Demmel and Guillaume Revy. See forum post 1783.
 !
-   THRESHA = MAX( TWENTY*EPS*SA, SMLNUM )
-   THRESHB = MAX( TWENTY*EPS*SB, SMLNUM )
+   THRESHA = MAX( 20.0E+0*EPS*SA, SMLNUM )
+   THRESHB = MAX( 20.0E+0*EPS*SB, SMLNUM )
 !
 !     Compute unitary QL and RQ that swap 1-by-1 and 1-by-1 blocks
 !     using Givens rotations and perform the swap tentatively.
@@ -301,10 +292,8 @@
 !     Weak stability test: |S21| <= O(EPS F-norm((A)))
 !                          and  |T21| <= O(EPS F-norm((B)))
 !
-   WEAK = ABS( S( 2, 1 ) ) <= THRESHA .AND. &
-    ABS( T( 2, 1 ) ) <= THRESHB
-   IF( .NOT.WEAK ) &
-      GO TO 20
+   WEAK = ABS( S( 2, 1 ) ) <= THRESHA .AND. ABS( T( 2, 1 ) ) <= THRESHB
+   IF( .NOT.WEAK ) GO TO 20
 !
    IF( WANDS ) THEN
 !
@@ -317,23 +306,20 @@
       CALL CROT( 2, WORK( 5 ), 1, WORK( 7 ), 1, CZ, -CONJG( SZ ) )
       CALL CROT( 2, WORK, 2, WORK( 2 ), 2, CQ, -SQ )
       CALL CROT( 2, WORK( 5 ), 2, WORK( 6 ), 2, CQ, -SQ )
-      DO I = 1, 2
-         WORK( I ) = WORK( I ) - A( J1+I-1, J1 )
-         WORK( I+2 ) = WORK( I+2 ) - A( J1+I-1, J1+1 )
-         WORK( I+4 ) = WORK( I+4 ) - B( J1+I-1, J1 )
-         WORK( I+6 ) = WORK( I+6 ) - B( J1+I-1, J1+1 )
-      ENDDO
-      SCALE = DBLE( CZERO )
-      SUM = DBLE( CONE )
+      WORK(1:2) = WORK(1:2) - A(J1-1+1:J1-1+2, J1)
+      WORK(3:4) = WORK(3:4) - A(J1-1+1:J1-1+2, J1+1 )
+      WORK(5:6) = WORK(5:6) - B(J1-1+1:J1-1+2, J1 )
+      WORK(7:8) = WORK(7:8) - B(J1-1+1:J1-1+2, J1+1 )
+      SCALE = DBLE( (0.0E+0,0.0E+0) )
+      SUM = DBLE( (1.0E+0,0.0E+0) )
       CALL CLASSQ( M*M, WORK, 1, SCALE, SUM )
       SA = SCALE*SQRT( SUM )
-      SCALE = DBLE( CZERO )
-      SUM = DBLE( CONE )
+      SCALE = DBLE( (0.0E+0,0.0E+0) )
+      SUM = DBLE( (1.0E+0,0.0E+0) )
       CALL CLASSQ( M*M, WORK(M*M+1), 1, SCALE, SUM )
       SB = SCALE*SQRT( SUM )
       STRONG = SA <= THRESHA .AND. SB <= THRESHB
-      IF( .NOT.STRONG ) &
-         GO TO 20
+      IF( .NOT.STRONG ) GO TO 20
    END IF
 !
 !     If the swap is accepted ("weakly" and "strongly"), apply the
@@ -346,15 +332,13 @@
 !
 !     Set  N1 by N2 (2,1) blocks to 0
 !
-   A( J1+1, J1 ) = CZERO
-   B( J1+1, J1 ) = CZERO
+   A( J1+1, J1 ) = (0.0E+0,0.0E+0)
+   B( J1+1, J1 ) = (0.0E+0,0.0E+0)
 !
 !     Accumulate transformations into Q and Z if requested.
 !
-   IF( WANTZ ) &
-      CALL CROT( N, Z( 1, J1 ), 1, Z( 1, J1+1 ), 1, CZ, CONJG( SZ ) )
-   IF( WANTQ ) &
-      CALL CROT( N, Q( 1, J1 ), 1, Q( 1, J1+1 ), 1, CQ, CONJG( SQ ) )
+   IF( WANTZ ) CALL CROT( N, Z( 1, J1 ), 1, Z( 1, J1+1 ), 1, CZ, CONJG( SZ ) )
+   IF( WANTQ ) CALL CROT( N, Q( 1, J1 ), 1, Q( 1, J1+1 ), 1, CQ, CONJG( SQ ) )
 !
 !     Exit with INFO = 0 if swap was successfully performed.
 !
@@ -369,5 +353,3 @@
 !     End of CTGEX2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

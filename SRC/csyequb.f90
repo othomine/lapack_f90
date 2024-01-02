@@ -148,15 +148,13 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ONE, ZERO
-   PARAMETER          ( ONE = 1.0E0, ZERO = 0.0E0 )
    INTEGER            MAX_ITER
    PARAMETER          ( MAX_ITER = 100 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J, ITER
    REAL               AVG, STD, TOL, C0, C1, C2, T, U, SI, D, BASE, &
-                      SMIN, SMAX, SMLNUM, BIGNUM, SCALE, SUMSQ
+                      SMIN, SMAX, SMLNUM, BIGNUM, SCALE, SUMSQ, tmpcabs
    LOGICAL            UP
    COMPLEX            ZDUM
 !     ..
@@ -167,9 +165,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLASSQ, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, INT, LOG, MAX, MIN, REAL, SQRT
 !     ..
 !     .. Statement Functions ..
    REAL               CABS1
@@ -195,59 +190,58 @@
    END IF
 
    UP = LSAME( UPLO, 'U' )
-   AMAX = ZERO
+   AMAX = 0.0E+0
 !
 !     Quick return if possible.
 !
    IF ( N  ==  0 ) THEN
-      SCOND = ONE
+      SCOND = 1.0E+0
       RETURN
    END IF
 
-   DO I = 1, N
-      S( I ) = ZERO
-   END DO
+   S(1:N) = 0.0E+0
 
-   AMAX = ZERO
+   AMAX = 0.0E+0
    IF ( UP ) THEN
       DO J = 1, N
          DO I = 1, J-1
-            S( I ) = MAX( S( I ), CABS1( A( I, J ) ) )
-            S( J ) = MAX( S( J ), CABS1( A( I, J ) ) )
-            AMAX = MAX( AMAX, CABS1( A( I, J ) ) )
+            tmpcabs = CABS1( A( I, J ) )
+            S( I ) = MAX( S( I ), tmpcabs )
+            S( J ) = MAX( S( J ), tmpcabs )
+            AMAX = MAX( AMAX, tmpcabs )
          END DO
-         S( J ) = MAX( S( J ), CABS1( A( J, J ) ) )
-         AMAX = MAX( AMAX, CABS1( A( J, J ) ) )
+         tmpcabs = CABS1( A( J, J ) )
+         S( J ) = MAX( S( J ), tmpcabs )
+         AMAX = MAX( AMAX, tmpcabs )
       END DO
    ELSE
       DO J = 1, N
-         S( J ) = MAX( S( J ), CABS1( A( J, J ) ) )
-         AMAX = MAX( AMAX, CABS1( A( J, J ) ) )
+         tmpcabs = CABS1( A( J, J ) )
+         S( J ) = MAX( S( J ), tmpcabs )
+         AMAX = MAX( AMAX, tmpcabs )
          DO I = J+1, N
-            S( I ) = MAX( S( I ), CABS1( A( I, J ) ) )
-            S( J ) = MAX( S( J ), CABS1( A( I, J ) ) )
-            AMAX = MAX( AMAX, CABS1( A( I, J ) ) )
+            tmpcabs = CABS1( A( I, J ) )
+            S( I ) = MAX( S( I ), tmpcabs )
+            S( J ) = MAX( S( J ), tmpcabs )
+            AMAX = MAX( AMAX, tmpcabs )
          END DO
       END DO
    END IF
-   DO J = 1, N
-      S( J ) = 1.0 / S( J )
-   END DO
+   S(1:N) = 1.0 / S(1:N)
 
-   TOL = ONE / SQRT( 2.0E0 * N )
+   TOL = 1.0E+0 / SQRT( 2.0E0 * N )
 
    DO ITER = 1, MAX_ITER
       SCALE = 0.0E0
       SUMSQ = 0.0E0
 !        beta = |A|s
-      DO I = 1, N
-          WORK( I ) = ZERO
-      END DO
+      WORK(1:N) = 0.0E+0
       IF ( UP ) THEN
          DO J = 1, N
             DO I = 1, J-1
-               WORK( I ) = WORK( I ) + CABS1( A( I, J ) ) * S( J )
-               WORK( J ) = WORK( J ) + CABS1( A( I, J ) ) * S( I )
+               tmpcabs = CABS1( A( I, J ) )
+               WORK( I ) = WORK( I ) + tmpcabs * S( J )
+               WORK( J ) = WORK( J ) + tmpcabs * S( I )
             END DO
             WORK( J ) = WORK( J ) + CABS1( A( J, J ) ) * S( J )
          END DO
@@ -255,23 +249,17 @@
          DO J = 1, N
             WORK( J ) = WORK( J ) + CABS1( A( J, J ) ) * S( J )
             DO I = J+1, N
-               WORK( I ) = WORK( I ) + CABS1( A( I, J ) ) * S( J )
-               WORK( J ) = WORK( J ) + CABS1( A( I, J ) ) * S( I )
+               tmpcabs = CABS1( A( I, J ) )
+               WORK( I ) = WORK( I ) + tmpcabs * S( J )
+               WORK( J ) = WORK( J ) + tmpcabs * S( I )
             END DO
          END DO
       END IF
 
 !        avg = s^T beta / n
-      AVG = 0.0E0
-      DO I = 1, N
-         AVG = AVG + REAL( S( I )*WORK( I ) )
-      END DO
-      AVG = AVG / N
+      AVG = SUM(REAL( S(1:N)*WORK(1:N) ))/N
 
-      STD = 0.0E0
-      DO I = N+1, 2*N
-         WORK( I ) = S( I-N ) * WORK( I-N ) - AVG
-      END DO
+      WORK(N+1:2*N) = S(1:N) * WORK(1:N) - AVG
       CALL CLASSQ( N, WORK( N+1 ), 1, SCALE, SUMSQ )
       STD = SCALE * SQRT( SUMSQ / N )
 
@@ -292,7 +280,7 @@
          SI = -2*C0 / ( C1 + SQRT( D ) )
 
          D = SI - S( I )
-         U = ZERO
+         U = 0.0E+0
          IF ( UP ) THEN
             DO J = 1, I
                T = CABS1( A( J, I ) )
@@ -325,12 +313,12 @@
  999  CONTINUE
 
    SMLNUM = SLAMCH( 'SAFEMIN' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    SMIN = BIGNUM
-   SMAX = ZERO
-   T = ONE / SQRT( AVG )
+   SMAX = 0.0E+0
+   T = 1.0E+0 / SQRT( AVG )
    BASE = SLAMCH( 'B' )
-   U = ONE / LOG( BASE )
+   U = 1.0E+0 / LOG( BASE )
    DO I = 1, N
       S( I ) = BASE ** INT( U * LOG( S( I ) * T ) )
       SMIN = MIN( SMIN, S( I ) )
@@ -339,5 +327,3 @@
    SCOND = MAX( SMIN, SMLNUM ) / MIN( SMAX, BIGNUM )
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

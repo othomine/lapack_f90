@@ -314,12 +314,6 @@
 !  =====================================================================
 !  Replaced various illegal calls to CCOPY by calls to CLASET.
 !  Sven Hammarling, 1/5/02.
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO
-   PARAMETER          ( CZERO = (0.0E+0, 0.0E+0) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, NOTRAN
@@ -334,9 +328,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CLACPY, CLASET, CSCAL, CTGSY2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, MAX, REAL, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -402,9 +393,7 @@
    IF( M == 0 .OR. N == 0 ) THEN
       SCALE = 1
       IF( NOTRAN ) THEN
-         IF( IJOB /= 0 ) THEN
-            DIF = 0
-         END IF
+         IF( IJOB /= 0 ) DIF = 0
       END IF
       RETURN
    END IF
@@ -419,28 +408,26 @@
    IF( NOTRAN ) THEN
       IF( IJOB >= 3 ) THEN
          IFUNC = IJOB - 2
-         CALL CLASET( 'F', M, N, CZERO, CZERO, C, LDC )
-         CALL CLASET( 'F', M, N, CZERO, CZERO, F, LDF )
+         C(1:M,1:N) = (0.0E+0,0.0E+0)
+         F(1:M,1:N) = (0.0E+0,0.0E+0)
       ELSE IF( IJOB >= 1 .AND. NOTRAN ) THEN
          ISOLVE = 2
       END IF
    END IF
 !
-   IF( ( MB <= 1 .AND. NB <= 1 ) .OR. ( MB >= M .AND. NB >= N ) ) &
-        THEN
+   IF( ( MB <= 1 .AND. NB <= 1 ) .OR. ( MB >= M .AND. NB >= N ) ) THEN
 !
 !        Use unblocked Level 2 solver
 !
       DO IROUND = 1, ISOLVE
 !
-         SCALE = ONE
-         DSCALE = ZERO
-         DSUM = ONE
+         SCALE = 1.0E+0
+         DSCALE = 0.0E+0
+         DSUM = 1.0E+0
          PQ = M*N
          CALL CTGSY2( TRANS, IFUNC, M, N, A, LDA, B, LDB, C, LDC, D, &
-                      LDD, E, LDE, F, LDF, SCALE, DSUM, DSCALE, &
-                      INFO )
-         IF( DSCALE /= ZERO ) THEN
+                      LDD, E, LDE, F, LDF, SCALE, DSUM, DSCALE, INFO )
+         IF( DSCALE /= 0.0E+0 ) THEN
             IF( IJOB == 1 .OR. IJOB == 3 ) THEN
                DIF = SQRT( REAL( 2*M*N ) ) / ( DSCALE*SQRT( DSUM ) )
             ELSE
@@ -454,8 +441,8 @@
             SCALE2 = SCALE
             CALL CLACPY( 'F', M, N, C, LDC, WORK, M )
             CALL CLACPY( 'F', M, N, F, LDF, WORK( M*N+1 ), M )
-            CALL CLASET( 'F', M, N, CZERO, CZERO, C, LDC )
-            CALL CLASET( 'F', M, N, CZERO, CZERO, F, LDF )
+            C(1:M,1:N) = (0.0E+0,0.0E+0)
+            F(1:M,1:N) = (0.0E+0,0.0E+0)
          ELSE IF( ISOLVE == 2 .AND. IROUND == 2 ) THEN
             CALL CLACPY( 'F', M, N, WORK, M, C, LDC )
             CALL CLACPY( 'F', M, N, WORK( M*N+1 ), M, F, LDF )
@@ -472,38 +459,32 @@
    P = 0
    I = 1
 40 CONTINUE
-   IF( I > M ) &
-      GO TO 50
+   IF( I > M ) GO TO 50
    P = P + 1
    IWORK( P ) = I
    I = I + MB
-   IF( I >= M ) &
-      GO TO 50
+   IF( I >= M ) GO TO 50
    GO TO 40
 50 CONTINUE
    IWORK( P+1 ) = M + 1
-   IF( IWORK( P ) == IWORK( P+1 ) ) &
-      P = P - 1
+   IF( IWORK( P ) == IWORK( P+1 ) ) P = P - 1
 !
 !     Determine block structure of B
 !
    Q = P + 1
    J = 1
 60 CONTINUE
-   IF( J > N ) &
-      GO TO 70
+   IF( J > N ) GO TO 70
 !
    Q = Q + 1
    IWORK( Q ) = J
    J = J + NB
-   IF( J >= N ) &
-      GO TO 70
+   IF( J >= N ) GO TO 70
    GO TO 60
 !
 70 CONTINUE
    IWORK( Q+1 ) = N + 1
-   IF( IWORK( Q ) == IWORK( Q+1 ) ) &
-      Q = Q - 1
+   IF( IWORK( Q ) == IWORK( Q+1 ) ) Q = Q - 1
 !
    IF( NOTRAN ) THEN
       DO IROUND = 1, ISOLVE
@@ -514,9 +495,9 @@
 !           for I = P, P - 1, ..., 1; J = 1, 2, ..., Q
 !
          PQ = 0
-         SCALE = ONE
-         DSCALE = ZERO
-         DSUM = ONE
+         SCALE = 1.0E+0
+         DSCALE = 0.0E+0
+         DSUM = 1.0E+0
          DO J = P + 2, Q
             JS = IWORK( J )
             JE = IWORK( J+1 ) - 1
@@ -530,34 +511,17 @@
                             D( IS, IS ), LDD, E( JS, JS ), LDE, &
                             F( IS, JS ), LDF, SCALOC, DSUM, DSCALE, &
                             LINFO )
-               IF( LINFO > 0 ) &
-                  INFO = LINFO
+               IF( LINFO > 0 ) INFO = LINFO
                PQ = PQ + MB*NB
-               IF( SCALOC /= ONE ) THEN
-                  DO K = 1, JS - 1
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                                 1 )
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                                 1 )
-                  ENDDO
-                  DO K = JS, JE
-                     CALL CSCAL( IS-1, CMPLX( SCALOC, ZERO ), &
-                                 C( 1, K ), 1 )
-                     CALL CSCAL( IS-1, CMPLX( SCALOC, ZERO ), &
-                                 F( 1, K ), 1 )
-                  ENDDO
-                  DO K = JS, JE
-                     CALL CSCAL( M-IE, CMPLX( SCALOC, ZERO ), &
-                                 C( IE+1, K ), 1 )
-                     CALL CSCAL( M-IE, CMPLX( SCALOC, ZERO ), &
-                                 F( IE+1, K ), 1 )
-                     ENDDO
-                  DO K = JE + 1, N
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                                 1 )
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                                 1 )
-                     ENDDO
+               IF( SCALOC /= 1.0E+0 ) THEN
+                  C(1:M,1:JS-1) = CMPLX( SCALOC, 0.0E+0 )*C(1:M,1:JS-1)
+                  F(1:M,1:JS-1) = CMPLX( SCALOC, 0.0E+0 )*F(1:M,1:JS-1)
+                  C(1:IS-1,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*C(1:IS-1,JS:JE)
+                  F(1:IS-1,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*F(1:IS-1,JS:JE)
+                  C(IE+1:M,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*C(IE+1:M,JS:JE)
+                  F(IE+1:M,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*F(IE+1:M,JS:JE)
+                  C(1:M,JE+1:N) = CMPLX( SCALOC, 0.0E+0 )*C(1:M,JE+1:N)
+                  F(1:M,JE+1:N) = CMPLX( SCALOC, 0.0E+0 )*F(1:M,JE+1:N)
                   SCALE = SCALE*SCALOC
                END IF
 !
@@ -565,27 +529,27 @@
 !
                IF( I > 1 ) THEN
                   CALL CGEMM( 'N', 'N', IS-1, NB, MB, &
-                              CMPLX( -ONE, ZERO ), A( 1, IS ), LDA, &
-                              C( IS, JS ), LDC, CMPLX( ONE, ZERO ), &
+                              CMPLX( -1.0E+0, 0.0E+0 ), A( 1, IS ), LDA, &
+                              C( IS, JS ), LDC, CMPLX( 1.0E+0, 0.0E+0 ), &
                               C( 1, JS ), LDC )
                   CALL CGEMM( 'N', 'N', IS-1, NB, MB, &
-                              CMPLX( -ONE, ZERO ), D( 1, IS ), LDD, &
-                              C( IS, JS ), LDC, CMPLX( ONE, ZERO ), &
+                              CMPLX( -1.0E+0, 0.0E+0 ), D( 1, IS ), LDD, &
+                              C( IS, JS ), LDC, CMPLX( 1.0E+0, 0.0E+0 ), &
                               F( 1, JS ), LDF )
                END IF
                IF( J < Q ) THEN
                   CALL CGEMM( 'N', 'N', MB, N-JE, NB, &
-                              CMPLX( ONE, ZERO ), F( IS, JS ), LDF, &
-                              B( JS, JE+1 ), LDB, CMPLX( ONE, ZERO ), &
+                              CMPLX( 1.0E+0, 0.0E+0 ), F( IS, JS ), LDF, &
+                              B( JS, JE+1 ), LDB, CMPLX( 1.0E+0, 0.0E+0 ), &
                               C( IS, JE+1 ), LDC )
                   CALL CGEMM( 'N', 'N', MB, N-JE, NB, &
-                              CMPLX( ONE, ZERO ), F( IS, JS ), LDF, &
-                              E( JS, JE+1 ), LDE, CMPLX( ONE, ZERO ), &
+                              CMPLX( 1.0E+0, 0.0E+0 ), F( IS, JS ), LDF, &
+                              E( JS, JE+1 ), LDE, CMPLX( 1.0E+0, 0.0E+0 ), &
                               F( IS, JE+1 ), LDF )
                END IF
                ENDDO
             ENDDO
-         IF( DSCALE /= ZERO ) THEN
+         IF( DSCALE /= 0.0E+0 ) THEN
             IF( IJOB == 1 .OR. IJOB == 3 ) THEN
                DIF = SQRT( REAL( 2*M*N ) ) / ( DSCALE*SQRT( DSUM ) )
             ELSE
@@ -599,8 +563,8 @@
             SCALE2 = SCALE
             CALL CLACPY( 'F', M, N, C, LDC, WORK, M )
             CALL CLACPY( 'F', M, N, F, LDF, WORK( M*N+1 ), M )
-            CALL CLASET( 'F', M, N, CZERO, CZERO, C, LDC )
-            CALL CLASET( 'F', M, N, CZERO, CZERO, F, LDF )
+            C(1:M,1:N) = (0.0E+0,0.0E+0)
+            F(1:M,1:N) = (0.0E+0,0.0E+0)
          ELSE IF( ISOLVE == 2 .AND. IROUND == 2 ) THEN
             CALL CLACPY( 'F', M, N, WORK, M, C, LDC )
             CALL CLACPY( 'F', M, N, WORK( M*N+1 ), M, F, LDF )
@@ -614,7 +578,7 @@
 !            R(I, J) * B(J, J)  + L(I, J) * E(J, J) = -F(I, J)
 !        for I = 1,2,..., P; J = Q, Q-1,..., 1
 !
-      SCALE = ONE
+      SCALE = 1.0E+0
       DO I = 1, P
          IS = IWORK( I )
          IE = IWORK( I+1 ) - 1
@@ -628,33 +592,16 @@
                          D( IS, IS ), LDD, E( JS, JS ), LDE, &
                          F( IS, JS ), LDF, SCALOC, DSUM, DSCALE, &
                          LINFO )
-            IF( LINFO > 0 ) &
-               INFO = LINFO
-            IF( SCALOC /= ONE ) THEN
-               DO K = 1, JS - 1
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                              1 )
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                              1 )
-                  ENDDO
-               DO K = JS, JE
-                  CALL CSCAL( IS-1, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                              1 )
-                  CALL CSCAL( IS-1, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                              1 )
-                  ENDDO
-               DO K = JS, JE
-                  CALL CSCAL( M-IE, CMPLX( SCALOC, ZERO ), &
-                              C( IE+1, K ), 1 )
-                  CALL CSCAL( M-IE, CMPLX( SCALOC, ZERO ), &
-                              F( IE+1, K ), 1 )
-                  ENDDO
-               DO K = JE + 1, N
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                              1 )
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                              1 )
-                  ENDDO
+            IF( LINFO > 0 ) INFO = LINFO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:JS-1) = CMPLX( SCALOC, 0.0E+0 )*C(1:M,1:JS-1)
+               F(1:M,1:JS-1) = CMPLX( SCALOC, 0.0E+0 )*F(1:M,1:JS-1)
+               C(1:IS-1,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*C(1:IS-1,JS:JE)
+               F(1:IS-1,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*F(1:IS-1,JS:JE)
+               C(IE+1:M,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*C(IE+1:M,JS:JE)
+               F(IE+1:M,JS:JE) = CMPLX( SCALOC, 0.0E+0 )*F(IE+1:M,JS:JE)
+               C(1:M,JE+1:N) = CMPLX( SCALOC, 0.0E+0 )*C(1:M,JE+1:N)
+               F(1:M,JE+1:N) = CMPLX( SCALOC, 0.0E+0 )*F(1:M,JE+1:N)
                SCALE = SCALE*SCALOC
             END IF
 !
@@ -662,22 +609,22 @@
 !
             IF( J > P+2 ) THEN
                CALL CGEMM( 'N', 'C', MB, JS-1, NB, &
-                           CMPLX( ONE, ZERO ), C( IS, JS ), LDC, &
-                           B( 1, JS ), LDB, CMPLX( ONE, ZERO ), &
+                           CMPLX( 1.0E+0, 0.0E+0 ), C( IS, JS ), LDC, &
+                           B( 1, JS ), LDB, CMPLX( 1.0E+0, 0.0E+0 ), &
                            F( IS, 1 ), LDF )
                CALL CGEMM( 'N', 'C', MB, JS-1, NB, &
-                           CMPLX( ONE, ZERO ), F( IS, JS ), LDF, &
-                           E( 1, JS ), LDE, CMPLX( ONE, ZERO ), &
+                           CMPLX( 1.0E+0, 0.0E+0 ), F( IS, JS ), LDF, &
+                           E( 1, JS ), LDE, CMPLX( 1.0E+0, 0.0E+0 ), &
                            F( IS, 1 ), LDF )
             END IF
             IF( I < P ) THEN
                CALL CGEMM( 'C', 'N', M-IE, NB, MB, &
-                           CMPLX( -ONE, ZERO ), A( IS, IE+1 ), LDA, &
-                           C( IS, JS ), LDC, CMPLX( ONE, ZERO ), &
+                           CMPLX( -1.0E+0, 0.0E+0 ), A( IS, IE+1 ), LDA, &
+                           C( IS, JS ), LDC, CMPLX( 1.0E+0, 0.0E+0 ), &
                            C( IE+1, JS ), LDC )
                CALL CGEMM( 'C', 'N', M-IE, NB, MB, &
-                           CMPLX( -ONE, ZERO ), D( IS, IE+1 ), LDD, &
-                           F( IS, JS ), LDF, CMPLX( ONE, ZERO ), &
+                           CMPLX( -1.0E+0, 0.0E+0 ), D( IS, IE+1 ), LDD, &
+                           F( IS, JS ), LDF, CMPLX( 1.0E+0, 0.0E+0 ), &
                            C( IE+1, JS ), LDC )
             END IF
             ENDDO
@@ -691,5 +638,3 @@
 !     End of CTGSYL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

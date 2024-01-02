@@ -455,13 +455,10 @@
 !     .. Parameters ..
    INTEGER            IDIFJB
    PARAMETER          ( IDIFJB = 3 )
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SWAP, WANTD, WANTD1, WANTD2, WANTP
-   INTEGER            I, IERR, IJB, K, KASE, KS, LIWMIN, LWMIN, MN2, &
-                      N1, N2
+   INTEGER            I, IERR, IJB, K, KASE, KS, LIWMIN, LWMIN, MN2, N1, N2
    REAL               DSCALE, DSUM, RDSCAL, SAFMIN
    COMPLEX            TEMP1, TEMP2
 !     ..
@@ -470,11 +467,7 @@
 !     ..
 !     .. External Subroutines ..
    REAL               SLAMCH
-   EXTERNAL           CLACN2, CLACPY, CLASSQ, CSCAL, CTGEXC, CTGSYL, &
-                      SLAMCH, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, CONJG, MAX, SQRT
+   EXTERNAL           CLACN2, CLACPY, CLASSQ, CSCAL, CTGEXC, CTGSYL, SLAMCH, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -512,19 +505,12 @@
 !     Set M to the dimension of the specified pair of deflating
 !     subspaces.
 !
-   M = 0
    IF( .NOT.LQUERY .OR. IJOB /= 0 ) THEN
-   DO K = 1, N
-      ALPHA( K ) = A( K, K )
-      BETA( K ) = B( K, K )
-      IF( K < N ) THEN
-         IF( SELECT( K ) ) &
-            M = M + 1
-      ELSE
-         IF( SELECT( N ) ) &
-            M = M + 1
-      END IF
-   ENDDO
+      M = COUNT(SELECT(1:N))
+      DO K = 1, N
+         ALPHA( K ) = A( K, K )
+         BETA( K ) = B( K, K )
+      ENDDO
    END IF
 !
    IF( IJOB == 1 .OR. IJOB == 2 .OR. IJOB == 4 ) THEN
@@ -558,12 +544,12 @@
 !
    IF( M == N .OR. M == 0 ) THEN
       IF( WANTP ) THEN
-         PL = ONE
-         PR = ONE
+         PL = 1.0E+0
+         PR = 1.0E+0
       END IF
       IF( WANTD ) THEN
-         DSCALE = ZERO
-         DSUM = ONE
+         DSCALE = 0.0E+0
+         DSUM = 1.0E+0
          DO I = 1, N
             CALL CLASSQ( N, A( 1, I ), 1, DSCALE, DSUM )
             CALL CLASSQ( N, B( 1, I ), 1, DSCALE, DSUM )
@@ -599,12 +585,12 @@
 !
             INFO = 1
             IF( WANTP ) THEN
-               PL = ZERO
-               PR = ZERO
+               PL = 0.0E+0
+               PR = 0.0E+0
             END IF
             IF( WANTD ) THEN
-               DIF( 1 ) = ZERO
-               DIF( 2 ) = ZERO
+               DIF( 1 ) = 0.0E+0
+               DIF( 2 ) = 0.0E+0
             END IF
             GO TO 70
          END IF
@@ -620,8 +606,7 @@
       N2 = N - M
       I = N1 + 1
       CALL CLACPY( 'Full', N1, N2, A( 1, I ), LDA, WORK, N1 )
-      CALL CLACPY( 'Full', N1, N2, B( 1, I ), LDB, WORK( N1*N2+1 ), &
-                   N1 )
+      CALL CLACPY( 'Full', N1, N2, B( 1, I ), LDB, WORK( N1*N2+1 ), N1 )
       IJB = 0
       CALL CTGSYL( 'N', IJB, N1, N2, A, LDA, A( I, I ), LDA, WORK, &
                    N1, B, LDB, B( I, I ), LDB, WORK( N1*N2+1 ), N1, &
@@ -631,21 +616,21 @@
 !        Estimate the reciprocal of norms of "projections" onto
 !        left and right eigenspaces
 !
-      RDSCAL = ZERO
-      DSUM = ONE
+      RDSCAL = 0.0E+0
+      DSUM = 1.0E+0
       CALL CLASSQ( N1*N2, WORK, 1, RDSCAL, DSUM )
       PL = RDSCAL*SQRT( DSUM )
-      IF( PL == ZERO ) THEN
-         PL = ONE
+      IF( PL == 0.0E+0 ) THEN
+         PL = 1.0E+0
       ELSE
          PL = DSCALE / ( SQRT( DSCALE*DSCALE / PL+PL )*SQRT( PL ) )
       END IF
-      RDSCAL = ZERO
-      DSUM = ONE
+      RDSCAL = 0.0E+0
+      DSUM = 1.0E+0
       CALL CLASSQ( N1*N2, WORK( N1*N2+1 ), 1, RDSCAL, DSUM )
       PR = RDSCAL*SQRT( DSUM )
-      IF( PR == ZERO ) THEN
-         PR = ONE
+      IF( PR == 0.0E+0 ) THEN
+         PR = 1.0E+0
       ELSE
          PR = DSCALE / ( SQRT( DSCALE*DSCALE / PR+PR )*SQRT( PR ) )
       END IF
@@ -719,8 +704,7 @@
 !           1-norm-based estimate of Difl.
 !
 50       CONTINUE
-         CALL CLACN2( MN2, WORK( MN2+1 ), WORK, DIF( 2 ), KASE, &
-                      ISAVE )
+         CALL CLACN2( MN2, WORK( MN2+1 ), WORK, DIF( 2 ), KASE, ISAVE )
          IF( KASE /= 0 ) THEN
             IF( KASE == 1 ) THEN
 !
@@ -757,12 +741,11 @@
          TEMP1 = CONJG( B( K, K ) / DSCALE )
          TEMP2 = B( K, K ) / DSCALE
          B( K, K ) = DSCALE
-         CALL CSCAL( N-K, TEMP1, B( K, K+1 ), LDB )
-         CALL CSCAL( N-K+1, TEMP1, A( K, K ), LDA )
-         IF( WANTQ ) &
-            CALL CSCAL( N, TEMP2, Q( 1, K ), 1 )
+         B(K,K+1:N) = TEMP1 * B(K,K+1:N)
+         A(K,K:N) = TEMP1 * A(K,K:N)
+         IF( WANTQ ) Q(1:N,K) = TEMP2 * Q(1:N,K)
       ELSE
-         B( K, K ) = CMPLX( ZERO, ZERO )
+         B( K, K ) = CMPLX( 0.0E+0, 0.0E+0 )
       END IF
 !
       ALPHA( K ) = A( K, K )
@@ -780,5 +763,3 @@
 !     End of CTGSEN
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

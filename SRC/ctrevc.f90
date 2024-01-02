@@ -233,13 +233,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CMZERO, CMONE
-   PARAMETER          ( CMZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CMONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ALLV, BOTHV, LEFTV, OVER, RIGHTV, SOMEV
@@ -249,21 +242,11 @@
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
-   INTEGER            ICAMAX
-   REAL               SCASUM, SLAMCH
-   EXTERNAL           LSAME, ICAMAX, SCASUM, SLAMCH
+   REAL               SLAMCH, CABS1
+   EXTERNAL           LSAME, SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMV, CLATRS, CSSCAL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, REAL
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( CDUM ) = ABS( REAL( CDUM ) ) + ABS( AIMAG( CDUM ) )
+   EXTERNAL           CGEMV, CLATRS, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -281,11 +264,7 @@
 !     eigenvectors.
 !
    IF( SOMEV ) THEN
-      M = 0
-      DO J = 1, N
-         IF( SELECT( J ) ) &
-            M = M + 1
-      ENDDO
+      M = COUNT(SELECT(1:N))
    ELSE
       M = N
    END IF
@@ -313,13 +292,12 @@
 !
 !     Quick return if possible.
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Set the constants to control overflow.
 !
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Precision' )
    SMLNUM = UNFL*( N / ULP )
 !
@@ -332,9 +310,9 @@
 !     Compute 1-norm of each column of strictly upper triangular
 !     part of T to control overflow in triangular solver.
 !
-   RWORK( 1 ) = ZERO
+   RWORK( 1 ) = 0.0E+0
    DO J = 2, N
-      RWORK( J ) = SCASUM( J-1, T( 1, J ), 1 )
+      RWORK( J ) = sum(ABS(REAL(T(1:J-1,J))) + ABS(AIMAG(T(1:J-1,J))))
    ENDDO
 !
    IF( RIGHTV ) THEN
@@ -345,55 +323,49 @@
       DO KI = N, 1, -1
 !
          IF( SOMEV ) THEN
-            IF( .NOT.SELECT( KI ) ) &
-               GO TO 80
+            IF( .NOT.SELECT( KI ) ) GO TO 80
          END IF
          SMIN = MAX( ULP*( CABS1( T( KI, KI ) ) ), SMLNUM )
 !
-         WORK( 1 ) = CMONE
+         WORK( 1 ) = (1.0E+0,0.0E+0)
 !
 !           Form right-hand side.
 !
-         DO K = 1, KI - 1
-            WORK( K ) = -T( K, KI )
-         ENDDO
+         WORK(1:KI-1) = -T(1:KI-1,KI)
 !
 !           Solve the triangular system:
 !              (T(1:KI-1,1:KI-1) - T(KI,KI))*X = SCALE*WORK.
 !
          DO K = 1, KI - 1
             T( K, K ) = T( K, K ) - T( KI, KI )
-            IF( CABS1( T( K, K ) ) < SMIN ) &
-               T( K, K ) = SMIN
+            IF( CABS1( T( K, K ) ) < SMIN ) T( K, K ) = SMIN
          ENDDO
 !
          IF( KI > 1 ) THEN
             CALL CLATRS( 'Upper', 'No transpose', 'Non-unit', 'Y', &
-                         KI-1, T, LDT, WORK( 1 ), SCALE, RWORK, &
-                         INFO )
+                         KI-1, T, LDT, WORK( 1 ), SCALE, RWORK, INFO )
             WORK( KI ) = SCALE
          END IF
 !
 !           Copy the vector x or Q*x to VR and normalize.
 !
          IF( .NOT.OVER ) THEN
-            CALL CCOPY( KI, WORK( 1 ), 1, VR( 1, IS ), 1 )
+            VR(1:KI,IS) = WORK(1:KI)
 !
-            II = ICAMAX( KI, VR( 1, IS ), 1 )
-            REMAX = ONE / CABS1( VR( II, IS ) )
-            CALL CSSCAL( KI, REMAX, VR( 1, IS ), 1 )
+            II = maxloc(ABS(REAL(VR(1:KI,IS))) + ABS(AIMAG(VR(1:KI,IS))),1)
+
+            REMAX = 1.0E+0 / CABS1( VR( II, IS ) )
+            VR(1:KI,IS) = REMAX*VR(1:KI,IS)
 !
-            DO K = KI + 1, N
-               VR( K, IS ) = CMZERO
-            ENDDO
+            VR(KI+1:N,IS) = (0.0E+0,0.0E+0)
          ELSE
             IF( KI > 1 ) &
-               CALL CGEMV( 'N', N, KI-1, CMONE, VR, LDVR, WORK( 1 ), &
+               CALL CGEMV( 'N', N, KI-1, (1.0E+0,0.0E+0), VR, LDVR, WORK( 1 ), &
                            1, CMPLX( SCALE ), VR( 1, KI ), 1 )
 !
-            II = ICAMAX( N, VR( 1, KI ), 1 )
-            REMAX = ONE / CABS1( VR( II, KI ) )
-            CALL CSSCAL( N, REMAX, VR( 1, KI ), 1 )
+            II = maxloc(ABS(REAL(VR(1:N,KI))) + ABS(AIMAG(VR(1:N,KI))),1)
+            REMAX = 1.0E+0 / CABS1( VR( II, KI ) )
+            VR(1:N,KI) = REMAX*VR(1:N,KI)
          END IF
 !
 !           Set back the original diagonal elements of T.
@@ -415,27 +387,23 @@
       DO KI = 1, N
 !
          IF( SOMEV ) THEN
-            IF( .NOT.SELECT( KI ) ) &
-               GO TO 130
+            IF( .NOT.SELECT( KI ) ) GO TO 130
          END IF
          SMIN = MAX( ULP*( CABS1( T( KI, KI ) ) ), SMLNUM )
 !
-         WORK( N ) = CMONE
+         WORK( N ) = (1.0E+0,0.0E+0)
 !
 !           Form right-hand side.
 !
-         DO K = KI + 1, N
-            WORK( K ) = -CONJG( T( KI, K ) )
-         ENDDO
+         WORK(KI+1:N) = -CONJG( T( KI, KI+1:N) )
 !
 !           Solve the triangular system:
 !              (T(KI+1:N,KI+1:N) - T(KI,KI))**H*X = SCALE*WORK.
 !
          DO K = KI + 1, N
             T( K, K ) = T( K, K ) - T( KI, KI )
-            IF( CABS1( T( K, K ) ) < SMIN ) &
-               T( K, K ) = SMIN
-            ENDDO
+            IF( CABS1( T( K, K ) ) < SMIN ) T( K, K ) = SMIN
+         ENDDO
 !
          IF( KI < N ) THEN
             CALL CLATRS( 'Upper', 'Conjugate transpose', 'Non-unit', &
@@ -447,35 +415,31 @@
 !           Copy the vector x or Q*x to VL and normalize.
 !
          IF( .NOT.OVER ) THEN
-            CALL CCOPY( N-KI+1, WORK( KI ), 1, VL( KI, IS ), 1 )
+            VL(KI:N,IS) = WORK(KI:N)
 !
-            II = ICAMAX( N-KI+1, VL( KI, IS ), 1 ) + KI - 1
-            REMAX = ONE / CABS1( VL( II, IS ) )
-            CALL CSSCAL( N-KI+1, REMAX, VL( KI, IS ), 1 )
+            II = maxloc(ABS(REAL(VL(KI:N,IS))) + ABS(AIMAG(VL(KI:N,IS))),1) + KI - 1
+
+            VL(KI:N,IS) = VL(KI:N,IS) / CABS1( VL( II, IS ) )
 !
-            DO K = 1, KI - 1
-               VL( K, IS ) = CMZERO
-               ENDDO
+            VL(1:KI-1, IS ) = (0.0E+0,0.0E+0)
          ELSE
             IF( KI < N ) &
-               CALL CGEMV( 'N', N, N-KI, CMONE, VL( 1, KI+1 ), LDVL, &
-                           WORK( KI+1 ), 1, CMPLX( SCALE ), &
-                           VL( 1, KI ), 1 )
+               CALL CGEMV( 'N', N, N-KI, (1.0E+0,0.0E+0), VL( 1, KI+1 ), LDVL, &
+                           WORK( KI+1 ), 1, CMPLX( SCALE ), VL( 1, KI ), 1 )
 !
-            II = ICAMAX( N, VL( 1, KI ), 1 )
-            REMAX = ONE / CABS1( VL( II, KI ) )
-            CALL CSSCAL( N, REMAX, VL( 1, KI ), 1 )
+            II = maxloc(ABS(REAL(VL(1:N,KI))) + ABS(AIMAG(VL(1:N,KI))),1)
+            VL(1:N,KI) = VL(1:N,KI) / CABS1( VL( II, KI ) )
          END IF
 !
 !           Set back the original diagonal elements of T.
 !
          DO K = KI + 1, N
             T( K, K ) = WORK( K+N )
-            ENDDO
+         ENDDO
 !
          IS = IS + 1
   130    CONTINUE
-         ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -483,5 +447,3 @@
 !     End of CTREVC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

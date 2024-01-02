@@ -271,17 +271,11 @@
 !
    LOGICAL            LSAME
    INTEGER            ICAMAX
-   REAL               SLAMCH, SLAPY2
-   EXTERNAL           LSAME, ICAMAX, SLAMCH, SLAPY2
+   REAL               SLAMCH, SLAPY2, CABS1
+   EXTERNAL           LSAME, ICAMAX, SLAMCH, SLAPY2, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, CHER
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
 !     ..
 !     .. Executable Statements ..
 !

@@ -186,17 +186,11 @@
    COMPLEX            Z
 !     ..
 !     .. External Functions ..
-   REAL               SLAMCH
-   EXTERNAL           SLAMCH
+   REAL               SLAMCH, CABS1
+   EXTERNAL           SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CSCAL, CTRSM, XERBLA
-!     ..
-!     .. Statement Functions ..
-   DOUBLE PRECISION   CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
 !     ..
 !     .. Executable Statements ..
 !

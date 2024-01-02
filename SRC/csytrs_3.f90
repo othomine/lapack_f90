@@ -178,11 +178,9 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0,0.0E+0 ) )
 !     ..
+!     .. Local Array ..
+   COMPLEX            B_tmp(NRHS)
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, J, K, KP
@@ -193,10 +191,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSCAL, CSWAP, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
+   EXTERNAL           CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -220,8 +215,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -241,30 +235,32 @@
       DO K = N, 1, -1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
          END IF
       END DO
 !
 !        Compute (U \P**T * B) -> B    [ (U \P**T * B) ]
 !
-      CALL CTRSM( 'L', 'U', 'N', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'U', 'N', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        Compute D \ B -> B   [ D \ (U \P**T * B) ]
 !
       I = N
       DO WHILE ( I >= 1 )
          IF( IPIV( I ) > 0 ) THEN
-            CALL CSCAL( NRHS, ONE / A( I, I ), B( I, 1 ), LDB )
+            B(I,1:NRHS) = B(I,1:NRHS) / A( I, I )
          ELSE IF ( I > 1 ) THEN
-            AKM1K = E( I )
-            AKM1 = A( I-1, I-1 ) / AKM1K
-            AK = A( I, I ) / AKM1K
-            DENOM = AKM1*AK - ONE
+            AKM1K = (1.0E+0,0.0E+0) / E( I )
+            AKM1 = A( I-1, I-1 ) * AKM1K
+            AK = A( I, I ) * AKM1K
+            DENOM = (1.0E+0,0.0E+0) / (AKM1*AK - (1.0E+0,0.0E+0))
             DO J = 1, NRHS
-               BKM1 = B( I-1, J ) / AKM1K
-               BK = B( I, J ) / AKM1K
-               B( I-1, J ) = ( AK*BKM1-BK ) / DENOM
-               B( I, J ) = ( AKM1*BK-BKM1 ) / DENOM
+               BKM1 = B( I-1, J ) * AKM1K
+               BK = B( I, J ) * AKM1K
+               B( I-1, J ) = ( AK*BKM1-BK ) * DENOM
+               B( I, J ) = ( AKM1*BK-BKM1 ) * DENOM
             END DO
             I = I - 1
          END IF
@@ -273,7 +269,7 @@
 !
 !        Compute (U**T \ B) -> B   [ U**T \ (D \ (U \P**T * B) ) ]
 !
-      CALL CTRSM( 'L', 'U', 'T', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'U', 'T', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        P * B  [ P * (U**T \ (D \ (U \P**T * B) )) ]
 !
@@ -287,7 +283,9 @@
       DO K = 1, N, 1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
          END IF
       END DO
 !
@@ -308,30 +306,32 @@
       DO K = 1, N, 1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
          END IF
       END DO
 !
 !        Compute (L \P**T * B) -> B    [ (L \P**T * B) ]
 !
-      CALL CTRSM( 'L', 'L', 'N', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM( 'L', 'L', 'N', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        Compute D \ B -> B   [ D \ (L \P**T * B) ]
 !
       I = 1
       DO WHILE ( I <= N )
          IF( IPIV( I ) > 0 ) THEN
-            CALL CSCAL( NRHS, ONE / A( I, I ), B( I, 1 ), LDB )
+            B(I,1:NRHS) = B(I,1:NRHS) / A( I, I )
          ELSE IF( I < N ) THEN
-            AKM1K = E( I )
-            AKM1 = A( I, I ) / AKM1K
-            AK = A( I+1, I+1 ) / AKM1K
-            DENOM = AKM1*AK - ONE
+            AKM1K = (1.0E+0,0.0E+0) / E( I )
+            AKM1 = A( I, I ) * AKM1K
+            AK = A( I+1, I+1 ) * AKM1K
+            DENOM = (1.0E+0,0.0E+0) / (AKM1*AK - (1.0E+0,0.0E+0))
             DO  J = 1, NRHS
-               BKM1 = B( I, J ) / AKM1K
-               BK = B( I+1, J ) / AKM1K
-               B( I, J ) = ( AK*BKM1-BK ) / DENOM
-               B( I+1, J ) = ( AKM1*BK-BKM1 ) / DENOM
+               BKM1 = B( I, J ) * AKM1K
+               BK = B( I+1, J ) * AKM1K
+               B( I, J ) = ( AK*BKM1-BK ) * DENOM
+               B( I+1, J ) = ( AKM1*BK-BKM1 ) * DENOM
             END DO
             I = I + 1
          END IF
@@ -340,7 +340,7 @@
 !
 !        Compute (L**T \ B) -> B   [ L**T \ (D \ (L \P**T * B) ) ]
 !
-      CALL CTRSM('L', 'L', 'T', 'U', N, NRHS, ONE, A, LDA, B, LDB )
+      CALL CTRSM('L', 'L', 'T', 'U', N, NRHS, (1.0E+0,0.0E+0), A, LDA, B, LDB )
 !
 !        P * B  [ P * (L**T \ (D \ (L \P**T * B) )) ]
 !
@@ -354,7 +354,9 @@
       DO K = N, 1, -1
          KP = ABS( IPIV( K ) )
          IF( KP /= K ) THEN
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
          END IF
       END DO
 !
@@ -367,5 +369,3 @@
 !     End of CSYTRS_3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

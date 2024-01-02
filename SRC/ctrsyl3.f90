@@ -164,18 +164,12 @@
    COMPLEX            A( LDA, * ), B( LDB, * ), C( LDC, * )
    REAL               SWORK( LDSWORK, * )
 !     ..
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
-!     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRNA, NOTRNB, LQUERY
    INTEGER            AWRK, BWRK, I, I1, I2, IINFO, J, J1, J2, JJ, &
                       K, K1, K2, L, L1, L2, LL, NBA, NB, NBB
    REAL               ANRM, BIGNUM, BNRM, CNRM, SCAL, SCALOC, &
-                      SCAMIN, SGN, XNRM, BUF, SMLNUM
+                      SCAMIN, SGN, XNRM, BUF, SMLNUM, TWOPEXP
    COMPLEX            CSGN
 !     ..
 !     .. Local Arrays ..
@@ -189,9 +183,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CSSCAL, CGEMM, CLASCL, CTRSYL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, EXPONENT, MAX, MIN, REAL
 !     ..
 !     .. Executable Statements ..
 !
@@ -247,9 +238,8 @@
 !
 !     Quick return if possible
 !
-   SCALE = ONE
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   SCALE = 1.0E+0
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Use unblocked code for small problems or if insufficient
 !     workspace is provided
@@ -263,20 +253,16 @@
 !     Set constants to control overflow
 !
    SMLNUM = SLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
 !     Set local scaling factors.
 !
-   DO L = 1, NBB
-      DO K = 1, NBA
-         SWORK( K, L ) = ONE
-      END DO
-   END DO
+   SWORK(1:NBA,1:NBB) = 1.0E+0
 !
 !     Fallback scaling factor to prevent flushing of SWORK( K, L ) to zero.
 !     This scaling is to ensure compatibility with TRSYL and may get flushed.
 !
-   BUF = ONE
+   BUF = 1.0E+0
 !
 !      Compute upper bounds of blocks of A and B
 !
@@ -314,7 +300,7 @@
    END DO
 !
    SGN = REAL( ISGN )
-   CSGN = CMPLX( SGN, ZERO )
+   CSGN = CMPLX( SGN, 0.0E+0 )
 !
    IF( NOTRNA .AND. NOTRNB ) THEN
 !
@@ -355,16 +341,17 @@
                          C( K1, L1 ), LDC, SCALOC, IINFO )
             INFO = MAX( INFO, IINFO )
 !
-            IF( SCALOC * SWORK( K, L )  ==  ZERO ) THEN
-               IF( SCALOC  ==  ZERO ) THEN
+            IF( SCALOC * SWORK( K, L )  ==  0.0E+0 ) THEN
+               TWOPEXP = 2.E0**EXPONENT( SCALOC )
+               IF( SCALOC  ==  0.0E+0 ) THEN
 !                    The magnitude of the largest entry of X(K1:K2-1, L1:L2-1)
 !                    is larger than the product of BIGNUM**2 and cannot be
 !                    represented in the form (1/SCALE)*X(K1:K2-1, L1:L2-1).
 !                    Mark the computation as pointless.
-                  BUF = ZERO
+                  BUF = 0.0E+0
                ELSE
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                END IF
                DO JJ = 1, NBB
                   DO LL = 1, NBA
@@ -372,13 +359,12 @@
 !                       is irrelevant; corresponding entries of the
 !                       solution will be flushed in consistency scaling.
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                   END DO
                END DO
             END IF
             SWORK( K, L ) = SCALOC * SWORK( K, L )
-            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, &
-                           WNRM )
+            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, WNRM )
 !
             DO I = K - 1, 1, -1
 !
@@ -390,24 +376,24 @@
 !                 Compute scaling factor to survive the linear update
 !                 simulating consistent scaling.
 !
-               CNRM = CLANGE( 'I', I2-I1, L2-L1, C( I1, L1 ), &
-                              LDC, WNRM )
+               CNRM = CLANGE( 'I', I2-I1, L2-L1, C( I1, L1 ), LDC, WNRM )
                SCAMIN = MIN( SWORK( I, L ), SWORK( K, L ) )
                CNRM = CNRM * ( SCAMIN / SWORK( I, L ) )
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                ANRM = SWORK( I, AWRK + K )
                SCALOC = SLARMM( ANRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -416,27 +402,23 @@
 !                 consistency scaling factor to C( I, L ) and C( K, L ).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL /= ONE ) THEN
-                   DO JJ = L1, L2-1
-                      CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1)
-                   END DO
-               ENDIF
+               IF( SCAL /= 1.0E+0 ) &
+                   C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                              SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( I, L ) ) * SCALOC
-               IF( SCAL /= ONE ) THEN
-                   DO LL = L1, L2-1
-                      CALL CSSCAL( I2-I1, SCAL, C( I1, LL ), 1)
-                   END DO
-               ENDIF
+               IF( SCAL /= 1.0E+0 ) &
+                   C(I1:I2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(I1:I2-1,L1:L2-1)), &
+                                              SCAL*AIMAG(C(I1:I2-1,L1:L2-1)))
 !
 !                 Record current scaling factor
 !
                SWORK( K, L ) = SCAMIN * SCALOC
                SWORK( I, L ) = SCAMIN * SCALOC
 !
-               CALL CGEMM( 'N', 'N', I2-I1, L2-L1, K2-K1, -CONE, &
+               CALL CGEMM( 'N', 'N', I2-I1, L2-L1, K2-K1, -(1.0E+0,0.0E+0), &
                            A( I1, K1 ), LDA, C( K1, L1 ), LDC, &
-                           CONE, C( I1, L1 ), LDC )
+                           (1.0E+0,0.0E+0), C( I1, L1 ), LDC )
 !
             END DO
 !
@@ -457,17 +439,18 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                BNRM = SWORK(L, BWRK + J)
                SCALOC = SLARMM( BNRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -476,18 +459,14 @@
 !                 consistency scaling factor to C( K, J ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                              SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( K, J ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                   DO JJ = J1, J2-1
-                      CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1 )
-                   END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,J1:J2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,J1:J2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,J1:J2-1)))
 !
 !                 Record current scaling factor
 !
@@ -496,7 +475,7 @@
 !
                CALL CGEMM( 'N', 'N', K2-K1, J2-J1, L2-L1, -CSGN, &
                            C( K1, L1 ), LDC, B( L1, J1 ), LDB, &
-                           CONE, C( K1, J1 ), LDC )
+                           (1.0E+0,0.0E+0), C( K1, J1 ), LDC )
             END DO
          END DO
       END DO
@@ -539,30 +518,29 @@
                          C( K1, L1 ), LDC, SCALOC, IINFO )
             INFO = MAX( INFO, IINFO )
 !
-            IF( SCALOC * SWORK( K, L )  ==  ZERO ) THEN
-               IF( SCALOC  ==  ZERO ) THEN
+            IF( SCALOC * SWORK( K, L )  ==  0.0E+0 ) THEN
+               TWOPEXP = 2.E0**EXPONENT( SCALOC )
+               IF( SCALOC  ==  0.0E+0 ) THEN
 !                    The magnitude of the largest entry of X(K1:K2-1, L1:L2-1)
 !                    is larger than the product of BIGNUM**2 and cannot be
 !                    represented in the form (1/SCALE)*X(K1:K2-1, L1:L2-1).
 !                    Mark the computation as pointless.
-                  BUF = ZERO
+                  BUF = 0.0E+0
                ELSE
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                END IF
                DO JJ = 1, NBB
                   DO LL = 1, NBA
 !                       Bound by BIGNUM to not introduce Inf. The value
 !                       is irrelevant; corresponding entries of the
 !                       solution will be flushed in consistency scaling.
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                     SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                   END DO
                END DO
             END IF
             SWORK( K, L ) = SCALOC * SWORK( K, L )
-            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, &
-                           WNRM )
+            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, WNRM )
 !
             DO I = K + 1, NBA
 !
@@ -581,17 +559,17 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                ANRM = SWORK( I, AWRK + K )
                SCALOC = SLARMM( ANRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                     SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -600,27 +578,23 @@
 !                 consistency scaling factor to to C( I, L ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( I, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( I2-I1, SCAL, C( I1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(I1:I2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(I1:I2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(I1:I2-1,L1:L2-1)))
 !
 !                 Record current scaling factor
 !
                SWORK( K, L ) = SCAMIN * SCALOC
                SWORK( I, L ) = SCAMIN * SCALOC
 !
-               CALL CGEMM( 'C', 'N', I2-I1, L2-L1, K2-K1, -CONE, &
+               CALL CGEMM( 'C', 'N', I2-I1, L2-L1, K2-K1, -(1.0E+0,0.0E+0), &
                            A( K1, I1 ), LDA, C( K1, L1 ), LDC, &
-                           CONE, C( I1, L1 ), LDC )
+                           (1.0E+0,0.0E+0), C( I1, L1 ), LDC )
             END DO
 !
             DO J = L + 1, NBB
@@ -640,17 +614,18 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                BNRM = SWORK( L, BWRK + J )
                SCALOC = SLARMM( BNRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -659,18 +634,14 @@
 !                 consistency scaling factor to to C( K, J ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                   DO LL = L1, L2-1
-                      CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-                   END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( K, J ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO JJ = J1, J2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,J1:J2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,J1:J2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,J1:J2-1)))
 !
 !                 Record current scaling factor
 !
@@ -679,7 +650,7 @@
 !
                CALL CGEMM( 'N', 'N', K2-K1, J2-J1, L2-L1, -CSGN, &
                            C( K1, L1 ), LDC, B( L1, J1 ), LDB, &
-                           CONE, C( K1, J1 ), LDC )
+                           (1.0E+0,0.0E+0), C( K1, J1 ), LDC )
             END DO
          END DO
       END DO
@@ -722,16 +693,17 @@
                          C( K1, L1 ), LDC, SCALOC, IINFO )
             INFO = MAX( INFO, IINFO )
 !
-            IF( SCALOC * SWORK( K, L )  ==  ZERO ) THEN
-               IF( SCALOC  ==  ZERO ) THEN
+            IF( SCALOC * SWORK( K, L )  ==  0.0E+0 ) THEN
+               TWOPEXP = 2.E0**EXPONENT( SCALOC )
+               IF( SCALOC  ==  0.0E+0 ) THEN
 !                    The magnitude of the largest entry of X(K1:K2-1, L1:L2-1)
 !                    is larger than the product of BIGNUM**2 and cannot be
 !                    represented in the form (1/SCALE)*X(K1:K2-1, L1:L2-1).
 !                    Mark the computation as pointless.
-                  BUF = ZERO
+                  BUF = 0.0E+0
                ELSE
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                END IF
                DO JJ = 1, NBB
                   DO LL = 1, NBA
@@ -739,7 +711,7 @@
 !                       is irrelevant; corresponding entries of the
 !                       solution will be flushed in consistency scaling.
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                   END DO
                END DO
             END IF
@@ -764,17 +736,17 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                ANRM = SWORK( I, AWRK + K )
                SCALOC = SLARMM( ANRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -783,27 +755,23 @@
 !                 consistency scaling factor to C( I, L ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( I, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( I2-I1, SCAL, C( I1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(I1:I2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(I1:I2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(I1:I2-1,L1:L2-1)))
 !
 !                 Record current scaling factor
 !
                SWORK( K, L ) = SCAMIN * SCALOC
                SWORK( I, L ) = SCAMIN * SCALOC
 !
-               CALL CGEMM( 'C', 'N', I2-I1, L2-L1, K2-K1, -CONE, &
+               CALL CGEMM( 'C', 'N', I2-I1, L2-L1, K2-K1, -(1.0E+0,0.0E+0), &
                            A( K1, I1 ), LDA, C( K1, L1 ), LDC, &
-                           CONE, C( I1, L1 ), LDC )
+                           (1.0E+0,0.0E+0), C( I1, L1 ), LDC )
             END DO
 !
             DO J = 1, L - 1
@@ -823,17 +791,17 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                BNRM = SWORK( L, BWRK + J )
                SCALOC = SLARMM( BNRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -842,18 +810,14 @@
 !                 consistency scaling factor to C( K, J ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1)
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( K, J ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO JJ = J1, J2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,J1:J2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,J1:J2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,J1:J2-1)))
 !
 !                 Record current scaling factor
 !
@@ -862,7 +826,7 @@
 !
                CALL CGEMM( 'N', 'C', K2-K1, J2-J1, L2-L1, -CSGN, &
                            C( K1, L1 ), LDC, B( J1, L1 ), LDB, &
-                           CONE, C( K1, J1 ), LDC )
+                           (1.0E+0,0.0E+0), C( K1, J1 ), LDC )
             END DO
          END DO
       END DO
@@ -905,30 +869,29 @@
                          C( K1, L1 ), LDC, SCALOC, IINFO )
             INFO = MAX( INFO, IINFO )
 !
-            IF( SCALOC * SWORK( K, L )  ==  ZERO ) THEN
-               IF( SCALOC  ==  ZERO ) THEN
+            IF( SCALOC * SWORK( K, L )  ==  0.0E+0 ) THEN
+               TWOPEXP = 2.E0**EXPONENT( SCALOC )
+               IF( SCALOC  ==  0.0E+0 ) THEN
 !                    The magnitude of the largest entry of X(K1:K2-1, L1:L2-1)
 !                    is larger than the product of BIGNUM**2 and cannot be
 !                    represented in the form (1/SCALE)*X(K1:K2-1, L1:L2-1).
 !                    Mark the computation as pointless.
-                  BUF = ZERO
+                  BUF = 0.0E+0
                ELSE
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                END IF
                DO JJ = 1, NBB
                   DO LL = 1, NBA
 !                       Bound by BIGNUM to not introduce Inf. The value
 !                       is irrelevant; corresponding entries of the
 !                       solution will be flushed in consistency scaling.
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                     SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                   END DO
                END DO
             END IF
             SWORK( K, L ) = SCALOC * SWORK( K, L )
-            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, &
-                           WNRM )
+            XNRM = CLANGE( 'I', K2-K1, L2-L1, C( K1, L1 ), LDC, WNRM )
 !
             DO I = 1, K - 1
 !
@@ -947,17 +910,18 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                ANRM = SWORK( I, AWRK + K )
                SCALOC = SLARMM( ANRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
                      SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -966,27 +930,23 @@
 !                 consistency scaling factor to C( I, L ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( I, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO LL = L1, L2-1
-                     CALL CSSCAL( I2-I1, SCAL, C( I1, LL ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(I1:I2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(I1:I2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(I1:I2-1,L1:L2-1)))
 !
 !                 Record current scaling factor
 !
                SWORK( K, L ) = SCAMIN * SCALOC
                SWORK( I, L ) = SCAMIN * SCALOC
 !
-               CALL CGEMM( 'N', 'N', I2-I1, L2-L1, K2-K1, -CONE, &
+               CALL CGEMM( 'N', 'N', I2-I1, L2-L1, K2-K1, -(1.0E+0,0.0E+0), &
                            A( I1, K1 ), LDA, C( K1, L1 ), LDC, &
-                           CONE, C( I1, L1 ), LDC )
+                           (1.0E+0,0.0E+0), C( I1, L1 ), LDC )
 !
             END DO
 !
@@ -1007,17 +967,17 @@
                XNRM = XNRM * ( SCAMIN / SWORK( K, L ) )
                BNRM = SWORK( L, BWRK + J )
                SCALOC = SLARMM( BNRM, XNRM, CNRM )
-               IF( SCALOC * SCAMIN  ==  ZERO ) THEN
+               IF( SCALOC * SCAMIN  ==  0.0E+0 ) THEN
+                  TWOPEXP = 2.E0**EXPONENT( SCALOC )
 !                    Use second scaling factor to prevent flushing to zero.
-                  BUF = BUF*2.E0**EXPONENT( SCALOC )
+                  BUF = BUF*TWOPEXP
                   DO JJ = 1, NBB
                      DO LL = 1, NBA
-                     SWORK( LL, JJ ) = MIN( BIGNUM, &
-                        SWORK( LL, JJ ) / 2.E0**EXPONENT( SCALOC ) )
+                        SWORK( LL, JJ ) = MIN( BIGNUM, SWORK( LL, JJ ) / TWOPEXP )
                      END DO
                   END DO
-                  SCAMIN = SCAMIN / 2.E0**EXPONENT( SCALOC )
-                  SCALOC = SCALOC / 2.E0**EXPONENT( SCALOC )
+                  SCAMIN = SCAMIN / TWOPEXP
+                  SCALOC = SCALOC / TWOPEXP
                END IF
                CNRM = CNRM * SCALOC
                XNRM = XNRM * SCALOC
@@ -1026,18 +986,14 @@
 !                 consistency scaling factor to C( K, J ) and C( K, L).
 !
                SCAL = ( SCAMIN / SWORK( K, L ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO JJ = L1, L2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
 !
                SCAL = ( SCAMIN / SWORK( K, J ) ) * SCALOC
-               IF( SCAL  /=  ONE ) THEN
-                  DO JJ = J1, J2-1
-                     CALL CSSCAL( K2-K1, SCAL, C( K1, JJ ), 1 )
-                  END DO
-               ENDIF
+               IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,J1:J2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,J1:J2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,J1:J2-1)))
 !
 !                 Record current scaling factor
 !
@@ -1046,7 +1002,7 @@
 !
                CALL CGEMM( 'N', 'C', K2-K1, J2-J1, L2-L1, -CSGN, &
                            C( K1, L1 ), LDC, B( J1, L1 ), LDB, &
-                           CONE, C( K1, J1 ), LDC )
+                           (1.0E+0,0.0E+0), C( K1, J1 ), LDC )
             END DO
          END DO
       END DO
@@ -1055,13 +1011,8 @@
 !
 !     Reduce local scaling factors
 !
-   SCALE = SWORK( 1, 1 )
-   DO K = 1, NBA
-      DO L = 1, NBB
-         SCALE = MIN( SCALE, SWORK( K, L ) )
-      END DO
-   END DO
-   IF( SCALE  ==  ZERO ) THEN
+   SCALE = MINVAL(SWORK(1:NBA,1:NBB))
+   IF( SCALE  ==  0.0E+0 ) THEN
 !
 !        The magnitude of the largest entry of the solution is larger
 !        than the product of BIGNUM**2 and cannot be represented in the
@@ -1082,24 +1033,22 @@
          L1 = (L - 1) * NB + 1
          L2 = MIN( L * NB, N ) + 1
          SCAL = SCALE / SWORK( K, L )
-         IF( SCAL  /=  ONE ) THEN
-            DO LL = L1, L2-1
-               CALL CSSCAL( K2-K1, SCAL, C( K1, LL ), 1 )
-            END DO
-         ENDIF
+         IF( SCAL  /=  1.0E+0 ) &
+                  C(K1:K2-1,L1:L2-1) = CMPLX(SCAL*REAL(C(K1:K2-1,L1:L2-1)), &
+                                             SCAL*AIMAG(C(K1:K2-1,L1:L2-1)))
       END DO
    END DO
 !
-   IF( BUF  /=  ONE .AND. BUF > ZERO ) THEN
+   IF( BUF  /=  1.0E+0 .AND. BUF > 0.0E+0 ) THEN
 !
 !        Decrease SCALE as much as possible.
 !
-      SCALOC = MIN( SCALE / SMLNUM, ONE / BUF )
+      SCALOC = MIN( SCALE / SMLNUM, 1.0E+0 / BUF )
       BUF = BUF * SCALOC
       SCALE = SCALE / SCALOC
    END IF
 !
-   IF( BUF /= ONE .AND. BUF > ZERO ) THEN
+   IF( BUF /= 1.0E+0 .AND. BUF > 0.0E+0 ) THEN
 !
 !        In case of overly aggressive scaling during the computation,
 !        flushing of the global scale factor may be prevented by
@@ -1109,20 +1058,13 @@
 !
 !        How much can the normwise largest entry be upscaled?
 !
-      SCAL = MAX( ABS( REAL( C( 1, 1 ) ) ), &
-                  ABS( AIMAG( C ( 1, 1 ) ) ) )
-      DO K = 1, M
-         DO L = 1, N
-            SCAL = MAX( SCAL, ABS( REAL ( C( K, L ) ) ), &
-                        ABS( AIMAG ( C( K, L ) ) ) )
-         END DO
-      END DO
+      SCAL = MAX(MAXVAL(ABS(REAL(C(1:M,1:N)))),MAXVAL(ABS(AIMAG(C(1:M,1:N)))))
 !
 !        Increase BUF as close to 1 as possible and apply scaling.
 !
-      SCALOC = MIN( BIGNUM / SCAL, ONE / BUF )
+      SCALOC = MIN( BIGNUM / SCAL, 1.0E+0 / BUF )
       BUF = BUF * SCALOC
-      CALL CLASCL( 'G', -1, -1, ONE, SCALOC, M, N, C, LDC, IINFO )
+      CALL CLASCL( 'G', -1, -1, 1.0E+0, SCALOC, M, N, C, LDC, IINFO )
    END IF
 !
 !     Combine with buffer scaling factor. SCALE will be flushed if
@@ -1140,4 +1082,3 @@
 !     End of CTRSYL3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

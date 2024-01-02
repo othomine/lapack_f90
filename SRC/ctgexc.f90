@@ -208,8 +208,7 @@
    INTEGER            IFST, ILST, INFO, LDA, LDB, LDQ, LDZ, N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX            A( LDA, * ), B( LDB, * ), Q( LDQ, * ), &
-                      Z( LDZ, * )
+   COMPLEX            A( LDA, * ), B( LDB, * ), Q( LDQ, * ), Z( LDZ, * )
 !     ..
 !
 !  =====================================================================
@@ -219,9 +218,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CTGEX2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -249,10 +245,8 @@
 !
 !     Quick return if possible
 !
-   IF( N <= 1 ) &
-      RETURN
-   IF( IFST == ILST ) &
-      RETURN
+   IF( N <= 1 ) RETURN
+   IF( IFST == ILST ) RETURN
 !
    IF( IFST < ILST ) THEN
 !
@@ -262,15 +256,13 @@
 !
 !        Swap with next one below
 !
-      CALL CTGEX2( WANTQ, WANTZ, N, A, LDA, B, LDB, Q, LDQ, Z, LDZ, &
-                   HERE, INFO )
+      CALL CTGEX2( WANTQ, WANTZ, N, A, LDA, B, LDB, Q, LDQ, Z, LDZ, HERE, INFO )
       IF( INFO /= 0 ) THEN
          ILST = HERE
          RETURN
       END IF
       HERE = HERE + 1
-      IF( HERE < ILST ) &
-         GO TO 10
+      IF( HERE < ILST ) GO TO 10
       HERE = HERE - 1
    ELSE
       HERE = IFST - 1
@@ -279,15 +271,13 @@
 !
 !        Swap with next one above
 !
-      CALL CTGEX2( WANTQ, WANTZ, N, A, LDA, B, LDB, Q, LDQ, Z, LDZ, &
-                   HERE, INFO )
+      CALL CTGEX2( WANTQ, WANTZ, N, A, LDA, B, LDB, Q, LDQ, Z, LDZ, HERE, INFO )
       IF( INFO /= 0 ) THEN
          ILST = HERE
          RETURN
       END IF
       HERE = HERE - 1
-      IF( HERE >= ILST ) &
-         GO TO 20
+      IF( HERE >= ILST ) GO TO 20
       HERE = HERE + 1
    END IF
    ILST = HERE
@@ -296,5 +286,3 @@
 !     End of CTGEXC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

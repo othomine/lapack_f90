@@ -175,7 +175,7 @@
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
-   INTEGER            CUT, I, ICOUNT, INVD, IP, K, NNB, J, U11
+   INTEGER            CUT, I, INVD, IP, K, NNB, J, U11
    REAL               AK, AKP1, T
    COMPLEX            AKKP1, D, UTMP1( N ), UTMP2( N )
 !     ..
@@ -288,9 +288,8 @@
             NNB = CUT
          ELSE
 !              count negative elements,
-            ICOUNT = COUNT(IPIV(CUT+1-NNB:CUT)  <  0)
 !              need a even number for a clear cut
-            IF( MOD( ICOUNT, 2 ) == 1 ) NNB = NNB + 1
+            IF( MOD( COUNT(IPIV(CUT+1-NNB:CUT)  <  0), 2 ) == 1 ) NNB = NNB + 1
          END IF
 
          CUT = CUT - NNB
@@ -396,8 +395,11 @@
       DO I = 1, N
           IP = ABS( IPIV( I ) )
           IF( IP /= I ) THEN
-             IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
-             IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+             IF (I  <  IP) THEN
+                CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
+             ELSEIF (I  >  IP) THEN
+                CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+             ENDIF
           END IF
       END DO
 !
@@ -443,11 +445,9 @@
          IF( (CUT + NNB) > N ) THEN
             NNB = N - CUT
          ELSE
-            ICOUNT = 0
 !              count negative elements,
-            ICOUNT = COUNT(IPIV(CUT+1:CUT+NNB) < 0)
 !              need a even number for a clear cut
-            IF( MOD( ICOUNT, 2 ) == 1 ) NNB = NNB + 1
+            IF( MOD( COUNT(IPIV(CUT+1:CUT+NNB) < 0), 2 ) == 1 ) NNB = NNB + 1
          END IF
 !
 !           L21 Block
@@ -565,8 +565,11 @@
       DO I = N, 1, -1
           IP = ABS( IPIV( I ) )
           IF( IP /= I ) THEN
-             IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
-             IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+             IF (I  <  IP) THEN
+                CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
+             ELSEIF (I  >  IP) THEN
+                CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+             ENDIF
           END IF
       END DO
 !

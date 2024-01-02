@@ -118,6 +118,7 @@
 !
 !  =====================================================================
    SUBROUTINE CHETRI2X( UPLO, N, A, LDA, IPIV, WORK, NB, INFO )
+   IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -139,7 +140,7 @@
    INTEGER            I, IINFO, IP, K, CUT, NNB
    INTEGER            J, U11, INVD
 
-   COMPLEX   AK, AKKP1, AKP1, D, T
+   COMPLEX   AK, AKKP1, AKP1, uoD, uoT
    COMPLEX   UTMP1( N ), UTMP2( N )
 !     ..
 !     .. External Functions ..
@@ -224,14 +225,14 @@
          K=K+1
       ELSE
 !           2 x 2 diagonal NNB
-          T = ABS ( WORK(K+1,1) )
-          AK = REAL ( A( K, K ) ) / T
-          AKP1 = REAL ( A( K+1, K+1 ) ) / T
-          AKKP1 = WORK(K+1,1)  / T
-          D = T*( AK*AKP1-1.0E+0 )
-          WORK(K,INVD) = AKP1 / D
-          WORK(K+1,INVD+1) = AK / D
-          WORK(K,INVD+1) = -AKKP1 / D
+          uoT = (1.e+0,0.e+0) / ABS ( WORK(K+1,1) )
+          AK = REAL ( A( K, K ) ) * uoT
+          AKP1 = REAL ( A( K+1, K+1 ) ) * uoT
+          AKKP1 = WORK(K+1,1)  * uoT
+          uoD = uoT/( AK*AKP1-1.0E+0 )
+          WORK(K,INVD) = AKP1 * uoD
+          WORK(K+1,INVD+1) = AK * uoD
+          WORK(K,INVD+1) = -AKKP1 * uoD
           WORK(K+1,INVD) = CONJG (WORK(K,INVD+1) )
          K=K+2
       END IF
@@ -289,9 +290,7 @@
         I=1
         DO WHILE (I  <=  NNB)
           IF (IPIV(CUT+I) > 0) THEN
-             DO J=I,NNB
-                 WORK(U11+I,J)=WORK(CUT+I,INVD)*WORK(U11+I,J)
-             END DO
+             WORK(U11+I,I:NNB)=WORK(CUT+I,INVD)*WORK(U11+I,I:NNB)
              I=I+1
           ELSE
              UTMP1(I:NNB) = WORK(U11+I,I:NNB)
@@ -331,9 +330,7 @@
 !
 !        Update U01
 !
-      DO I=1,CUT
-         A(I,CUT+1:CUT+NNB)=WORK(I,1:NNB)
-      END DO
+      A(1:CUT,CUT+1:CUT+NNB)=WORK(1:CUT,1:NNB)
 !
 !      Next Block
 !
@@ -345,13 +342,19 @@
          DO WHILE ( I  <=  N )
             IF( IPIV(I)  >  0 ) THEN
                IP=IPIV(I)
-               IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
-               IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+               IF (I  <  IP) THEN
+                  CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
+               ELSEIF (I  >  IP) THEN
+                  CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+               ENDIF
             ELSE
                IP=-IPIV(I)
                I=I+1
-               IF ( (I-1)  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I-1 ,IP )
-               IF ( (I-1)  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I-1 )
+               IF ( (I-1)  <  IP) THEN
+                  CALL CHESWAPR( UPLO, N, A, LDA, I-1 ,IP )
+               ELSEIF ( (I-1)  >  IP) THEN
+                  CALL CHESWAPR( UPLO, N, A, LDA, IP ,I-1 )
+               ENDIF
             ENDIF
             I=I+1
          END DO
@@ -374,14 +377,14 @@
             K=K-1
          ELSE
 !              2 x 2 diagonal NNB
-           T = ABS(WORK(K-1,1))
-           AK = REAL ( A( K-1, K-1 ) ) / T
-           AKP1 = REAL ( A( K, K ) ) / T
-           AKKP1 = WORK(K-1,1) / T
-           D = T*( AK*AKP1-1.0E+0 )
-           WORK(K-1,INVD) = AKP1 / D
-           WORK(K,INVD) = AK / D
-           WORK(K,INVD+1) = -AKKP1 / D
+           uoT = (1.e+0,0.e+0) / ABS(WORK(K-1,1))
+           AK = REAL ( A( K-1, K-1 ) ) * uoT
+           AKP1 = REAL ( A( K, K ) ) * uoT
+           AKKP1 = WORK(K-1,1) * uoT
+           uoD = uoT / ( AK*AKP1-1.0E+0 )
+           WORK(K-1,INVD) = AKP1 * uoD
+           WORK(K,INVD) = AK * uoD
+           WORK(K,INVD+1) = -AKKP1 * uoD
            WORK(K-1,INVD+1) = CONJG(WORK(K,INVD+1))
            K=K-2
         END IF
@@ -405,9 +408,9 @@
         WORK(1:N-CUT-NNB,1:NNB)=A(CUT+NNB+1:N,CUT+1:CUT+NNB)
 !     L11 Block
         DO I=1,NNB
+          WORK(U11+I,1:I-1)=A(CUT+I,CUT+1:CUT+I-1)
           WORK(U11+I,I)=(1.0E+0,0.0E+0)
           WORK(U11+I,I+1:NNB)=(0.0E+0,0.0E+0)
-          WORK(U11+I,1:I-1)=A(CUT+I,CUT+1:CUT+I-1)
         END DO
 !
 !          invD*L21
@@ -496,12 +499,18 @@
          DO WHILE ( I  >=  1 )
             IF( IPIV(I)  >  0 ) THEN
                IP=IPIV(I)
-              IF (I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP  )
-              IF (I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+              IF (I  <  IP) THEN
+                 CALL CHESWAPR( UPLO, N, A, LDA, I ,IP  )
+              ELSEIF (I  >  IP) THEN
+                 CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+              ENDIF
             ELSE
               IP=-IPIV(I)
-              IF ( I  <  IP) CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
-              IF ( I  >  IP) CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+              IF ( I  <  IP) THEN
+                 CALL CHESWAPR( UPLO, N, A, LDA, I ,IP )
+              ELSEIF ( I  >  IP) THEN
+                 CALL CHESWAPR( UPLO, N, A, LDA, IP ,I )
+              ENDIF
               I=I-1
             ENDIF
             I=I-1

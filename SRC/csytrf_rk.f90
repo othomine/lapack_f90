@@ -273,6 +273,8 @@
 !
 !  =====================================================================
 !
+!     .. Local Array ..
+   COMPLEX            A_tmp(N)
 !     .. Local Scalars ..
    LOGICAL            LQUERY, UPPER
    INTEGER            I, IINFO, IP, IWS, K, KB, LDWORK, LWKOPT, &
@@ -284,10 +286,7 @@
    EXTERNAL           LSAME, ILAENV
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLASYF_RK, CSYTF2_RK, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
+   EXTERNAL           CLASYF_RK, CSYTF2_RK, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -334,8 +333,7 @@
    ELSE
       IWS = 1
    END IF
-   IF( NB < NBMIN ) &
-      NB = N
+   IF( NB < NBMIN ) NB = N
 !
    IF( UPPER ) THEN
 !
@@ -350,8 +348,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 15
+      IF( K < 1 ) GO TO 15
 !
       IF( K > NB ) THEN
 !
@@ -370,8 +367,7 @@
 !
 !        Set INFO on the first occurrence of a zero pivot
 !
-      IF( INFO == 0 .AND. IINFO > 0 ) &
-         INFO = IINFO
+      IF( INFO == 0 .AND. IINFO > 0 ) INFO = IINFO
 !
 !        No need to adjust IPIV
 !
@@ -389,8 +385,9 @@
          DO I = K, ( K - KB + 1 ), -1
             IP = ABS( IPIV( I ) )
             IF( IP /= I ) THEN
-               CALL CSWAP( N-K, A( I, K+1 ), LDA, &
-                           A( IP, K+1 ), LDA )
+               A_tmp(1:N-K) = A(I,K+1:N)
+               A(I,K+1:N) = A(IP,K+1:N)
+               A(IP,K+1:N) = A_tmp(1:N-K)
             END IF
          END DO
       END IF
@@ -418,8 +415,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 35
+      IF( K > N ) GO TO 35
 !
       IF( K <= N-NB ) THEN
 !
@@ -434,16 +430,14 @@
 !
 !           Use unblocked code to factorize columns k:n of A
 !
-         CALL CSYTF2_RK( UPLO, N-K+1, A( K, K ), LDA, E( K ), &
-                         IPIV( K ), IINFO )
+         CALL CSYTF2_RK( UPLO, N-K+1, A( K, K ), LDA, E( K ), IPIV( K ), IINFO )
          KB = N - K + 1
 !
       END IF
 !
 !        Set INFO on the first occurrence of a zero pivot
 !
-      IF( INFO == 0 .AND. IINFO > 0 ) &
-         INFO = IINFO + K - 1
+      IF( INFO == 0 .AND. IINFO > 0 ) INFO = IINFO + K - 1
 !
 !        Adjust IPIV
 !
@@ -468,8 +462,9 @@
          DO I = K, ( K + KB - 1 ), 1
             IP = ABS( IPIV( I ) )
             IF( IP /= I ) THEN
-               CALL CSWAP( K-1, A( I, 1 ), LDA, &
-                           A( IP, 1 ), LDA )
+               A_tmp(1:K-1) = A(I,1:K-1)
+               A(I,1:K-1) = A(IP,1:K-1)
+               A(IP,1:K-1) = A_tmp(1:K-1)
             END IF
          END DO
       END IF
@@ -494,5 +489,3 @@
 !     End of CSYTRF_RK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

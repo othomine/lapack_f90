@@ -222,10 +222,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ZERO
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -233,6 +229,8 @@
 !
 !     .. External Subroutines ..
    EXTERNAL           CSWAP, XERBLA
+!     .. Local Array ..
+   COMPLEX            A_tmp(N)
 !     .. Local Scalars ..
    LOGICAL            UPPER, CONVERT
    INTEGER            I, IP
@@ -259,8 +257,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
@@ -277,15 +274,15 @@
 !           corresponding entries in input storage A
 !
          I = N
-         E( 1 ) = ZERO
+         E( 1 ) = (0.0E+0,0.0E+0 )
          DO WHILE ( I > 1 )
             IF( IPIV( I ) < 0 ) THEN
                E( I ) = A( I-1, I )
-               E( I-1 ) = ZERO
-               A( I-1, I ) = ZERO
+               E( I-1 ) = (0.0E+0,0.0E+0 )
+               A( I-1, I ) = (0.0E+0,0.0E+0 )
                I = I - 1
             ELSE
-               E( I ) = ZERO
+               E( I ) = (0.0E+0,0.0E+0 )
             END IF
             I = I - 1
          END DO
@@ -306,8 +303,9 @@
                IP = IPIV( I )
                IF( I < N ) THEN
                   IF( IP /= I ) THEN
-                     CALL CSWAP( N-I, A( I, I+1 ), LDA, &
-                                 A( IP, I+1 ), LDA )
+                     A_tmp(1:N-I) = A(I,I+1:N)
+                     A(I,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -320,8 +318,9 @@
                IP = -IPIV( I )
                IF( I < N ) THEN
                   IF( IP /= (I-1) ) THEN
-                     CALL CSWAP( N-I, A( I-1, I+1 ), LDA, &
-                                 A( IP, I+1 ), LDA )
+                     A_tmp(1:N-I) = A(I-1,I+1:N)
+                     A(I-1,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -359,8 +358,9 @@
                IP = IPIV( I )
                IF( I < N ) THEN
                   IF( IP /= I ) THEN
-                     CALL CSWAP( N-I, A( IP, I+1 ), LDA, &
-                                 A( I, I+1 ), LDA )
+                     A_tmp(1:N-I) = A(I,I+1:N)
+                     A(I,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -374,8 +374,9 @@
                IP = -IPIV( I )
                IF( I < N ) THEN
                   IF( IP /= (I-1) ) THEN
-                     CALL CSWAP( N-I, A( IP, I+1 ), LDA, &
-                                 A( I-1, I+1 ), LDA )
+                     A_tmp(1:N-I) = A(I-1,I+1:N)
+                     A(I-1,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -421,15 +422,15 @@
 !           corresponding entries in input storage A
 !
          I = 1
-         E( N ) = ZERO
+         E( N ) = (0.0E+0,0.0E+0 )
          DO WHILE ( I <= N )
             IF( I < N .AND. IPIV(I) < 0 ) THEN
                E( I ) = A( I+1, I )
-               E( I+1 ) = ZERO
-               A( I+1, I ) = ZERO
+               E( I+1 ) = (0.0E+0,0.0E+0 )
+               A( I+1, I ) = (0.0E+0,0.0E+0 )
                I = I + 1
             ELSE
-               E( I ) = ZERO
+               E( I ) = (0.0E+0,0.0E+0 )
             END IF
             I = I + 1
          END DO
@@ -450,8 +451,9 @@
                IP = IPIV( I )
                IF ( I > 1 ) THEN
                   IF( IP /= I ) THEN
-                     CALL CSWAP( I-1, A( I, 1 ), LDA, &
-                                 A( IP, 1 ), LDA )
+                     A_tmp(1:N-I) = A(I-1,I+1:N)
+                     A(I-1,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -464,8 +466,9 @@
                IP = -IPIV( I )
                IF ( I > 1 ) THEN
                   IF( IP /= (I+1) ) THEN
-                     CALL CSWAP( I-1, A( I+1, 1 ), LDA, &
-                                 A( IP, 1 ), LDA )
+                     A_tmp(1:N-I) = A(I-1,I+1:N)
+                     A(I-1,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -503,8 +506,9 @@
                IP = IPIV( I )
                IF ( I > 1 ) THEN
                   IF( IP /= I ) THEN
-                     CALL CSWAP( I-1, A( IP, 1 ), LDA, &
-                                 A( I, 1 ), LDA )
+                     A_tmp(1:N-I) = A(I,I+1:N)
+                     A(I,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -518,8 +522,9 @@
                IP = -IPIV( I )
                IF ( I > 1 ) THEN
                   IF( IP /= (I+1) ) THEN
-                     CALL CSWAP( I-1, A( IP, 1 ), LDA, &
-                                 A( I+1, 1 ), LDA )
+                     A_tmp(1:N-I) = A(I+1,I+1:N)
+                     A(I+1,I+1:N) = A(IP,I+1:N)
+                     A(IP,I+1:N) = A_tmp(1:N-I)
                   END IF
                END IF
 !
@@ -558,5 +563,3 @@
 !     End of CSYCONVF
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

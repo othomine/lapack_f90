@@ -399,11 +399,7 @@
 !     .. Parameters ..
    INTEGER            MAXIT
    PARAMETER          ( MAXIT = 40 )
-   REAL               ZERO, ONE, HUGENUM
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
+   REAL               HUGENUM
 !     ..
 !     .. Local Scalars ..
 !
@@ -418,12 +414,10 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLAGS2, CLAPLL, CLASET, CROT, CSSCAL, &
-                      SLARTG, XERBLA
+   EXTERNAL           CLAGS2, CLAPLL, CLASET, CROT, SLARTG, XERBLA
 !     ..
 !     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CONJG, MAX, MIN, REAL, HUGE
-   PARAMETER          ( HUGENUM = HUGE(ZERO) )
+   PARAMETER          ( HUGENUM = HUGE(0.0E+0) )
 !     ..
 !     .. Executable Statements ..
 !
@@ -469,12 +463,24 @@
 !
 !     Initialize U, V and Q, if necessary
 !
-   IF( INITU ) &
-      CALL CLASET( 'Full', M, M, CZERO, CONE, U, LDU )
-   IF( INITV ) &
-      CALL CLASET( 'Full', P, P, CZERO, CONE, V, LDV )
-   IF( INITQ ) &
-      CALL CLASET( 'Full', N, N, CZERO, CONE, Q, LDQ )
+   IF( INITU ) THEN
+      U(1:M, 1:M) = (0.0E+0,0.0E+0)
+      DO I = 1, M
+         U( I, I ) = (1.0E+0,0.0E+0)
+      ENDDO
+   ENDIF
+   IF( INITV ) THEN
+      V(1:M, 1:M) = (0.0E+0,0.0E+0)
+      DO I = 1, M
+         V( I, I ) = (1.0E+0,0.0E+0)
+      ENDDO
+   ENDIF
+   IF( INITQ ) THEN
+      Q(1:M, 1:M) = (0.0E+0,0.0E+0)
+      DO I = 1, M
+         Q( I, I ) = (1.0E+0,0.0E+0)
+      ENDDO
+   ENDIF
 !
 !     Loop until convergence
 !
@@ -486,81 +492,64 @@
       DO I = 1, L - 1
          DO J = I + 1, L
 !
-            A1 = ZERO
-            A2 = CZERO
-            A3 = ZERO
-            IF( K+I <= M ) &
-               A1 = REAL( A( K+I, N-L+I ) )
-            IF( K+J <= M ) &
-               A3 = REAL( A( K+J, N-L+J ) )
+            A1 = 0.0E+0
+            A2 = (0.0E+0,0.0E+0)
+            A3 = 0.0E+0
+            IF( K+I <= M ) A1 = REAL( A( K+I, N-L+I ) )
+            IF( K+J <= M ) A3 = REAL( A( K+J, N-L+J ) )
 !
             B1 = REAL( B( I, N-L+I ) )
             B3 = REAL( B( J, N-L+J ) )
 !
             IF( UPPER ) THEN
-               IF( K+I <= M ) &
-                  A2 = A( K+I, N-L+J )
+               IF( K+I <= M ) A2 = A( K+I, N-L+J )
                B2 = B( I, N-L+J )
             ELSE
-               IF( K+J <= M ) &
-                  A2 = A( K+J, N-L+I )
+               IF( K+J <= M ) A2 = A( K+J, N-L+I )
                B2 = B( J, N-L+I )
             END IF
 !
-            CALL CLAGS2( UPPER, A1, A2, A3, B1, B2, B3, CSU, SNU, &
-                         CSV, SNV, CSQ, SNQ )
+            CALL CLAGS2( UPPER, A1, A2, A3, B1, B2, B3, CSU, SNU, CSV, SNV, CSQ, SNQ )
 !
 !              Update (K+I)-th and (K+J)-th rows of matrix A: U**H *A
 !
             IF( K+J <= M ) &
-               CALL CROT( L, A( K+J, N-L+1 ), LDA, A( K+I, N-L+1 ), &
-                          LDA, CSU, CONJG( SNU ) )
+               CALL CROT( L, A( K+J, N-L+1 ), LDA, A( K+I, N-L+1 ), LDA, CSU, CONJG( SNU ) )
 !
 !              Update I-th and J-th rows of matrix B: V**H *B
 !
-            CALL CROT( L, B( J, N-L+1 ), LDB, B( I, N-L+1 ), LDB, &
-                       CSV, CONJG( SNV ) )
+            CALL CROT( L, B( J, N-L+1 ), LDB, B( I, N-L+1 ), LDB, CSV, CONJG( SNV ) )
 !
 !              Update (N-L+I)-th and (N-L+J)-th columns of matrices
 !              A and B: A*Q and B*Q
 !
-            CALL CROT( MIN( K+L, M ), A( 1, N-L+J ), 1, &
-                       A( 1, N-L+I ), 1, CSQ, SNQ )
+            CALL CROT( MIN( K+L, M ), A( 1, N-L+J ), 1, A( 1, N-L+I ), 1, CSQ, SNQ )
 !
-            CALL CROT( L, B( 1, N-L+J ), 1, B( 1, N-L+I ), 1, CSQ, &
-                       SNQ )
+            CALL CROT( L, B( 1, N-L+J ), 1, B( 1, N-L+I ), 1, CSQ, SNQ )
 !
             IF( UPPER ) THEN
-               IF( K+I <= M ) &
-                  A( K+I, N-L+J ) = CZERO
-               B( I, N-L+J ) = CZERO
+               IF( K+I <= M ) A( K+I, N-L+J ) = (0.0E+0,0.0E+0)
+               B( I, N-L+J ) = (0.0E+0,0.0E+0)
             ELSE
-               IF( K+J <= M ) &
-                  A( K+J, N-L+I ) = CZERO
-               B( J, N-L+I ) = CZERO
+               IF( K+J <= M ) A( K+J, N-L+I ) = (0.0E+0,0.0E+0)
+               B( J, N-L+I ) = (0.0E+0,0.0E+0)
             END IF
 !
 !              Ensure that the diagonal elements of A and B are real.
 !
-            IF( K+I <= M ) &
-               A( K+I, N-L+I ) = REAL( A( K+I, N-L+I ) )
-            IF( K+J <= M ) &
-               A( K+J, N-L+J ) = REAL( A( K+J, N-L+J ) )
+            IF( K+I <= M ) A( K+I, N-L+I ) = REAL( A( K+I, N-L+I ) )
+            IF( K+J <= M ) A( K+J, N-L+J ) = REAL( A( K+J, N-L+J ) )
             B( I, N-L+I ) = REAL( B( I, N-L+I ) )
             B( J, N-L+J ) = REAL( B( J, N-L+J ) )
 !
 !              Update unitary matrices U, V, Q, if desired.
 !
-            IF( WANTU .AND. K+J <= M ) &
-               CALL CROT( M, U( 1, K+J ), 1, U( 1, K+I ), 1, CSU, &
+            IF( WANTU .AND. K+J <= M ) CALL CROT( M, U( 1, K+J ), 1, U( 1, K+I ), 1, CSU, &
                           SNU )
 !
-            IF( WANTV ) &
-               CALL CROT( P, V( 1, J ), 1, V( 1, I ), 1, CSV, SNV )
+            IF( WANTV ) CALL CROT( P, V( 1, J ), 1, V( 1, I ), 1, CSV, SNV )
 !
-            IF( WANTQ ) &
-               CALL CROT( N, Q( 1, N-L+J ), 1, Q( 1, N-L+I ), 1, CSQ, &
-                          SNQ )
+            IF( WANTQ ) CALL CROT( N, Q( 1, N-L+J ), 1, Q( 1, N-L+I ), 1, CSQ, SNQ )
 !
          ENDDO
       ENDDO
@@ -573,16 +562,15 @@
 !           Convergence test: test the parallelism of the corresponding
 !           rows of A and B.
 !
-         ERROR = ZERO
+         ERROR = 0.0E+0
          DO I = 1, MIN( L, M-K )
-            CALL CCOPY( L-I+1, A( K+I, N-L+I ), LDA, WORK, 1 )
-            CALL CCOPY( L-I+1, B( I, N-L+I ), LDB, WORK( L+1 ), 1 )
+            WORK(1:L-I+1) = A(K+I,N-L+I:N)
+            WORK(L+1:L+L-I+1) = B(I,N-L+I:N)
             CALL CLAPLL( L-I+1, WORK, 1, WORK( L+1 ), 1, SSMIN )
             ERROR = MAX( ERROR, SSMIN )
          ENDDO
 !
-         IF( ABS( ERROR ) <= MIN( TOLA, TOLB ) ) &
-            GO TO 50
+         IF( ABS( ERROR ) <= MIN( TOLA, TOLB ) ) GO TO 50
       END IF
 !
 !        End of cycle loop
@@ -600,10 +588,8 @@
 !     Compute the generalized singular value pairs (ALPHA, BETA), and
 !     set the triangular matrix R to array A.
 !
-   DO I = 1, K
-      ALPHA( I ) = ONE
-      BETA( I ) = ZERO
-   ENDDO
+   ALPHA(1:K) = 1.0E+0
+   BETA(1:K) = 0.0E+0
 !
    DO I = 1, MIN( L, M-K )
 !
@@ -613,45 +599,36 @@
 !
       IF( (GAMMA <= HUGENUM).AND.(GAMMA >= -HUGENUM) ) THEN
 !
-         IF( GAMMA < ZERO ) THEN
-            CALL CSSCAL( L-I+1, -ONE, B( I, N-L+I ), LDB )
-            IF( WANTV ) &
-               CALL CSSCAL( P, -ONE, V( 1, I ), 1 )
+         IF( GAMMA < 0.0E+0 ) THEN
+            B(I,N-L+I:N) = - B(I,N-L+I:N)
+            IF( WANTV ) V(1:P,I) = - V(1:P,I)
          END IF
 !
-         CALL SLARTG( ABS( GAMMA ), ONE, BETA( K+I ), ALPHA( K+I ), &
-                      RWK )
+         CALL SLARTG( ABS( GAMMA ), 1.0E+0, BETA( K+I ), ALPHA( K+I ), RWK )
 !
          IF( ALPHA( K+I ) >= BETA( K+I ) ) THEN
-            CALL CSSCAL( L-I+1, ONE / ALPHA( K+I ), A( K+I, N-L+I ), &
-                         LDA )
+            A(K+I,N-L+I:N) = A(K+I,N-L+I:N) / ALPHA( K+I )
          ELSE
-            CALL CSSCAL( L-I+1, ONE / BETA( K+I ), B( I, N-L+I ), &
-                         LDB )
-            CALL CCOPY( L-I+1, B( I, N-L+I ), LDB, A( K+I, N-L+I ), &
-                        LDA )
+            B(I,N-L+I:N) = B(I,N-L+I:N) / BETA( K+I )
+
+            A(K+I,N-L+I:N) = B(I,N-L+I:N)
          END IF
 !
       ELSE
-         ALPHA( K+I ) = ZERO
-         BETA( K+I ) = ONE
-         CALL CCOPY( L-I+1, B( I, N-L+I ), LDB, A( K+I, N-L+I ), &
-                     LDA )
+         ALPHA( K+I ) = 0.0E+0
+         BETA( K+I ) = 1.0E+0
+         A(K+I,N-L+I:N) = B(I,N-L+I:N)
       END IF
    ENDDO
 !
 !     Post-assignment
 !
-   DO I = M + 1, K + L
-      ALPHA( I ) = ZERO
-      BETA( I ) = ONE
-   ENDDO
+   ALPHA(M+1:K+L) = 0.0E+0
+   BETA(M+1:K+L) = 1.0E+0
 !
    IF( K+L < N ) THEN
-      DO I = K + L + 1, N
-         ALPHA( I ) = ZERO
-         BETA( I ) = ZERO
-      ENDDO
+      ALPHA(K+L+1:N) = 0.0E+0
+      BETA(K+L+1:N) = 0.0E+0
    END IF
 !
   100 CONTINUE
@@ -662,5 +639,3 @@
 !     End of CTGSJA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

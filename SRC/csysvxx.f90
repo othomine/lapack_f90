@@ -530,8 +530,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
    INTEGER            FINAL_NRM_ERR_I, FINAL_CMP_ERR_I, BERR_I
    INTEGER            RCOND_I, NRM_RCOND_I, NRM_ERR_I, CMP_RCOND_I
    INTEGER            CMP_ERR_I, PIV_GROWTH_I
@@ -555,16 +553,13 @@
    EXTERNAL           CSYEQUB, CSYTRF, CSYTRS, CLACPY, &
                       CLAQSY, XERBLA, CLASCL2, CSYRFSX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
    NOFACT = LSAME( FACT, 'N' )
    EQUIL = LSAME( FACT, 'E' )
    SMLNUM = SLAMCH( 'Safe minimum' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    IF( NOFACT .OR. EQUIL ) THEN
       EQUED = 'N'
       RCEQU = .FALSE.
@@ -576,7 +571,7 @@
 !     factorization fails, make everything look horrible.  Only the
 !     pivot growth is set here, the rest is initialized in CSYRFSX.
 !
-   RPVGRW = ZERO
+   RPVGRW = 0.0E+0
 !
 !     Test the input parameters.  PARAMS is not tested until CSYRFSX.
 !
@@ -599,18 +594,14 @@
       INFO = -10
    ELSE
       IF ( RCEQU ) THEN
-         SMIN = BIGNUM
-         SMAX = ZERO
-         DO J = 1, N
-            SMIN = MIN( SMIN, S( J ) )
-            SMAX = MAX( SMAX, S( J ) )
-            ENDDO
-         IF( SMIN <= ZERO ) THEN
+         SMIN = MINVAL(S(1:N))
+         SMAX = MAXVAL(S(1:N))
+         IF( SMIN <= 0.0E+0 ) THEN
             INFO = -11
          ELSE IF( N > 0 ) THEN
             SCOND = MAX( SMIN, SMLNUM ) / MIN( SMAX, BIGNUM )
          ELSE
-            SCOND = ONE
+            SCOND = 1.0E+0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -688,14 +679,10 @@
 !
 !     Scale solutions.
 !
-   IF ( RCEQU ) THEN
-      CALL CLASCL2 (N, NRHS, S, X, LDX )
-   END IF
+   IF ( RCEQU ) CALL CLASCL2 (N, NRHS, S, X, LDX )
 !
    RETURN
 !
 !     End of CSYSVXX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

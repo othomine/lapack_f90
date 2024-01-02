@@ -128,8 +128,7 @@
 !> \ingroup hetrs2
 !
 !  =====================================================================
-   SUBROUTINE CSYTRS2( UPLO, N, NRHS, A, LDA, IPIV, B, LDB, &
-                       WORK, INFO )
+   SUBROUTINE CSYTRS2( UPLO, N, NRHS, A, LDA, IPIV, B, LDB, WORK, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -145,11 +144,9 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = (1.0E+0,0.0E+0) )
 !     ..
+!     .. Local Array ..
+   COMPLEX            B_tmp(NRHS)
 !     .. Local Scalars ..
    LOGICAL            UPPER
    INTEGER            I, IINFO, J, K, KP
@@ -160,10 +157,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CSCAL, CSYCONV, CSWAP, CTRSM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
+   EXTERNAL           CSYCONV, CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -187,8 +181,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 .OR. NRHS == 0 ) &
-      RETURN
+   IF( N == 0 .OR. NRHS == 0 ) RETURN
 !
 !     Convert A
 !
@@ -205,41 +198,47 @@
 !           1 x 1 diagonal block
 !           Interchange rows K and IPIV(K).
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K-1
       ELSE
 !           2 x 2 diagonal block
 !           Interchange rows K-1 and -IPIV(K).
          KP = -IPIV( K )
-         IF( KP == -IPIV( K-1 ) ) &
-            CALL CSWAP( NRHS, B( K-1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP == -IPIV( K-1 ) ) THEN
+            B_tmp(1:NRHS) = B(K-1,1:NRHS)
+            B(K-1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K-2
       END IF
      END DO
 !
 !  Compute (U \P**T * B) -> B    [ (U \P**T * B) ]
 !
-     CALL CTRSM('L','U','N','U',N,NRHS,ONE,A,LDA,B,LDB)
+     CALL CTRSM('L','U','N','U',N,NRHS,(1.0E+0,0.0E+0),A,LDA,B,LDB)
 !
 !  Compute D \ B -> B   [ D \ (U \P**T * B) ]
 !
       I=N
       DO WHILE ( I  >=  1 )
          IF( IPIV(I)  >  0 ) THEN
-           CALL CSCAL( NRHS, ONE / A( I, I ), B( I, 1 ), LDB )
+           B(I,1:NRHS) = B(I,1:NRHS) / A( I, I )
          ELSEIF ( I  >  1) THEN
             IF ( IPIV(I-1)  ==  IPIV(I) ) THEN
-               AKM1K = WORK(I)
-               AKM1 = A( I-1, I-1 ) / AKM1K
-               AK = A( I, I ) / AKM1K
-               DENOM = AKM1*AK - ONE
+               AKM1K = (1.0E+0,0.0E+0) / WORK(I)
+               AKM1 = A( I-1, I-1 ) * AKM1K
+               AK = A( I, I ) * AKM1K
+               DENOM = (1.0E+0,0.0E+0) / (AKM1*AK - (1.0E+0,0.0E+0 ))
                DO J = 1, NRHS
-                  BKM1 = B( I-1, J ) / AKM1K
-                  BK = B( I, J ) / AKM1K
-                  B( I-1, J ) = ( AK*BKM1-BK ) / DENOM
-                  B( I, J ) = ( AKM1*BK-BKM1 ) / DENOM
-                 ENDDO
+                  BKM1 = B( I-1, J ) * AKM1K
+                  BK = B( I, J ) * AKM1K
+                  B( I-1, J ) = ( AK*BKM1-BK ) * DENOM
+                  B( I, J ) = ( AKM1*BK-BKM1 ) * DENOM
+               ENDDO
             I = I - 1
             ENDIF
          ENDIF
@@ -248,7 +247,7 @@
 !
 !      Compute (U**T \ B) -> B   [ U**T \ (D \ (U \P**T * B) ) ]
 !
-      CALL CTRSM('L','U','T','U',N,NRHS,ONE,A,LDA,B,LDB)
+      CALL CTRSM('L','U','T','U',N,NRHS,(1.0E+0,0.0E+0 ),A,LDA,B,LDB)
 !
 !       P * B  [ P * (U**T \ (D \ (U \P**T * B) )) ]
 !
@@ -258,15 +257,21 @@
 !           1 x 1 diagonal block
 !           Interchange rows K and IPIV(K).
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K+1
       ELSE
 !           2 x 2 diagonal block
 !           Interchange rows K-1 and -IPIV(K).
          KP = -IPIV( K )
-         IF( K  <  N .AND. KP == -IPIV( K+1 ) ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( K  <  N .AND. KP == -IPIV( K+1 ) ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K+2
       ENDIF
      END DO
@@ -282,40 +287,46 @@
 !           1 x 1 diagonal block
 !           Interchange rows K and IPIV(K).
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K+1
       ELSE
 !           2 x 2 diagonal block
 !           Interchange rows K and -IPIV(K+1).
          KP = -IPIV( K+1 )
-         IF( KP == -IPIV( K ) ) &
-            CALL CSWAP( NRHS, B( K+1, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP == -IPIV( K ) ) THEN
+            B_tmp(1:NRHS) = B(K+1,1:NRHS)
+            B(K+1,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K+2
       ENDIF
      END DO
 !
 !  Compute (L \P**T * B) -> B    [ (L \P**T * B) ]
 !
-     CALL CTRSM('L','L','N','U',N,NRHS,ONE,A,LDA,B,LDB)
+     CALL CTRSM('L','L','N','U',N,NRHS,(1.0E+0,0.0E+0 ),A,LDA,B,LDB)
 !
 !  Compute D \ B -> B   [ D \ (L \P**T * B) ]
 !
       I=1
       DO WHILE ( I  <=  N )
          IF( IPIV(I)  >  0 ) THEN
-           CALL CSCAL( NRHS, ONE / A( I, I ), B( I, 1 ), LDB )
+           B(I,1:NRHS) = B(I,1:NRHS) / A( I, I )
          ELSE
-               AKM1K = WORK(I)
-               AKM1 = A( I, I ) / AKM1K
-               AK = A( I+1, I+1 ) / AKM1K
-               DENOM = AKM1*AK - ONE
+               AKM1K = (1.0E+0,0.0E+0 ) / WORK(I)
+               AKM1 = A( I, I ) * AKM1K
+               AK = A( I+1, I+1 ) * AKM1K
+               DENOM = (1.0E+0,0.0E+0 ) / (AKM1*AK - (1.0E+0,0.0E+0 ))
                DO J = 1, NRHS
-                  BKM1 = B( I, J ) / AKM1K
-                  BK = B( I+1, J ) / AKM1K
-                  B( I, J ) = ( AK*BKM1-BK ) / DENOM
-                  B( I+1, J ) = ( AKM1*BK-BKM1 ) / DENOM
-                 ENDDO
+                  BKM1 = B( I, J ) * AKM1K
+                  BK = B( I+1, J ) * AKM1K
+                  B( I, J ) = ( AK*BKM1-BK ) * DENOM
+                  B( I+1, J ) = ( AKM1*BK-BKM1 ) * DENOM
+               ENDDO
                I = I + 1
          ENDIF
          I = I + 1
@@ -323,7 +334,7 @@
 !
 !  Compute (L**T \ B) -> B   [ L**T \ (D \ (L \P**T * B) ) ]
 !
-     CALL CTRSM('L','L','T','U',N,NRHS,ONE,A,LDA,B,LDB)
+     CALL CTRSM('L','L','T','U',N,NRHS,(1.0E+0,0.0E+0 ),A,LDA,B,LDB)
 !
 !       P * B  [ P * (L**T \ (D \ (L \P**T * B) )) ]
 !
@@ -333,15 +344,21 @@
 !           1 x 1 diagonal block
 !           Interchange rows K and IPIV(K).
          KP = IPIV( K )
-         IF( KP /= K ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( KP /= K ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K-1
       ELSE
 !           2 x 2 diagonal block
 !           Interchange rows K-1 and -IPIV(K).
          KP = -IPIV( K )
-         IF( K > 1 .AND. KP == -IPIV( K-1 ) ) &
-            CALL CSWAP( NRHS, B( K, 1 ), LDB, B( KP, 1 ), LDB )
+         IF( K > 1 .AND. KP == -IPIV( K-1 ) ) THEN
+            B_tmp(1:NRHS) = B(K,1:NRHS)
+            B(K,1:NRHS) = B(KP,1:NRHS)
+            B(KP,1:NRHS) = B_tmp(1:NRHS)
+         ENDIF
          K=K-2
       ENDIF
      END DO
@@ -357,5 +374,3 @@
 !     End of CSYTRS2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

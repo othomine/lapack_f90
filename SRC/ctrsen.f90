@@ -278,10 +278,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WANTBH, WANTQ, WANTS, WANTSP
@@ -300,9 +296,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLACN2, CLACPY, CTREXC, CTRSYL, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Decode and test the input parameters.
@@ -314,11 +307,7 @@
 !
 !     Set M to the number of selected eigenvalues.
 !
-   M = 0
-   DO K = 1, N
-      IF( SELECT( K ) ) &
-         M = M + 1
-   ENDDO
+   M = COUNT(SELECT(1:N))
 !
    N1 = M
    N2 = N - M
@@ -335,8 +324,7 @@
       LWMIN = MAX( 1, NN )
    END IF
 !
-   IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.WANTS .AND. .NOT.WANTSP ) &
-        THEN
+   IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.WANTS .AND. .NOT.WANTSP ) THEN
       INFO = -1
    ELSE IF( .NOT.LSAME( COMPQ, 'N' ) .AND. .NOT.WANTQ ) THEN
       INFO = -2
@@ -350,9 +338,7 @@
       INFO = -14
    END IF
 !
-   IF( INFO == 0 ) THEN
-      WORK( 1 ) = LWMIN
-   END IF
+   IF( INFO == 0 ) WORK( 1 ) = LWMIN
 !
    IF( INFO /= 0 ) THEN
       CALL XERBLA( 'CTRSEN', -INFO )
@@ -364,10 +350,8 @@
 !     Quick return if possible
 !
    IF( M == N .OR. M == 0 ) THEN
-      IF( WANTS ) &
-         S = ONE
-      IF( WANTSP ) &
-         SEP = CLANGE( '1', N, N, T, LDT, RWORK )
+      IF( WANTS ) S = 1.0E+0
+      IF( WANTSP ) SEP = CLANGE( '1', N, N, T, LDT, RWORK )
       GO TO 40
    END IF
 !
@@ -380,8 +364,7 @@
 !
 !           Swap the K-th eigenvalue to position KS.
 !
-         IF( K /= KS ) &
-            CALL CTREXC( COMPQ, N, T, LDT, Q, LDQ, K, KS, IERR )
+         IF( K /= KS ) CALL CTREXC( COMPQ, N, T, LDT, Q, LDQ, K, KS, IERR )
       END IF
    ENDDO
 !
@@ -399,11 +382,10 @@
 !        of eigenvalues.
 !
       RNORM = CLANGE( 'F', N1, N2, WORK, N1, RWORK )
-      IF( RNORM == ZERO ) THEN
-         S = ONE
+      IF( RNORM == 0.0E+0 ) THEN
+         S = 1.0E+0
       ELSE
-         S = SCALE / ( SQRT( SCALE*SCALE / RNORM+RNORM )* &
-             SQRT( RNORM ) )
+         S = SCALE / ( SQRT( SCALE*SCALE / RNORM+RNORM )* SQRT( RNORM ) )
       END IF
    END IF
 !
@@ -411,7 +393,7 @@
 !
 !        Estimate sep(T11,T22).
 !
-      EST = ZERO
+      EST = 0.0E+0
       KASE = 0
 30    CONTINUE
       CALL CLACN2( NN, WORK( NN+1 ), WORK, EST, KASE, ISAVE )
@@ -421,15 +403,13 @@
 !              Solve T11*R - R*T22 = scale*X.
 !
             CALL CTRSYL( 'N', 'N', -1, N1, N2, T, LDT, &
-                         T( N1+1, N1+1 ), LDT, WORK, N1, SCALE, &
-                         IERR )
+                         T( N1+1, N1+1 ), LDT, WORK, N1, SCALE, IERR )
          ELSE
 !
 !              Solve T11**H*R - R*T22**H = scale*X.
 !
             CALL CTRSYL( 'C', 'C', -1, N1, N2, T, LDT, &
-                         T( N1+1, N1+1 ), LDT, WORK, N1, SCALE, &
-                         IERR )
+                         T( N1+1, N1+1 ), LDT, WORK, N1, SCALE, IERR )
          END IF
          GO TO 30
       END IF
@@ -452,5 +432,3 @@
 !     End of CTRSEN
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

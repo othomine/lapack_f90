@@ -262,11 +262,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                        CONE  = ( 1.0E+0, 0.0E+0 ) )
    INTEGER            NBMIN, NBMAX
    PARAMETER          ( NBMIN = 8, NBMAX = 128 )
 !     ..
@@ -278,22 +273,13 @@
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
-   INTEGER            ILAENV, ICAMAX
-   REAL               SLAMCH, SCASUM
-   EXTERNAL           LSAME, ILAENV, ICAMAX, SLAMCH, SCASUM
+   INTEGER            ILAENV
+   REAL               SLAMCH, CABS1
+   EXTERNAL           LSAME, ILAENV, SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           XERBLA, CCOPY, CLASET, CSSCAL, CGEMM, CGEMV, &
+   EXTERNAL           XERBLA, CLASET, CGEMM, CGEMV, &
                       CLATRS, CLACPY
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, REAL, CMPLX, CONJG, AIMAG, MAX
-!     ..
-!     .. Statement Functions ..
-   REAL   CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( CDUM ) = ABS( REAL( CDUM ) ) + ABS( AIMAG( CDUM ) )
 !     ..
 !     .. Executable Statements ..
 !
@@ -311,11 +297,7 @@
 !     eigenvectors.
 !
    IF( SOMEV ) THEN
-      M = 0
-      DO J = 1, N
-         IF( SELECT( J ) ) &
-            M = M + 1
-      ENDDO
+      M = COUNT(SELECT(1:N))
    ELSE
       M = N
    END IF
@@ -354,8 +336,7 @@
 !
 !     Quick return if possible.
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Use blocked version of back-transformation if sufficient workspace.
 !     Zero-out the workspace to avoid potential NaN propagation.
@@ -363,7 +344,7 @@
    IF( OVER .AND. LWORK  >=  N + 2*N*NBMIN ) THEN
       NB = (LWORK - N) / (2*N)
       NB = MIN( NB, NBMAX )
-      CALL CLASET( 'F', N, 1+2*NB, CZERO, CZERO, WORK, N )
+      CALL CLASET( 'F', N, 1+2*NB, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), WORK, N )
    ELSE
       NB = 1
    END IF
@@ -371,7 +352,7 @@
 !     Set the constants to control overflow.
 !
    UNFL = SLAMCH( 'Safe minimum' )
-   OVFL = ONE / UNFL
+   OVFL = 1.0E+0 / UNFL
    ULP = SLAMCH( 'Precision' )
    SMLNUM = UNFL*( N / ULP )
 !
@@ -384,9 +365,9 @@
 !     Compute 1-norm of each column of strictly upper triangular
 !     part of T to control overflow in triangular solver.
 !
-   RWORK( 1 ) = ZERO
+   RWORK( 1 ) = 0.0E+0
    DO J = 2, N
-      RWORK( J ) = SCASUM( J-1, T( 1, J ), 1 )
+      RWORK( J ) = sum(ABS(REAL(T(1:J-1,J))) + ABS(AIMAG(T(1:J-1,J))))
    ENDDO
 !
    IF( RIGHTV ) THEN
@@ -402,29 +383,25 @@
       IS = M
       DO KI = N, 1, -1
          IF( SOMEV ) THEN
-            IF( .NOT.SELECT( KI ) ) &
-               GO TO 80
+            IF( .NOT.SELECT( KI ) ) GO TO 80
          END IF
          SMIN = MAX( ULP*( CABS1( T( KI, KI ) ) ), SMLNUM )
 !
 !           --------------------------------------------------------
 !           Complex right eigenvector
 !
-         WORK( KI + IV*N ) = CONE
+         WORK( KI + IV*N ) = (1.0E+0,0.0E+0)
 !
 !           Form right-hand side.
 !
-         DO K = 1, KI - 1
-            WORK( K + IV*N ) = -T( K, KI )
-         ENDDO
+         WORK(IV*N+1:IV*N+KI-1 ) = -T(1:KI-1, KI )
 !
 !           Solve upper triangular system:
 !           [ T(1:KI-1,1:KI-1) - T(KI,KI) ]*X = SCALE*WORK.
 !
          DO K = 1, KI - 1
             T( K, K ) = T( K, K ) - T( KI, KI )
-            IF( CABS1( T( K, K ) ) < SMIN ) &
-               T( K, K ) = SMIN
+            IF( CABS1( T( K, K ) ) < SMIN ) T( K, K ) = SMIN
          ENDDO
 !
          IF( KI > 1 ) THEN
@@ -439,50 +416,46 @@
          IF( .NOT.OVER ) THEN
 !              ------------------------------
 !              no back-transform: copy x to VR and normalize.
-            CALL CCOPY( KI, WORK( 1 + IV*N ), 1, VR( 1, IS ), 1 )
+            VR(1:KI,IS) = WORK(1+IV*N:IV*N+KI)
 !
-            II = ICAMAX( KI, VR( 1, IS ), 1 )
-            REMAX = ONE / CABS1( VR( II, IS ) )
-            CALL CSSCAL( KI, REMAX, VR( 1, IS ), 1 )
+            II = MAXLOC(ABS(REAL(VR(1:KI,IS))) + ABS(AIMAG(VR(1:KI,IS))),1)
+
+            VR(1:KI,IS) = VR(1:KI,IS) / CABS1( VR( II, IS ) )
 !
-            DO K = KI + 1, N
-               VR( K, IS ) = CZERO
-            ENDDO
+            VR(KI+1:N, IS ) = (0.0E+0,0.0E+0)
 !
          ELSE IF( NB == 1 ) THEN
 !              ------------------------------
 !              version 1: back-transform each vector with GEMV, Q*x.
             IF( KI > 1 ) &
-               CALL CGEMV( 'N', N, KI-1, CONE, VR, LDVR, &
-                           WORK( 1 + IV*N ), 1, CMPLX( SCALE ), &
-                           VR( 1, KI ), 1 )
+               CALL CGEMV( 'N', N, KI-1, (1.0E+0,0.0E+0), VR, LDVR, &
+                           WORK( 1 + IV*N ), 1, CMPLX( SCALE ), VR( 1, KI ), 1 )
 !
-            II = ICAMAX( N, VR( 1, KI ), 1 )
-            REMAX = ONE / CABS1( VR( II, KI ) )
-            CALL CSSCAL( N, REMAX, VR( 1, KI ), 1 )
+            II = MAXLOC(ABS(REAL(VR(1:N,KI))) + ABS(AIMAG(VR(1:N,KI))),1)
+
+            VR(1:N,KI) = VR(1:N,KI) / CABS1( VR( II, KI ) )
 !
          ELSE
 !              ------------------------------
 !              version 2: back-transform block of vectors with GEMM
 !              zero out below vector
-            DO K = KI + 1, N
-               WORK( K + IV*N ) = CZERO
-            END DO
+            WORK(IV*N+KI+1:IV*N+N ) = (0.0E+0,0.0E+0)
 !
 !              Columns IV:NB of work are valid vectors.
 !              When the number of vectors stored reaches NB,
 !              or if this was last vector, do the GEMM
             IF( (IV == 1) .OR. (KI == 1) ) THEN
-               CALL CGEMM( 'N', 'N', N, NB-IV+1, KI+NB-IV, CONE, &
+               CALL CGEMM( 'N', 'N', N, NB-IV+1, KI+NB-IV, (1.0E+0,0.0E+0), &
                            VR, LDVR, &
                            WORK( 1 + (IV)*N    ), N, &
-                           CZERO, &
+                           (0.0E+0,0.0E+0), &
                            WORK( 1 + (NB+IV)*N ), N )
 !                 normalize vectors
                DO K = IV, NB
-                  II = ICAMAX( N, WORK( 1 + (NB+K)*N ), 1 )
-                  REMAX = ONE / CABS1( WORK( II + (NB+K)*N ) )
-                  CALL CSSCAL( N, REMAX, WORK( 1 + (NB+K)*N ), 1 )
+                  II = MAXLOC(ABS(REAL(WORK(1+(NB+K)*N:(NB+K+1)*N))) + &
+                    ABS(AIMAG(WORK(1+(NB+K)*N:(NB+K+1)*N))),1)
+                  WORK(1+(NB+K)*N:(NB+K+1)*N) = WORK(1+(NB+K)*N:(NB+K+1)*N) / &
+                    CABS1( WORK( II + (NB+K)*N ) )
                END DO
                CALL CLACPY( 'F', N, NB-IV+1, &
                             WORK( 1 + (NB+IV)*N ), N, &
@@ -518,29 +491,25 @@
       DO KI = 1, N
 !
          IF( SOMEV ) THEN
-            IF( .NOT.SELECT( KI ) ) &
-               GO TO 130
+            IF( .NOT.SELECT( KI ) ) GO TO 130
          END IF
          SMIN = MAX( ULP*( CABS1( T( KI, KI ) ) ), SMLNUM )
 !
 !           --------------------------------------------------------
 !           Complex left eigenvector
 !
-         WORK( KI + IV*N ) = CONE
+         WORK( KI + IV*N ) = (1.0E+0,0.0E+0)
 !
 !           Form right-hand side.
 !
-         DO K = KI + 1, N
-            WORK( K + IV*N ) = -CONJG( T( KI, K ) )
-         ENDDO
+         WORK(IV*N+KI+1:(IV+1)*N) = -CONJG( T( KI,KI+1:N) )
 !
 !           Solve conjugate-transposed triangular system:
 !           [ T(KI+1:N,KI+1:N) - T(KI,KI) ]**H * X = SCALE*WORK.
 !
          DO K = KI + 1, N
             T( K, K ) = T( K, K ) - T( KI, KI )
-            IF( CABS1( T( K, K ) ) < SMIN ) &
-               T( K, K ) = SMIN
+            IF( CABS1( T( K, K ) ) < SMIN ) T( K, K ) = SMIN
             ENDDO
 !
          IF( KI < N ) THEN
@@ -555,51 +524,46 @@
          IF( .NOT.OVER ) THEN
 !              ------------------------------
 !              no back-transform: copy x to VL and normalize.
-            CALL CCOPY( N-KI+1, WORK( KI + IV*N ), 1, VL(KI,IS), 1 )
+            VL(KI:N,IS) = WORK(KI+IV*N:(IV+1)*N)
 !
-            II = ICAMAX( N-KI+1, VL( KI, IS ), 1 ) + KI - 1
-            REMAX = ONE / CABS1( VL( II, IS ) )
-            CALL CSSCAL( N-KI+1, REMAX, VL( KI, IS ), 1 )
+            II = MAXLOC(ABS(REAL(VL(KI:N,IS))) + ABS(AIMAG(VL(KI:N,IS))),1) + KI - 1
+            VL(KI:N,IS) = VL(KI:N,IS) / CABS1( VL( II, IS ) )
 !
-            DO K = 1, KI - 1
-               VL( K, IS ) = CZERO
-               ENDDO
+            VL(1:KI-1,IS) = (0.0E+0,0.0E+0)
 !
          ELSE IF( NB == 1 ) THEN
 !              ------------------------------
 !              version 1: back-transform each vector with GEMV, Q*x.
             IF( KI < N ) &
-               CALL CGEMV( 'N', N, N-KI, CONE, VL( 1, KI+1 ), LDVL, &
+               CALL CGEMV( 'N', N, N-KI, (1.0E+0,0.0E+0), VL( 1, KI+1 ), LDVL, &
                            WORK( KI+1 + IV*N ), 1, CMPLX( SCALE ), &
                            VL( 1, KI ), 1 )
 !
-            II = ICAMAX( N, VL( 1, KI ), 1 )
-            REMAX = ONE / CABS1( VL( II, KI ) )
-            CALL CSSCAL( N, REMAX, VL( 1, KI ), 1 )
+            II = MAXLOC(ABS(REAL(VL(1:N,KI))) + ABS(AIMAG(VL(1:N,KI))),1)
+            VL(1:N,KI) = VL(1:N,KI) / CABS1( VL( II, KI ) )
 !
          ELSE
 !              ------------------------------
 !              version 2: back-transform block of vectors with GEMM
 !              zero out above vector
 !              could go from KI-NV+1 to KI-1
-            DO K = 1, KI - 1
-               WORK( K + IV*N ) = CZERO
-            END DO
+            WORK(IV*N+1:IV*N+KI-1) = (0.0E+0,0.0E+0)
 !
 !              Columns 1:IV of work are valid vectors.
 !              When the number of vectors stored reaches NB,
 !              or if this was last vector, do the GEMM
             IF( (IV == NB) .OR. (KI == N) ) THEN
-               CALL CGEMM( 'N', 'N', N, IV, N-KI+IV, CONE, &
+               CALL CGEMM( 'N', 'N', N, IV, N-KI+IV, (1.0E+0,0.0E+0), &
                            VL( 1, KI-IV+1 ), LDVL, &
                            WORK( KI-IV+1 + (1)*N ), N, &
-                           CZERO, &
+                           (0.0E+0,0.0E+0), &
                            WORK( 1 + (NB+1)*N ), N )
 !                 normalize vectors
                DO K = 1, IV
-                  II = ICAMAX( N, WORK( 1 + (NB+K)*N ), 1 )
-                  REMAX = ONE / CABS1( WORK( II + (NB+K)*N ) )
-                  CALL CSSCAL( N, REMAX, WORK( 1 + (NB+K)*N ), 1 )
+                  II = MAXLOC(ABS(REAL(WORK(1+(NB+K)*N:(NB+K+1)*N))) + &
+                     ABS(AIMAG(WORK(1+(NB+K)*N:(NB+K+1)*N))),1)
+                  WORK(1+(NB+K)*N:(NB+K+1)*N) = WORK(1+(NB+K)*N:(NB+K+1)*N) / &
+                     CABS1( WORK( II + (NB+K)*N ) )
                END DO
                CALL CLACPY( 'F', N, IV, &
                             WORK( 1 + (NB+1)*N ), N, &
@@ -614,11 +578,11 @@
 !
          DO K = KI + 1, N
             T( K, K ) = WORK( K )
-            ENDDO
+         ENDDO
 !
          IS = IS + 1
   130    CONTINUE
-         ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -626,5 +590,3 @@
 !     End of CTREVC3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

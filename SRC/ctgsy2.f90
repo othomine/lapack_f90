@@ -275,9 +275,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
    INTEGER            LDZ
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, LDZ = 2 )
+   PARAMETER          (LDZ = 2 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -296,9 +295,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CGESC2, CGETC2, CSCAL, CLATDF, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, CONJG, MAX
-!     ..
 !     .. Executable Statements ..
 !
 !     Decode and test input parameters
@@ -309,9 +305,7 @@
    IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'C' ) ) THEN
       INFO = -1
    ELSE IF( NOTRAN ) THEN
-      IF( ( IJOB < 0 ) .OR. ( IJOB > 2 ) ) THEN
-         INFO = -2
-      END IF
+      IF( ( IJOB < 0 ) .OR. ( IJOB > 2 ) ) INFO = -2
    END IF
    IF( INFO == 0 ) THEN
       IF( M <= 0 ) THEN
@@ -344,8 +338,8 @@
 !           D(I, I) * R(I, J) - L(I, J) * E(J, J) = F(I, J)
 !        for I = M, M - 1, ..., 1; J = 1, 2, ..., N
 !
-      SCALE = ONE
-      SCALOC = ONE
+      SCALE = 1.0E+0
+      SCALOC = 1.0E+0
       DO J = 1, N
          DO I = M, 1, -1
 !
@@ -364,17 +358,12 @@
 !              Solve Z * x = RHS
 !
             CALL CGETC2( LDZ, Z, LDZ, IPIV, JPIV, IERR )
-            IF( IERR > 0 ) &
-               INFO = IERR
+            IF( IERR > 0 ) INFO = IERR
             IF( IJOB == 0 ) THEN
                CALL CGESC2( LDZ, Z, LDZ, RHS, IPIV, JPIV, SCALOC )
-               IF( SCALOC /= ONE ) THEN
-                  DO K = 1, N
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                                 1 )
-                     CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                                 1 )
-                  ENDDO
+               IF( SCALOC /= 1.0E+0 ) THEN
+                  C(1:M,1:N) = C(1:M,1:N) * CMPLX( SCALOC, 0.0E+0)
+                  F(1:M,1:N) = F(1:M,1:N) * CMPLX( SCALOC, 0.0E+0 )
                   SCALE = SCALE*SCALOC
                END IF
             ELSE
@@ -391,14 +380,12 @@
 !
             IF( I > 1 ) THEN
                ALPHA = -RHS( 1 )
-               CALL CAXPY( I-1, ALPHA, A( 1, I ), 1, C( 1, J ), 1 )
-               CALL CAXPY( I-1, ALPHA, D( 1, I ), 1, F( 1, J ), 1 )
+               C(1:I-1,J) = C(1:I-1,J) + -RHS( 1 )*A(1:I-1,I)
+               F(1:I-1,J) = F(1:I-1,J) + -RHS( 1 )*A(1:I-1,I)
             END IF
             IF( J < N ) THEN
-               CALL CAXPY( N-J, RHS( 2 ), B( J, J+1 ), LDB, &
-                           C( I, J+1 ), LDC )
-               CALL CAXPY( N-J, RHS( 2 ), E( J, J+1 ), LDE, &
-                           F( I, J+1 ), LDF )
+               C(I,J+1:N) = C(I,J+1:N) + RHS( 2 )*B(J,J+1:N)
+               F(I,J+1:N) = F(I,J+1:N) + RHS( 2 )*E(J,J+1:N)
             END IF
 !
          ENDDO
@@ -410,8 +397,8 @@
 !           R(I, I) * B(J, J) + L(I, J) * E(J, J)   = -F(I, J)
 !        for I = 1, 2, ..., M, J = N, N - 1, ..., 1
 !
-      SCALE = ONE
-      SCALOC = ONE
+      SCALE = 1.0E+0
+      SCALOC = 1.0E+0
       DO I = 1, M
          DO J = N, 1, -1
 !
@@ -431,16 +418,11 @@
 !              Solve Z**H * x = RHS
 !
             CALL CGETC2( LDZ, Z, LDZ, IPIV, JPIV, IERR )
-            IF( IERR > 0 ) &
-               INFO = IERR
+            IF( IERR > 0 ) INFO = IERR
             CALL CGESC2( LDZ, Z, LDZ, RHS, IPIV, JPIV, SCALOC )
-            IF( SCALOC /= ONE ) THEN
-               DO K = 1, N
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), C( 1, K ), &
-                              1 )
-                  CALL CSCAL( M, CMPLX( SCALOC, ZERO ), F( 1, K ), &
-                              1 )
-               ENDDO
+            IF( SCALOC /= 1.0E+0 ) THEN
+               C(1:M,1:N) = CMPLX( SCALOC, 0.0E+0 )*C(1:M,1:N)
+               F(1:M,1:N) = CMPLX( SCALOC, 0.0E+0 )*F(1:M,1:N)
                SCALE = SCALE*SCALOC
             END IF
 !
@@ -451,14 +433,10 @@
 !
 !              Substitute R(I, J) and L(I, J) into remaining equation.
 !
-            DO K = 1, J - 1
-               F( I, K ) = F( I, K ) + RHS( 1 )*CONJG( B( K, J ) ) + &
-                           RHS( 2 )*CONJG( E( K, J ) )
-            ENDDO
-            DO K = I + 1, M
-               C( K, J ) = C( K, J ) - CONJG( A( I, K ) )*RHS( 1 ) - &
-                           CONJG( D( I, K ) )*RHS( 2 )
-            ENDDO
+            F( I,1:J-1) = F( I,1:J-1) + RHS( 1 )*CONJG( B(1:J-1, J ) ) + &
+                        RHS( 2 )*CONJG( E(1:J-1, J ) )
+            C(I+1:M, J ) = C(I+1:M, J ) - CONJG( A( I, I+1:M) )*RHS( 1 ) - &
+                        CONJG( D( I, I+1:M) )*RHS( 2 )
 !
          ENDDO
       ENDDO
@@ -468,5 +446,3 @@
 !     End of CTGSY2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

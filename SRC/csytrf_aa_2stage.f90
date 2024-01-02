@@ -175,10 +175,6 @@
 !     ..
 !
 !  =====================================================================
-!     .. Parameters ..
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                        CONE  = ( 1.0E+0, 0.0E+0 ) )
 !
 !     .. Local Scalars ..
    LOGICAL            UPPER, TQUERY, WQUERY
@@ -194,9 +190,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CCOPY, CGBTRF, CGEMM, CGETRF, CLACPY, &
                       CLASET, CTRSM, CSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MIN, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -227,32 +220,20 @@
 !
    NB = ILAENV( 1, 'CSYTRF_AA_2STAGE', UPLO, N, -1, -1, -1 )
    IF( INFO == 0 ) THEN
-      IF( TQUERY ) THEN
-         TB( 1 ) = (3*NB+1)*N
-      END IF
-      IF( WQUERY ) THEN
-         WORK( 1 ) = N*NB
-      END IF
+      IF( TQUERY ) TB( 1 ) = (3*NB+1)*N
+      IF( WQUERY ) WORK( 1 ) = N*NB
    END IF
-   IF( TQUERY .OR. WQUERY ) THEN
-      RETURN
-   END IF
+   IF( TQUERY .OR. WQUERY ) RETURN
 !
 !     Quick return
 !
-   IF ( N == 0 ) THEN
-      RETURN
-   ENDIF
+   IF ( N == 0 ) RETURN
 !
 !     Determine the number of the block size
 !
    LDTB = LTB/N
-   IF( LDTB  <  3*NB+1 ) THEN
-      NB = (LDTB-1)/3
-   END IF
-   IF( LWORK  <  NB*N ) THEN
-      NB = LWORK/N
-   END IF
+   IF( LDTB  <  3*NB+1 ) NB = (LDTB-1)/3
+   IF( LWORK  <  NB*N ) NB = LWORK/N
 !
 !     Determine the number of the block columns
 !
@@ -291,9 +272,9 @@
                END IF
                CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                        NB, KB, JB, &
-                       CONE,  TB( TD+1 + (I*NB)*LDTB ), LDTB-1, &
+                       (1.0E+0,0.0E+0),  TB( TD+1 + (I*NB)*LDTB ), LDTB-1, &
                               A( (I-1)*NB+1, J*NB+1 ), LDA, &
-                       CZERO, WORK( I*NB+1 ), N )
+                       (0.0E+0,0.0E+0), WORK( I*NB+1 ), N )
             ELSE
 !                 H(I,J) = T(I,I-1)*U(I-1,J) + T(I,I)*U(I,J) + T(I,I+1)*U(I+1,J)
                IF( I  ==  J-1) THEN
@@ -303,10 +284,10 @@
                END IF
                CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                        NB, KB, JB, &
-                       CONE,  TB( TD+NB+1 + ((I-1)*NB)*LDTB ), &
+                       (1.0E+0,0.0E+0),  TB( TD+NB+1 + ((I-1)*NB)*LDTB ), &
                           LDTB-1, &
                               A( (I-2)*NB+1, J*NB+1 ), LDA, &
-                       CZERO, WORK( I*NB+1 ), N )
+                       (0.0E+0,0.0E+0), WORK( I*NB+1 ), N )
             END IF
          END DO
 !
@@ -318,20 +299,20 @@
 !              T(J,J) = U(1:J,J)'*H(1:J)
             CALL CGEMM( 'Transpose', 'NoTranspose', &
                     KB, KB, (J-1)*NB, &
-                   -CONE, A( 1, J*NB+1 ), LDA, &
+                   -(1.0E+0,0.0E+0), A( 1, J*NB+1 ), LDA, &
                           WORK( NB+1 ), N, &
-                    CONE, TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
+                    (1.0E+0,0.0E+0), TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
 !              T(J,J) += U(J,J)'*T(J,J-1)*U(J-1,J)
             CALL CGEMM( 'Transpose', 'NoTranspose', &
                     KB, NB, KB, &
-                    CONE,  A( (J-1)*NB+1, J*NB+1 ), LDA, &
+                    (1.0E+0,0.0E+0),  A( (J-1)*NB+1, J*NB+1 ), LDA, &
                            TB( TD+NB+1 + ((J-1)*NB)*LDTB ), LDTB-1, &
-                    CZERO, WORK( 1 ), N )
+                    (0.0E+0,0.0E+0), WORK( 1 ), N )
             CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                     KB, KB, NB, &
-                   -CONE, WORK( 1 ), N, &
+                   -(1.0E+0,0.0E+0), WORK( 1 ), N, &
                           A( (J-2)*NB+1, J*NB+1 ), LDA, &
-                    CONE, TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
+                    (1.0E+0,0.0E+0), TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
          END IF
 !
 !           Expand T(J,J) into full format
@@ -346,10 +327,10 @@
 !               CALL CHEGST( 1, 'Upper', KB,
 !     $                      TB( TD+1 + (J*NB)*LDTB ), LDTB-1,
 !     $                      A( (J-1)*NB+1, J*NB+1 ), LDA, IINFO )
-            CALL CTRSM( 'L', 'U', 'T', 'N', KB, KB, CONE, &
+            CALL CTRSM( 'L', 'U', 'T', 'N', KB, KB, (1.0E+0,0.0E+0), &
                         A( (J-1)*NB+1, J*NB+1 ), LDA, &
                         TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
-            CALL CTRSM( 'R', 'U', 'N', 'N', KB, KB, CONE, &
+            CALL CTRSM( 'R', 'U', 'N', 'N', KB, KB, (1.0E+0,0.0E+0), &
                         A( (J-1)*NB+1, J*NB+1 ), LDA, &
                         TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
          END IF
@@ -362,25 +343,25 @@
                IF( J == 1 ) THEN
                   CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                           KB, KB, KB, &
-                          CONE,  TB( TD+1 + (J*NB)*LDTB ), LDTB-1, &
+                          (1.0E+0,0.0E+0),  TB( TD+1 + (J*NB)*LDTB ), LDTB-1, &
                                  A( (J-1)*NB+1, J*NB+1 ), LDA, &
-                          CZERO, WORK( J*NB+1 ), N )
+                          (0.0E+0,0.0E+0), WORK( J*NB+1 ), N )
                ELSE
                   CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                          KB, KB, NB+KB, &
-                         CONE, TB( TD+NB+1 + ((J-1)*NB)*LDTB ), &
+                         (1.0E+0,0.0E+0), TB( TD+NB+1 + ((J-1)*NB)*LDTB ), &
                             LDTB-1, &
                                 A( (J-2)*NB+1, J*NB+1 ), LDA, &
-                         CZERO, WORK( J*NB+1 ), N )
+                         (0.0E+0,0.0E+0), WORK( J*NB+1 ), N )
                END IF
 !
 !                 Update with the previous column
 !
                CALL CGEMM( 'Transpose', 'NoTranspose', &
                        NB, N-(J+1)*NB, J*NB, &
-                       -CONE, WORK( NB+1 ), N, &
+                       -(1.0E+0,0.0E+0), WORK( NB+1 ), N, &
                               A( 1, (J+1)*NB+1 ), LDA, &
-                        CONE, A( J*NB+1, (J+1)*NB+1 ), LDA )
+                        (1.0E+0,0.0E+0), A( J*NB+1, (J+1)*NB+1 ), LDA )
             END IF
 !
 !              Copy panel to workspace to call CGETRF
@@ -411,13 +392,13 @@
 !              Compute T(J+1, J), zero out for GEMM update
 !
             KB = MIN(NB, N-(J+1)*NB)
-            CALL CLASET( 'Full', KB, NB, CZERO, CZERO, &
+            CALL CLASET( 'Full', KB, NB, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          TB( TD+NB+1 + (J*NB)*LDTB), LDTB-1 )
             CALL CLACPY( 'Upper', KB, NB, &
                          WORK, N, &
                          TB( TD+NB+1 + (J*NB)*LDTB ), LDTB-1 )
             IF( J > 0 ) THEN
-               CALL CTRSM( 'R', 'U', 'N', 'U', KB, NB, CONE, &
+               CALL CTRSM( 'R', 'U', 'N', 'U', KB, NB, (1.0E+0,0.0E+0), &
                            A( (J-1)*NB+1, J*NB+1 ), LDA, &
                            TB( TD+NB+1 + (J*NB)*LDTB ), LDTB-1 )
             END IF
@@ -431,7 +412,7 @@
                      = TB( TD+NB+I-K+1 + (J*NB+K-1)*LDTB )
                END DO
             END DO
-            CALL CLASET( 'Lower', KB, NB, CZERO, CONE, &
+            CALL CLASET( 'Lower', KB, NB, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                          A( J*NB+1, (J+1)*NB+1), LDA )
 !
 !              Apply pivots to trailing submatrix of A
@@ -444,24 +425,20 @@
                I2 = IPIV( (J+1)*NB+K )
                IF( I1 /= I2 ) THEN
 !                    > Apply pivots to previous columns of L
-                  CALL CSWAP( K-1, A( (J+1)*NB+1, I1 ), 1, &
-                                   A( (J+1)*NB+1, I2 ), 1 )
+                  CALL CSWAP( K-1, A( (J+1)*NB+1, I1 ), 1, A( (J+1)*NB+1, I2 ), 1 )
 !                    > Swap A(I1+1:M, I1) with A(I2, I1+1:M)
                   IF( I2 > (I1+1) ) &
-                     CALL CSWAP( I2-I1-1, A( I1, I1+1 ), LDA, &
-                                          A( I1+1, I2 ), 1 )
+                     CALL CSWAP( I2-I1-1, A( I1, I1+1 ), LDA, A( I1+1, I2 ), 1 )
 !                    > Swap A(I2+1:M, I1) with A(I2+1:M, I2)
                   IF( I2 < N ) &
-                     CALL CSWAP( N-I2, A( I1, I2+1 ), LDA, &
-                                       A( I2, I2+1 ), LDA )
+                     CALL CSWAP( N-I2, A( I1, I2+1 ), LDA, A( I2, I2+1 ), LDA )
 !                    > Swap A(I1, I1) with A(I2, I2)
                   PIV = A( I1, I1 )
                   A( I1, I1 ) = A( I2, I2 )
                   A( I2, I2 ) = PIV
 !                    > Apply pivots to previous columns of L
                   IF( J > 0 ) THEN
-                     CALL CSWAP( J*NB, A( 1, I1 ), 1, &
-                                       A( 1, I2 ), 1 )
+                     CALL CSWAP( J*NB, A( 1, I1 ), 1, A( 1, I2 ), 1 )
                   END IF
                ENDIF
             END DO
@@ -488,9 +465,9 @@
                END IF
                CALL CGEMM( 'NoTranspose', 'Transpose', &
                        NB, KB, JB, &
-                       CONE, TB( TD+1 + (I*NB)*LDTB ), LDTB-1, &
+                       (1.0E+0,0.0E+0), TB( TD+1 + (I*NB)*LDTB ), LDTB-1, &
                              A( J*NB+1, (I-1)*NB+1 ), LDA, &
-                       CZERO, WORK( I*NB+1 ), N )
+                       (0.0E+0,0.0E+0), WORK( I*NB+1 ), N )
             ELSE
 !                 H(I,J) = T(I,I-1)*L(J,I-1)' + T(I,I)*L(J,I)' + T(I,I+1)*L(J,I+1)'
                IF( I  ==  (J-1) ) THEN
@@ -500,10 +477,10 @@
                END IF
                CALL CGEMM( 'NoTranspose', 'Transpose', &
                        NB, KB, JB, &
-                       CONE,  TB( TD+NB+1 + ((I-1)*NB)*LDTB ), &
+                       (1.0E+0,0.0E+0),  TB( TD+NB+1 + ((I-1)*NB)*LDTB ), &
                           LDTB-1, &
                               A( J*NB+1, (I-2)*NB+1 ), LDA, &
-                       CZERO, WORK( I*NB+1 ), N )
+                       (0.0E+0,0.0E+0), WORK( I*NB+1 ), N )
             END IF
          END DO
 !
@@ -515,20 +492,20 @@
 !              T(J,J) = L(J,1:J)*H(1:J)
             CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                     KB, KB, (J-1)*NB, &
-                   -CONE, A( J*NB+1, 1 ), LDA, &
+                   -(1.0E+0,0.0E+0), A( J*NB+1, 1 ), LDA, &
                           WORK( NB+1 ), N, &
-                    CONE, TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
+                    (1.0E+0,0.0E+0), TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
 !              T(J,J) += L(J,J)*T(J,J-1)*L(J,J-1)'
             CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                     KB, NB, KB, &
-                    CONE,  A( J*NB+1, (J-1)*NB+1 ), LDA, &
+                    (1.0E+0,0.0E+0),  A( J*NB+1, (J-1)*NB+1 ), LDA, &
                            TB( TD+NB+1 + ((J-1)*NB)*LDTB ), LDTB-1, &
-                    CZERO, WORK( 1 ), N )
+                    (0.0E+0,0.0E+0), WORK( 1 ), N )
             CALL CGEMM( 'NoTranspose', 'Transpose', &
                     KB, KB, NB, &
-                   -CONE, WORK( 1 ), N, &
+                   -(1.0E+0,0.0E+0), WORK( 1 ), N, &
                           A( J*NB+1, (J-2)*NB+1 ), LDA, &
-                    CONE, TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
+                    (1.0E+0,0.0E+0), TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
          END IF
 !
 !           Expand T(J,J) into full format
@@ -543,10 +520,10 @@
 !               CALL CHEGST( 1, 'Lower', KB,
 !     $                      TB( TD+1 + (J*NB)*LDTB ), LDTB-1,
 !     $                      A( J*NB+1, (J-1)*NB+1 ), LDA, IINFO )
-            CALL CTRSM( 'L', 'L', 'N', 'N', KB, KB, CONE, &
+            CALL CTRSM( 'L', 'L', 'N', 'N', KB, KB, (1.0E+0,0.0E+0), &
                         A( J*NB+1, (J-1)*NB+1 ), LDA, &
                         TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
-            CALL CTRSM( 'R', 'L', 'T', 'N', KB, KB, CONE, &
+            CALL CTRSM( 'R', 'L', 'T', 'N', KB, KB, (1.0E+0,0.0E+0), &
                         A( J*NB+1, (J-1)*NB+1 ), LDA, &
                         TB( TD+1 + (J*NB)*LDTB ), LDTB-1 )
          END IF
@@ -568,25 +545,25 @@
                IF( J == 1 ) THEN
                   CALL CGEMM( 'NoTranspose', 'Transpose', &
                           KB, KB, KB, &
-                          CONE,  TB( TD+1 + (J*NB)*LDTB ), LDTB-1, &
+                          (1.0E+0,0.0E+0),  TB( TD+1 + (J*NB)*LDTB ), LDTB-1, &
                                  A( J*NB+1, (J-1)*NB+1 ), LDA, &
-                          CZERO, WORK( J*NB+1 ), N )
+                          (0.0E+0,0.0E+0), WORK( J*NB+1 ), N )
                ELSE
                   CALL CGEMM( 'NoTranspose', 'Transpose', &
                          KB, KB, NB+KB, &
-                         CONE, TB( TD+NB+1 + ((J-1)*NB)*LDTB ), &
+                         (1.0E+0,0.0E+0), TB( TD+NB+1 + ((J-1)*NB)*LDTB ), &
                             LDTB-1, &
                                 A( J*NB+1, (J-2)*NB+1 ), LDA, &
-                         CZERO, WORK( J*NB+1 ), N )
+                         (0.0E+0,0.0E+0), WORK( J*NB+1 ), N )
                END IF
 !
 !                 Update with the previous column
 !
                CALL CGEMM( 'NoTranspose', 'NoTranspose', &
                        N-(J+1)*NB, NB, J*NB, &
-                       -CONE, A( (J+1)*NB+1, 1 ), LDA, &
+                       -(1.0E+0,0.0E+0), A( (J+1)*NB+1, 1 ), LDA, &
                               WORK( NB+1 ), N, &
-                        CONE, A( (J+1)*NB+1, J*NB+1 ), LDA )
+                        (1.0E+0,0.0E+0), A( (J+1)*NB+1, J*NB+1 ), LDA )
             END IF
 !
 !              Factorize panel
@@ -601,13 +578,13 @@
 !              Compute T(J+1, J), zero out for GEMM update
 !
             KB = MIN(NB, N-(J+1)*NB)
-            CALL CLASET( 'Full', KB, NB, CZERO, CZERO, &
+            CALL CLASET( 'Full', KB, NB, (0.0E+0,0.0E+0), (0.0E+0,0.0E+0), &
                          TB( TD+NB+1 + (J*NB)*LDTB), LDTB-1 )
             CALL CLACPY( 'Upper', KB, NB, &
                          A( (J+1)*NB+1, J*NB+1 ), LDA, &
                          TB( TD+NB+1 + (J*NB)*LDTB ), LDTB-1 )
             IF( J > 0 ) THEN
-               CALL CTRSM( 'R', 'L', 'T', 'U', KB, NB, CONE, &
+               CALL CTRSM( 'R', 'L', 'T', 'U', KB, NB, (1.0E+0,0.0E+0), &
                            A( J*NB+1, (J-1)*NB+1 ), LDA, &
                            TB( TD+NB+1 + (J*NB)*LDTB ), LDTB-1 )
             END IF
@@ -621,7 +598,7 @@
                      TB( TD+NB+I-K+1 + (J*NB+K-1)*LDTB )
                END DO
             END DO
-            CALL CLASET( 'Upper', KB, NB, CZERO, CONE, &
+            CALL CLASET( 'Upper', KB, NB, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), &
                          A( (J+1)*NB+1, J*NB+1 ), LDA )
 !
 !              Apply pivots to trailing submatrix of A
@@ -634,24 +611,20 @@
                I2 = IPIV( (J+1)*NB+K )
                IF( I1 /= I2 ) THEN
 !                    > Apply pivots to previous columns of L
-                  CALL CSWAP( K-1, A( I1, (J+1)*NB+1 ), LDA, &
-                                   A( I2, (J+1)*NB+1 ), LDA )
+                  CALL CSWAP( K-1, A( I1, (J+1)*NB+1 ), LDA, A( I2, (J+1)*NB+1 ), LDA )
 !                    > Swap A(I1+1:M, I1) with A(I2, I1+1:M)
                   IF( I2 > (I1+1) ) &
-                     CALL CSWAP( I2-I1-1, A( I1+1, I1 ), 1, &
-                                          A( I2, I1+1 ), LDA )
+                     CALL CSWAP( I2-I1-1, A( I1+1, I1 ), 1, A( I2, I1+1 ), LDA )
 !                    > Swap A(I2+1:M, I1) with A(I2+1:M, I2)
                   IF( I2 < N ) &
-                     CALL CSWAP( N-I2, A( I2+1, I1 ), 1, &
-                                       A( I2+1, I2 ), 1 )
+                     CALL CSWAP( N-I2, A( I2+1, I1 ), 1, A( I2+1, I2 ), 1 )
 !                    > Swap A(I1, I1) with A(I2, I2)
                   PIV = A( I1, I1 )
                   A( I1, I1 ) = A( I2, I2 )
                   A( I2, I2 ) = PIV
 !                    > Apply pivots to previous columns of L
                   IF( J > 0 ) THEN
-                     CALL CSWAP( J*NB, A( I1, 1 ), LDA, &
-                                       A( I2, 1 ), LDA )
+                     CALL CSWAP( J*NB, A( I1, 1 ), LDA, A( I2, 1 ), LDA )
                   END IF
                ENDIF
             END DO
@@ -672,5 +645,3 @@
 !     End of CSYTRF_AA_2STAGE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

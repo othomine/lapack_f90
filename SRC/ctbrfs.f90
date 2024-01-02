@@ -202,12 +202,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN, NOUNIT, UPPER
@@ -222,19 +216,10 @@
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CCOPY, CLACN2, CTBMV, CTBSV, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, MIN, REAL
-!     ..
 !     .. External Functions ..
    LOGICAL            LSAME
-   REAL               SLAMCH
-   EXTERNAL           LSAME, SLAMCH
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( ZDUM ) = ABS( REAL( ZDUM ) ) + ABS( AIMAG( ZDUM ) )
+   REAL               SLAMCH, CABS1
+   EXTERNAL           LSAME, SLAMCH, CABS1
 !     ..
 !     .. Executable Statements ..
 !
@@ -273,10 +258,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -303,9 +286,9 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL CCOPY( N, X( 1, J ), 1, WORK, 1 )
+      WORK(1:N) = X(1:N,J)
       CALL CTBMV( UPLO, TRANS, DIAG, N, KD, AB, LDAB, WORK, 1 )
-      CALL CAXPY( N, -ONE, B( 1, J ), 1, WORK, 1 )
+      WORK(1:N) = WORK(1:N) - B(1:N,J)
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -316,9 +299,7 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      DO I = 1, N
-         RWORK( I ) = CABS1( B( I, J ) )
-      ENDDO
+      RWORK(1:N) = CABS1(B(1:N,J))
 !
       IF( NOTRAN ) THEN
 !
@@ -329,16 +310,14 @@
                DO K = 1, N
                   XK = CABS1( X( K, J ) )
                   DO I = MAX( 1, K-KD ), K
-                     RWORK( I ) = RWORK( I ) + &
-                                  CABS1( AB( KD+1+I-K, K ) )*XK
+                     RWORK( I ) = RWORK( I ) + CABS1( AB( KD+1+I-K, K ) )*XK
                   ENDDO
                ENDDO
             ELSE
                DO K = 1, N
                   XK = CABS1( X( K, J ) )
                   DO I = MAX( 1, K-KD ), K - 1
-                     RWORK( I ) = RWORK( I ) + &
-                                  CABS1( AB( KD+1+I-K, K ) )*XK
+                     RWORK( I ) = RWORK( I ) + CABS1( AB( KD+1+I-K, K ) )*XK
                   ENDDO
                   RWORK( K ) = RWORK( K ) + XK
                ENDDO
@@ -348,19 +327,17 @@
                DO K = 1, N
                   XK = CABS1( X( K, J ) )
                   DO I = K, MIN( N, K+KD )
-                     RWORK( I ) = RWORK( I ) + &
-                                  CABS1( AB( 1+I-K, K ) )*XK
+                     RWORK( I ) = RWORK( I ) + CABS1( AB( 1+I-K, K ) )*XK
                   ENDDO
                ENDDO
             ELSE
                DO K = 1, N
                   XK = CABS1( X( K, J ) )
                   DO I = K + 1, MIN( N, K+KD )
-                     RWORK( I ) = RWORK( I ) + &
-                                  CABS1( AB( 1+I-K, K ) )*XK
+                     RWORK( I ) = RWORK( I ) + CABS1( AB( 1+I-K, K ) )*XK
                   ENDDO
                   RWORK( K ) = RWORK( K ) + XK
-                  ENDDO
+               ENDDO
             END IF
          END IF
       ELSE
@@ -370,52 +347,47 @@
          IF( UPPER ) THEN
             IF( NOUNIT ) THEN
                DO K = 1, N
-                  S = ZERO
+                  S = 0.0E+0
                   DO I = MAX( 1, K-KD ), K
-                     S = S + CABS1( AB( KD+1+I-K, K ) )* &
-                         CABS1( X( I, J ) )
-                     ENDDO
-                  RWORK( K ) = RWORK( K ) + S
+                     S = S + CABS1( AB( KD+1+I-K, K ) )*CABS1( X( I, J ) )
                   ENDDO
+                  RWORK( K ) = RWORK( K ) + S
+               ENDDO
             ELSE
                DO K = 1, N
                   S = CABS1( X( K, J ) )
                   DO I = MAX( 1, K-KD ), K - 1
-                     S = S + CABS1( AB( KD+1+I-K, K ) )* &
-                         CABS1( X( I, J ) )
-                     ENDDO
-                  RWORK( K ) = RWORK( K ) + S
+                     S = S + CABS1( AB( KD+1+I-K, K ) )* CABS1( X( I, J ) )
                   ENDDO
+                  RWORK( K ) = RWORK( K ) + S
+               ENDDO
             END IF
          ELSE
             IF( NOUNIT ) THEN
                DO K = 1, N
-                  S = ZERO
+                  S = 0.0E+0
                   DO I = K, MIN( N, K+KD )
-                     S = S + CABS1( AB( 1+I-K, K ) )* &
-                         CABS1( X( I, J ) )
-                     ENDDO
-                  RWORK( K ) = RWORK( K ) + S
+                     S = S + CABS1( AB( 1+I-K, K ) )* CABS1( X( I, J ) )
                   ENDDO
+                  RWORK( K ) = RWORK( K ) + S
+               ENDDO
             ELSE
                DO K = 1, N
                   S = CABS1( X( K, J ) )
                   DO I = K + 1, MIN( N, K+KD )
-                     S = S + CABS1( AB( 1+I-K, K ) )* &
-                         CABS1( X( I, J ) )
-                     ENDDO
-                  RWORK( K ) = RWORK( K ) + S
+                     S = S + CABS1( AB( 1+I-K, K ) )* CABS1( X( I, J ) )
                   ENDDO
+                  RWORK( K ) = RWORK( K ) + S
+               ENDDO
             END IF
          END IF
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
          ELSE
-            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / &
-                ( RWORK( I )+SAFE1 ) )
+            S = MAX( S, ( CABS1( WORK( I ) )+SAFE1 ) / ( RWORK( I )+SAFE1 ) )
          END IF
          ENDDO
       BERR( J ) = S
@@ -446,10 +418,9 @@
          IF( RWORK( I ) > SAFE2 ) THEN
             RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I )
          ELSE
-            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + &
-                         SAFE1
+            RWORK( I ) = CABS1( WORK( I ) ) + NZ*EPS*RWORK( I ) + SAFE1
          END IF
-         ENDDO
+      ENDDO
 !
       KASE = 0
   210    CONTINUE
@@ -461,37 +432,29 @@
 !
             CALL CTBSV( UPLO, TRANST, DIAG, N, KD, AB, LDAB, WORK, &
                         1 )
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( I ) = RWORK( I )*WORK( I )
-               ENDDO
-            CALL CTBSV( UPLO, TRANSN, DIAG, N, KD, AB, LDAB, WORK, &
-                        1 )
+            WORK(1:N) = RWORK(1:N)*WORK(1:N)
+            CALL CTBSV( UPLO, TRANSN, DIAG, N, KD, AB, LDAB, WORK, 1 )
          END IF
          GO TO 210
       END IF
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
-!
       ENDDO
+      IF( LSTRES /= 0.0E+0 ) FERR( J ) = FERR( J ) / LSTRES
+!
+   ENDDO
 !
    RETURN
 !
 !     End of CTBRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

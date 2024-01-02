@@ -152,7 +152,7 @@
 !
 !     Scale the vector X by MUL
 !
-   CALL CSSCAL( N, MUL, SX, INCX )
+   SX(1:N*INCX:INCX) = CMPLX(MUL*REAL(SX(1:N*INCX:INCX)),MUL*AIMAG(SX(1:N*INCX:INCX)))
 !
    IF( .NOT.DONE ) GO TO 10
 !

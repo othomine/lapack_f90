@@ -179,9 +179,9 @@
 !>    Bobby Cheng, MathWorks
 !>
 !>    Replace l.209 and l.377
-!>         IF( MAX( ABSAKK, COLMAX ) == ZERO ) THEN
+!>         IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) THEN
 !>    by
-!>         IF( (MAX( ABSAKK, COLMAX ) == ZERO) .OR. SISNAN(ABSAKK) ) THEN
+!>         IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) .OR. SISNAN(ABSAKK) ) THEN
 !>
 !>  1-96 - Based on modifications by J. Lewis, Boeing Computer Services
 !>         Company
@@ -204,14 +204,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
-   COMPLEX            CONE
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -222,19 +214,11 @@
 !     .. External Functions ..
    LOGICAL            LSAME, SISNAN
    INTEGER            ICAMAX
-   EXTERNAL           LSAME, ICAMAX, SISNAN
+   REAL               CABS1
+   EXTERNAL           LSAME, ICAMAX, SISNAN, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CSCAL, CSWAP, CSYR, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL, SQRT
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
 !     ..
 !     .. Executable Statements ..
 !
@@ -256,7 +240,7 @@
 !
 !     Initialize ALPHA for use in choosing pivot block size.
 !
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
+   ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !
    IF( UPPER ) THEN
 !
@@ -270,8 +254,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 70
+      IF( K < 1 ) GO TO 70
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -287,16 +270,15 @@
          IMAX = ICAMAX( K-1, A( 1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO .OR. SISNAN(ABSAKK) ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 .OR. SISNAN(ABSAKK) ) THEN
 !
 !           Column K is zero or underflow, or contains a NaN:
 !           set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -344,8 +326,7 @@
 !              submatrix A(1:k,1:k)
 !
             CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
-            CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), &
-                        LDA )
+            CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), LDA )
             T = A( KK, KK )
             A( KK, KK ) = A( KP, KP )
             A( KP, KP ) = T
@@ -370,12 +351,12 @@
 !
 !              A := A - U(k)*D(k)*U(k)**T = A - W(k)*1/D(k)*W(k)**T
 !
-            R1 = CONE / A( K, K )
+            R1 = (1.0E+0,0.0E+0) / A( K, K )
             CALL CSYR( UPLO, K-1, -R1, A( 1, K ), 1, A, LDA )
 !
 !              Store U(k) in column k
 !
-            CALL CSCAL( K-1, R1, A( 1, K ), 1 )
+            A(1:K-1,K) = R1*A(1:K-1,K)
          ELSE
 !
 !              2-by-2 pivot block D(k): columns k and k-1 now hold
@@ -395,15 +376,14 @@
                D12 = A( K-1, K )
                D22 = A( K-1, K-1 ) / D12
                D11 = A( K, K ) / D12
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
                D12 = T / D12
 !
                DO J = K - 2, 1, -1
                   WKM1 = D12*( D11*A( J, K-1 )-A( J, K ) )
                   WK = D12*( D22*A( J, K )-A( J, K-1 ) )
                   DO I = J, 1, -1
-                     A( I, J ) = A( I, J ) - A( I, K )*WK - &
-                                 A( I, K-1 )*WKM1
+                     A( I, J ) = A( I, J ) - A( I, K )*WK - A( I, K-1 )*WKM1
                   ENDDO
                   A( J, K ) = WK
                   A( J, K-1 ) = WKM1
@@ -440,8 +420,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 70
+      IF( K > N ) GO TO 70
       KSTEP = 1
 !
 !        Determine rows and columns to be interchanged and whether
@@ -457,16 +436,15 @@
          IMAX = K + ICAMAX( N-K, A( K+1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( MAX( ABSAKK, COLMAX ) == ZERO .OR. SISNAN(ABSAKK) ) THEN
+      IF( MAX( ABSAKK, COLMAX ) == 0.0E+0 .OR. SISNAN(ABSAKK) ) THEN
 !
 !           Column K is zero or underflow, or contains a NaN:
 !           set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
       ELSE
          IF( ABSAKK >= ALPHA*COLMAX ) THEN
@@ -543,13 +521,12 @@
 !
 !                 A := A - L(k)*D(k)*L(k)**T = A - W(k)*(1/D(k))*W(k)**T
 !
-               R1 = CONE / A( K, K )
-               CALL CSYR( UPLO, N-K, -R1, A( K+1, K ), 1, &
-                          A( K+1, K+1 ), LDA )
+               R1 = (1.0E+0,0.0E+0) / A( K, K )
+               CALL CSYR( UPLO, N-K, -R1, A( K+1, K ), 1, A( K+1, K+1 ), LDA )
 !
 !                 Store L(k) in column K
 !
-               CALL CSCAL( N-K, R1, A( K+1, K ), 1 )
+               A(K+1:N,K) = R1*A(K+1:N,K)
             END IF
          ELSE
 !
@@ -568,15 +545,14 @@
                D21 = A( K+1, K )
                D11 = A( K+1, K+1 ) / D21
                D22 = A( K, K ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
                D21 = T / D21
 !
                DO J = K + 2, N
                   WK = D21*( D11*A( J, K )-A( J, K+1 ) )
                   WKP1 = D21*( D22*A( J, K+1 )-A( J, K ) )
                   DO I = J, N
-                     A( I, J ) = A( I, J ) - A( I, K )*WK - &
-                                 A( I, K+1 )*WKP1
+                     A( I, J ) = A( I, J ) - A( I, K )*WK - A( I, K+1 )*WKP1
                   ENDDO
                   A( J, K ) = WK
                   A( J, K+1 ) = WKP1
@@ -607,5 +583,3 @@
 !     End of CSYTF2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

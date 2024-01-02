@@ -170,12 +170,6 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
-   COMPLEX            ZERO
-   PARAMETER          ( ZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, INFO, IX, IY, J, JX, JY, KX, KY
@@ -187,9 +181,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -214,7 +205,7 @@
 !
 !     Quick return if possible.
 !
-   IF( ( N == 0 ) .OR. ( ( ALPHA == ZERO ) .AND. ( BETA == ONE ) ) ) &
+   IF( ( N == 0 ) .OR. ( ( ALPHA == (0.0E+0,0.0E+0) ) .AND. ( BETA == (1.0E+0,0.0E+0) ) ) ) &
       RETURN
 !
 !     Set up the start points in  X  and  Y.
@@ -236,22 +227,18 @@
 !
 !     First form  y := beta*y.
 !
-   IF( BETA /= ONE ) THEN
+   IF( BETA /= (1.0E+0,0.0E+0) ) THEN
       IF( INCY == 1 ) THEN
-         IF( BETA == ZERO ) THEN
-            DO I = 1, N
-               Y( I ) = ZERO
-            ENDDO
+         IF( BETA == (0.0E+0,0.0E+0) ) THEN
+            Y(1:N) = (0.0E+0,0.0E+0)
          ELSE
-            DO I = 1, N
-               Y( I ) = BETA*Y( I )
-            ENDDO
+            Y(1:N) = BETA*Y(1:N)
          END IF
       ELSE
          IY = KY
-         IF( BETA == ZERO ) THEN
+         IF( BETA == (0.0E+0,0.0E+0) ) THEN
             DO I = 1, N
-               Y( IY ) = ZERO
+               Y( IY ) = (0.0E+0,0.0E+0)
                IY = IY + INCY
             ENDDO
          ELSE
@@ -262,8 +249,7 @@
          END IF
       END IF
    END IF
-   IF( ALPHA == ZERO ) &
-      RETURN
+   IF( ALPHA == (0.0E+0,0.0E+0) ) RETURN
    IF( LSAME( UPLO, 'U' ) ) THEN
 !
 !        Form  y  when A is stored in upper triangle.
@@ -271,11 +257,8 @@
       IF( ( INCX == 1 ) .AND. ( INCY == 1 ) ) THEN
          DO J = 1, N
             TEMP1 = ALPHA*X( J )
-            TEMP2 = ZERO
-            DO I = 1, J - 1
-               Y( I ) = Y( I ) + TEMP1*A( I, J )
-               TEMP2 = TEMP2 + A( I, J )*X( I )
-            ENDDO
+            TEMP2 = SUM(A(1:J-1,J)*X(1:J-1))
+            Y(1:J-1) = Y(1:J-1) + TEMP1*A(1:J-1,J)
             Y( J ) = Y( J ) + TEMP1*A( J, J ) + ALPHA*TEMP2
          ENDDO
       ELSE
@@ -283,7 +266,7 @@
          JY = KY
          DO J = 1, N
             TEMP1 = ALPHA*X( JX )
-            TEMP2 = ZERO
+            TEMP2 = (0.0E+0,0.0E+0)
             IX = KX
             IY = KY
             DO I = 1, J - 1
@@ -304,12 +287,9 @@
       IF( ( INCX == 1 ) .AND. ( INCY == 1 ) ) THEN
          DO J = 1, N
             TEMP1 = ALPHA*X( J )
-            TEMP2 = ZERO
             Y( J ) = Y( J ) + TEMP1*A( J, J )
-            DO I = J + 1, N
-               Y( I ) = Y( I ) + TEMP1*A( I, J )
-               TEMP2 = TEMP2 + A( I, J )*X( I )
-            ENDDO
+            Y(J+1:N) = Y(J+1:N) + TEMP1*A(J+1:N,J)
+            TEMP2 = SUM(A(J+1:N,J)*X(J+1:N))
             Y( J ) = Y( J ) + ALPHA*TEMP2
             ENDDO
       ELSE
@@ -317,7 +297,7 @@
          JY = KY
          DO J = 1, N
             TEMP1 = ALPHA*X( JX )
-            TEMP2 = ZERO
+            TEMP2 = (0.0E+0,0.0E+0)
             Y( JY ) = Y( JY ) + TEMP1*A( J, J )
             IX = JX
             IY = JY
@@ -326,11 +306,11 @@
                IY = IY + INCY
                Y( IY ) = Y( IY ) + TEMP1*A( I, J )
                TEMP2 = TEMP2 + A( I, J )*X( IX )
-               ENDDO
+            ENDDO
             Y( JY ) = Y( JY ) + ALPHA*TEMP2
             JX = JX + INCX
             JY = JY + INCY
-            ENDDO
+         ENDDO
       END IF
    END IF
 !
@@ -339,5 +319,3 @@
 !     End of CSYMV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

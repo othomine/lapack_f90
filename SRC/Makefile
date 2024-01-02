@@ -204,7 +204,7 @@ SXLASRC = sgesvxx.o sgerfsx.o sla_gerfsx_extended.o sla_geamv.o \
 endif
 
 CLASRC = \
-   cpotrf2.o cgetrf2.o \
+   cabs1.o cpotrf2.o cgetrf2.o \
    cbdsqr.o cgbbrd.o cgbcon.o cgbequ.o cgbrfs.o cgbsv.o  cgbsvx.o \
    cgbtf2.o cgbtrf.o cgbtrs.o cgebak.o cgebal.o cgebd2.o cgebrd.o \
    cgecon.o cgeequ.o cgees.o  cgeesx.o cgeev.o  cgeevx.o \

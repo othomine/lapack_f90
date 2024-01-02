@@ -235,13 +235,6 @@
 !
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   COMPLEX            CZERO, CONE
-   PARAMETER          ( CZERO = ( 0.0E+0, 0.0E+0 ), &
-                      CONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COMPL, COMPR, ILALL, ILBACK, ILBBAD, ILCOMP, &
@@ -251,25 +244,17 @@
    REAL               ACOEFA, ACOEFF, ANORM, ASCALE, BCOEFA, BIG, &
                       BIGNUM, BNORM, BSCALE, DMIN, SAFMIN, SBETA, &
                       SCALE, SMALL, TEMP, ULP, XMAX
-   COMPLEX            BCOEFF, CA, CB, D, SALPHA, SUM, SUMA, SUMB, X
+   COMPLEX            BCOEFF, CA, CB, D, SALPHA, SOMME, SUMA, SUMB, X
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
-   REAL               SLAMCH
+   REAL               SLAMCH, CABS1
    COMPLEX            CLADIV
-   EXTERNAL           LSAME, SLAMCH, CLADIV
+   EXTERNAL           LSAME, SLAMCH, CLADIV, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMV, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, CMPLX, CONJG, MAX, MIN, REAL
-!     ..
-!     .. Statement Functions ..
-   REAL               ABS1
-!     ..
-!     .. Statement Function definitions ..
-   ABS1( X ) = ABS( REAL( X ) ) + ABS( AIMAG( X ) )
+
 !     ..
 !     .. Executable Statements ..
 !
@@ -327,11 +312,7 @@
 !     Count the number of eigenvectors
 !
    IF( .NOT.ILALL ) THEN
-      IM = 0
-      DO J = 1, N
-         IF( SELECT( J ) ) &
-            IM = IM + 1
-      ENDDO
+      IM = COUNT(SELECT(1:N))
    ELSE
       IM = N
    END IF
@@ -340,8 +321,7 @@
 !
    ILBBAD = .FALSE.
    DO J = 1, N
-      IF( AIMAG( P( J, J ) ) /= ZERO ) &
-         ILBBAD = .TRUE.
+      IF( AIMAG( P( J, J ) ) /= 0.0E+0 ) ILBBAD = .TRUE.
    ENDDO
 !
    IF( ILBBAD ) THEN
@@ -361,39 +341,38 @@
 !     Quick return if possible
 !
    M = IM
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Machine Constants
 !
    SAFMIN = SLAMCH( 'Safe minimum' )
-   BIG = ONE / SAFMIN
+   BIG = 1.0E+0 / SAFMIN
    ULP = SLAMCH( 'Epsilon' )*SLAMCH( 'Base' )
    SMALL = SAFMIN*N / ULP
-   BIG = ONE / SMALL
-   BIGNUM = ONE / ( SAFMIN*N )
+   BIG = 1.0E+0 / SMALL
+   BIGNUM = 1.0E+0 / ( SAFMIN*N )
 !
 !     Compute the 1-norm of each column of the strictly upper triangular
 !     part of A and B to check for possible overflow in the triangular
 !     solver.
 !
-   ANORM = ABS1( S( 1, 1 ) )
-   BNORM = ABS1( P( 1, 1 ) )
-   RWORK( 1 ) = ZERO
-   RWORK( N+1 ) = ZERO
+   ANORM = CABS1( S( 1, 1 ) )
+   BNORM = CABS1( P( 1, 1 ) )
+   RWORK( 1 ) = 0.0E+0
+   RWORK( N+1 ) = 0.0E+0
    DO J = 2, N
-      RWORK( J ) = ZERO
-      RWORK( N+J ) = ZERO
+      RWORK( J ) = 0.0E+0
+      RWORK( N+J ) = 0.0E+0
       DO I = 1, J - 1
-         RWORK( J ) = RWORK( J ) + ABS1( S( I, J ) )
-         RWORK( N+J ) = RWORK( N+J ) + ABS1( P( I, J ) )
+         RWORK( J ) = RWORK( J ) + CABS1( S( I, J ) )
+         RWORK( N+J ) = RWORK( N+J ) + CABS1( P( I, J ) )
       ENDDO
-      ANORM = MAX( ANORM, RWORK( J )+ABS1( S( J, J ) ) )
-      BNORM = MAX( BNORM, RWORK( N+J )+ABS1( P( J, J ) ) )
+      ANORM = MAX( ANORM, RWORK( J )+CABS1( S( J, J ) ) )
+      BNORM = MAX( BNORM, RWORK( N+J )+CABS1( P( J, J ) ) )
    ENDDO
 !
-   ASCALE = ONE / MAX( ANORM, SAFMIN )
-   BSCALE = ONE / MAX( BNORM, SAFMIN )
+   ASCALE = 1.0E+0 / MAX( ANORM, SAFMIN )
+   BSCALE = 1.0E+0 / MAX( BNORM, SAFMIN )
 !
 !     Left eigenvectors
 !
@@ -411,15 +390,13 @@
          IF( ILCOMP ) THEN
             IEIG = IEIG + 1
 !
-            IF( ABS1( S( JE, JE ) ) <= SAFMIN .AND. &
+            IF( CABS1( S( JE, JE ) ) <= SAFMIN .AND. &
                 ABS( REAL( P( JE, JE ) ) ) <= SAFMIN ) THEN
 !
 !                 Singular matrix pencil -- return unit eigenvector
 !
-               DO JR = 1, N
-                  VL( JR, IEIG ) = CZERO
-               ENDDO
-               VL( IEIG, IEIG ) = CONE
+               VL(1:N, IEIG ) = (0.0E+0,0.0E+0)
+               VL( IEIG, IEIG ) = (1.0E+0,0.0E+0)
                GO TO 140
             END IF
 !
@@ -428,7 +405,7 @@
 !                   H
 !                 y  ( a A - b B ) = 0
 !
-            TEMP = ONE / MAX( ABS1( S( JE, JE ) )*ASCALE, &
+            TEMP = 1.0E+0 / MAX( CABS1( S( JE, JE ) )*ASCALE, &
                    ABS( REAL( P( JE, JE ) ) )*BSCALE, SAFMIN )
             SALPHA = ( TEMP*S( JE, JE ) )*ASCALE
             SBETA = ( TEMP*REAL( P( JE, JE ) ) )*BSCALE
@@ -438,19 +415,16 @@
 !              Scale to avoid underflow
 !
             LSA = ABS( SBETA ) >= SAFMIN .AND. ABS( ACOEFF ) < SMALL
-            LSB = ABS1( SALPHA ) >= SAFMIN .AND. ABS1( BCOEFF ) < &
+            LSB = CABS1( SALPHA ) >= SAFMIN .AND. CABS1( BCOEFF ) < &
                   SMALL
 !
-            SCALE = ONE
-            IF( LSA ) &
-               SCALE = ( SMALL / ABS( SBETA ) )*MIN( ANORM, BIG )
+            SCALE = 1.0E+0
+            IF( LSA ) SCALE = ( SMALL / ABS( SBETA ) )*MIN( ANORM, BIG )
             IF( LSB ) &
-               SCALE = MAX( SCALE, ( SMALL / ABS1( SALPHA ) )* &
-                       MIN( BNORM, BIG ) )
+               SCALE = MAX( SCALE, ( SMALL / CABS1( SALPHA ) )* MIN( BNORM, BIG ) )
             IF( LSA .OR. LSB ) THEN
-               SCALE = MIN( SCALE, ONE / &
-                       ( SAFMIN*MAX( ONE, ABS( ACOEFF ), &
-                       ABS1( BCOEFF ) ) ) )
+               SCALE = MIN( SCALE, 1.0E+0 / &
+                       ( SAFMIN*MAX( 1.0E+0, ABS( ACOEFF ), CABS1( BCOEFF ) ) ) )
                IF( LSA ) THEN
                   ACOEFF = ASCALE*( SCALE*SBETA )
                ELSE
@@ -464,12 +438,10 @@
             END IF
 !
             ACOEFA = ABS( ACOEFF )
-            BCOEFA = ABS1( BCOEFF )
-            XMAX = ONE
-            DO JR = 1, N
-               WORK( JR ) = CZERO
-            ENDDO
-            WORK( JE ) = CONE
+            BCOEFA = CABS1( BCOEFF )
+            XMAX = 1.0E+0
+            WORK(1:N) = (0.0E+0,0.0E+0)
+            WORK( JE ) = (1.0E+0,0.0E+0)
             DMIN = MAX( ULP*ACOEFA*ANORM, ULP*BCOEFA*BNORM, SAFMIN )
 !
 !                                              H
@@ -482,54 +454,43 @@
 !
 !                 Compute
 !                       j-1
-!                 SUM = sum  conjg( a*S(k,j) - b*P(k,j) )*x(k)
+!                 SOMME = sum  conjg( a*S(k,j) - b*P(k,j) )*x(k)
 !                       k=je
 !                 (Scale if necessary)
 !
-               TEMP = ONE / XMAX
-               IF( ACOEFA*RWORK( J )+BCOEFA*RWORK( N+J ) > BIGNUM* &
-                   TEMP ) THEN
-                  DO JR = JE, J - 1
-                     WORK( JR ) = TEMP*WORK( JR )
-                  ENDDO
-                  XMAX = ONE
+               TEMP = 1.0E+0 / XMAX
+               IF( ACOEFA*RWORK( J )+BCOEFA*RWORK( N+J ) > BIGNUM* TEMP ) THEN
+                  WORK(JE:J-1) = TEMP*WORK(JE:J-1)
+                  XMAX = 1.0E+0
                END IF
-               SUMA = CZERO
-               SUMB = CZERO
+               SUMA = SUM(CONJG( S( JE:J-1, J ) )*WORK( JE:J-1 ))
+               SUMB = SUM(CONJG( P( JE:J-1, J ) )*WORK( JE:J-1 ))
+               SOMME = ACOEFF*SUMA - CONJG( BCOEFF )*SUMB
 !
-               DO JR = JE, J - 1
-                  SUMA = SUMA + CONJG( S( JR, J ) )*WORK( JR )
-                  SUMB = SUMB + CONJG( P( JR, J ) )*WORK( JR )
-               ENDDO
-               SUM = ACOEFF*SUMA - CONJG( BCOEFF )*SUMB
-!
-!                 Form x(j) = - SUM / conjg( a*S(j,j) - b*P(j,j) )
+!                 Form x(j) = - SOMME / conjg( a*S(j,j) - b*P(j,j) )
 !
 !                 with scaling and perturbation of the denominator
 !
                D = CONJG( ACOEFF*S( J, J )-BCOEFF*P( J, J ) )
-               IF( ABS1( D ) <= DMIN ) &
-                  D = CMPLX( DMIN )
+               IF( CABS1( D ) <= DMIN ) D = CMPLX( DMIN )
 !
-               IF( ABS1( D ) < ONE ) THEN
-                  IF( ABS1( SUM ) >= BIGNUM*ABS1( D ) ) THEN
-                     TEMP = ONE / ABS1( SUM )
-                     DO JR = JE, J - 1
-                        WORK( JR ) = TEMP*WORK( JR )
-                     ENDDO
+               IF( CABS1( D ) < 1.0E+0 ) THEN
+                  IF( CABS1( SOMME ) >= BIGNUM*CABS1( D ) ) THEN
+                     TEMP = 1.0E+0 / CABS1( SOMME )
+                     WORK(JE:J-1) = TEMP*WORK(JE:J-1)
                      XMAX = TEMP*XMAX
-                     SUM = TEMP*SUM
+                     SOMME = TEMP*SOMME
                   END IF
                END IF
-               WORK( J ) = CLADIV( -SUM, D )
-               XMAX = MAX( XMAX, ABS1( WORK( J ) ) )
-               ENDDO
+               WORK( J ) = CLADIV( -SOMME, D )
+               XMAX = MAX( XMAX, CABS1( WORK( J ) ) )
+            ENDDO
 !
 !              Back transform eigenvector if HOWMNY='B'.
 !
             IF( ILBACK ) THEN
-               CALL CGEMV( 'N', N, N+1-JE, CONE, VL( 1, JE ), LDVL, &
-                           WORK( JE ), 1, CZERO, WORK( N+1 ), 1 )
+               CALL CGEMV( 'N', N, N+1-JE, (1.0E+0,0.0E+0), VL( 1, JE ), LDVL, &
+                           WORK( JE ), 1, (0.0E+0,0.0E+0), WORK( N+1 ), 1 )
                ISRC = 2
                IBEG = 1
             ELSE
@@ -539,27 +500,22 @@
 !
 !              Copy and scale eigenvector into column of VL
 !
-            XMAX = ZERO
+            XMAX = 0.0E+0
             DO JR = IBEG, N
-               XMAX = MAX( XMAX, ABS1( WORK( ( ISRC-1 )*N+JR ) ) )
-               ENDDO
+               XMAX = MAX( XMAX, CABS1( WORK( ( ISRC-1 )*N+JR ) ) )
+            ENDDO
 !
             IF( XMAX > SAFMIN ) THEN
-               TEMP = ONE / XMAX
-               DO JR = IBEG, N
-                  VL( JR, IEIG ) = TEMP*WORK( ( ISRC-1 )*N+JR )
-                  ENDDO
+               VL(IBEG:N, IEIG ) = TEMP*WORK( ( ISRC-1 )*N+IBEG:ISRC*N) / XMAX
             ELSE
                IBEG = N + 1
             END IF
 !
-            DO JR = 1, IBEG - 1
-               VL( JR, IEIG ) = CZERO
-               ENDDO
+            VL(1:IBEG-1, IEIG ) = (0.0E+0,0.0E+0)
 !
          END IF
   140    CONTINUE
-         ENDDO
+      ENDDO
    END IF
 !
 !     Right eigenvectors
@@ -578,15 +534,13 @@
          IF( ILCOMP ) THEN
             IEIG = IEIG - 1
 !
-            IF( ABS1( S( JE, JE ) ) <= SAFMIN .AND. &
+            IF( CABS1( S( JE, JE ) ) <= SAFMIN .AND. &
                 ABS( REAL( P( JE, JE ) ) ) <= SAFMIN ) THEN
 !
 !                 Singular matrix pencil -- return unit eigenvector
 !
-               DO JR = 1, N
-                  VR( JR, IEIG ) = CZERO
-                  ENDDO
-               VR( IEIG, IEIG ) = CONE
+               VR(1:N, IEIG ) = (0.0E+0,0.0E+0)
+               VR( IEIG, IEIG ) = (1.0E+0,0.0E+0)
                GO TO 250
             END IF
 !
@@ -595,7 +549,7 @@
 !
 !              ( a A - b B ) x  = 0
 !
-            TEMP = ONE / MAX( ABS1( S( JE, JE ) )*ASCALE, &
+            TEMP = 1.0E+0 / MAX( CABS1( S( JE, JE ) )*ASCALE, &
                    ABS( REAL( P( JE, JE ) ) )*BSCALE, SAFMIN )
             SALPHA = ( TEMP*S( JE, JE ) )*ASCALE
             SBETA = ( TEMP*REAL( P( JE, JE ) ) )*BSCALE
@@ -605,19 +559,14 @@
 !              Scale to avoid underflow
 !
             LSA = ABS( SBETA ) >= SAFMIN .AND. ABS( ACOEFF ) < SMALL
-            LSB = ABS1( SALPHA ) >= SAFMIN .AND. ABS1( BCOEFF ) < &
-                  SMALL
+            LSB = CABS1( SALPHA ) >= SAFMIN .AND. CABS1( BCOEFF ) < SMALL
 !
-            SCALE = ONE
-            IF( LSA ) &
-               SCALE = ( SMALL / ABS( SBETA ) )*MIN( ANORM, BIG )
-            IF( LSB ) &
-               SCALE = MAX( SCALE, ( SMALL / ABS1( SALPHA ) )* &
-                       MIN( BNORM, BIG ) )
+            SCALE = 1.0E+0
+            IF( LSA ) SCALE = ( SMALL / ABS( SBETA ) )*MIN( ANORM, BIG )
+            IF( LSB ) SCALE = MAX( SCALE, ( SMALL / CABS1( SALPHA ) )* MIN( BNORM, BIG ) )
             IF( LSA .OR. LSB ) THEN
-               SCALE = MIN( SCALE, ONE / &
-                       ( SAFMIN*MAX( ONE, ABS( ACOEFF ), &
-                       ABS1( BCOEFF ) ) ) )
+               SCALE = MIN( SCALE, 1.0E+0 / ( SAFMIN*MAX( 1.0E+0, ABS( ACOEFF ), &
+                       CABS1( BCOEFF ) ) ) )
                IF( LSA ) THEN
                   ACOEFF = ASCALE*( SCALE*SBETA )
                ELSE
@@ -631,12 +580,10 @@
             END IF
 !
             ACOEFA = ABS( ACOEFF )
-            BCOEFA = ABS1( BCOEFF )
-            XMAX = ONE
-            DO JR = 1, N
-               WORK( JR ) = CZERO
-               ENDDO
-            WORK( JE ) = CONE
+            BCOEFA = CABS1( BCOEFF )
+            XMAX = 1.0E+0
+            WORK(1:N) = (0.0E+0,0.0E+0)
+            WORK( JE ) = (1.0E+0,0.0E+0)
             DMIN = MAX( ULP*ACOEFA*ANORM, ULP*BCOEFA*BNORM, SAFMIN )
 !
 !              Triangular solve of  (a A - b B) x = 0  (columnwise)
@@ -644,10 +591,8 @@
 !              WORK(1:j-1) contains sums w,
 !              WORK(j+1:JE) contains x
 !
-            DO JR = 1, JE - 1
-               WORK( JR ) = ACOEFF*S( JR, JE ) - BCOEFF*P( JR, JE )
-               ENDDO
-            WORK( JE ) = CONE
+            WORK(1:JE-1) = ACOEFF*S(1:JE-1, JE ) - BCOEFF*P(1:JE-1, JE )
+            WORK( JE ) = (1.0E+0,0.0E+0)
 !
             DO J = JE - 1, 1, -1
 !
@@ -655,15 +600,12 @@
 !                 with scaling and perturbation of the denominator
 !
                D = ACOEFF*S( J, J ) - BCOEFF*P( J, J )
-               IF( ABS1( D ) <= DMIN ) &
-                  D = CMPLX( DMIN )
+               IF( CABS1( D ) <= DMIN ) D = CMPLX( DMIN )
 !
-               IF( ABS1( D ) < ONE ) THEN
-                  IF( ABS1( WORK( J ) ) >= BIGNUM*ABS1( D ) ) THEN
-                     TEMP = ONE / ABS1( WORK( J ) )
-                     DO JR = 1, JE
-                        WORK( JR ) = TEMP*WORK( JR )
-                        ENDDO
+               IF( CABS1( D ) < 1.0E+0 ) THEN
+                  IF( CABS1( WORK( J ) ) >= BIGNUM*CABS1( D ) ) THEN
+                     TEMP = 1.0E+0 / CABS1( WORK( J ) )
+                     WORK(1:JE) = TEMP*WORK(1:JE)
                   END IF
                END IF
 !
@@ -673,30 +615,24 @@
 !
 !                    w = w + x(j)*(a S(*,j) - b P(*,j) ) with scaling
 !
-                  IF( ABS1( WORK( J ) ) > ONE ) THEN
-                     TEMP = ONE / ABS1( WORK( J ) )
-                     IF( ACOEFA*RWORK( J )+BCOEFA*RWORK( N+J ) >= &
-                         BIGNUM*TEMP ) THEN
-                        DO JR = 1, JE
-                           WORK( JR ) = TEMP*WORK( JR )
-                           ENDDO
+                  IF( CABS1( WORK( J ) ) > 1.0E+0 ) THEN
+                     TEMP = 1.0E+0 / CABS1( WORK( J ) )
+                     IF( ACOEFA*RWORK( J )+BCOEFA*RWORK( N+J ) >= BIGNUM*TEMP ) THEN
+                        WORK(1:JE) = TEMP*WORK(1:JE)
                      END IF
                   END IF
 !
                   CA = ACOEFF*WORK( J )
                   CB = BCOEFF*WORK( J )
-                  DO JR = 1, J - 1
-                     WORK( JR ) = WORK( JR ) + CA*S( JR, J ) - &
-                                  CB*P( JR, J )
-                     ENDDO
+                  WORK(1:J-1) = WORK(1:J-1) + CA*S(1:J-1, J ) - CB*P(1:J-1, J )
                END IF
-               ENDDO
+            ENDDO
 !
 !              Back transform eigenvector if HOWMNY='B'.
 !
             IF( ILBACK ) THEN
-               CALL CGEMV( 'N', N, JE, CONE, VR, LDVR, WORK, 1, &
-                           CZERO, WORK( N+1 ), 1 )
+               CALL CGEMV( 'N', N, JE, (1.0E+0,0.0E+0), VR, LDVR, WORK, 1, &
+                           (0.0E+0,0.0E+0), WORK( N+1 ), 1 )
                ISRC = 2
                IEND = N
             ELSE
@@ -706,27 +642,23 @@
 !
 !              Copy and scale eigenvector into column of VR
 !
-            XMAX = ZERO
+            XMAX = 0.0E+0
             DO JR = 1, IEND
-               XMAX = MAX( XMAX, ABS1( WORK( ( ISRC-1 )*N+JR ) ) )
-               ENDDO
+               XMAX = MAX( XMAX, CABS1( WORK( ( ISRC-1 )*N+JR ) ) )
+            ENDDO
 !
             IF( XMAX > SAFMIN ) THEN
-               TEMP = ONE / XMAX
-               DO JR = 1, IEND
-                  VR( JR, IEIG ) = TEMP*WORK( ( ISRC-1 )*N+JR )
-                  ENDDO
+               TEMP = 1.0E+0 / XMAX
+               VR(1:IEND,IEIG ) = TEMP*WORK((ISRC-1)*N+1:(ISRC-1)*N+IEND )
             ELSE
                IEND = 0
             END IF
 !
-            DO JR = IEND + 1, N
-               VR( JR, IEIG ) = CZERO
-               ENDDO
+            VR(IEND+1:N, IEIG ) = (0.0E+0,0.0E+0)
 !
          END IF
   250    CONTINUE
-         ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -734,5 +666,3 @@
 !     End of CTGEVC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

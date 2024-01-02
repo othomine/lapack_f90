@@ -211,14 +211,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   REAL               ZERO
-   PARAMETER          ( ZERO = 0.0E+0 )
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
-   REAL               TWO
-   PARAMETER          ( TWO = 2.0E+0 )
-   REAL               THREE
-   PARAMETER          ( THREE = 3.0E+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER
@@ -231,9 +223,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CAXPY, CCOPY, CLACN2, CSYMV, CSYTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -275,10 +264,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0E+0
+      BERR(1:NRHS) = 0.0E+0
       RETURN
    END IF
 !
@@ -295,15 +282,15 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0E+0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
 !
 !        Compute residual R = B - A * X
 !
-      CALL CCOPY( N, B( 1, J ), 1, WORK, 1 )
-      CALL CSYMV( UPLO, N, -ONE, A, LDA, X( 1, J ), 1, ONE, WORK, 1 )
+      WORK(1:N) = B(1:N,J)
+      CALL CSYMV( UPLO, N, -(1.0E+0,0.0E+0), A, LDA, X( 1, J ), 1, (1.0E+0,0.0E+0), WORK, 1 )
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -322,7 +309,7 @@
 !
       IF( UPPER ) THEN
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             XK = CABS1( X( K, J ) )
             DO I = 1, K - 1
                RWORK( I ) = RWORK( I ) + CABS1( A( I, K ) )*XK
@@ -332,7 +319,7 @@
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0E+0
             XK = CABS1( X( K, J ) )
             RWORK( K ) = RWORK( K ) + CABS1( A( K, K ) )*XK
             DO I = K + 1, N
@@ -342,7 +329,7 @@
             RWORK( K ) = RWORK( K ) + S
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0E+0
       DO I = 1, N
          IF( RWORK( I ) > SAFE2 ) THEN
             S = MAX( S, CABS1( WORK( I ) ) / RWORK( I ) )
@@ -359,13 +346,13 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
+      IF( BERR( J ) > EPS .AND. 2.0E+0*BERR( J ) <= LSTRES .AND. &
           COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL CSYTRS( UPLO, N, 1, AF, LDAF, IPIV, WORK, N, INFO )
-         CALL CAXPY( N, ONE, WORK, 1, X( 1, J ), 1 )
+         CALL CAXPY( N, (1.0E+0,0.0E+0), WORK, 1, X( 1, J ), 1 )
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -428,11 +415,11 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
+      LSTRES = 0.0E+0
       DO I = 1, N
          LSTRES = MAX( LSTRES, CABS1( X( I, J ) ) )
          ENDDO
-      IF( LSTRES /= ZERO ) &
+      IF( LSTRES /= 0.0E+0 ) &
          FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
@@ -442,5 +429,3 @@
 !     End of CSYRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

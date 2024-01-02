@@ -264,10 +264,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            SOMCON, WANTBH, WANTS, WANTSP
@@ -284,21 +280,12 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ICAMAX
-   REAL               SCNRM2, SLAMCH
+   REAL               SCNRM2, SLAMCH, CABS1
    COMPLEX            CDOTC
-   EXTERNAL           LSAME, ICAMAX, SCNRM2, SLAMCH, CDOTC
+   EXTERNAL           LSAME, ICAMAX, SCNRM2, SLAMCH, CDOTC, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLACN2, CLACPY, CLATRS, CSRSCL, CTREXC, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, AIMAG, MAX, REAL
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( CDUM ) = ABS( REAL( CDUM ) ) + ABS( AIMAG( CDUM ) )
 !     ..
 !     .. Executable Statements ..
 !
@@ -314,11 +301,7 @@
 !     to be computed.
 !
    IF( SOMCON ) THEN
-      M = 0
-      DO J = 1, N
-         IF( SELECT( J ) ) &
-            M = M + 1
-      ENDDO
+      M = COUNT(SELECT(1:N))
    ELSE
       M = N
    END IF
@@ -348,18 +331,14 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( N == 1 ) THEN
       IF( SOMCON ) THEN
-         IF( .NOT.SELECT( 1 ) ) &
-            RETURN
+         IF( .NOT.SELECT( 1 ) ) RETURN
       END IF
-      IF( WANTS ) &
-         S( 1 ) = ONE
-      IF( WANTSP ) &
-         SEP( 1 ) = ABS( T( 1, 1 ) )
+      IF( WANTS ) S( 1 ) = 1.0E+0
+      IF( WANTSP ) SEP( 1 ) = ABS( T( 1, 1 ) )
       RETURN
    END IF
 !
@@ -367,14 +346,13 @@
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
 !
    KS = 1
    DO K = 1, N
 !
       IF( SOMCON ) THEN
-         IF( .NOT.SELECT( K ) ) &
-            GO TO 50
+         IF( .NOT.SELECT( K ) ) GO TO 50
       END IF
 !
       IF( WANTS ) THEN
@@ -409,8 +387,8 @@
 !           Estimate a lower bound for the 1-norm of inv(C**H). The 1st
 !           and (N+1)th columns of WORK are used to store work vectors.
 !
-         SEP( KS ) = ZERO
-         EST = ZERO
+         SEP( KS ) = 0.0E+0
+         EST = 0.0E+0
          KASE = 0
          NORMIN = 'N'
 30       CONTINUE
@@ -433,21 +411,20 @@
                             SCALE, RWORK, IERR )
             END IF
             NORMIN = 'Y'
-            IF( SCALE /= ONE ) THEN
+            IF( SCALE /= 1.0E+0 ) THEN
 !
 !                 Multiply by 1/SCALE if doing so will not cause
 !                 overflow.
 !
-               IX = ICAMAX( N-1, WORK, 1 )
+               IX = maxloc(ABS(REAL(WORK(1:N-1,1))) + ABS(AIMAG(WORK(1:N-1,1))),1)
                XNORM = CABS1( WORK( IX, 1 ) )
-               IF( SCALE < XNORM*SMLNUM .OR. SCALE == ZERO ) &
-                  GO TO 40
+               IF( SCALE < XNORM*SMLNUM .OR. SCALE == 0.0E+0 ) GO TO 40
                CALL CSRSCL( N, SCALE, WORK, 1 )
             END IF
             GO TO 30
          END IF
 !
-         SEP( KS ) = ONE / MAX( EST, SMLNUM )
+         SEP( KS ) = 1.0E+0 / MAX( EST, SMLNUM )
       END IF
 !
 40    CONTINUE
@@ -459,5 +436,3 @@
 !     End of CTRSNA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

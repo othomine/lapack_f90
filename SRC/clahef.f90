@@ -204,16 +204,11 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ICAMAX
-   EXTERNAL           LSAME, ICAMAX
+   REAL               CABS1
+   EXTERNAL           LSAME, ICAMAX, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMM, CGEMV, CLACGV
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
 !     ..
 !     .. Executable Statements ..
 !

@@ -173,10 +173,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX  ONE, ZERO
-   PARAMETER( ZERO = ( 0.0E+0, 0.0E+0 ),ONE  = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    INTEGER   I, J, P, MP, NP
@@ -184,9 +180,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL  CLARFG, CGEMV, CGERC, CTRMV, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -223,29 +216,21 @@
       CALL CLARFG( P+1, A( I, I ), B( I, 1 ), LDB, T( 1, I ) )
       T(1,I)=CONJG(T(1,I))
       IF( I < M ) THEN
-         DO J = 1, P
-            B( I, J ) = CONJG(B(I,J))
-         END DO
+         B( I,1:P) = CONJG(B(I,1:P))
 !
 !           W(M-I:1) := C(I+1:M,I:N) * C(I,I:N) [use W = T(M,:)]
 !
-         DO J = 1, M-I
-            T( M, J ) = (A( I+J, I ))
-         END DO
-         CALL CGEMV( 'N', M-I, P, ONE, B( I+1, 1 ), LDB, &
-                     B( I, 1 ), LDB, ONE, T( M, 1 ), LDT )
+         T( M,1:M-I) = (A( I+1:M, I ))
+         CALL CGEMV( 'N', M-I, P, (1.0E+0,0.0E+0), B( I+1, 1 ), LDB, &
+                     B( I, 1 ), LDB, (1.0E+0,0.0E+0), T( M, 1 ), LDT )
 !
 !           C(I+1:M,I:N) = C(I+1:M,I:N) + alpha * C(I,I:N)*W(M-1:1)^H
 !
          ALPHA = -(T( 1, I ))
-         DO J = 1, M-I
-            A( I+J, I ) = A( I+J, I ) + ALPHA*(T( M, J ))
-         END DO
+         A( I+1:M, I ) = A( I+1:M, I ) + ALPHA*(T( M,1:M-I))
          CALL CGERC( M-I, P, (ALPHA),  T( M, 1 ), LDT, &
              B( I, 1 ), LDB, B( I+1, 1 ), LDB )
-         DO J = 1, P
-            B( I, J ) = CONJG(B(I,J))
-         END DO
+         B( I,1:P) = CONJG(B(I,1:P))
       END IF
    END DO
 !
@@ -254,65 +239,48 @@
 !        T(I,1:I-1) := C(I:I-1,1:N)**H * (alpha * C(I,I:N))
 !
       ALPHA = -(T( 1, I ))
-      DO J = 1, I-1
-         T( I, J ) = ZERO
-      END DO
+      T( I,1:I-1) = (0.0E+0,0.0E+0)
       P = MIN( I-1, L )
       NP = MIN( N-L+1, N )
       MP = MIN( P+1, M )
-      DO J = 1, N-L+P
-        B(I,J)=CONJG(B(I,J))
-      END DO
+      B(I,1:N-L+P)=CONJG(B(I,1:N-L+P))
 !
 !        Triangular part of B2
 !
-      DO J = 1, P
-         T( I, J ) = (ALPHA*B( I, N-L+J ))
-      END DO
-      CALL CTRMV( 'L', 'N', 'N', P, B( 1, NP ), LDB, &
-                  T( I, 1 ), LDT )
+      T( I,1:P) = (ALPHA*B( I, N-L+1:N-L+P ))
+      CALL CTRMV( 'L', 'N', 'N', P, B( 1, NP ), LDB, T( I, 1 ), LDT )
 !
 !        Rectangular part of B2
 !
       CALL CGEMV( 'N', I-1-P, L,  ALPHA, B( MP, NP ), LDB, &
-                  B( I, NP ), LDB, ZERO, T( I,MP ), LDT )
+                  B( I, NP ), LDB, (0.0E+0,0.0E+0), T( I,MP ), LDT )
 !
 !        B1
 
 !
       CALL CGEMV( 'N', I-1, N-L, ALPHA, B, LDB, B( I, 1 ), LDB, &
-                  ONE, T( I, 1 ), LDT )
+                  (1.0E+0,0.0E+0), T( I, 1 ), LDT )
 !
 
 !
 !        T(1:I-1,I) := T(1:I-1,1:I-1) * T(I,1:I-1)
 !
-      DO J = 1, I-1
-         T(I,J)=CONJG(T(I,J))
-      END DO
+      T(I,1:I-1)=CONJG(T(I,1:I-1))
       CALL CTRMV( 'L', 'C', 'N', I-1, T, LDT, T( I, 1 ), LDT )
-      DO J = 1, I-1
-         T(I,J)=CONJG(T(I,J))
-      END DO
-      DO J = 1, N-L+P
-         B(I,J)=CONJG(B(I,J))
-      END DO
+      T(I,1:I-1)=CONJG(T(I,1:I-1))
+      B(I,1:N-L+P)=CONJG(B(I,1:N-L+P))
 !
 !        T(I,I) = tau(I)
 !
       T( I, I ) = T( 1, I )
-      T( 1, I ) = ZERO
+      T( 1, I ) = (0.0E+0,0.0E+0)
    END DO
    DO I=1,M
-      DO J= I+1,M
-         T(I,J)=(T(J,I))
-         T(J,I)=ZERO
-      END DO
+      T(I,I+1:M)=(T(I+1:M,I))
+      T(I+1:M,I)=(0.0E+0,0.0E+0)
    END DO
 
 !
 !     End of CTPLQT2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

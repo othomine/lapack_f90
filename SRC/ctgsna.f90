@@ -329,9 +329,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ZERO, ONE
    INTEGER            IDIFJB
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, IDIFJB = 3 )
+   PARAMETER          (IDIFJB = 3 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SOMCON, WANTBH, WANTDF, WANTS
@@ -350,9 +349,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMV, CLACPY, CTGEXC, CTGSYL, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, CMPLX, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -387,11 +383,7 @@
 !        are required, and test MM.
 !
       IF( SOMCON ) THEN
-         M = 0
-         DO K = 1, N
-            IF( SELECT( K ) ) &
-               M = M + 1
-         ENDDO
+         M = COUNT(SELECT(1:N))
       ELSE
          M = N
       END IF
@@ -421,14 +413,13 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = SLAMCH( 'P' )
    SMLNUM = SLAMCH( 'S' ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0E+0 / SMLNUM
    KS = 0
    DO K = 1, N
 !
@@ -436,8 +427,7 @@
 !        eigenpair.
 !
       IF( SOMCON ) THEN
-         IF( .NOT.SELECT( K ) ) &
-            GO TO 20
+         IF( .NOT.SELECT( K ) ) GO TO 20
       END IF
 !
       KS = KS + 1
@@ -449,15 +439,15 @@
 !
          RNRM = SCNRM2( N, VR( 1, KS ), 1 )
          LNRM = SCNRM2( N, VL( 1, KS ), 1 )
-         CALL CGEMV( 'N', N, N, CMPLX( ONE, ZERO ), A, LDA, &
-                     VR( 1, KS ), 1, CMPLX( ZERO, ZERO ), WORK, 1 )
-         YHAX = CDOTC( N, WORK, 1, VL( 1, KS ), 1 )
-         CALL CGEMV( 'N', N, N, CMPLX( ONE, ZERO ), B, LDB, &
-                     VR( 1, KS ), 1, CMPLX( ZERO, ZERO ), WORK, 1 )
-         YHBX = CDOTC( N, WORK, 1, VL( 1, KS ), 1 )
+         CALL CGEMV( 'N', N, N, CMPLX( 1.0E+0, 0.0E+0 ), A, LDA, &
+                     VR( 1, KS ), 1, CMPLX( 0.0E+0, 0.0E+0 ), WORK, 1 )
+         YHAX = SUM(WORK(1:N)*VL(1:N,KS))
+         CALL CGEMV( 'N', N, N, CMPLX( 1.0E+0, 0.0E+0 ), B, LDB, &
+                     VR( 1, KS ), 1, CMPLX( 0.0E+0, 0.0E+0 ), WORK, 1 )
+         YHBX = SUM(WORK(1:N)*VL(1:N,KS))
          COND = SLAPY2( ABS( YHAX ), ABS( YHBX ) )
-         IF( COND == ZERO ) THEN
-            S( KS ) = -ONE
+         IF( COND == 0.0E+0 ) THEN
+            S( KS ) = -1.0E+0
          ELSE
             S( KS ) = COND / ( RNRM*LNRM )
          END IF
@@ -486,7 +476,7 @@
 !
 !                 Ill-conditioned problem - swap rejected.
 !
-               DIF( KS ) = ZERO
+               DIF( KS ) = 0.0E+0
             ELSE
 !
 !                 Reordering successful, solve generalized Sylvester
@@ -515,5 +505,3 @@
 !     End of CTGSNA
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

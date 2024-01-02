@@ -146,7 +146,7 @@
 !>
 !>            c) In both cases a) and b), always ABS( IPIV(k) ) <= k.
 !>
-!>            d) NOTE: Any entry IPIV(k) is always NONZERO on output.
+!>            d) NOTE: Any entry IPIV(k) is always NON0.0E+0 on output.
 !>
 !>          If UPLO = 'L',
 !>          ( in factorization order, k increases from 1 to N ):
@@ -171,7 +171,7 @@
 !>
 !>            c) In both cases a) and b), always ABS( IPIV(k) ) >= k.
 !>
-!>            d) NOTE: Any entry IPIV(k) is always NONZERO on output.
+!>            d) NOTE: Any entry IPIV(k) is always NON0.0E+0 on output.
 !> \endverbatim
 !>
 !> \param[out] INFO
@@ -254,15 +254,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   REAL               ZERO, ONE
-   PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0 )
-   REAL               EIGHT, SEVTEN
-   PARAMETER          ( EIGHT = 8.0E+0, SEVTEN = 17.0E+0 )
-   COMPLEX             CONE, CZERO
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ), &
-                      CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            UPPER, DONE
@@ -274,20 +265,11 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    INTEGER            ICAMAX
-   REAL               SLAMCH
-   EXTERNAL           LSAME, ICAMAX, SLAMCH
+   REAL               SLAMCH, CABS1
+   EXTERNAL           LSAME, ICAMAX, SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CSCAL, CSWAP, CSYR, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT, AIMAG, REAL
-!     ..
-!     .. Statement Functions ..
-   REAL               CABS1
-!     ..
-!     .. Statement Function definitions ..
-   CABS1( Z ) = ABS( REAL( Z ) ) + ABS( AIMAG( Z ) )
 !     ..
 !     .. Executable Statements ..
 !
@@ -309,7 +291,7 @@
 !
 !     Initialize ALPHA for use in choosing pivot block size.
 !
-   ALPHA = ( ONE+SQRT( SEVTEN ) ) / EIGHT
+   ALPHA = ( 1.0E+0+SQRT( 17.0E+0 ) ) / 8.0E+0
 !
 !     Compute machine safe minimum
 !
@@ -322,7 +304,7 @@
 !        Initialize the first entry of array E, where superdiagonal
 !        elements of D are stored
 !
-      E( 1 ) = CZERO
+      E( 1 ) = (0.0E+0,0.0E+0)
 !
 !        K is the main loop index, decreasing from N to 1 in steps of
 !        1 or 2
@@ -332,8 +314,7 @@
 !
 !        If K < 1, exit from loop
 !
-      IF( K < 1 ) &
-         GO TO 34
+      IF( K < 1 ) GO TO 34
       KSTEP = 1
       P = K
 !
@@ -350,21 +331,19 @@
          IMAX = ICAMAX( K-1, A( 1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( (MAX( ABSAKK, COLMAX ) == ZERO) ) THEN
+      IF( (MAX( ABSAKK, COLMAX ) == 0.0E+0) ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
 !
 !           Set E( K ) to zero
 !
-         IF( K > 1 ) &
-            E( K ) = CZERO
+         IF( K > 1 ) E( K ) = (0.0E+0,0.0E+0)
 !
       ELSE
 !
@@ -398,7 +377,7 @@
                                        LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX > 1 ) THEN
@@ -413,8 +392,7 @@
 !                 Equivalent to testing for (used to handle NaN and Inf)
 !                 ABS( A( IMAX, IMAX ) ) >= ALPHA*ROWMAX
 !
-               IF( .NOT.( CABS1( A( IMAX, IMAX ) ) < ALPHA*ROWMAX )) &
-               THEN
+               IF( .NOT.( CABS1( A( IMAX, IMAX ) ) < ALPHA*ROWMAX )) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -457,11 +435,8 @@
 !              Interchange rows and column K and P in the leading
 !              submatrix A(1:k,1:k) if we have a 2-by-2 pivot
 !
-            IF( P > 1 ) &
-               CALL CSWAP( P-1, A( 1, K ), 1, A( 1, P ), 1 )
-            IF( P < (K-1) ) &
-               CALL CSWAP( K-P-1, A( P+1, K ), 1, A( P, P+1 ), &
-                        LDA )
+            IF( P > 1 ) CALL CSWAP( P-1, A( 1, K ), 1, A( 1, P ), 1 )
+            IF( P < (K-1) ) CALL CSWAP( K-P-1, A( P+1, K ), 1, A( P, P+1 ), LDA )
             T = A( K, K )
             A( K, K ) = A( P, P )
             A( P, P ) = T
@@ -469,8 +444,7 @@
 !              Convert upper triangle of A into U form by applying
 !              the interchanges in columns k+1:N.
 !
-            IF( K < N ) &
-               CALL CSWAP( N-K, A( K, K+1 ), LDA, A( P, K+1 ), LDA )
+            IF( K < N ) CALL CSWAP( N-K, A( K, K+1 ), LDA, A( P, K+1 ), LDA )
 !
          END IF
 !
@@ -482,11 +456,9 @@
 !              Interchange rows and columns KK and KP in the leading
 !              submatrix A(1:k,1:k)
 !
-            IF( KP > 1 ) &
-               CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
+            IF( KP > 1 ) CALL CSWAP( KP-1, A( 1, KK ), 1, A( 1, KP ), 1 )
             IF( ( KK > 1 ) .AND. ( KP < (KK-1) ) ) &
-               CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), &
-                        LDA )
+               CALL CSWAP( KK-KP-1, A( KP+1, KK ), 1, A( KP, KP+1 ), LDA )
             T = A( KK, KK )
             A( KK, KK ) = A( KP, KP )
             A( KP, KP ) = T
@@ -499,9 +471,7 @@
 !              Convert upper triangle of A into U form by applying
 !              the interchanges in columns k+1:N.
 !
-            IF( K < N ) &
-               CALL CSWAP( N-K, A( KK, K+1 ), LDA, A( KP, K+1 ), &
-                           LDA )
+            IF( K < N ) CALL CSWAP( N-K, A( KK, K+1 ), LDA, A( KP, K+1 ), LDA )
 !
          END IF
 !
@@ -526,20 +496,18 @@
 !                    A := A - U(k)*D(k)*U(k)**T
 !                       = A - W(k)*1/D(k)*W(k)**T
 !
-                  D11 = CONE / A( K, K )
+                  D11 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSYR( UPLO, K-1, -D11, A( 1, K ), 1, A, LDA )
 !
 !                    Store U(k) in column k
 !
-                  CALL CSCAL( K-1, D11, A( 1, K ), 1 )
+                  A(1:K-1,K) = D11*A(1:K-1,K)
                ELSE
 !
 !                    Store L(k) in column K
 !
                   D11 = A( K, K )
-                  DO II = 1, K - 1
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(1:K-1,K) = A(1:K-1,K)/D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - U(k)*D(k)*U(k)**T
@@ -551,7 +519,7 @@
 !
 !                 Store the superdiagonal element of D in array E
 !
-               E( K ) = CZERO
+               E( K ) = (0.0E+0,0.0E+0)
 !
             END IF
 !
@@ -576,7 +544,7 @@
                D12 = A( K-1, K )
                D22 = A( K-1, K-1 ) / D12
                D11 = A( K, K ) / D12
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
 !
                DO J = K - 2, 1, -1
 !
@@ -598,11 +566,11 @@
             END IF
 !
 !              Copy superdiagonal elements of D(K) to E(K) and
-!              ZERO out superdiagonal entry of A
+!              0.0E+0 out superdiagonal entry of A
 !
             E( K ) = A( K-1, K )
-            E( K-1 ) = CZERO
-            A( K-1, K ) = CZERO
+            E( K-1 ) = (0.0E+0,0.0E+0)
+            A( K-1, K ) = (0.0E+0,0.0E+0)
 !
          END IF
 !
@@ -632,7 +600,7 @@
 !
 !        Initialize the unused last entry of the subdiagonal array E.
 !
-      E( N ) = CZERO
+      E( N ) = (0.0E+0,0.0E+0)
 !
 !        K is the main loop index, increasing from 1 to N in steps of
 !        1 or 2
@@ -642,8 +610,7 @@
 !
 !        If K > N, exit from loop
 !
-      IF( K > N ) &
-         GO TO 64
+      IF( K > N ) GO TO 64
       KSTEP = 1
       P = K
 !
@@ -660,21 +627,19 @@
          IMAX = K + ICAMAX( N-K, A( K+1, K ), 1 )
          COLMAX = CABS1( A( IMAX, K ) )
       ELSE
-         COLMAX = ZERO
+         COLMAX = 0.0E+0
       END IF
 !
-      IF( ( MAX( ABSAKK, COLMAX ) == ZERO ) ) THEN
+      IF( ( MAX( ABSAKK, COLMAX ) == 0.0E+0 ) ) THEN
 !
 !           Column K is zero or underflow: set INFO and continue
 !
-         IF( INFO == 0 ) &
-            INFO = K
+         IF( INFO == 0 ) INFO = K
          KP = K
 !
 !           Set E( K ) to zero
 !
-         IF( K < N ) &
-            E( K ) = CZERO
+         IF( K < N ) E( K ) = (0.0E+0,0.0E+0)
 !
       ELSE
 !
@@ -707,7 +672,7 @@
                   JMAX = K - 1 + ICAMAX( IMAX-K, A( IMAX, K ), LDA )
                   ROWMAX = CABS1( A( IMAX, JMAX ) )
                ELSE
-                  ROWMAX = ZERO
+                  ROWMAX = 0.0E+0
                END IF
 !
                IF( IMAX < N ) THEN
@@ -723,8 +688,7 @@
 !                 Equivalent to testing for (used to handle NaN and Inf)
 !                 ABS( A( IMAX, IMAX ) ) >= ALPHA*ROWMAX
 !
-               IF( .NOT.( CABS1( A( IMAX, IMAX ) ) < ALPHA*ROWMAX )) &
-               THEN
+               IF( .NOT.( CABS1( A( IMAX, IMAX ) ) < ALPHA*ROWMAX )) THEN
 !
 !                    interchange rows and columns K and IMAX,
 !                    use 1-by-1 pivot block
@@ -767,10 +731,8 @@
 !              Interchange rows and column K and P in the trailing
 !              submatrix A(k:n,k:n) if we have a 2-by-2 pivot
 !
-            IF( P < N ) &
-               CALL CSWAP( N-P, A( P+1, K ), 1, A( P+1, P ), 1 )
-            IF( P > (K+1) ) &
-               CALL CSWAP( P-K-1, A( K+1, K ), 1, A( P, K+1 ), LDA )
+            IF( P < N ) CALL CSWAP( N-P, A( P+1, K ), 1, A( P+1, P ), 1 )
+            IF( P > (K+1) ) CALL CSWAP( P-K-1, A( K+1, K ), 1, A( P, K+1 ), LDA )
             T = A( K, K )
             A( K, K ) = A( P, P )
             A( P, P ) = T
@@ -778,8 +740,7 @@
 !              Convert lower triangle of A into L form by applying
 !              the interchanges in columns 1:k-1.
 !
-            IF ( K > 1 ) &
-               CALL CSWAP( K-1, A( K, 1 ), LDA, A( P, 1 ), LDA )
+            IF ( K > 1 ) CALL CSWAP( K-1, A( K, 1 ), LDA, A( P, 1 ), LDA )
 !
          END IF
 !
@@ -791,11 +752,9 @@
 !              Interchange rows and columns KK and KP in the trailing
 !              submatrix A(k:n,k:n)
 !
-            IF( KP < N ) &
-               CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
+            IF( KP < N ) CALL CSWAP( N-KP, A( KP+1, KK ), 1, A( KP+1, KP ), 1 )
             IF( ( KK < N ) .AND. ( KP > (KK+1) ) ) &
-               CALL CSWAP( KP-KK-1, A( KK+1, KK ), 1, A( KP, KK+1 ), &
-                        LDA )
+               CALL CSWAP( KP-KK-1, A( KK+1, KK ), 1, A( KP, KK+1 ), LDA )
             T = A( KK, KK )
             A( KK, KK ) = A( KP, KP )
             A( KP, KP ) = T
@@ -808,8 +767,7 @@
 !              Convert lower triangle of A into L form by applying
 !              the interchanges in columns 1:k-1.
 !
-            IF ( K > 1 ) &
-               CALL CSWAP( K-1, A( KK, 1 ), LDA, A( KP, 1 ), LDA )
+            IF ( K > 1 ) CALL CSWAP( K-1, A( KK, 1 ), LDA, A( KP, 1 ), LDA )
 !
          END IF
 !
@@ -834,7 +792,7 @@
 !                    A := A - L(k)*D(k)*L(k)**T
 !                       = A - W(k)*(1/D(k))*W(k)**T
 !
-                  D11 = CONE / A( K, K )
+                  D11 = (1.0E+0,0.0E+0) / A( K, K )
                   CALL CSYR( UPLO, N-K, -D11, A( K+1, K ), 1, &
                              A( K+1, K+1 ), LDA )
 !
@@ -846,22 +804,19 @@
 !                    Store L(k) in column k
 !
                   D11 = A( K, K )
-                  DO II = K + 1, N
-                     A( II, K ) = A( II, K ) / D11
-                  ENDDO
+                  A(K+1:N,K) = A(K+1:N,K)/D11
 !
 !                    Perform a rank-1 update of A(k+1:n,k+1:n) as
 !                    A := A - L(k)*D(k)*L(k)**T
 !                       = A - W(k)*(1/D(k))*W(k)**T
 !                       = A - (W(k)/D(k))*(D(k))*(W(k)/D(K))**T
 !
-                  CALL CSYR( UPLO, N-K, -D11, A( K+1, K ), 1, &
-                             A( K+1, K+1 ), LDA )
+                  CALL CSYR( UPLO, N-K, -D11, A( K+1, K ), 1, A( K+1, K+1 ), LDA )
                END IF
 !
 !                 Store the subdiagonal element of D in array E
 !
-               E( K ) = CZERO
+               E( K ) = (0.0E+0,0.0E+0)
 !
             END IF
 !
@@ -887,7 +842,7 @@
                D21 = A( K+1, K )
                D11 = A( K+1, K+1 ) / D21
                D22 = A( K, K ) / D21
-               T = CONE / ( D11*D22-CONE )
+               T = (1.0E+0,0.0E+0) / ( D11*D22-(1.0E+0,0.0E+0) )
 !
                DO J = K + 2, N
 !
@@ -913,11 +868,11 @@
             END IF
 !
 !              Copy subdiagonal elements of D(K) to E(K) and
-!              ZERO out subdiagonal entry of A
+!              0.0E+0 out subdiagonal entry of A
 !
             E( K ) = A( K+1, K )
-            E( K+1 ) = CZERO
-            A( K+1, K ) = CZERO
+            E( K+1 ) = (0.0E+0,0.0E+0)
+            A( K+1, K ) = (0.0E+0,0.0E+0)
 !
          END IF
 !
@@ -948,5 +903,3 @@
 !     End of CSYTF2_RK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
