@@ -140,7 +140,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CGERU, CLACGV, CSSCAL, CSWAP, XERBLA
+   EXTERNAL           CGEMV, CGERU, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -264,10 +264,10 @@
 !           stored in column K of A.
 !
          IF( K > 1 ) THEN
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
                         LDB, AP( KC ), 1, (1.0E+0,0.0E+0), B( K, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
          END IF
 !
 !           Interchange rows K and IPIV(K).
@@ -288,15 +288,15 @@
 !           stored in columns K and K+1 of A.
 !
          IF( K > 1 ) THEN
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
                         LDB, AP( KC ), 1, (1.0E+0,0.0E+0), B( K, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
 !
-            CALL CLACGV( NRHS, B( K+1, 1 ), LDB )
+            B(K+1,1:NRHS) = CONJG(B(K+1,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', K-1, NRHS, -(1.0E+0,0.0E+0), B, &
                         LDB, AP( KC+K ), 1, (1.0E+0,0.0E+0), B( K+1, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K+1, 1 ), LDB )
+            B(K+1,1:NRHS) = CONJG(B(K+1,1:NRHS))
          END IF
 !
 !           Interchange rows K and -IPIV(K).
@@ -418,11 +418,11 @@
 !           stored in column K of A.
 !
          IF( K < N ) THEN
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
                         B( K+1, 1 ), LDB, AP( KC+1 ), 1, (1.0E+0,0.0E+0), &
                         B( K, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
          END IF
 !
 !           Interchange rows K and IPIV(K).
@@ -442,17 +442,17 @@
 !           stored in columns K-1 and K of A.
 !
          IF( K < N ) THEN
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
                         B( K+1, 1 ), LDB, AP( KC+1 ), 1, (1.0E+0,0.0E+0), &
                         B( K, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K, 1 ), LDB )
+            B(K,1:NRHS) = CONJG(B(K,1:NRHS))
 !
-            CALL CLACGV( NRHS, B( K-1, 1 ), LDB )
+            B(K-1,1:NRHS) = CONJG(B(K-1,1:NRHS))
             CALL CGEMV( 'Conjugate transpose', N-K, NRHS, -(1.0E+0,0.0E+0), &
                         B( K+1, 1 ), LDB, AP( KC-( N-K ) ), 1, (1.0E+0,0.0E+0), &
                         B( K-1, 1 ), LDB )
-            CALL CLACGV( NRHS, B( K-1, 1 ), LDB )
+            B(K-1,1:NRHS) = CONJG(B(K-1,1:NRHS))
          END IF
 !
 !           Interchange rows K and -IPIV(K).

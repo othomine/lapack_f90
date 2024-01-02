@@ -188,9 +188,9 @@
 
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           XERBLA, CCOPY, CLACGV, CLACPY, &
+   EXTERNAL           XERBLA, CCOPY, CLACPY, &
                       CLASET, CGBTRF, CGEMM,  CGETRF, &
-                      CHEGST, CSWAP, CTRSM
+                      CHEGST, CTRSM
 !     ..
 !     .. Executable Statements ..
 !
@@ -388,7 +388,7 @@
 !
 !                  Transpose U-factor to be copied back into T(J+1, J)
 !
-                CALL CLACGV( K, WORK( 1+(K-1)*N ), 1 )
+                WORK(1+(K-1)*N:K*N) = CONJG(WORK(1+(K-1)*N:K*N))
             END DO
 !
 !              Compute T(J+1, J), zero out for GEMM update
@@ -435,10 +435,9 @@
                   IF( I2 > (I1+1) ) THEN
                      A_TMP(1:I2-I1-1) = A(I1,I1+1:I2-1)
                      A(I1,I1+1:I2-1) = A(I1+1:I2-1,I2)
-                     A(I1+1:I2-1,I2) = A_TMP(1:I2-I1-1)
-                     CALL CLACGV( I2-I1-1, A( I1+1, I2 ), 1 )
+                     A(I1+1:I2-1,I2) = CONJG(A_TMP(1:I2-I1-1))
                   END IF
-                  CALL CLACGV( I2-I1, A( I1, I1+1 ), LDA )
+                  A(I1,I1+1:I2) = CONJG(A(I1,I1+1:I2))
 !                    > Swap A(I2+1:M, I1) with A(I2+1:M, I2)
                   IF( I2 < N ) THEN
                      A_TMP(1:N-I2) = A(I1,I2+1:N)
@@ -620,10 +619,9 @@
                   IF( I2 > (I1+1) ) THEN
                      A_TMP(1:I2-I1-1) = A(I1+1:I2-1,I1)
                      A(I1+1:I2-1,I1) = A(I2,I1+1:I2-1)
-                     A(I2,I1+1:I2-1) = A_TMP(1:I2-I1-1)
-                     CALL CLACGV( I2-I1-1, A( I2, I1+1 ), LDA )
+                     A(I2,I1+1:I2-1) = CONJG(A_TMP(1:I2-I1-1))
                   END IF
-                  CALL CLACGV( I2-I1, A( I1+1, I1 ), 1 )
+                  A(I1+1:I2,I1) = CONJG(A(I1+1:I2,I1))
 !                    > Swap A(I2+1:M, I1) with A(I2+1:M, I2)
                   IF( I2 < N ) THEN
                      A_TMP(1:N-I2) = A(I2+1:I2+1+N-I2-1,I1)

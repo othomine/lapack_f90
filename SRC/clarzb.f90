@@ -206,7 +206,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMM, CLACGV, CTRMM, XERBLA
+   EXTERNAL           CGEMM, CTRMM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !

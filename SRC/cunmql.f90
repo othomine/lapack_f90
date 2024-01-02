@@ -164,8 +164,7 @@
 !> \ingroup unmql
 !
 !  =====================================================================
-   SUBROUTINE CUNMQL( SIDE, TRANS, M, N, K, A, LDA, TAU, C, LDC, &
-                      WORK, LWORK, INFO )
+   SUBROUTINE CUNMQL( SIDE, TRANS, M, N, K, A, LDA, TAU, C, LDC, WORK, LWORK, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -176,8 +175,7 @@
    INTEGER            INFO, K, LDA, LDC, LWORK, M, N
 !     ..
 !     .. Array Arguments ..
-   COMPLEX            A( LDA, * ), C( LDC, * ), TAU( * ), &
-                      WORK( * )
+   COMPLEX            A( LDA, * ), C( LDC, * ), TAU( * ), WORK( * )
 !     ..
 !
 !  =====================================================================
@@ -199,9 +197,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLARFB, CLARFT, CUNM2L, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -262,9 +257,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Determine the block size
 !
@@ -273,8 +266,7 @@
    IF( NB > 1 .AND. NB < K ) THEN
       IF( LWORK < LWKOPT ) THEN
          NB = (LWORK-TSIZE) / LDWORK
-         NBMIN = MAX( 2, ILAENV( 2, 'CUNMQL', SIDE // TRANS, M, N, K, &
-                 -1 ) )
+         NBMIN = MAX( 2, ILAENV( 2, 'CUNMQL', SIDE // TRANS, M, N, K, -1 ) )
       END IF
    END IF
 !
@@ -282,15 +274,13 @@
 !
 !        Use unblocked code
 !
-      CALL CUNM2L( SIDE, TRANS, M, N, K, A, LDA, TAU, C, LDC, WORK, &
-                   IINFO )
+      CALL CUNM2L( SIDE, TRANS, M, N, K, A, LDA, TAU, C, LDC, WORK, IINFO )
    ELSE
 !
 !        Use blocked code
 !
       IWT = 1 + NW*NB
-      IF( ( LEFT .AND. NOTRAN ) .OR. &
-          ( .NOT.LEFT .AND. .NOT.NOTRAN ) ) THEN
+      IF( ( LEFT .AND. NOTRAN ) .OR. ( .NOT.LEFT .AND. .NOT.NOTRAN ) ) THEN
          I1 = 1
          I2 = K
          I3 = NB
@@ -339,5 +329,3 @@
 !     End of CUNMQL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

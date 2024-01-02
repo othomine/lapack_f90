@@ -162,10 +162,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE
-   PARAMETER          ( ONE = ( 1.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            FORWRD, LEFT, NOTRAN, UPPER
@@ -178,9 +174,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CLARF, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CONJG, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -218,15 +211,13 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
    IF( UPPER ) THEN
 !
 !        Q was determined by a call to CHPTRD with UPLO = 'U'
 !
-      FORWRD = ( LEFT .AND. NOTRAN ) .OR. &
-               ( .NOT.LEFT .AND. .NOT.NOTRAN )
+      FORWRD = ( LEFT .AND. NOTRAN ) .OR. ( .NOT.LEFT .AND. .NOT.NOTRAN )
 !
       IF( FORWRD ) THEN
          I1 = 1
@@ -267,9 +258,8 @@
             TAUI = CONJG( TAU( I ) )
          END IF
          AII = AP( II )
-         AP( II ) = ONE
-         CALL CLARF( SIDE, MI, NI, AP( II-I+1 ), 1, TAUI, C, LDC, &
-                     WORK )
+         AP( II ) = (1.0E+0,0.0E+0)
+         CALL CLARF( SIDE, MI, NI, AP( II-I+1 ), 1, TAUI, C, LDC, WORK )
          AP( II ) = AII
 !
          IF( FORWRD ) THEN
@@ -282,8 +272,7 @@
 !
 !        Q was determined by a call to CHPTRD with UPLO = 'L'.
 !
-      FORWRD = ( LEFT .AND. .NOT.NOTRAN ) .OR. &
-               ( .NOT.LEFT .AND. NOTRAN )
+      FORWRD = ( LEFT .AND. .NOT.NOTRAN ) .OR. ( .NOT.LEFT .AND. NOTRAN )
 !
       IF( FORWRD ) THEN
          I1 = 1
@@ -307,7 +296,7 @@
 !
       DO I = I1, I2, I3
          AII = AP( II )
-         AP( II ) = ONE
+         AP( II ) = (1.0E+0,0.0E+0)
          IF( LEFT ) THEN
 !
 !              H(i) or H(i)**H is applied to C(i+1:m,1:n)
@@ -329,8 +318,7 @@
          ELSE
             TAUI = CONJG( TAU( I ) )
          END IF
-         CALL CLARF( SIDE, MI, NI, AP( II ), 1, TAUI, C( IC, JC ), &
-                     LDC, WORK )
+         CALL CLARF( SIDE, MI, NI, AP( II ), 1, TAUI, C( IC, JC ), LDC, WORK )
          AP( II ) = AII
 !
          IF( FORWRD ) THEN
@@ -345,5 +333,3 @@
 !     End of CUPMTR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

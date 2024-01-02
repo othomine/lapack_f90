@@ -157,7 +157,7 @@
    COMPLEX            ALPHA
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACGV, CLARFG, CLARZ
+   EXTERNAL           CLARFG, CLARZ
 !     ..
 !     .. Executable Statements ..
 !

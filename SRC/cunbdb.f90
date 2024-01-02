@@ -303,31 +303,20 @@
 !     ..
 !
 !  ====================================================================
-!
-!     .. Parameters ..
-   REAL               REALONE
-   PARAMETER          ( REALONE = 1.0E0 )
-   COMPLEX            ONE
-   PARAMETER          ( ONE = (1.0E0,0.0E0) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COLMAJOR, LQUERY
    INTEGER            I, LWORKMIN, LWORKOPT
-   REAL               Z1, Z2, Z3, Z4
+   REAL               Z1, Z2, Z3, Z4, COSPHIM1, SINPHIM1, COSTHETAI, SINTHETAI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CAXPY, CLARF, CLARFGP, CSCAL, XERBLA
-   EXTERNAL           CLACGV
+   EXTERNAL           CLARF, CLARFGP, XERBLA
 !
 !     ..
 !     .. External Functions ..
    REAL               SCNRM2
    LOGICAL            LSAME
    EXTERNAL           SCNRM2, LSAME
-!     ..
-!     .. Intrinsic Functions
-   INTRINSIC          ATAN2, COS, MAX, MIN, SIN
-   INTRINSIC          CMPLX, CONJG
 !     ..
 !     .. Executable Statements ..
 !
@@ -336,15 +325,15 @@
    INFO = 0
    COLMAJOR = .NOT. LSAME( TRANS, 'T' )
    IF( .NOT. LSAME( SIGNS, 'O' ) ) THEN
-      Z1 = REALONE
-      Z2 = REALONE
-      Z3 = REALONE
-      Z4 = REALONE
+      Z1 = 1.0E+0
+      Z2 = 1.0E+0
+      Z3 = 1.0E+0
+      Z4 = 1.0E+0
    ELSE
-      Z1 = REALONE
-      Z2 = -REALONE
-      Z3 = REALONE
-      Z4 = -REALONE
+      Z1 = 1.0E+0
+      Z2 = -1.0E+0
+      Z3 = 1.0E+0
+      Z4 = -1.0E+0
    END IF
    LQUERY = LWORK  ==  -1
 !
@@ -399,39 +388,29 @@
       DO I = 1, Q
 !
          IF( I  ==  1 ) THEN
-            CALL CSCAL( P-I+1, CMPLX( Z1, 0.0E0 ), X11(I,I), 1 )
+            X11(I:P,I) = Z1*X11(I:P,I)
+            X21(I:M-P,I) = Z2*X21(I:M-P,I)
          ELSE
-            CALL CSCAL( P-I+1, CMPLX( Z1*COS(PHI(I-1)), 0.0E0 ), &
-                        X11(I,I), 1 )
-            CALL CAXPY( P-I+1, CMPLX( -Z1*Z3*Z4*SIN(PHI(I-1)), &
-                        0.0E0 ), X12(I,I-1), 1, X11(I,I), 1 )
-         END IF
-         IF( I  ==  1 ) THEN
-            CALL CSCAL( M-P-I+1, CMPLX( Z2, 0.0E0 ), X21(I,I), 1 )
-         ELSE
-            CALL CSCAL( M-P-I+1, CMPLX( Z2*COS(PHI(I-1)), 0.0E0 ), &
-                        X21(I,I), 1 )
-            CALL CAXPY( M-P-I+1, CMPLX( -Z2*Z3*Z4*SIN(PHI(I-1)), &
-                        0.0E0 ), X22(I,I-1), 1, X21(I,I), 1 )
+            COSPHIM1 = COS(PHI(I-1))
+            SINPHIM1 = sqrt(1.0E0-COSPHIM1**2)
+            X11(I:P,I) = Z1*(COSPHIM1*X11(I:P,I) - Z3*Z4*SINPHIM1*X12(I:P,I-1))
+            X21(I:M-P,I) = Z2*(COSPHIM1*X21(I:M-P,I) - Z3*Z4*SINPHIM1*X22(I:M-P,I-1))
          END IF
 !
-         THETA(I) = ATAN2( SCNRM2( M-P-I+1, X21(I,I), 1 ), &
-                    SCNRM2( P-I+1, X11(I,I), 1 ) )
+         THETA(I) = ATAN2( SCNRM2( M-P-I+1, X21(I,I), 1 ), SCNRM2( P-I+1, X11(I,I), 1 ) )
 !
          IF( P  >  I ) THEN
             CALL CLARFGP( P-I+1, X11(I,I), X11(I+1,I), 1, TAUP1(I) )
          ELSE IF ( P  ==  I ) THEN
             CALL CLARFGP( P-I+1, X11(I,I), X11(I,I), 1, TAUP1(I) )
          END IF
-         X11(I,I) = ONE
+         X11(I,I) = (1.0E+0,0.0E+0)
          IF ( M-P  >  I ) THEN
-            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I+1,I), 1, &
-                          TAUP2(I) )
+            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I+1,I), 1, TAUP2(I) )
          ELSE IF ( M-P  ==  I ) THEN
-            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I), 1, &
-                          TAUP2(I) )
+            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I), 1, TAUP2(I) )
          END IF
-         X21(I,I) = ONE
+         X21(I,I) = (1.0E+0,0.0E+0)
 !
          IF ( Q  >  I ) THEN
             CALL CLARF( 'L', P-I+1, Q-I, X11(I,I), 1, &
@@ -446,43 +425,30 @@
                         CONJG(TAUP2(I)), X22(I,I), LDX22, WORK )
          END IF
 !
+         COSTHETAI = COS(THETA(I))
+         SINTHETAI = SQRT(1.0E0-COSTHETAI**2)
+         X12(I,I:M-Q) = Z4*(Z2*COSTHETAI*X22(I,I:M-Q)-Z1*SINTHETAI*X12(I,I:M-Q))
          IF( I  <  Q ) THEN
-            CALL CSCAL( Q-I, CMPLX( -Z1*Z3*SIN(THETA(I)), 0.0E0 ), &
-                        X11(I,I+1), LDX11 )
-            CALL CAXPY( Q-I, CMPLX( Z2*Z3*COS(THETA(I)), 0.0E0 ), &
-                        X21(I,I+1), LDX21, X11(I,I+1), LDX11 )
-         END IF
-         CALL CSCAL( M-Q-I+1, CMPLX( -Z1*Z4*SIN(THETA(I)), 0.0E0 ), &
-                     X12(I,I), LDX12 )
-         CALL CAXPY( M-Q-I+1, CMPLX( Z2*Z4*COS(THETA(I)), 0.0E0 ), &
-                     X22(I,I), LDX22, X12(I,I), LDX12 )
-!
-         IF( I  <  Q ) &
+            X11(I,I+1:Q) = Z3*(Z2*COSTHETAI*X21(I,I+1:Q)-Z1*SINTHETAI*X11(I,I+1:Q))
             PHI(I) = ATAN2( SCNRM2( Q-I, X11(I,I+1), LDX11 ), &
                      SCNRM2( M-Q-I+1, X12(I,I), LDX12 ) )
-!
-         IF( I  <  Q ) THEN
-            CALL CLACGV( Q-I, X11(I,I+1), LDX11 )
+            X11(I,I+1:Q) = CONJG(X11(I,I+1:Q))
             IF ( I  ==  Q-1 ) THEN
-               CALL CLARFGP( Q-I, X11(I,I+1), X11(I,I+1), LDX11, &
-                             TAUQ1(I) )
+               CALL CLARFGP( Q-I, X11(I,I+1), X11(I,I+1), LDX11, TAUQ1(I) )
             ELSE
-               CALL CLARFGP( Q-I, X11(I,I+1), X11(I,I+2), LDX11, &
-                             TAUQ1(I) )
+               CALL CLARFGP( Q-I, X11(I,I+1), X11(I,I+2), LDX11, TAUQ1(I) )
             END IF
-            X11(I,I+1) = ONE
+            X11(I,I+1) = (1.0E+0,0.0E+0)
          END IF
          IF ( M-Q+1  >  I ) THEN
-            CALL CLACGV( M-Q-I+1, X12(I,I), LDX12 )
+            X12(I,I:M-Q) = CONJG(X12(I,I:M-Q))
             IF ( M-Q  ==  I ) THEN
-               CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I), LDX12, &
-                             TAUQ2(I) )
+               CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I), LDX12, TAUQ2(I) )
             ELSE
-               CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I+1), LDX12, &
-                             TAUQ2(I) )
+               CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I+1), LDX12, TAUQ2(I) )
             END IF
          END IF
-         X12(I,I) = ONE
+         X12(I,I) = (1.0E+0,0.0E+0)
 !
          IF( I  <  Q ) THEN
             CALL CLARF( 'R', P-I, Q-I, X11(I,I+1), LDX11, TAUQ1(I), &
@@ -499,9 +465,8 @@
                         TAUQ2(I), X22(I+1,I), LDX22, WORK )
          END IF
 !
-         IF( I  <  Q ) &
-            CALL CLACGV( Q-I, X11(I,I+1), LDX11 )
-         CALL CLACGV( M-Q-I+1, X12(I,I), LDX12 )
+         IF( I  <  Q ) X11(I,I+1:Q) = CONJG(X11(I,I+1:Q))
+         X12(I,I:M-Q) = CONJG(X12(I,I:M-Q))
 !
       END DO
 !
@@ -509,17 +474,13 @@
 !
       DO I = Q + 1, P
 !
-         CALL CSCAL( M-Q-I+1, CMPLX( -Z1*Z4, 0.0E0 ), X12(I,I), &
-                     LDX12 )
-         CALL CLACGV( M-Q-I+1, X12(I,I), LDX12 )
+         X12(I,I:M-Q) = CONJG(-Z1*Z4*X12(I,I:M-Q))
          IF ( I  >=  M-Q ) THEN
-            CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I), LDX12, &
-                          TAUQ2(I) )
+            CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I), LDX12, TAUQ2(I) )
          ELSE
-            CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I+1), LDX12, &
-                          TAUQ2(I) )
+            CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I,I+1), LDX12, TAUQ2(I) )
          END IF
-         X12(I,I) = ONE
+         X12(I,I) = (1.0E+0,0.0E+0)
 !
          IF ( P  >  I ) THEN
             CALL CLARF( 'R', P-I, M-Q-I+1, X12(I,I), LDX12, TAUQ2(I), &
@@ -529,7 +490,7 @@
             CALL CLARF( 'R', M-P-Q, M-Q-I+1, X12(I,I), LDX12, &
                         TAUQ2(I), X22(Q+1,I), LDX22, WORK )
 !
-         CALL CLACGV( M-Q-I+1, X12(I,I), LDX12 )
+         X12(I,I:M-Q) = CONJG(X12(I,I:M-Q))
 !
       END DO
 !
@@ -537,16 +498,14 @@
 !
       DO I = 1, M - P - Q
 !
-         CALL CSCAL( M-P-Q-I+1, CMPLX( Z2*Z4, 0.0E0 ), &
-                     X22(Q+I,P+I), LDX22 )
-         CALL CLACGV( M-P-Q-I+1, X22(Q+I,P+I), LDX22 )
+         X22(Q+I,P+I:M-Q) = CONJG(Z2*Z4*X22(Q+I,P+I:M-Q))
          CALL CLARFGP( M-P-Q-I+1, X22(Q+I,P+I), X22(Q+I,P+I+1), &
                        LDX22, TAUQ2(P+I) )
-         X22(Q+I,P+I) = ONE
+         X22(Q+I,P+I) = (1.0E+0,0.0E+0)
          CALL CLARF( 'R', M-P-Q-I, M-P-Q-I+1, X22(Q+I,P+I), LDX22, &
                      TAUQ2(P+I), X22(Q+I+1,P+I), LDX22, WORK )
 !
-         CALL CLACGV( M-P-Q-I+1, X22(Q+I,P+I), LDX22 )
+         X22(Q+I,P+I:M-Q) = CONJG(X22(Q+I,P+I:M-Q))
 !
       END DO
 !
@@ -557,40 +516,29 @@
       DO I = 1, Q
 !
          IF( I  ==  1 ) THEN
-            CALL CSCAL( P-I+1, CMPLX( Z1, 0.0E0 ), X11(I,I), &
-                        LDX11 )
+            X11(I,I:P) = Z1*X11(I,I:P)
+            X21(I,I:M-P) = Z2*X21(I,I:M-P)
          ELSE
-            CALL CSCAL( P-I+1, CMPLX( Z1*COS(PHI(I-1)), 0.0E0 ), &
-                        X11(I,I), LDX11 )
-            CALL CAXPY( P-I+1, CMPLX( -Z1*Z3*Z4*SIN(PHI(I-1)), &
-                        0.0E0 ), X12(I-1,I), LDX12, X11(I,I), LDX11 )
-         END IF
-         IF( I  ==  1 ) THEN
-            CALL CSCAL( M-P-I+1, CMPLX( Z2, 0.0E0 ), X21(I,I), &
-                        LDX21 )
-         ELSE
-            CALL CSCAL( M-P-I+1, CMPLX( Z2*COS(PHI(I-1)), 0.0E0 ), &
-                        X21(I,I), LDX21 )
-            CALL CAXPY( M-P-I+1, CMPLX( -Z2*Z3*Z4*SIN(PHI(I-1)), &
-                        0.0E0 ), X22(I-1,I), LDX22, X21(I,I), LDX21 )
+            COSPHIM1 = COS(PHI(I-1))
+            SINPHIM1 = SQRT(1.0E0-COSPHIM1**2)
+            X11(I,I:P) = Z1*(COSPHIM1*X11(I,I:P) -Z3*Z4*SINPHIM1*X12(I-1,I:P))
+            X21(I,I:M-P) = Z2*(COSPHIM1*X21(I,I:M-P) -Z3*Z4*SINPHIM1*X22(I-1,I:M-P))
          END IF
 !
          THETA(I) = ATAN2( SCNRM2( M-P-I+1, X21(I,I), LDX21 ), &
                     SCNRM2( P-I+1, X11(I,I), LDX11 ) )
 !
-         CALL CLACGV( P-I+1, X11(I,I), LDX11 )
-         CALL CLACGV( M-P-I+1, X21(I,I), LDX21 )
+         X11(I,I:P) = CONJG(X11(I,I:P))
+         X21(I,I:M-P) = CONJG(X21(I,I:M-P))
 !
          CALL CLARFGP( P-I+1, X11(I,I), X11(I,I+1), LDX11, TAUP1(I) )
-         X11(I,I) = ONE
+         X11(I,I) = (1.0E+0,0.0E+0)
          IF ( I  ==  M-P ) THEN
-            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I), LDX21, &
-                          TAUP2(I) )
+            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I), LDX21, TAUP2(I) )
          ELSE
-            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I+1), LDX21, &
-                          TAUP2(I) )
+            CALL CLARFGP( M-P-I+1, X21(I,I), X21(I,I+1), LDX21, TAUP2(I) )
          END IF
-         X21(I,I) = ONE
+         X21(I,I) = (1.0E+0,0.0E+0)
 !
          CALL CLARF( 'R', Q-I, P-I+1, X11(I,I), LDX11, TAUP1(I), &
                      X11(I+1,I), LDX11, WORK )
@@ -601,30 +549,21 @@
          CALL CLARF( 'R', M-Q-I+1, M-P-I+1, X21(I,I), LDX21, &
                      TAUP2(I), X22(I,I), LDX22, WORK )
 !
-         CALL CLACGV( P-I+1, X11(I,I), LDX11 )
-         CALL CLACGV( M-P-I+1, X21(I,I), LDX21 )
+         X11(I,I:P) = CONJG(X11(I,I:P))
+         X21(I,I:M-P) = CONJG(X21(I,I:M-P))
 !
+         COSTHETAI = COS(THETA(I))
+         SINTHETAI = SQRT(1.0E0-COSTHETAI**2)
+         X12(I:M-Q,I) = Z4*(Z2*COSTHETAI*X22(I:M-Q,I)-Z1*SINTHETAI*X12(I:M-Q,I))
          IF( I  <  Q ) THEN
-            CALL CSCAL( Q-I, CMPLX( -Z1*Z3*SIN(THETA(I)), 0.0E0 ), &
-                        X11(I+1,I), 1 )
-            CALL CAXPY( Q-I, CMPLX( Z2*Z3*COS(THETA(I)), 0.0E0 ), &
-                        X21(I+1,I), 1, X11(I+1,I), 1 )
-         END IF
-         CALL CSCAL( M-Q-I+1, CMPLX( -Z1*Z4*SIN(THETA(I)), 0.0E0 ), &
-                     X12(I,I), 1 )
-         CALL CAXPY( M-Q-I+1, CMPLX( Z2*Z4*COS(THETA(I)), 0.0E0 ), &
-                     X22(I,I), 1, X12(I,I), 1 )
-!
-         IF( I  <  Q ) &
+            X11(I+1:Q,I) = Z3*(Z2*COSTHETAI*X21(I+1:Q,I)-Z1*SINTHETAI*X11(I+1:Q,I))
             PHI(I) = ATAN2( SCNRM2( Q-I, X11(I+1,I), 1 ), &
                      SCNRM2( M-Q-I+1, X12(I,I), 1 ) )
-!
-         IF( I  <  Q ) THEN
             CALL CLARFGP( Q-I, X11(I+1,I), X11(I+2,I), 1, TAUQ1(I) )
-            X11(I+1,I) = ONE
+            X11(I+1,I) = (1.0E+0,0.0E+0)
          END IF
          CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I+1,I), 1, TAUQ2(I) )
-         X12(I,I) = ONE
+         X12(I,I) = (1.0E+0,0.0E+0)
 !
          IF( I  <  Q ) THEN
             CALL CLARF( 'L', Q-I, P-I, X11(I+1,I), 1, &
@@ -645,9 +584,9 @@
 !
       DO I = Q + 1, P
 !
-         CALL CSCAL( M-Q-I+1, CMPLX( -Z1*Z4, 0.0E0 ), X12(I,I), 1 )
+         X12(I:M-Q,I) = -Z1*Z4*X12(I:M-Q,I)
          CALL CLARFGP( M-Q-I+1, X12(I,I), X12(I+1,I), 1, TAUQ2(I) )
-         X12(I,I) = ONE
+         X12(I,I) = (1.0E+0,0.0E+0)
 !
          IF ( P  >  I ) THEN
             CALL CLARF( 'L', M-Q-I+1, P-I, X12(I,I), 1, &
@@ -663,15 +602,12 @@
 !
       DO I = 1, M - P - Q
 !
-         CALL CSCAL( M-P-Q-I+1, CMPLX( Z2*Z4, 0.0E0 ), &
-                     X22(P+I,Q+I), 1 )
-         CALL CLARFGP( M-P-Q-I+1, X22(P+I,Q+I), X22(P+I+1,Q+I), 1, &
-                       TAUQ2(P+I) )
-         X22(P+I,Q+I) = ONE
+         X22(P+I:+M-Q,Q+I) = Z2*Z4*X22(P+I:+M-Q,Q+I)
+         CALL CLARFGP( M-P-Q-I+1, X22(P+I,Q+I), X22(P+I+1,Q+I), 1, TAUQ2(P+I) )
+         X22(P+I,Q+I) = (1.0E+0,0.0E+0)
          IF ( M-P-Q  /=  I ) THEN
             CALL CLARF( 'L', M-P-Q-I+1, M-P-Q-I, X22(P+I,Q+I), 1, &
-                        CONJG(TAUQ2(P+I)), X22(P+I,Q+I+1), LDX22, &
-                        WORK )
+                        CONJG(TAUQ2(P+I)), X22(P+I,Q+I+1), LDX22, WORK )
          END IF
       END DO
 !
@@ -682,6 +618,3 @@
 !     End of CUNBDB
 !
    END
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

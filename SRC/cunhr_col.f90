@@ -271,22 +271,12 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE, CZERO
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ), &
-                        CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
-   INTEGER            I, IINFO, J, JB, JBTEMP1, JBTEMP2, JNB, &
-                      NPLUSONE
+   INTEGER            I, IINFO, J, JB, JBTEMP1, JBTEMP2, JNB, NPLUSONE
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLAUNHR_COL_GETRFNP, CSCAL, CTRSM, &
-                      XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
+   EXTERNAL           CCOPY, CLAUNHR_COL_GETRFNP, CSCAL, CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -314,9 +304,7 @@
 !
 !     Quick return if possible
 !
-   IF( MIN( M, N ) == 0 ) THEN
-      RETURN
-   END IF
+   IF( MIN( M, N ) == 0 ) RETURN
 !
 !     On input, the M-by-N matrix A contains the unitary
 !     M-by-N matrix Q_in.
@@ -336,7 +324,7 @@
 !     (1-2) Solve for V2.
 !
    IF( M > N ) THEN
-      CALL CTRSM( 'R', 'U', 'N', 'N', M-N, N, CONE, A, LDA, &
+      CALL CTRSM( 'R', 'U', 'N', 'N', M-N, N, (1.0E+0,0.0E+0), A, LDA, &
                   A( N+1, 1 ), LDA )
    END IF
 !
@@ -363,7 +351,7 @@
 !
       JBTEMP1 = JB - 1
       DO J = JB, JB+JNB-1
-         CALL CCOPY( J-JBTEMP1, A( JB, J ), 1, T( 1, J ), 1 )
+         T(1:J-JBTEMP1,J) = A(JB:JB+J-JBTEMP1-1,J)
       END DO
 !
 !        (2-2) Perform on the upper-triangular part of the current
@@ -378,9 +366,7 @@
 !        S(JB), i.e. S(J,J) that is stored in the array element D(J).
 !
       DO J = JB, JB+JNB-1
-         IF( D( J ) == CONE ) THEN
-            CALL CSCAL( J-JBTEMP1, -CONE, T( 1, J ), 1 )
-         END IF
+         IF( D( J ) == (1.0E+0,0.0E+0) ) T(1:J-JBTEMP1,J) = -T(1:J-JBTEMP1,J)
       END DO
 !
 !        (2-3) Perform the triangular solve for the current block
@@ -421,14 +407,12 @@
 !
       JBTEMP2 = JB - 2
       DO J = JB, JB+JNB-2
-         DO I = J-JBTEMP2, NB
-            T( I, J ) = CZERO
-         END DO
+         T(J-JBTEMP2:NB, J ) = (0.0E+0,0.0E+0)
       END DO
 !
 !        (2-3b) Perform the triangular solve.
 !
-      CALL CTRSM( 'R', 'L', 'C', 'U', JNB, JNB, CONE, &
+      CALL CTRSM( 'R', 'L', 'C', 'U', JNB, JNB, (1.0E+0,0.0E+0), &
                   A( JB, JB ), LDA, T( 1, JB ), LDT )
 !
    END DO
@@ -438,5 +422,3 @@
 !     End of CUNHR_COL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

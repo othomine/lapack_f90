@@ -164,8 +164,7 @@
 !  -- Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd..--
 !
 !     .. Scalar Arguments ..
-   INTEGER            INCX1, INCX2, INFO, LDQ1, LDQ2, LWORK, M1, M2, &
-                      N
+   INTEGER            INCX1, INCX2, INFO, LDQ1, LDQ2, LWORK, M1, M2, N
 !     ..
 !     .. Array Arguments ..
    COMPLEX            Q1(LDQ1,*), Q2(LDQ2,*), WORK(*), X1(*), X2(*)
@@ -174,12 +173,8 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   REAL               ALPHA, REALONE, REALZERO
-   PARAMETER          ( ALPHA = 0.01E0, REALONE = 1.0E0, &
-                        REALZERO = 0.0E0 )
-   COMPLEX            NEGONE, ONE, ZERO
-   PARAMETER          ( NEGONE = (-1.0E0,0.0E0), ONE = (1.0E0,0.0E0), &
-                        ZERO = (0.0E0,0.0E0) )
+   REAL               ALPHA
+   PARAMETER          ( ALPHA = 0.01E0)
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, IX
@@ -190,9 +185,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           CGEMV, CLASSQ, XERBLA
-!     ..
-!     .. Intrinsic Function ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -231,26 +223,24 @@
 !     and an assertion added comparing the norm with one. Alas, Fortran
 !     never made it into 1989 when assert() was introduced into the C
 !     programming language.
-   NORM = REALONE
+   NORM = 1.0E+0
 !
    IF( M1  ==  0 ) THEN
-      DO I = 1, N
-         WORK(I) = ZERO
-      END DO
+      WORK(1:N) = (0.0E+0,0.0E+0)
    ELSE
-      CALL CGEMV( 'C', M1, N, ONE, Q1, LDQ1, X1, INCX1, ZERO, WORK, &
+      CALL CGEMV( 'C', M1, N, (1.0E+0,0.0E+0), Q1, LDQ1, X1, INCX1, (0.0E+0,0.0E+0), WORK, &
                   1 )
    END IF
 !
-   CALL CGEMV( 'C', M2, N, ONE, Q2, LDQ2, X2, INCX2, ONE, WORK, 1 )
+   CALL CGEMV( 'C', M2, N, (1.0E+0,0.0E+0), Q2, LDQ2, X2, INCX2, (1.0E+0,0.0E+0), WORK, 1 )
 !
-   CALL CGEMV( 'N', M1, N, NEGONE, Q1, LDQ1, WORK, 1, ONE, X1, &
+   CALL CGEMV( 'N', M1, N, (-1.0E+0,0.0E+0), Q1, LDQ1, WORK, 1, (1.0E+0,0.0E+0), X1, &
                INCX1 )
-   CALL CGEMV( 'N', M2, N, NEGONE, Q2, LDQ2, WORK, 1, ONE, X2, &
+   CALL CGEMV( 'N', M2, N, (-1.0E+0,0.0E+0), Q2, LDQ2, WORK, 1, (1.0E+0,0.0E+0), X2, &
                INCX2 )
 !
-   SCL = REALZERO
-   SSQ = REALZERO
+   SCL = 0.0E+0
+   SSQ = 0.0E+0
    CALL CLASSQ( M1, X1, INCX1, SCL, SSQ )
    CALL CLASSQ( M2, X2, INCX2, SCL, SSQ )
    NORM_NEW = SCL * SQRT(SSQ)
@@ -259,44 +249,36 @@
 !     If projection is zero, then stop.
 !     Otherwise, project again.
 !
-   IF( NORM_NEW  >=  ALPHA * NORM ) THEN
-      RETURN
-   END IF
+   IF( NORM_NEW  >=  ALPHA * NORM ) RETURN
 !
    IF( NORM_NEW  <=  N * EPS * NORM ) THEN
       DO IX = 1, 1 + (M1-1)*INCX1, INCX1
-        X1( IX ) = ZERO
+        X1( IX ) = (0.0E+0,0.0E+0)
       END DO
       DO IX = 1, 1 + (M2-1)*INCX2, INCX2
-        X2( IX ) = ZERO
+        X2( IX ) = (0.0E+0,0.0E+0)
       END DO
       RETURN
    END IF
 !
    NORM = NORM_NEW
 !
-   DO I = 1, N
-      WORK(I) = ZERO
-   END DO
+   WORK(1:N) = (0.0E+0,0.0E+0)
 !
-   IF( M1  ==  0 ) THEN
-      DO I = 1, N
-         WORK(I) = ZERO
-      END DO
-   ELSE
-      CALL CGEMV( 'C', M1, N, ONE, Q1, LDQ1, X1, INCX1, ZERO, WORK, &
+   IF( M1  /=  0 ) THEN
+      CALL CGEMV( 'C', M1, N, (1.0E+0,0.0E+0), Q1, LDQ1, X1, INCX1, (0.0E+0,0.0E+0), WORK, &
                   1 )
    END IF
 !
-   CALL CGEMV( 'C', M2, N, ONE, Q2, LDQ2, X2, INCX2, ONE, WORK, 1 )
+   CALL CGEMV( 'C', M2, N, (1.0E+0,0.0E+0), Q2, LDQ2, X2, INCX2, (1.0E+0,0.0E+0), WORK, 1 )
 !
-   CALL CGEMV( 'N', M1, N, NEGONE, Q1, LDQ1, WORK, 1, ONE, X1, &
+   CALL CGEMV( 'N', M1, N, (-1.0E+0,0.0E+0), Q1, LDQ1, WORK, 1, (1.0E+0,0.0E+0), X1, &
                INCX1 )
-   CALL CGEMV( 'N', M2, N, NEGONE, Q2, LDQ2, WORK, 1, ONE, X2, &
+   CALL CGEMV( 'N', M2, N, (-1.0E+0,0.0E+0), Q2, LDQ2, WORK, 1, (1.0E+0,0.0E+0), X2, &
                INCX2 )
 !
-   SCL = REALZERO
-   SSQ = REALZERO
+   SCL = 0.0E+0
+   SSQ = 0.0E+0
    CALL CLASSQ( M1, X1, INCX1, SCL, SSQ )
    CALL CLASSQ( M2, X2, INCX2, SCL, SSQ )
    NORM_NEW = SCL * SQRT(SSQ)
@@ -307,10 +289,10 @@
 !
    IF( NORM_NEW  <  ALPHA * NORM ) THEN
       DO IX = 1, 1 + (M1-1)*INCX1, INCX1
-         X1(IX) = ZERO
+         X1(IX) = (0.0E+0,0.0E+0)
       END DO
       DO IX = 1, 1 + (M2-1)*INCX2, INCX2
-         X2(IX) = ZERO
+         X2(IX) = (0.0E+0,0.0E+0)
       END DO
    END IF
 !
@@ -319,5 +301,3 @@
 !     End of CUNBDB6
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

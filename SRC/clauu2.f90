@@ -122,11 +122,10 @@
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
-   COMPLEX            CDOTC
-   EXTERNAL           LSAME, CDOTC
+   EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CLACGV, CSSCAL, XERBLA
+   EXTERNAL           CGEMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -157,8 +156,7 @@
       DO I = 1, N
          AII = REAL( A( I, I ) )
          IF( I < N ) THEN
-            A( I, I ) = AII*AII + REAL( CDOTC( N-I, A( I, I+1 ), LDA, &
-                        A( I, I+1 ), LDA ) )
+            A( I, I ) = AII*AII + REAL(SUM(CONJG(A(I,I+1:N))*A(I,I+1:N)))
             A(I,I+1:N) = CONJG(A(I,I+1:N))
             CALL CGEMV( 'No transpose', I-1, N-I, (1.0E+0,0.0E+0), A( 1, I+1 ), &
                         LDA, A( I, I+1 ), LDA, CMPLX( AII ), &
@@ -176,8 +174,7 @@
       DO I = 1, N
          AII = REAL( A( I, I ) )
          IF( I < N ) THEN
-            A( I, I ) = AII*AII + REAL( CDOTC( N-I, A( I+1, I ), 1, &
-                        A( I+1, I ), 1 ) )
+            A( I, I ) = AII*AII + REAL(SUM(CONJG(A(I+1:N,I))*A(I+1:N,I)))
             A(I,1:I-1) = CONJG(A(I,1:I-1))
             CALL CGEMV( 'Conjugate transpose', N-I, I-1, (1.0E+0,0.0E+0), &
                         A( I+1, 1 ), LDA, A( I+1, I ), 1, &

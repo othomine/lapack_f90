@@ -339,11 +339,6 @@
 !     ..
 !
 !  ===================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = (1.0E0,0.0E0), &
-                        ZERO = (0.0E0,0.0E0) )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          TRANST, SIGNST
@@ -367,9 +362,6 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
-!     ..
-!     .. Intrinsic Functions
-   INTRINSIC          INT, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -507,11 +499,9 @@
                  IORBDB + LORBDBWORKMIN ) - 1
       WORK(1) = MAX(LWORKOPT,LWORKMIN)
 !
-      IF( LWORK  <  LWORKMIN &
-          .AND. .NOT. ( LQUERY .OR. LRQUERY ) ) THEN
+      IF( LWORK  <  LWORKMIN .AND. .NOT. ( LQUERY .OR. LRQUERY ) ) THEN
          INFO = -22
-      ELSE IF( LRWORK  <  LRWORKMIN &
-               .AND. .NOT. ( LQUERY .OR. LRQUERY ) ) THEN
+      ELSE IF( LRWORK  <  LRWORKMIN .AND. .NOT. ( LQUERY .OR. LRQUERY ) ) THEN
          INFO = -24
       ELSE
          LORGQRWORK = LWORK - IORGQR + 1
@@ -553,11 +543,9 @@
       IF( WANTV1T .AND. Q  >  0 ) THEN
          CALL CLACPY( 'U', Q-1, Q-1, X11(1,2), LDX11, V1T(2,2), &
                       LDV1T )
-         V1T(1, 1) = ONE
-         DO J = 2, Q
-            V1T(1,J) = ZERO
-            V1T(J,1) = ZERO
-         END DO
+         V1T(1, 1) = (1.0E+0,0.0E+0)
+         V1T(1,2:Q) = (0.0E+0,0.0E+0)
+         V1T(2:Q,1) = (0.0E+0,0.0E+0)
          CALL CUNGLQ( Q-1, Q-1, Q-1, V1T(2,2), LDV1T, WORK(ITAUQ1), &
                       WORK(IORGLQ), LORGLQWORK, INFO )
       END IF
@@ -586,11 +574,9 @@
       IF( WANTV1T .AND. Q  >  0 ) THEN
          CALL CLACPY( 'L', Q-1, Q-1, X11(2,1), LDX11, V1T(2,2), &
                       LDV1T )
-         V1T(1, 1) = ONE
-         DO J = 2, Q
-            V1T(1,J) = ZERO
-            V1T(J,1) = ZERO
-         END DO
+         V1T(1, 1) = (1.0E+0,0.0E+0)
+         V1T(1,2:Q) = (0.0E+0,0.0E+0)
+         V1T(2:Q,1) = (0.0E+0,0.0E+0)
          CALL CUNGQR( Q-1, Q-1, Q-1, V1T(2,2), LDV1T, WORK(ITAUQ1), &
                       WORK(IORGQR), LORGQRWORK, INFO )
       END IF
@@ -653,6 +639,3 @@
 !     End CUNCSD
 !
    END
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

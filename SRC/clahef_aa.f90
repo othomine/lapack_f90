@@ -170,7 +170,7 @@
    EXTERNAL     LSAME, ILAENV, ICAMAX
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL     CLACGV, CGEMV, XERBLA
+   EXTERNAL     CGEMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -216,12 +216,10 @@
 !         > for the rest of the columns, K is J+1, skipping only the
 !           first column
 !
-         CALL CLACGV( J-K1, A( 1, J ), 1 )
-         CALL CGEMV( 'No transpose', MJ, J-K1, &
-                    -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
-                          A( 1, J ), 1, &
-                     (1.0E+0,0.0E+0), H( J, J ), 1 )
-         CALL CLACGV( J-K1, A( 1, J ), 1 )
+         A(1:J-K1,J) = CONJG(A(1:J-K1,J))
+         CALL CGEMV( 'No transpose', MJ, J-K1, -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
+                          A( 1, J ), 1, (1.0E+0,0.0E+0), H( J, J ), 1 )
+         A(1:J-K1,J) = CONJG(A(1:J-K1,J))
       END IF
 !
 !        Copy H(i:n, i) into WORK
@@ -272,9 +270,8 @@
             I2 = I2+J-1
             A_TMP(1:I2-I1-1) = A(J1+I1-1,I1+1:I2-1)
             A(J1+I1-1,I1+1:I2-1) = A(J1+I1:J1+I2-2,I2)
-            A(J1+I1:J1+I2-2,I2) = A_TMP(1:I2-I1-1)
-            CALL CLACGV( I2-I1, A( J1+I1-1, I1+1 ), LDA )
-            CALL CLACGV( I2-I1-1, A( J1+I1, I2 ), 1 )
+            A(J1+I1:J1+I2-2,I2) = CONJG(A_TMP(1:I2-I1-1))
+            A(J1+I1-1,I1+1:I2) = CONJG(A(J1+I1-1,I1+1:I2))
 !
 !              Swap A(I1, I2+1:N) with A(I2, I2+1:N)
 !
@@ -371,12 +368,10 @@
 !         > for the rest of the columns, K is J+1, skipping only the
 !           first column
 !
-         CALL CLACGV( J-K1, A( J, 1 ), LDA )
-         CALL CGEMV( 'No transpose', MJ, J-K1, &
-                    -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
-                          A( J, 1 ), LDA, &
-                     (1.0E+0,0.0E+0), H( J, J ), 1 )
-         CALL CLACGV( J-K1, A( J, 1 ), LDA )
+         A(J,1:J-K1) = CONJG(A(J,1:J-K1))
+         CALL CGEMV( 'No transpose', MJ, J-K1, -(1.0E+0,0.0E+0), H( J, K1 ), LDH, &
+                          A( J, 1 ), LDA, (1.0E+0,0.0E+0), H( J, J ), 1 )
+         A(J,1:J-K1) = CONJG(A(J,1:J-K1))
       END IF
 !
 !        Copy H(J:N, J) into WORK
@@ -388,8 +383,7 @@
 !           Compute WORK := WORK - L(J:N, J-1) * T(J-1,J),
 !            where A(J-1, J) = T(J-1, J) and A(J, J-2) = L(J, J-1)
 !
-         ALPHA = -CONJG( A( J, K-1 ) )
-         WORK(1:MJ) = WORK(1:MJ) + ALPHA*A(J:J+MJ-1,K-2)
+         WORK(1:MJ) = WORK(1:MJ) -CONJG( A( J, K-1 ) )*A(J:J+MJ-1,K-2)
       END IF
 !
 !        Set A(J, J) = T(J, J)
@@ -424,9 +418,8 @@
             I2 = I2+J-1
             A_TMP(1:I2-I1-1) = A(I1+1:I2-1,J1+I1-1)
             A(I1+1:I2-1,J1+I1-1) = A(I2,J1+I1:J1+I2-2)
-            A(I2,J1+I1:J1+I2-2) = A_TMP(1:I2-I1-1)
-            CALL CLACGV( I2-I1, A( I1+1, J1+I1-1 ), 1 )
-            CALL CLACGV( I2-I1-1, A( I2, J1+I1 ), LDA )
+            A(I2,J1+I1:J1+I2-2) = CONJG(A_TMP(1:I2-I1-1))
+            A(I1+1:I2,J1+I1-1) = CONJG(A(I1+1:I2,J1+I1-1))
 !
 !              Swap A(I2+1:N, I1) with A(I2+1:N, I2)
 !

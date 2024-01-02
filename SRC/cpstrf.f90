@@ -171,7 +171,7 @@
    EXTERNAL           SLAMCH, ILAENV, LSAME, SISNAN
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CHERK, CLACGV, CPSTF2, XERBLA
+   EXTERNAL           CGEMV, CHERK, CPSTF2, XERBLA
 !     ..
 !     .. Executable Statements ..
 !

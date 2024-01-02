@@ -219,9 +219,6 @@
 !     .. External Subroutines ..
    EXTERNAL           CLARZB, CLARZT, CUNMR3, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input arguments
@@ -250,8 +247,7 @@
       INFO = -4
    ELSE IF( K < 0 .OR. K > NQ ) THEN
       INFO = -5
-   ELSE IF( L < 0 .OR. ( LEFT .AND. ( L > M ) ) .OR. &
-            ( .NOT.LEFT .AND. ( L > N ) ) ) THEN
+   ELSE IF( L < 0 .OR. ( LEFT .AND. ( L > M ) ) .OR. ( .NOT.LEFT .AND. ( L > N ) ) ) THEN
       INFO = -6
    ELSE IF( LDA < MAX( 1, K ) ) THEN
       INFO = -8
@@ -268,8 +264,7 @@
       IF( M == 0 .OR. N == 0 ) THEN
          LWKOPT = 1
       ELSE
-         NB = MIN( NBMAX, ILAENV( 1, 'CUNMRQ', SIDE // TRANS, M, N, &
-                                  K, -1 ) )
+         NB = MIN( NBMAX, ILAENV( 1, 'CUNMRQ', SIDE // TRANS, M, N, K, -1 ) )
          LWKOPT = NW*NB + TSIZE
       END IF
       WORK( 1 ) = LWKOPT
@@ -284,9 +279,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Determine the block size.
 !
@@ -297,8 +290,7 @@
    IF( NB > 1 .AND. NB < K ) THEN
       IF( LWORK < LWKOPT ) THEN
          NB = (LWORK-TSIZE) / LDWORK
-         NBMIN = MAX( 2, ILAENV( 2, 'CUNMRQ', SIDE // TRANS, M, N, K, &
-                                 -1 ) )
+         NBMIN = MAX( 2, ILAENV( 2, 'CUNMRQ', SIDE // TRANS, M, N, K, -1 ) )
       END IF
    END IF
 !
@@ -306,15 +298,13 @@
 !
 !        Use unblocked code
 !
-      CALL CUNMR3( SIDE, TRANS, M, N, K, L, A, LDA, TAU, C, LDC, &
-                   WORK, IINFO )
+      CALL CUNMR3( SIDE, TRANS, M, N, K, L, A, LDA, TAU, C, LDC, WORK, IINFO )
    ELSE
 !
 !        Use blocked code
 !
       IWT = 1 + NW*NB
-      IF( ( LEFT .AND. .NOT.NOTRAN ) .OR. &
-          ( .NOT.LEFT .AND. NOTRAN ) ) THEN
+      IF( ( LEFT .AND. .NOT.NOTRAN ) .OR. ( .NOT.LEFT .AND. NOTRAN ) ) THEN
          I1 = 1
          I2 = K
          I3 = NB
@@ -379,5 +369,3 @@
 !     End of CUNMRZ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

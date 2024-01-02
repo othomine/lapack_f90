@@ -170,7 +170,7 @@
    EXTERNAL           SLAMCH, LSAME, SISNAN
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CLACGV, XERBLA
+   EXTERNAL           CGEMV, XERBLA
 !     ..
 !     .. Executable Statements ..
 !

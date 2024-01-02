@@ -275,10 +275,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            ONE, ZERO
-   PARAMETER          ( ONE = (1.0E0,0.0E0), ZERO = (0.0E0,0.0E0) )
 !     ..
 !     .. Local Scalars ..
    INTEGER            CHILDINFO, I, IB11D, IB11E, IB12D, IB12E, &
@@ -301,9 +297,6 @@
 !     .. External Functions ..
    LOGICAL            LSAME
    EXTERNAL           LSAME
-!     ..
-!     .. Intrinsic Function ..
-   INTRINSIC          INT, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -473,24 +466,20 @@
          LBBCSD = INT( RWORK(1) )
       ELSE
          CALL CUNBDB4( M, P, Q, X11, LDX11, X21, LDX21, THETA, DUM, &
-                       CDUM, CDUM, CDUM, CDUM, WORK(1), -1, CHILDINFO &
-                     )
+                       CDUM, CDUM, CDUM, CDUM, WORK(1), -1, CHILDINFO )
          LORBDB = M + INT( WORK(1) )
          IF( WANTU1 .AND. P  >  0 ) THEN
-            CALL CUNGQR( P, P, M-Q, U1, LDU1, CDUM, WORK(1), -1, &
-                         CHILDINFO )
+            CALL CUNGQR( P, P, M-Q, U1, LDU1, CDUM, WORK(1), -1, CHILDINFO )
             LORGQRMIN = MAX( LORGQRMIN, P )
             LORGQROPT = MAX( LORGQROPT, INT( WORK(1) ) )
          END IF
          IF( WANTU2 .AND. M-P  >  0 ) THEN
-            CALL CUNGQR( M-P, M-P, M-Q, U2, LDU2, CDUM, WORK(1), -1, &
-                         CHILDINFO )
+            CALL CUNGQR( M-P, M-P, M-Q, U2, LDU2, CDUM, WORK(1), -1, CHILDINFO )
             LORGQRMIN = MAX( LORGQRMIN, M-P )
             LORGQROPT = MAX( LORGQROPT, INT( WORK(1) ) )
          END IF
          IF( WANTV1T .AND. Q  >  0 ) THEN
-            CALL CUNGLQ( Q, Q, Q, V1T, LDV1T, CDUM, WORK(1), -1, &
-                         CHILDINFO )
+            CALL CUNGLQ( Q, Q, Q, V1T, LDV1T, CDUM, WORK(1), -1, CHILDINFO )
             LORGLQMIN = MAX( LORGLQMIN, Q )
             LORGLQOPT = MAX( LORGLQOPT, INT( WORK(1) ) )
          END IF
@@ -510,12 +499,8 @@
                       IORGQR+LORGQROPT-1, &
                       IORGLQ+LORGLQOPT-1 )
       WORK(1) = LWORKOPT
-      IF( LWORK  <  LWORKMIN .AND. .NOT.LQUERY ) THEN
-         INFO = -19
-      END IF
-      IF( LRWORK  <  LRWORKMIN .AND. .NOT.LQUERY ) THEN
-         INFO = -21
-      END IF
+      IF( LWORK  <  LWORKMIN .AND. .NOT.LQUERY ) INFO = -19
+      IF( LRWORK  <  LRWORKMIN .AND. .NOT.LQUERY ) INFO = -21
    END IF
    IF( INFO  /=  0 ) THEN
       CALL XERBLA( 'CUNCSD2BY1', -INFO )
@@ -552,11 +537,9 @@
                       WORK(IORGQR), LORGQR, CHILDINFO )
       END IF
       IF( WANTV1T .AND. Q  >  0 ) THEN
-         V1T(1,1) = ONE
-         DO J = 2, Q
-            V1T(1,J) = ZERO
-            V1T(J,1) = ZERO
-         END DO
+         V1T(1,1) = (1.0E+0,0.0E+0)
+         V1T(1,2:Q) = (0.0E+0,0.0E+0)
+         V1T(2:Q,1) = (0.0E+0,0.0E+0)
          CALL CLACPY( 'U', Q-1, Q-1, X21(1,2), LDX21, V1T(2,2), &
                       LDV1T )
          CALL CUNGLQ( Q-1, Q-1, Q-1, V1T(2,2), LDV1T, WORK(ITAUQ1), &
@@ -597,11 +580,9 @@
 !        Accumulate Householder reflectors
 !
       IF( WANTU1 .AND. P  >  0 ) THEN
-         U1(1,1) = ONE
-         DO J = 2, P
-            U1(1,J) = ZERO
-            U1(J,1) = ZERO
-         END DO
+         U1(1,1) = (1.0E+0,0.0E+0)
+         U1(1,2:P) = (0.0E+0,0.0E+0)
+         U1(2:P,1) = (0.0E+0,0.0E+0)
          CALL CLACPY( 'L', P-1, P-1, X11(2,1), LDX11, U1(2,2), LDU1 )
          CALL CUNGQR( P-1, P-1, P-1, U1(2,2), LDU1, WORK(ITAUP1), &
                       WORK(IORGQR), LORGQR, CHILDINFO )
@@ -656,11 +637,9 @@
                       LORGQR, CHILDINFO )
       END IF
       IF( WANTU2 .AND. M-P  >  0 ) THEN
-         U2(1,1) = ONE
-         DO J = 2, M-P
-            U2(1,J) = ZERO
-            U2(J,1) = ZERO
-         END DO
+         U2(1,1) = (1.0E+0,0.0E+0)
+         U2(1,2:M-P) = (0.0E+0,0.0E+0)
+         U2(2:M-P,1) = (0.0E+0,0.0E+0)
          CALL CLACPY( 'L', M-P-1, M-P-1, X21(2,1), LDX21, U2(2,2), &
                       LDU2 )
          CALL CUNGQR( M-P-1, M-P-1, M-P-1, U2(2,2), LDU2, &
@@ -713,22 +692,18 @@
 !
 
       IF( WANTU2 .AND. M-P  >  0 ) THEN
-         CALL CCOPY( M-P, WORK(IORBDB+P), 1, U2, 1 )
+         U2(1:M-P,1) = WORK(IORBDB+P:IORBDB+P+M-P-1)
       END IF
       IF( WANTU1 .AND. P  >  0 ) THEN
-         CALL CCOPY( P, WORK(IORBDB), 1, U1, 1 )
-         DO J = 2, P
-            U1(1,J) = ZERO
-         END DO
+         U1(1:P,1) = WORK(IORBDB:IORBDB+P-1)
+         U1(1,2:P) = (0.0E+0,0.0E+0)
          CALL CLACPY( 'L', P-1, M-Q-1, X11(2,1), LDX11, U1(2,2), &
                       LDU1 )
          CALL CUNGQR( P, P, M-Q, U1, LDU1, WORK(ITAUP1), &
                       WORK(IORGQR), LORGQR, CHILDINFO )
       END IF
       IF( WANTU2 .AND. M-P  >  0 ) THEN
-         DO J = 2, M-P
-            U2(1,J) = ZERO
-         END DO
+         U2(1,2:M-P) = (0.0E+0,0.0E+0)
          CALL CLACPY( 'L', M-P-1, M-Q-1, X21(2,1), LDX21, U2(2,2), &
                       LDU2 )
          CALL CUNGQR( M-P, M-P, M-Q, U2, LDU2, WORK(ITAUP2), &
@@ -777,6 +752,3 @@
 !     End of CUNCSD2BY1
 !
    END
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

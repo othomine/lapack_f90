@@ -162,7 +162,7 @@
 !  =====================================================================
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CGERC, CGERU, CLACGV
+   EXTERNAL           CGEMV, CGERC, CGERU
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -184,7 +184,7 @@
 !
          CALL CGEMV( 'Conjugate transpose', L, N, (1.0E+0,0.0E+0), C( M-L+1, 1 ), &
                      LDC, V, INCV, (1.0E+0,0.0E+0), WORK, 1 )
-         CALL CLACGV( N, WORK, 1 )
+         WORK(1:N) = CONJG(WORK(1:N))
 !
 !           C( 1, 1:n ) = C( 1, 1:n ) - tau * w( 1:n )
 !

@@ -217,7 +217,7 @@
    EXTERNAL           LSAME, ICAMAX, SLAMCH, CABS1
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMM, CGEMV, CLACGV
+   EXTERNAL           CGEMM, CGEMV
 !     ..
 !     .. Executable Statements ..
 !
@@ -314,8 +314,7 @@
                IF( IMAX > 1 ) W(1:IMAX-1,KW-1) = A(1:IMAX-1,IMAX)
                W( IMAX, KW-1 ) = REAL( A( IMAX, IMAX ) )
 !
-               W(IMAX+1:K,KW-1) = A(IMAX,IMAX+1:K)
-               CALL CLACGV( K-IMAX, W( IMAX+1, KW-1 ), 1 )
+               W(IMAX+1:K,KW-1) = CONJG(A(IMAX,IMAX+1:K))
 !
                IF( K < N ) THEN
                   CALL CGEMV( 'No transpose', K, N-K, -(1.0E+0,0.0E+0), &
@@ -421,8 +420,7 @@
 !              will be later overwritten.
 !
             A( P, P ) = REAL( A( K, K ) )
-            A(P,P+1:K-1) = A(P+1:K-1,K)
-            CALL CLACGV( K-1-P, A( P, P+1 ), LDA )
+            A(P,P+1:K-1) = CONJG(A(P+1:K-1,K))
             IF( P > 1 ) A(1:P-1,P) = A(1:P-1,K)
 !
 !              Interchange rows K and P in the last K+1 to N columns of A
@@ -453,8 +451,7 @@
             A( KP, KP ) = REAL( A( KK, KK ) )
             A_TMP(1:KK-1-KP) = A(KP+1:KK-1,KK)
             A(KP+1:KK-1,KK) = A(KP,KP+1:KK-1)
-            A(KP,KP+1:KK-1) = A_TMP(1:KK-1-KP)
-            CALL CLACGV( KK-1-KP, A( KP, KP+1 ), LDA )
+            A(KP,KP+1:KK-1) = CONJG(A_TMP(1:KK-1-KP))
             IF( KP > 1 ) A(1:KP-1,KP) = A(1:KP-1,KK)
 !
 !              Interchange rows KK and KP in last K+1 to N columns of A
@@ -512,7 +509,7 @@
 !
 !                 (2) Conjugate column W(kw)
 !
-               CALL CLACGV( K-1, W( 1, KW ), 1 )
+               W(1:K-1,KW) = CONJG(W(1:K-1,KW))
             END IF
 !
          ELSE
@@ -600,8 +597,8 @@
 !
 !              (2) Conjugate columns W(kw) and W(kw-1)
 !
-            CALL CLACGV( K-1, W( 1, KW ), 1 )
-            CALL CLACGV( K-2, W( 1, KW-1 ), 1 )
+            W(1:K-1,KW) = CONJG(W(1:K-1,KW))
+            W(1:K-2,KW-1) = CONJG(W(1:K-2,KW-1))
 !
          END IF
 !
@@ -773,8 +770,7 @@
 !
 !                 Copy column IMAX to column k+1 of W and update it
 !
-               W(K:IMAX-1,K+1) = A(IMAX,K:IMAX-1)
-               CALL CLACGV( IMAX-K, W( K, K+1 ), 1 )
+               W(K:IMAX-1,K+1) = CONJG(A(IMAX,K:IMAX-1))
                W( IMAX, K+1 ) = REAL( A( IMAX, IMAX ) )
 !
                IF( IMAX < N ) W(IMAX+1:N,K+1) = A(IMAX+1:N,IMAX)
@@ -878,8 +874,7 @@
 !              will be later overwritten.
 !
             A( P, P ) = REAL( A( K, K ) )
-            A(P,K+1:P-1) = A(K+1:P-1,K)
-            CALL CLACGV( P-K-1, A( P, K+1 ), LDA )
+            A(P,K+1:P-1) = CONJG(A(K+1:P-1,K))
             IF( P < N ) A(P+1:N,P) = A(P+1:N,K)
 !
 !              Interchange rows K and P in first K-1 columns of A
@@ -908,8 +903,7 @@
 !              will be later overwritten.
 !
             A( KP, KP ) = REAL( A( KK, KK ) )
-            A(KP,KK+1:KP-1) = A(KK+1:KP-1,KK)
-            CALL CLACGV( KP-KK-1, A( KP, KK+1 ), LDA )
+            A(KP,KK+1:KP-1) = CONJG(A(KK+1:KP-1,KK))
             IF( KP < N ) A(KP+1:N,KP) = A(KP+1:N,KK)
 !
 !              Interchange rows KK and KP in first K-1 columns of A
@@ -967,7 +961,7 @@
 !
 !                 (2) Conjugate column W(k)
 !
-               CALL CLACGV( N-K, W( K+1, K ), 1 )
+               W(K+1:N,K) = CONJG(W(K+1:N,K))
             END IF
 !
          ELSE
@@ -1055,8 +1049,8 @@
 !
 !              (2) Conjugate columns W(k) and W(k+1)
 !
-            CALL CLACGV( N-K, W( K+1, K ), 1 )
-            CALL CLACGV( N-K-1, W( K+2, K+1 ), 1 )
+            W(K+1:N,K) = CONJG(W(K+1:N,K))
+            W(K+2:N,K+1) = CONJG(W(K+2:N,K+1))
 !
          END IF
 !

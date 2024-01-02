@@ -172,8 +172,7 @@
 !> \endverbatim
 !
 !  =====================================================================
-   SUBROUTINE CUNGTSQR( M, N, MB, NB, A, LDA, T, LDT, WORK, LWORK, &
-                        INFO )
+   SUBROUTINE CUNGTSQR( M, N, MB, NB, A, LDA, T, LDT, WORK, LWORK, INFO )
    IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
@@ -188,21 +187,13 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   COMPLEX            CONE, CZERO
-   PARAMETER          ( CONE = ( 1.0E+0, 0.0E+0 ), &
-                        CZERO = ( 0.0E+0, 0.0E+0 ) )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
    INTEGER            IINFO, LDC, LWORKOPT, LC, LW, NBLOCAL, J
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CLAMTSQR, CLASET, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CMPLX, MAX, MIN
+   EXTERNAL           CLAMTSQR, CLASET, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -246,9 +237,7 @@
 !
          LWORKOPT = LC+LW
 !
-         IF( ( LWORK < MAX( 1, LWORKOPT ) ).AND.(.NOT.LQUERY) ) THEN
-            INFO = -10
-         END IF
+         IF( ( LWORK < MAX( 1, LWORKOPT ) ).AND.(.NOT.LQUERY) ) INFO = -10
       END IF
 !
    END IF
@@ -281,7 +270,7 @@
 !     (1a) Form M-by-N matrix in the array WORK(1:LDC*N) with ones
 !     on the diagonal and zeros elsewhere.
 !
-   CALL CLASET( 'F', M, N, CZERO, CONE, WORK, LDC )
+   CALL CLASET( 'F', M, N, (0.0E+0,0.0E+0), (1.0E+0,0.0E+0), WORK, LDC )
 !
 !     (1b)  On input, WORK(1:LDC*N) stores ( I );
 !                                          ( 0 )
@@ -296,7 +285,7 @@
 !     the output array A(1:M,1:N) column-by-column.
 !
    DO J = 1, N
-      CALL CCOPY( M, WORK( (J-1)*LDC + 1 ), 1, A( 1, J ), 1 )
+      A(1:M,J) = WORK((J-1)*LDC+1:(J-1)*LDC+M)
    END DO
 !
    WORK( 1 ) = CMPLX( LWORKOPT )
@@ -305,5 +294,3 @@
 !     End of CUNGTSQR
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -199,7 +199,7 @@
    COMPLEX            EI
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMM, CGEMV, CLARFG, CTRMM, CTRMV, CLACGV
+   EXTERNAL           CGEMM, CGEMV, CLARFG, CTRMM, CTRMV
 !     ..
 !     .. Executable Statements ..
 !
@@ -214,10 +214,10 @@
 !
 !           Update I-th column of A - Y * V**H
 !
-         CALL CLACGV( I-1, A( K+I-1, 1 ), LDA )
+         A(K+I-1,1:I-2) = CONJG(A(K+I-1,1:I-2))
          CALL CGEMV( 'NO TRANSPOSE', N-K, I-1, -(1.0E+0,0.0E+0), Y(K+1,1), LDY, &
                      A( K+I-1, 1 ), LDA, (1.0E+0,0.0E+0), A( K+1, I ), 1 )
-         CALL CLACGV( I-1, A( K+I-1, 1 ), LDA )
+         A(K+I-1,1:I-2) = CONJG(A(K+I-1,1:I-2))
 !
 !           Apply I - V * T**H * V**H to this column (call it b) from the
 !           left, using the last column of T as workspace

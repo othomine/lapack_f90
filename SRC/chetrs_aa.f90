@@ -157,7 +157,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CLACPY, CLACGV, CGTSV, CTRSM, XERBLA
+   EXTERNAL           CLACPY, CGTSV, CTRSM, XERBLA
 !     ..
 !     .. Executable Statements ..
 !
@@ -225,10 +225,9 @@
       IF( N > 1 ) THEN
           CALL CLACPY( 'F', 1, N-1, A( 1, 2 ), LDA+1, WORK( 2*N ), 1)
           CALL CLACPY( 'F', 1, N-1, A( 1, 2 ), LDA+1, WORK( 1 ), 1)
-          CALL CLACGV( N-1, WORK( 1 ), 1 )
+          WORK(1:N-1) = CONJG(WORK(1:N-1))
       END IF
-      CALL CGTSV(N, NRHS, WORK(1), WORK(N), WORK(2*N), B, LDB, &
-                 INFO)
+      CALL CGTSV(N, NRHS, WORK(1), WORK(N), WORK(2*N), B, LDB, INFO)
 !
 !        3) Backward substitution with U
 !
@@ -288,7 +287,7 @@
       IF( N > 1 ) THEN
           CALL CLACPY( 'F', 1, N-1, A( 2, 1 ), LDA+1, WORK( 1 ), 1 )
           CALL CLACPY( 'F', 1, N-1, A( 2, 1 ), LDA+1, WORK( 2*N ), 1)
-          CALL CLACGV( N-1, WORK( 2*N ), 1 )
+          WORK(2*N:2*N+N-2) = CONJG(WORK(2*N:2*N+N-2))
       END IF
       CALL CGTSV(N, NRHS, WORK(1), WORK(N), WORK(2*N), B, LDB, &
                  INFO)

@@ -220,7 +220,7 @@
    EXTERNAL           LSAME
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CCOPY, CGEMM, CLACGV, CTRMM
+   EXTERNAL           CGEMM, CTRMM
 !     ..
 !     .. Executable Statements ..
 !

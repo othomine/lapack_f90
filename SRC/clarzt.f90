@@ -202,7 +202,7 @@
    INTEGER            I, INFO, J
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CLACGV, CTRMV, XERBLA
+   EXTERNAL           CGEMV, CTRMV, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
