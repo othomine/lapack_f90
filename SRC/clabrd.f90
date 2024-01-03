@@ -220,8 +220,7 @@
 !     ..
 !     .. Array Arguments ..
    REAL               D( * ), E( * )
-   COMPLEX            A( LDA, * ), TAUP( * ), TAUQ( * ), X( LDX, * ), &
-                      Y( LDY, * )
+   COMPLEX            A( LDA, * ), TAUP( * ), TAUQ( * ), X( LDX, * ), Y( LDY, * )
 !     ..
 !
 !  =====================================================================
@@ -231,7 +230,7 @@
    COMPLEX            ALPHA
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           CGEMV, CLACGV, CLARFG
+   EXTERNAL           CGEMV, CLARFG
 !     ..
 !     .. Executable Statements ..
 !
@@ -247,10 +246,10 @@
 !
 !           Update A(i:m,i)
 !
-         CALL CLACGV( I-1, Y( I, 1 ), LDY )
+         Y(I,1:I-1) = CONJG(Y(I,1:I-1))
          CALL CGEMV( 'No transpose', M-I+1, I-1, -(1.0E+0,0.0E+0), A( I, 1 ), &
                      LDA, Y( I, 1 ), LDY, (1.0E+0,0.0E+0), A( I, I ), 1 )
-         CALL CLACGV( I-1, Y( I, 1 ), LDY )
+         Y(I,1:I-1) = CONJG(Y(I,1:I-1))
          CALL CGEMV( 'No transpose', M-I+1, I-1, -(1.0E+0,0.0E+0), X( I, 1 ), &
                      LDX, A( 1, I ), 1, (1.0E+0,0.0E+0), A( I, I ), 1 )
 !
@@ -282,16 +281,15 @@
 !
 !              Update A(i,i+1:n)
 !
-            CALL CLACGV( N-I, A( I, I+1 ), LDA )
-            CALL CLACGV( I, A( I, 1 ), LDA )
+            A(I,1:N) = CONJG(A(I,1:N))
             CALL CGEMV( 'No transpose', N-I, I, -(1.0E+0,0.0E+0), Y( I+1, 1 ), &
                         LDY, A( I, 1 ), LDA, (1.0E+0,0.0E+0), A( I, I+1 ), LDA )
-            CALL CLACGV( I, A( I, 1 ), LDA )
-            CALL CLACGV( I-1, X( I, 1 ), LDX )
+            A(I,1:I) = CONJG(A(I,1:I))
+            X(I,1:I-1) = CONJG(X(I,1:I-1))
             CALL CGEMV( 'Conjugate transpose', I-1, N-I, -(1.0E+0,0.0E+0), &
                         A( 1, I+1 ), LDA, X( I, 1 ), LDX, (1.0E+0,0.0E+0), &
                         A( I, I+1 ), LDA )
-            CALL CLACGV( I-1, X( I, 1 ), LDX )
+            X(I,1:I-1) = CONJG(X(I,1:I-1))
 !
 !              Generate reflection P(i) to annihilate A(i,i+2:n)
 !
@@ -315,7 +313,7 @@
             CALL CGEMV( 'No transpose', M-I, I-1, -(1.0E+0,0.0E+0), X( I+1, 1 ), &
                         LDX, X( 1, I ), 1, (1.0E+0,0.0E+0), X( I+1, I ), 1 )
             X(I+1:M,I) = TAUP(I)*X(I+1:M,I)
-            CALL CLACGV( N-I, A( I, I+1 ), LDA )
+            A(I,I+1:N) = CONJG(A(I,I+1:N))
          END IF
       ENDDO
    ELSE
@@ -326,16 +324,15 @@
 !
 !           Update A(i,i:n)
 !
-         CALL CLACGV( N-I+1, A( I, I ), LDA )
-         CALL CLACGV( I-1, A( I, 1 ), LDA )
+         A(I,1:N) = CONJG(A(I,1:N))
          CALL CGEMV( 'No transpose', N-I+1, I-1, -(1.0E+0,0.0E+0), Y( I, 1 ), &
                      LDY, A( I, 1 ), LDA, (1.0E+0,0.0E+0), A( I, I ), LDA )
-         CALL CLACGV( I-1, A( I, 1 ), LDA )
-         CALL CLACGV( I-1, X( I, 1 ), LDX )
+         A(I,1:I-1) = CONJG(A(I,1:I-1))
+         X(I,1:I-1) = CONJG(X(I,1:I-1))
          CALL CGEMV( 'Conjugate transpose', I-1, N-I+1, -(1.0E+0,0.0E+0), &
                      A( 1, I ), LDA, X( I, 1 ), LDX, (1.0E+0,0.0E+0), A( I, I ), &
                      LDA )
-         CALL CLACGV( I-1, X( I, 1 ), LDX )
+         X(I,1:I-1) = CONJG(X(I,1:I-1))
 !
 !           Generate reflection P(i) to annihilate A(i,i+1:n)
 !
@@ -360,22 +357,21 @@
             CALL CGEMV( 'No transpose', M-I, I-1, -(1.0E+0,0.0E+0), X( I+1, 1 ), &
                         LDX, X( 1, I ), 1, (1.0E+0,0.0E+0), X( I+1, I ), 1 )
             X(I+1:M,I) = TAUP(I)*X(I+1:M,I)
-            CALL CLACGV( N-I+1, A( I, I ), LDA )
+            A(I,I:N) = CONJG(A(I,I:N))
 !
 !              Update A(i+1:m,i)
 !
-            CALL CLACGV( I-1, Y( I, 1 ), LDY )
+            Y(I,1:I-1) = CONJG(Y(I,1:I-1))
             CALL CGEMV( 'No transpose', M-I, I-1, -(1.0E+0,0.0E+0), A( I+1, 1 ), &
                         LDA, Y( I, 1 ), LDY, (1.0E+0,0.0E+0), A( I+1, I ), 1 )
-            CALL CLACGV( I-1, Y( I, 1 ), LDY )
+            Y(I,1:I-1) = CONJG(Y(I,1:I-1))
             CALL CGEMV( 'No transpose', M-I, I, -(1.0E+0,0.0E+0), X( I+1, 1 ), &
                         LDX, A( 1, I ), 1, (1.0E+0,0.0E+0), A( I+1, I ), 1 )
 !
 !              Generate reflection Q(i) to annihilate A(i+2:m,i)
 !
             ALPHA = A( I+1, I )
-            CALL CLARFG( M-I, ALPHA, A( MIN( I+2, M ), I ), 1, &
-                         TAUQ( I ) )
+            CALL CLARFG( M-I, ALPHA, A( MIN( I+2, M ), I ), 1, TAUQ( I ) )
             E( I ) = REAL( ALPHA )
             A( I+1, I ) = (1.0E+0,0.0E+0)
 !
@@ -397,7 +393,7 @@
                         Y( I+1, I ), 1 )
             Y(I+1:N,I) = TAUQ(I)*Y(I+1:N,I)
          ELSE
-            CALL CLACGV( N-I+1, A( I, I ), LDA )
+            A(I,I:N) = CONJG(A(I,I:N))
          END IF
       ENDDO
    END IF

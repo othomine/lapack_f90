@@ -581,8 +581,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            FINAL_NRM_ERR_I, FINAL_CMP_ERR_I, BERR_I
    INTEGER            RCOND_I, NRM_RCOND_I, NRM_ERR_I, CMP_RCOND_I
    INTEGER            CMP_ERR_I, PIV_GROWTH_I
@@ -607,9 +605,6 @@
    EXTERNAL           DGBEQUB, DGBTRF, DGBTRS, DLACPY, DLAQGB, &
                       XERBLA, DLASCL2, DGBRFSX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
@@ -617,7 +612,7 @@
    EQUIL = LSAME( FACT, 'E' )
    NOTRAN = LSAME( TRANS, 'N' )
    SMLNUM = DLAMCH( 'Safe minimum' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    IF( NOFACT .OR. EQUIL ) THEN
       EQUED = 'N'
       ROWEQU = .FALSE.
@@ -631,15 +626,13 @@
 !     factorization fails, make everything look horrible.  Only the
 !     pivot growth is set here, the rest is initialized in DGBRFSX.
 !
-   RPVGRW = ZERO
+   RPVGRW = 0.0D0
 !
 !     Test the input parameters.  PARAMS is not tested until DGBRFSX.
 !
-   IF( .NOT.NOFACT .AND. .NOT.EQUIL .AND. .NOT. &
-        LSAME( FACT, 'F' ) ) THEN
+   IF( .NOT.NOFACT .AND. .NOT.EQUIL .AND. .NOT. LSAME( FACT, 'F' ) ) THEN
       INFO = -1
-   ELSE IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT. &
-           LSAME( TRANS, 'C' ) ) THEN
+   ELSE IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT. LSAME( TRANS, 'C' ) ) THEN
       INFO = -2
    ELSE IF( N < 0 ) THEN
       INFO = -3
@@ -658,33 +651,25 @@
       INFO = -12
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-            ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAXVAL(R(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -13
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0D0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-            ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAXVAL(C(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -14
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0D0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -705,30 +690,20 @@
 !
 !     Compute row and column scalings to equilibrate the matrix A.
 !
-      CALL DGBEQUB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, &
-           AMAX, INFEQU )
+      CALL DGBEQUB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, AMAX, INFEQU )
       IF( INFEQU == 0 ) THEN
 !
 !     Equilibrate the matrix.
 !
-         CALL DLAQGB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, &
-              AMAX, EQUED )
+         CALL DLAQGB( N, N, KL, KU, AB, LDAB, R, C, ROWCND, COLCND, AMAX, EQUED )
          ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
          COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       END IF
 !
 !     If the scaling factors are not applied, set them to 1.0.
 !
-      IF ( .NOT.ROWEQU ) THEN
-         DO J = 1, N
-            R( J ) = 1.0D+0
-         END DO
-      END IF
-      IF ( .NOT.COLEQU ) THEN
-         DO J = 1, N
-            C( J ) = 1.0D+0
-         END DO
-      END IF
+      IF ( .NOT.ROWEQU ) R(1:N) = 1.0D+0
+      IF ( .NOT.COLEQU ) C(1:N) = 1.0D+0
    END IF
 !
 !     Scale the right hand side.
@@ -743,11 +718,7 @@
 !
 !        Compute the LU factorization of A.
 !
-      DO , J = 1, N
-         DO , I = KL+1, 2*KL+KU+1
-            AFB( I, J ) = AB( I-KL, J )
-            ENDDO
-         ENDDO
+      AFB(KL+1:2*KL+KU+1,1:N) = AB(1:KL+KU+1,1:N)
       CALL DGBTRF( N, N, KL, KU, AFB, LDAFB, IPIV, INFO )
 !
 !        Return if INFO is non-zero.
@@ -758,8 +729,7 @@
 !           Compute the reciprocal pivot growth factor of the
 !           leading rank-deficient INFO columns of A.
 !
-         RPVGRW = DLA_GBRPVGRW( N, KL, KU, INFO, AB, LDAB, AFB, &
-              LDAFB )
+         RPVGRW = DLA_GBRPVGRW( N, KL, KU, INFO, AB, LDAB, AFB, LDAFB )
          RETURN
       END IF
    END IF
@@ -771,8 +741,7 @@
 !     Compute the solution matrix X.
 !
    CALL DLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
-   CALL DGBTRS( TRANS, N, KL, KU, NRHS, AFB, LDAFB, IPIV, X, LDX, &
-        INFO )
+   CALL DGBTRS( TRANS, N, KL, KU, NRHS, AFB, LDAFB, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solution and
 !     compute error bounds and backward error estimates for it.
@@ -795,5 +764,3 @@
 !     End of DGBSVXX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

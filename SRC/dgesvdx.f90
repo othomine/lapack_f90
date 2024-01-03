@@ -278,10 +278,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    CHARACTER          JOBZ, RNGTGK
@@ -304,9 +300,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -346,7 +339,7 @@
       INFO = -7
    ELSE IF( MINMN > 0 ) THEN
       IF( VALS ) THEN
-         IF( VL < ZERO ) THEN
+         IF( VL < 0.0D0 ) THEN
             INFO = -8
          ELSE IF( VU <= VL ) THEN
             INFO = -9
@@ -459,9 +452,7 @@
       MAXWRK = MAX( MAXWRK, MINWRK )
       WORK( 1 ) = DBLE( MAXWRK )
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) THEN
-          INFO = -19
-      END IF
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -19
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -473,9 +464,7 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Set singular values indices accord to RANGE.
 !
@@ -497,13 +486,13 @@
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = SQRT( DLAMCH( 'S' ) ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, DUM )
    ISCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       ISCL = 1
       CALL DLASCL( 'G', 0, 0, ANRM, SMLNUM, M, N, A, LDA, INFO )
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -542,7 +531,7 @@
          ITAUP = ITAUQ + N
          ITEMP = ITAUP + N
          CALL DLACPY( 'U', N, N, A, LDA, WORK( IQRF ), N )
-         CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, WORK( IQRF+1 ), N )
+         CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IQRF+1 ), N )
          CALL DGEBRD( N, N, WORK( IQRF ), N, WORK( ID ), WORK( IE ), &
                       WORK( ITAUQ ), WORK( ITAUP ), WORK( ITEMP ), &
                       LWORK-ITEMP+1, INFO )
@@ -564,7 +553,7 @@
                CALL DCOPY( N, WORK( J ), 1, U( 1,I ), 1 )
                J = J + N*2
             END DO
-            CALL DLASET( 'A', M-N, NS, ZERO, ZERO, U( N+1,1 ), LDU )
+            U(N+1:M,1:NS) = 0.0D0
 !
 !              Call DORMBR to compute QB*UB.
 !              (Workspace in WORK( ITEMP ): need N, prefer N*NB)
@@ -586,7 +575,7 @@
          IF( WANTVT) THEN
             J = ITGKZ + N
             DO I = 1, NS
-               CALL DCOPY( N, WORK( J ), 1, VT( I,1 ), LDVT )
+               VT(I,1:N) = WORK(J:J+N-1)
                J = J + N*2
             END DO
 !
@@ -630,10 +619,10 @@
          IF( WANTU ) THEN
             J = ITGKZ
             DO I = 1, NS
-               CALL DCOPY( N, WORK( J ), 1, U( 1,I ), 1 )
+               U(1:N,I) = WORK(J:J+N-1)
                J = J + N*2
             END DO
-            CALL DLASET( 'A', M-N, NS, ZERO, ZERO, U( N+1,1 ), LDU )
+            U(N+1:M,1:NS) = 0.0D0
 !
 !              Call DORMBR to compute QB*UB.
 !              (Workspace in WORK( ITEMP ): need N, prefer N*NB)
@@ -648,7 +637,7 @@
          IF( WANTVT) THEN
             J = ITGKZ + N
             DO I = 1, NS
-               CALL DCOPY( N, WORK( J ), 1, VT( I,1 ), LDVT )
+               VT(I,1:N) = WORK(J:J+N-1)
                J = J + N*2
             END DO
 !
@@ -690,7 +679,7 @@
          ITAUP = ITAUQ + M
          ITEMP = ITAUP + M
          CALL DLACPY( 'L', M, M, A, LDA, WORK( ILQF ), M )
-         CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, WORK( ILQF+M ), M )
+         CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, WORK( ILQF+M ), M )
          CALL DGEBRD( M, M, WORK( ILQF ), M, WORK( ID ), WORK( IE ), &
                       WORK( ITAUQ ), WORK( ITAUP ), WORK( ITEMP ), &
                       LWORK-ITEMP+1, INFO )
@@ -709,7 +698,7 @@
          IF( WANTU ) THEN
             J = ITGKZ
             DO I = 1, NS
-               CALL DCOPY( M, WORK( J ), 1, U( 1,I ), 1 )
+               U(1:M,I) = WORK(J:J+M-1)
                J = J + M*2
             END DO
 !
@@ -726,10 +715,10 @@
          IF( WANTVT) THEN
             J = ITGKZ + M
             DO I = 1, NS
-               CALL DCOPY( M, WORK( J ), 1, VT( I,1 ), LDVT )
+               VT(I,1:M) = WORK(J:J+M-1)
                J = J + M*2
             END DO
-            CALL DLASET( 'A', NS, N-M, ZERO, ZERO, VT( 1,M+1 ), LDVT)
+            VT(1:NS,M+1:N) = 0.0D0
 !
 !              Call DORMBR to compute (VB**T)*(PB**T)
 !              (Workspace in WORK( ITEMP ): need M, prefer M*NB)
@@ -778,7 +767,7 @@
          IF( WANTU ) THEN
             J = ITGKZ
             DO I = 1, NS
-               CALL DCOPY( M, WORK( J ), 1, U( 1,I ), 1 )
+               U(1:M,I) = WORK(J:J+M-1)
                J = J + M*2
             END DO
 !
@@ -795,10 +784,10 @@
          IF( WANTVT) THEN
             J = ITGKZ + M
             DO I = 1, NS
-               CALL DCOPY( M, WORK( J ), 1, VT( I,1 ), LDVT )
+               VT(I,1:M) = WORK(J:J+M-1)
                J = J + M*2
             END DO
-            CALL DLASET( 'A', NS, N-M, ZERO, ZERO, VT( 1,M+1 ), LDVT)
+            VT(1:NS,M+1:N) = 0.0D0
 !
 !              Call DORMBR to compute VB**T * PB**T
 !              (Workspace in WORK( ITEMP ): need M, prefer M*NB)
@@ -814,11 +803,9 @@
 !
    IF( ISCL == 1 ) THEN
       IF( ANRM > BIGNUM ) &
-         CALL DLASCL( 'G', 0, 0, BIGNUM, ANRM, MINMN, 1, &
-                      S, MINMN, INFO )
+         CALL DLASCL( 'G', 0, 0, BIGNUM, ANRM, MINMN, 1, S, MINMN, INFO )
       IF( ANRM < SMLNUM ) &
-         CALL DLASCL( 'G', 0, 0, SMLNUM, ANRM, MINMN, 1, &
-                      S, MINMN, INFO )
+         CALL DLASCL( 'G', 0, 0, SMLNUM, ANRM, MINMN, 1, S, MINMN, INFO )
    END IF
 !
 !     Return optimal workspace in WORK(1)
@@ -830,5 +817,3 @@
 !     End of DGESVDX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

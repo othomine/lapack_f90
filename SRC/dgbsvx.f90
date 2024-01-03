@@ -385,10 +385,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COLEQU, EQUIL, NOFACT, NOTRAN, ROWEQU
@@ -406,9 +402,6 @@
    EXTERNAL           DCOPY, DGBCON, DGBEQU, DGBRFS, DGBTRF, DGBTRS, &
                       DLACPY, DLAQGB, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
@@ -423,16 +416,14 @@
       ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
       COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       SMLNUM = DLAMCH( 'Safe minimum' )
-      BIGNUM = ONE / SMLNUM
+      BIGNUM = 1.0D0 / SMLNUM
    END IF
 !
 !     Test the input parameters.
 !
-   IF( .NOT.NOFACT .AND. .NOT.EQUIL .AND. .NOT.LSAME( FACT, 'F' ) ) &
-        THEN
+   IF( .NOT.NOFACT .AND. .NOT.EQUIL .AND. .NOT.LSAME( FACT, 'F' ) ) THEN
       INFO = -1
-   ELSE IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT. &
-            LSAME( TRANS, 'C' ) ) THEN
+   ELSE IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT. LSAME( TRANS, 'C' ) ) THEN
       INFO = -2
    ELSE IF( N < 0 ) THEN
       INFO = -3
@@ -451,33 +442,25 @@
       INFO = -12
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAXVAL(R(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -13
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0D0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAXVAL(C(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -14
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0D0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -516,16 +499,12 @@
    IF( NOTRAN ) THEN
       IF( ROWEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               B( I, J ) = R( I )*B( I, J )
-            ENDDO
+            B(1:N,J) = R(1:N)*B(1:N,J)
          ENDDO
       END IF
    ELSE IF( COLEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = C( I )*B( I, J )
-         ENDDO
+         B(1:N,J) = C(1:N)*B(1:N,J)
       ENDDO
    END IF
 !
@@ -536,8 +515,7 @@
       DO J = 1, N
          J1 = MAX( J-KU, 1 )
          J2 = MIN( J+KL, N )
-         CALL DCOPY( J2-J1+1, AB( KU+1-J+J1, J ), 1, &
-                     AFB( KL+KU+1-J+J1, J ), 1 )
+         AFB(KL+KU+1-J+J1:KL+KU+1-J+J2,J) = AB(KU+1-J+J1:KU+1-J+J2,J)
       ENDDO
 !
       CALL DGBTRF( N, N, KL, KU, AFB, LDAFB, IPIV, INFO )
@@ -549,7 +527,7 @@
 !           Compute the reciprocal pivot growth factor of the
 !           leading rank-deficient INFO columns of A.
 !
-         ANORM = ZERO
+         ANORM = 0.0D0
          DO J = 1, INFO
             DO I = MAX( KU+2-J, 1 ), MIN( N+KU+1-J, KL+KU+1 )
                ANORM = MAX( ANORM, ABS( AB( I, J ) ) )
@@ -558,13 +536,13 @@
          RPVGRW = DLANTB( 'M', 'U', 'N', INFO, MIN( INFO-1, KL+KU ), &
                           AFB( MAX( 1, KL+KU+2-INFO ), 1 ), LDAFB, &
                           WORK )
-         IF( RPVGRW == ZERO ) THEN
-            RPVGRW = ONE
+         IF( RPVGRW == 0.0D0 ) THEN
+            RPVGRW = 1.0D0
          ELSE
             RPVGRW = ANORM / RPVGRW
          END IF
          WORK( 1 ) = RPVGRW
-         RCOND = ZERO
+         RCOND = 0.0D0
          RETURN
       END IF
    END IF
@@ -579,8 +557,8 @@
    END IF
    ANORM = DLANGB( NORM, N, KL, KU, AB, LDAB, WORK )
    RPVGRW = DLANTB( 'M', 'U', 'N', N, KL+KU, AFB, LDAFB, WORK )
-   IF( RPVGRW == ZERO ) THEN
-      RPVGRW = ONE
+   IF( RPVGRW == 0.0D0 ) THEN
+      RPVGRW = 1.0D0
    ELSE
       RPVGRW = DLANGB( 'M', N, KL, KU, AB, LDAB, WORK ) / RPVGRW
    END IF
@@ -608,29 +586,20 @@
    IF( NOTRAN ) THEN
       IF( COLEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               X( I, J ) = C( I )*X( I, J )
-               ENDDO
-            ENDDO
-         DO J = 1, NRHS
-            FERR( J ) = FERR( J ) / COLCND
-            ENDDO
+            X(1:N,J) = C(1:N)*X(1:N,J)
+         ENDDO
+         FERR(1:NRHS) = FERR(1:NRHS) / COLCND
       END IF
    ELSE IF( ROWEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            X( I, J ) = R( I )*X( I, J )
-            ENDDO
-         ENDDO
-      DO J = 1, NRHS
-         FERR( J ) = FERR( J ) / ROWCND
-         ENDDO
+         X(1:N,J) = R(1:N)*X(1:N,J)
+      ENDDO
+      FERR(1:NRHS) = FERR(1:NRHS) / ROWCND
    END IF
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < DLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < DLAMCH( 'Epsilon' ) ) INFO = N + 1
 !
    WORK( 1 ) = RPVGRW
    RETURN
@@ -638,5 +607,3 @@
 !     End of DGBSVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

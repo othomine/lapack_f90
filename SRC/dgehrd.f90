@@ -183,9 +183,6 @@
    INTEGER            NBMAX, LDT, TSIZE
    PARAMETER          ( NBMAX = 64, LDT = NBMAX+1, &
                         TSIZE = LDT*NBMAX )
-   DOUBLE PRECISION  ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, &
-                        ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -196,9 +193,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DAXPY, DGEHD2, DGEMM, DLAHR2, DLARFB, DTRMM, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. External Functions ..
    INTEGER            ILAENV
@@ -240,11 +234,9 @@
 !
 !     Set elements 1:ILO-1 and IHI:N-1 of TAU to zero
 !
-   DO I = 1, ILO - 1
-      TAU( I ) = ZERO
-   ENDDO
+   TAU(1:ILO-1) = 0.0D0
    DO I = MAX( 1, IHI ), N - 1
-      TAU( I ) = ZERO
+      TAU( I ) = 0.0D0
    ENDDO
 !
 !     Quick return if possible
@@ -305,18 +297,16 @@
 !           matrices V and T of the block reflector H = I - V*T*V**T
 !           which performs the reduction, and also the matrix Y = A*V*T
 !
-         CALL DLAHR2( IHI, I, IB, A( 1, I ), LDA, TAU( I ), &
-                      WORK( IWT ), LDT, WORK, LDWORK )
+         CALL DLAHR2( IHI, I, IB, A( 1, I ), LDA, TAU( I ), WORK( IWT ), LDT, WORK, LDWORK )
 !
 !           Apply the block reflector H to A(1:ihi,i+ib:ihi) from the
 !           right, computing  A := A - Y * V**T. V(i+ib,ib-1) must be set
 !           to 1
 !
          EI = A( I+IB, I+IB-1 )
-         A( I+IB, I+IB-1 ) = ONE
-         CALL DGEMM( 'No transpose', 'Transpose', &
-                     IHI, IHI-I-IB+1, &
-                     IB, -ONE, WORK, LDWORK, A( I+IB, I ), LDA, ONE, &
+         A( I+IB, I+IB-1 ) = 1.0D0
+         CALL DGEMM( 'No transpose', 'Transpose', IHI, IHI-I-IB+1, &
+                     IB, -1.0D0, WORK, LDWORK, A( I+IB, I ), LDA, 1.0D0, &
                      A( 1, I+IB ), LDA )
          A( I+IB, I+IB-1 ) = EI
 !
@@ -325,10 +315,9 @@
 !
          CALL DTRMM( 'Right', 'Lower', 'Transpose', &
                      'Unit', I, IB-1, &
-                     ONE, A( I+1, I ), LDA, WORK, LDWORK )
+                     1.0D0, A( I+1, I ), LDA, WORK, LDWORK )
          DO J = 0, IB-2
-            CALL DAXPY( I, -ONE, WORK( LDWORK*J+1 ), 1, &
-                        A( 1, I+J+1 ), 1 )
+            A(1:I,I+J+1) = A(1:I,I+J+1) - WORK(LDWORK*J+1:LDWORK*J+I)
          ENDDO
 !
 !           Apply the block reflector H to A(i+1:ihi,i+ib:n) from the
@@ -352,5 +341,3 @@
 !     End of DGEHRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

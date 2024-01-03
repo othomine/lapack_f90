@@ -216,10 +216,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -236,9 +232,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, INT, LOG, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -273,8 +266,7 @@
    MINWRK = 1
    LIWORK = 1
    MINMN = MAX( 1, MINMN )
-   NLVL = MAX( INT( LOG( DBLE( MINMN ) / DBLE( SMLSIZ+1 ) ) / &
-          LOG( TWO ) ) + 1, 0 )
+   NLVL = MAX( INT( LOG( DBLE( MINMN ) / DBLE( SMLSIZ+1 ) ) / LOG( 2.0D0 ) ) + 1, 0 )
 !
    IF( INFO == 0 ) THEN
       MAXWRK = 0
@@ -285,8 +277,7 @@
 !           Path 1a - overdetermined, with many more rows than columns.
 !
          MM = N
-         MAXWRK = MAX( MAXWRK, N+N*ILAENV( 1, 'DGEQRF', ' ', M, N, &
-                  -1, -1 ) )
+         MAXWRK = MAX( MAXWRK, N+N*ILAENV( 1, 'DGEQRF', ' ', M, N, -1, -1 ) )
          MAXWRK = MAX( MAXWRK, N+NRHS* &
                   ILAENV( 1, 'DORMQR', 'LT', M, NRHS, N, -1 ) )
       END IF
@@ -328,8 +319,7 @@
             MAXWRK = MAX( MAXWRK, M*M+4*M+WLALSD )
 !     XXX: Ensure the Path 2a case below is triggered.  The workspace
 !     calculation should use queries for all routines eventually.
-            MAXWRK = MAX( MAXWRK, &
-                 4*M+M*M+MAX( M, 2*M-4, NRHS, N-3*M ) )
+            MAXWRK = MAX( MAXWRK, 4*M+M*M+MAX( M, 2*M-4, NRHS, N-3*M ) )
          ELSE
 !
 !              Path 2 - remaining underdetermined cases.
@@ -372,13 +362,13 @@
    EPS = DLAMCH( 'P' )
    SFMIN = DLAMCH( 'S' )
    SMLNUM = SFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max entry outside range [SMLNUM,BIGNUM].
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, WORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM.
 !
@@ -390,12 +380,12 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'F', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
-      CALL DLASET( 'F', MINMN, 1, ZERO, ZERO, S, 1 )
+      CALL DLASET( 'F', MAX( M, N ), NRHS, 0.0D0, 0.0D0, B, LDB )
+      S(1:MINMN) = 0.0D0
       RANK = 0
       GO TO 10
    END IF
@@ -404,7 +394,7 @@
 !
    BNRM = DLANGE( 'M', M, NRHS, B, LDB, WORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM.
 !
@@ -420,8 +410,7 @@
 !
 !     If M < N make sure certain entries of B are zero.
 !
-   IF( M < N ) &
-      CALL DLASET( 'F', N-M, NRHS, ZERO, ZERO, B( M+1, 1 ), LDB )
+   IF( M < N ) B(M+1:N,1:NRHS) = 0.0D0
 !
 !     Overdetermined case.
 !
@@ -453,7 +442,7 @@
 !           Zero out below R.
 !
          IF( N > 1 ) THEN
-            CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, A( 2, 1 ), LDA )
+            CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
          END IF
       END IF
 !
@@ -479,16 +468,14 @@
 !
       CALL DLALSD( 'U', SMLSIZ, N, NRHS, S, WORK( IE ), B, LDB, &
                    RCOND, RANK, WORK( NWORK ), IWORK, INFO )
-      IF( INFO /= 0 ) THEN
-         GO TO 10
-      END IF
+      IF( INFO /= 0 ) GO TO 10
 !
 !        Multiply B by right bidiagonalizing vectors of R.
 !
       CALL DORMBR( 'P', 'L', 'N', N, NRHS, N, A, LDA, WORK( ITAUP ), &
                    B, LDB, WORK( NWORK ), LWORK-NWORK+1, INFO )
 !
-   ELSE IF( N >= MNTHR .AND. LWORK >= 4*M+M*M+ &
+   ELSE IF( N >= MNTHR .AND. LWORK >= M*(4+M)+ &
             MAX( M, 2*M-4, NRHS, N-3*M, WLALSD ) ) THEN
 !
 !        Path 2a - underdetermined, with many more columns than rows
@@ -510,7 +497,7 @@
 !        Copy L to WORK(IL), zeroing out above its diagonal.
 !
       CALL DLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWORK )
-      CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, WORK( IL+LDWORK ), &
+      CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, WORK( IL+LDWORK ), &
                    LDWORK )
       IE = IL + LDWORK*M
       ITAUQ = IE + M
@@ -535,9 +522,7 @@
 !
       CALL DLALSD( 'U', SMLSIZ, M, NRHS, S, WORK( IE ), B, LDB, &
                    RCOND, RANK, WORK( NWORK ), IWORK, INFO )
-      IF( INFO /= 0 ) THEN
-         GO TO 10
-      END IF
+      IF( INFO /= 0 ) GO TO 10
 !
 !        Multiply B by right bidiagonalizing vectors of L.
 !
@@ -547,7 +532,7 @@
 !
 !        Zero out below first M rows of B.
 !
-      CALL DLASET( 'F', N-M, NRHS, ZERO, ZERO, B( M+1, 1 ), LDB )
+      B(M+1:N,1:NRHS) = 0.0D0
       NWORK = ITAU + M
 !
 !        Multiply transpose(Q) by B.
@@ -582,9 +567,7 @@
 !
       CALL DLALSD( 'L', SMLSIZ, M, NRHS, S, WORK( IE ), B, LDB, &
                    RCOND, RANK, WORK( NWORK ), IWORK, INFO )
-      IF( INFO /= 0 ) THEN
-         GO TO 10
-      END IF
+      IF( INFO /= 0 ) GO TO 10
 !
 !        Multiply B by right bidiagonalizing vectors of A.
 !
@@ -618,5 +601,3 @@
 !     End of DGELSD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

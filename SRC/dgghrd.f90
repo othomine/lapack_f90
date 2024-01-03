@@ -220,10 +220,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILQ, ILZ
@@ -236,9 +232,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           DLARTG, DLASET, DROT, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -301,22 +294,17 @@
 !
 !     Initialize Q and Z if desired.
 !
-   IF( ICOMPQ == 3 ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, Q, LDQ )
-   IF( ICOMPZ == 3 ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, Z, LDZ )
+   IF( ICOMPQ == 3 ) CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Q, LDQ )
+   IF( ICOMPZ == 3 ) CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Z, LDZ )
 !
 !     Quick return if possible
 !
-   IF( N <= 1 ) &
-      RETURN
+   IF( N <= 1 ) RETURN
 !
 !     Zero out lower triangle of B
 !
    DO JCOL = 1, N - 1
-      DO JROW = JCOL + 1, N
-         B( JROW, JCOL ) = ZERO
-      ENDDO
+      B(JCOL+1:N,JCOL) = 0.0D0
    ENDDO
 !
 !     Reduce A and B
@@ -330,25 +318,21 @@
          TEMP = A( JROW-1, JCOL )
          CALL DLARTG( TEMP, A( JROW, JCOL ), C, S, &
                       A( JROW-1, JCOL ) )
-         A( JROW, JCOL ) = ZERO
+         A( JROW, JCOL ) = 0.0D0
          CALL DROT( N-JCOL, A( JROW-1, JCOL+1 ), LDA, &
                     A( JROW, JCOL+1 ), LDA, C, S )
          CALL DROT( N+2-JROW, B( JROW-1, JROW-1 ), LDB, &
                     B( JROW, JROW-1 ), LDB, C, S )
-         IF( ILQ ) &
-            CALL DROT( N, Q( 1, JROW-1 ), 1, Q( 1, JROW ), 1, C, S )
+         IF( ILQ ) CALL DROT( N, Q( 1, JROW-1 ), 1, Q( 1, JROW ), 1, C, S )
 !
 !           Step 2: rotate columns JROW, JROW-1 to kill B(JROW,JROW-1)
 !
          TEMP = B( JROW, JROW )
-         CALL DLARTG( TEMP, B( JROW, JROW-1 ), C, S, &
-                      B( JROW, JROW ) )
-         B( JROW, JROW-1 ) = ZERO
+         CALL DLARTG( TEMP, B( JROW, JROW-1 ), C, S, B( JROW, JROW ) )
+         B( JROW, JROW-1 ) = 0.0D0
          CALL DROT( IHI, A( 1, JROW ), 1, A( 1, JROW-1 ), 1, C, S )
-         CALL DROT( JROW-1, B( 1, JROW ), 1, B( 1, JROW-1 ), 1, C, &
-                    S )
-         IF( ILZ ) &
-            CALL DROT( N, Z( 1, JROW ), 1, Z( 1, JROW-1 ), 1, C, S )
+         CALL DROT( JROW-1, B( 1, JROW ), 1, B( 1, JROW-1 ), 1, C, S )
+         IF( ILZ ) CALL DROT( N, Z( 1, JROW ), 1, Z( 1, JROW-1 ), 1, C, S )
       ENDDO
    ENDDO
 !
@@ -357,5 +341,3 @@
 !     End of DGGHRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

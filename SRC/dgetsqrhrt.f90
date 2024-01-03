@@ -20,7 +20,7 @@
 !
 !       SUBROUTINE DGETSQRHRT( M, N, MB1, NB1, NB2, A, LDA, T, LDT, WORK,
 !      $                       LWORK, INFO )
-!       IMPLICIT NONE
+!       IMPLICIT N1.0D0
 !
 !       .. Scalar Arguments ..
 !       INTEGER           INFO, LDA, LDT, LWORK, M, N, NB1, NB2, MB1
@@ -175,8 +175,7 @@
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE DGETSQRHRT( M, N, MB1, NB1, NB2, A, LDA, T, LDT, WORK, &
-                          LWORK, INFO )
+   SUBROUTINE DGETSQRHRT( M, N, MB1, NB1, NB2, A, LDA, T, LDT, WORK, LWORK, INFO )
    IMPLICIT NONE
 !
 !  -- LAPACK computational routine --
@@ -191,10 +190,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -204,9 +199,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DCOPY, DLATSQR, DORGTSQR_ROW, DORHR_COL, &
                       XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          CEILING, DBLE, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -245,8 +237,7 @@
 !
          NB1LOCAL = MIN( NB1, N )
 !
-         NUM_ALL_ROW_BLOCKS = MAX( 1, &
-                      CEILING( DBLE( M - N ) / DBLE( MB1 - N ) ) )
+         NUM_ALL_ROW_BLOCKS = MAX( 1, CEILING( DBLE( M - N ) / DBLE( MB1 - N ) ) )
 !
 !           Length and leading dimension of WORK array to place
 !           T array in TSQR.
@@ -265,9 +256,7 @@
 !
          LWORKOPT = MAX( LWT + LW1, MAX( LWT+N*N+LW2, LWT+N*N+N ) )
 !
-         IF( ( LWORK < MAX( 1, LWORKOPT ) ).AND.(.NOT.LQUERY) ) THEN
-            INFO = -11
-         END IF
+         IF( ( LWORK < MAX( 1, LWORKOPT ) ).AND.(.NOT.LQUERY) ) INFO = -11
 !
       END IF
    END IF
@@ -294,15 +283,14 @@
 !
 !     (1) Perform TSQR-factorization of the M-by-N matrix A.
 !
-   CALL DLATSQR( M, N, MB1, NB1LOCAL, A, LDA, WORK, LDWT, &
-                 WORK(LWT+1), LW1, IINFO )
+   CALL DLATSQR( M, N, MB1, NB1LOCAL, A, LDA, WORK, LDWT, WORK(LWT+1), LW1, IINFO )
 !
 !     (2) Copy the factor R_tsqr stored in the upper-triangular part
 !         of A into the square matrix in the work array
 !         WORK(LWT+1:LWT+N*N) column-by-column.
 !
    DO J = 1, N
-      CALL DCOPY( J, A( 1, J ), 1, WORK( LWT + N*(J-1)+1 ), 1 )
+      WORK(LWT+N*(J-1)+1:LWT+N*(J-1)+J) = A(1:J,J)
    END DO
 !
 !     (3) Generate a M-by-N matrix Q with orthonormal columns from
@@ -333,12 +321,10 @@
 !     are accessed only once.
 !
    DO I = 1, N
-      IF( WORK( LWT+N*N+I ) == -ONE ) THEN
-         DO J = I, N
-            A( I, J ) = -ONE * WORK( LWT+N*(J-1)+I )
-         END DO
+      IF( WORK( LWT+N*N+I ) == -1.0D0 ) THEN
+         A(I,I:N) = -WORK(LWT+N*(I-1)+I:LWT+N*I:N)
       ELSE
-         CALL DCOPY( N-I+1, WORK(LWT+N*(I-1)+I), N, A( I, I ), LDA )
+         A(I,I:N) = WORK(LWT+N*(I-1)+I:LWT+N*I:N)
       END IF
    END DO
 !
@@ -348,5 +334,3 @@
 !     End of DGETSQRHRT
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

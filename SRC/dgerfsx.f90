@@ -419,8 +419,7 @@
 !
 !     .. Scalar Arguments ..
    CHARACTER          TRANS, EQUED
-   INTEGER            INFO, LDA, LDAF, LDB, LDX, N, NRHS, NPARAMS, &
-                      N_ERR_BNDS
+   INTEGER            INFO, LDA, LDAF, LDB, LDX, N, NRHS, NPARAMS, N_ERR_BNDS
    DOUBLE PRECISION   RCOND
 !     ..
 !     .. Array Arguments ..
@@ -435,8 +434,6 @@
 !  ==================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    DOUBLE PRECISION   ITREF_DEFAULT, ITHRESH_DEFAULT
    DOUBLE PRECISION   COMPONENTWISE_DEFAULT, RTHRESH_DEFAULT
    DOUBLE PRECISION   DZTHRESH_DEFAULT
@@ -468,9 +465,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA, DGECON, DLA_GERFSX_EXTENDED
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. External Functions ..
    EXTERNAL           LSAME, ILATRANS, ILAPREC
@@ -536,8 +530,7 @@
 !
    IF( TRANS_TYPE == -1 ) THEN
      INFO = -1
-   ELSE IF( .NOT.ROWEQU .AND. .NOT.COLEQU .AND. &
-            .NOT.LSAME( EQUED, 'N' ) ) THEN
+   ELSE IF( .NOT.ROWEQU .AND. .NOT.COLEQU .AND. .NOT.LSAME( EQUED, 'N' ) ) THEN
      INFO = -2
    ELSE IF( N < 0 ) THEN
      INFO = -3
@@ -727,5 +720,3 @@
 !     End of DGERFSX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -223,14 +223,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D+0 )
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D+0 )
-   DOUBLE PRECISION   TWO
-   PARAMETER          ( TWO = 2.0D+0 )
-   DOUBLE PRECISION   THREE
-   PARAMETER          ( THREE = 3.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -243,9 +235,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           DAXPY, DCOPY, DGBMV, DGBTRS, DLACN2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -286,10 +275,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0D0
+      BERR(1:NRHS) = 0.0D0
       RETURN
    END IF
 !
@@ -312,7 +299,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0D0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -320,9 +307,9 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL DCOPY( N, B( 1, J ), 1, WORK( N+1 ), 1 )
-      CALL DGBMV( TRANS, N, N, KL, KU, -ONE, AB, LDAB, X( 1, J ), 1, &
-                  ONE, WORK( N+1 ), 1 )
+      WORK(N+1:2*N) = B(1:N,J)
+      CALL DGBMV( TRANS, N, N, KL, KU, -1.0D0, AB, LDAB, X( 1, J ), 1, &
+                  1.0D0, WORK( N+1 ), 1 )
 !
 !        Compute componentwise relative backward error from formula
 !
@@ -333,9 +320,7 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      DO I = 1, N
-         WORK( I ) = ABS( B( I, J ) )
-      ENDDO
+      WORK(1:N) = ABS(B(1:N,J))
 !
 !        Compute abs(op(A))*abs(X) + abs(B).
 !
@@ -349,7 +334,7 @@
          ENDDO
       ELSE
          DO K = 1, N
-            S = ZERO
+            S = 0.0D0
             KK = KU + 1 - K
             DO I = MAX( 1, K-KU ), MIN( N, K+KL )
                S = S + ABS( AB( KK+I, K ) )*ABS( X( I, J ) )
@@ -357,13 +342,12 @@
             WORK( K ) = WORK( K ) + S
          ENDDO
       END IF
-      S = ZERO
+      S = 0.0D0
       DO I = 1, N
          IF( WORK( I ) > SAFE2 ) THEN
             S = MAX( S, ABS( WORK( N+I ) ) / WORK( I ) )
          ELSE
-            S = MAX( S, ( ABS( WORK( N+I ) )+SAFE1 ) / &
-                ( WORK( I )+SAFE1 ) )
+            S = MAX( S, ( ABS( WORK( N+I ) )+SAFE1 ) / ( WORK( I )+SAFE1 ) )
          END IF
       ENDDO
       BERR( J ) = S
@@ -374,14 +358,12 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
-          COUNT <= ITMAX ) THEN
+      IF( BERR( J ) > EPS .AND. 2.0D0*BERR( J ) <= LSTRES .AND. COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
-         CALL DGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, &
-                      WORK( N+1 ), N, INFO )
-         CALL DAXPY( N, ONE, WORK( N+1 ), 1, X( 1, J ), 1 )
+         CALL DGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, WORK( N+1 ), N, INFO )
+         X(1:N,J) = X(1:N,J) + WORK(N+1:2*N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -426,32 +408,22 @@
 !
 !              Multiply by diag(W)*inv(op(A)**T).
 !
-            CALL DGBTRS( TRANST, N, KL, KU, 1, AFB, LDAFB, IPIV, &
-                         WORK( N+1 ), N, INFO )
-            DO I = 1, N
-               WORK( N+I ) = WORK( N+I )*WORK( I )
-               ENDDO
+            CALL DGBTRS( TRANST, N, KL, KU, 1, AFB, LDAFB, IPIV, WORK( N+1 ), N, INFO )
+            WORK(N+1:2*N) = WORK(N+1:2*N)*WORK(1:N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( N+I ) = WORK( N+I )*WORK( I )
-               ENDDO
-            CALL DGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, &
-                         WORK( N+1 ), N, INFO )
+            WORK(N+1:2*N) = WORK(N+1:2*N)*WORK(1:N)
+            CALL DGBTRS( TRANS, N, KL, KU, 1, AFB, LDAFB, IPIV, WORK( N+1 ), N, INFO )
          END IF
          GO TO 100
       END IF
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
-      DO I = 1, N
-         LSTRES = MAX( LSTRES, ABS( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
+      LSTRES = MAXVAL(ABS(X(1:N,J)))
+      IF( LSTRES /= 0.0D0 ) FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
 !
@@ -460,5 +432,3 @@
 !     End of DGBRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

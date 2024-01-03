@@ -206,10 +206,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SCALEA, WANTVL, WANTVR
@@ -233,9 +229,6 @@
    DOUBLE PRECISION   DLAMCH, DLANGE, DLAPY2, DNRM2
    EXTERNAL           LSAME, IDAMAX, ILAENV, DLAMCH, DLANGE, DLAPY2, &
                       DNRM2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -328,30 +321,28 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', N, N, A, LDA, DUM )
    SCALEA = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = SMLNUM
    ELSE IF( ANRM > BIGNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = BIGNUM
    END IF
-   IF( SCALEA ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+   IF( SCALEA ) CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
 !
 !     Balance the matrix
 !     (Workspace: need N)
@@ -430,8 +421,7 @@
 !
 !     If INFO  /=  0 from DHSEQR, then quit
 !
-   IF( INFO /= 0 ) &
-      GO TO 50
+   IF( INFO /= 0 ) GO TO 50
 !
    IF( WANTVL .OR. WANTVR ) THEN
 !
@@ -447,27 +437,24 @@
 !        Undo balancing of left eigenvectors
 !        (Workspace: need N)
 !
-      CALL DGEBAK( 'B', 'L', N, ILO, IHI, WORK( IBAL ), N, VL, LDVL, &
-                   IERR )
+      CALL DGEBAK( 'B', 'L', N, ILO, IHI, WORK( IBAL ), N, VL, LDVL, IERR )
 !
 !        Normalize left eigenvectors and make largest component real
 !
       DO I = 1, N
-         IF( WI( I ) == ZERO ) THEN
-            SCL = ONE / DNRM2( N, VL( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VL( 1, I ), 1 )
-         ELSE IF( WI( I ) > ZERO ) THEN
-            SCL = ONE / DLAPY2( DNRM2( N, VL( 1, I ), 1 ), &
+         IF( WI( I ) == 0.0D0 ) THEN
+            SCL = 1.0D0 / DNRM2( N, VL( 1, I ), 1 )
+            VL(1:N,I) = SCL*VL(1:N,I)
+         ELSE IF( WI( I ) > 0.0D0 ) THEN
+            SCL = 1.0D0 / DLAPY2( DNRM2( N, VL( 1, I ), 1 ), &
                   DNRM2( N, VL( 1, I+1 ), 1 ) )
-            CALL DSCAL( N, SCL, VL( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VL( 1, I+1 ), 1 )
-            DO K = 1, N
-               WORK( IWRK+K-1 ) = VL( K, I )**2 + VL( K, I+1 )**2
-            ENDDO
+            VL(1:N,I) = SCL*VL(1:N,I)
+            VL(1:N,I+1) = SCL*VL(1:N,I+1)
+            WORK( IWRK-1+1:IWRK-1+N ) = VL(1:N, I )**2 + VL(1:N, I+1 )**2
             K = IDAMAX( N, WORK( IWRK ), 1 )
             CALL DLARTG( VL( K, I ), VL( K, I+1 ), CS, SN, R )
             CALL DROT( N, VL( 1, I ), 1, VL( 1, I+1 ), 1, CS, SN )
-            VL( K, I+1 ) = ZERO
+            VL( K, I+1 ) = 0.0D0
          END IF
       ENDDO
    END IF
@@ -483,21 +470,19 @@
 !        Normalize right eigenvectors and make largest component real
 !
       DO I = 1, N
-         IF( WI( I ) == ZERO ) THEN
-            SCL = ONE / DNRM2( N, VR( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VR( 1, I ), 1 )
-         ELSE IF( WI( I ) > ZERO ) THEN
-            SCL = ONE / DLAPY2( DNRM2( N, VR( 1, I ), 1 ), &
+         IF( WI( I ) == 0.0D0 ) THEN
+            SCL = 1.0D0 / DNRM2( N, VR( 1, I ), 1 )
+            VR(1:N,I) = SCL*VR(1:N,I)
+         ELSE IF( WI( I ) > 0.0D0 ) THEN
+            SCL = 1.0D0 / DLAPY2( DNRM2( N, VR( 1, I ), 1 ), &
                   DNRM2( N, VR( 1, I+1 ), 1 ) )
-            CALL DSCAL( N, SCL, VR( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VR( 1, I+1 ), 1 )
-            DO K = 1, N
-               WORK( IWRK+K-1 ) = VR( K, I )**2 + VR( K, I+1 )**2
-            ENDDO
+            VR(1:N,I) = SCL*VR(1:N,I)
+            VR(1:N,I+1) = SCL*VR(1:N,I+1)
+            WORK(IWRK:IWRK-1+N) = VR(1:N,I)**2 + VR(1:N,I+1)**2
             K = IDAMAX( N, WORK( IWRK ), 1 )
             CALL DLARTG( VR( K, I ), VR( K, I+1 ), CS, SN, R )
             CALL DROT( N, VR( 1, I ), 1, VR( 1, I+1 ), 1, CS, SN )
-            VR( K, I+1 ) = ZERO
+            VR( K, I+1 ) = 0.0D0
          END IF
       ENDDO
    END IF
@@ -524,5 +509,3 @@
 !     End of DGEEV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

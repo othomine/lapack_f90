@@ -195,10 +195,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TPSD
@@ -217,9 +213,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGELQF, DGEQRF, DLASCL, DLASET, DORMLQ, DORMQR, &
                       DTRTRS, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -250,26 +243,21 @@
    IF( INFO == 0 .OR. INFO == -10 ) THEN
 !
       TPSD = .TRUE.
-      IF( LSAME( TRANS, 'N' ) ) &
-         TPSD = .FALSE.
+      IF( LSAME( TRANS, 'N' ) ) TPSD = .FALSE.
 !
       IF( M >= N ) THEN
          NB = ILAENV( 1, 'DGEQRF', ' ', M, N, -1, -1 )
          IF( TPSD ) THEN
-            NB = MAX( NB, ILAENV( 1, 'DORMQR', 'LN', M, NRHS, N, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'DORMQR', 'LN', M, NRHS, N, -1 ) )
          ELSE
-            NB = MAX( NB, ILAENV( 1, 'DORMQR', 'LT', M, NRHS, N, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'DORMQR', 'LT', M, NRHS, N, -1 ) )
          END IF
       ELSE
          NB = ILAENV( 1, 'DGELQF', ' ', M, N, -1, -1 )
          IF( TPSD ) THEN
-            NB = MAX( NB, ILAENV( 1, 'DORMLQ', 'LT', N, NRHS, M, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'DORMLQ', 'LT', N, NRHS, M, -1 ) )
          ELSE
-            NB = MAX( NB, ILAENV( 1, 'DORMLQ', 'LN', N, NRHS, M, &
-                 -1 ) )
+            NB = MAX( NB, ILAENV( 1, 'DORMLQ', 'LN', N, NRHS, M, -1 ) )
          END IF
       END IF
 !
@@ -288,20 +276,20 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-      CALL DLASET( 'Full', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      CALL DLASET( 'Full', MAX( M, N ), NRHS, 0.0D0, 0.0D0, B, LDB )
       RETURN
    END IF
 !
 !     Get machine parameters
 !
    SMLNUM = DLAMCH( 'S' ) / DLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, RWORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -313,11 +301,11 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'F', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      CALL DLASET( 'F', MAX( M, N ), NRHS, 0.0D0, 0.0D0, B, LDB )
       GO TO 50
    END IF
 !
@@ -326,19 +314,17 @@
       BROW = N
    BNRM = DLANGE( 'M', BROW, NRHS, B, LDB, RWORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 1
    ELSE IF( BNRM > BIGNUM ) THEN
 !
 !        Scale matrix norm down to BIGNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 2
    END IF
 !
@@ -346,8 +332,7 @@
 !
 !        compute QR factorization of A
 !
-      CALL DGEQRF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, &
-                   INFO )
+      CALL DGEQRF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, INFO )
 !
 !        workspace at least N, optimally N*NB
 !
@@ -358,8 +343,7 @@
 !           B(1:M,1:NRHS) := Q**T * B(1:M,1:NRHS)
 !
          CALL DORMQR( 'Left', 'Transpose', M, NRHS, N, A, LDA, &
-                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, &
-                      INFO )
+                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, INFO )
 !
 !           workspace at least NRHS, optimally NRHS*NB
 !
@@ -368,9 +352,7 @@
          CALL DTRTRS( 'Upper', 'No transpose', 'Non-unit', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = N
 !
@@ -383,23 +365,16 @@
          CALL DTRTRS( 'Upper', 'Transpose', 'Non-unit', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
-!           B(N+1:M,1:NRHS) = ZERO
+!           B(N+1:M,1:NRHS) = 0.0D0
 !
-         DO J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         B(N+1:M,1:NRHS) = 0.0D0
 !
 !           B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS)
 !
          CALL DORMQR( 'Left', 'No transpose', M, NRHS, N, A, LDA, &
-                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, &
-                      INFO )
+                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, INFO )
 !
 !           workspace at least NRHS, optimally NRHS*NB
 !
@@ -411,8 +386,7 @@
 !
 !        Compute LQ factorization of A
 !
-      CALL DGELQF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, &
-                   INFO )
+      CALL DGELQF( M, N, A, LDA, WORK( 1 ), WORK( MN+1 ), LWORK-MN, INFO )
 !
 !        workspace at least M, optimally M*NB.
 !
@@ -425,23 +399,16 @@
          CALL DTRTRS( 'Lower', 'No transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           B(M+1:N,1:NRHS) = 0
 !
-         DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         B(M+1:N,1:NRHS) = 0.0D0
 !
 !           B(1:N,1:NRHS) := Q(1:N,:)**T * B(1:M,1:NRHS)
 !
          CALL DORMLQ( 'Left', 'Transpose', N, NRHS, M, A, LDA, &
-                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, &
-                      INFO )
+                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, INFO )
 !
 !           workspace at least NRHS, optimally NRHS*NB
 !
@@ -454,8 +421,7 @@
 !           B(1:N,1:NRHS) := Q * B(1:N,1:NRHS)
 !
          CALL DORMLQ( 'Left', 'No transpose', N, NRHS, M, A, LDA, &
-                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, &
-                      INFO )
+                      WORK( 1 ), B, LDB, WORK( MN+1 ), LWORK-MN, INFO )
 !
 !           workspace at least NRHS, optimally NRHS*NB
 !
@@ -464,9 +430,7 @@
          CALL DTRTRS( 'Lower', 'Transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -477,18 +441,14 @@
 !     Undo scaling
 !
    IF( IASCL == 1 ) THEN
-      CALL DLASCL( 'G', 0, 0, ANRM, SMLNUM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, ANRM, SMLNUM, SCLLEN, NRHS, B, LDB, INFO )
    ELSE IF( IASCL == 2 ) THEN
-      CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, SCLLEN, NRHS, B, LDB, INFO )
    END IF
    IF( IBSCL == 1 ) THEN
-      CALL DLASCL( 'G', 0, 0, SMLNUM, BNRM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, SMLNUM, BNRM, SCLLEN, NRHS, B, LDB, INFO )
    ELSE IF( IBSCL == 2 ) THEN
-      CALL DLASCL( 'G', 0, 0, BIGNUM, BNRM, SCLLEN, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BIGNUM, BNRM, SCLLEN, NRHS, B, LDB, INFO )
    END IF
 !
 50 CONTINUE
@@ -499,5 +459,3 @@
 !     End of DGELS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

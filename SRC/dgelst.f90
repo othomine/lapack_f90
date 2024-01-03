@@ -206,10 +206,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TPSD
@@ -230,9 +226,6 @@
    EXTERNAL           DGELQT, DGEQRT, DGEMLQT, DGEMQRT, DLASCL, &
                       DLASET, DTRTRS, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input arguments.
@@ -252,8 +245,7 @@
       INFO = -6
    ELSE IF( LDB < MAX( 1, M, N ) ) THEN
       INFO = -8
-   ELSE IF( LWORK < MAX( 1, MN+MAX( MN, NRHS ) ) .AND. .NOT.LQUERY ) &
-             THEN
+   ELSE IF( LWORK < MAX( 1, MN+MAX( MN, NRHS ) ) .AND. .NOT.LQUERY ) THEN
       INFO = -10
    END IF
 !
@@ -283,7 +275,7 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-      CALL DLASET( 'Full', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      B(1:MAX(M,N),NRHS) = 0.0D0
       WORK( 1 ) = DBLE( LWOPT )
       RETURN
    END IF
@@ -302,20 +294,18 @@
 !
    NBMIN = MAX( 2, ILAENV( 2, 'DGELST', ' ', M, N, -1, -1 ) )
 !
-   IF( NB < NBMIN ) THEN
-      NB = 1
-   END IF
+   IF( NB < NBMIN ) NB = 1
 !
 !     Get machine parameters
 !
    SMLNUM = DLAMCH( 'S' ) / DLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, RWORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -327,33 +317,30 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'Full', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      B(1:MAX(M,N),NRHS) = 0.0D0
       WORK( 1 ) = DBLE( LWOPT )
       RETURN
    END IF
 !
    BROW = M
-   IF( TPSD ) &
-      BROW = N
+   IF( TPSD ) BROW = N
    BNRM = DLANGE( 'M', BROW, NRHS, B, LDB, RWORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 1
    ELSE IF( BNRM > BIGNUM ) THEN
 !
 !        Scale matrix norm down to BIGNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 2
    END IF
 !
@@ -364,8 +351,7 @@
 !        using the compact WY representation of Q,
 !        workspace at least N, optimally N*NB.
 !
-      CALL DGEQRT( M, N, NB, A, LDA, WORK( 1 ), NB, &
-                   WORK( MN*NB+1 ), INFO )
+      CALL DGEQRT( M, N, NB, A, LDA, WORK( 1 ), NB, WORK( MN*NB+1 ), INFO )
 !
       IF( .NOT.TPSD ) THEN
 !
@@ -386,9 +372,7 @@
          CALL DTRTRS( 'Upper', 'No transpose', 'Non-unit', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = N
 !
@@ -405,18 +389,12 @@
          CALL DTRTRS( 'Upper', 'Transpose', 'Non-unit', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           Block 2: Zero out all rows below the N-th row in B:
-!           B(N+1:M,1:NRHS) = ZERO
+!           B(N+1:M,1:NRHS) = 0.0D0
 !
-         DO  J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = ZERO
-            END DO
-         END DO
+         B(N+1:M,1:NRHS) = 0.0D0
 !
 !           Compute B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS),
 !           using the compact WY representation of Q,
@@ -437,8 +415,7 @@
 !        using the compact WY representation of Q,
 !        workspace at least M, optimally M*NB.
 !
-      CALL DGELQT( M, N, NB, A, LDA, WORK( 1 ), NB, &
-                   WORK( MN*NB+1 ), INFO )
+      CALL DGELQT( M, N, NB, A, LDA, WORK( 1 ), NB, WORK( MN*NB+1 ), INFO )
 !
       IF( .NOT.TPSD ) THEN
 !
@@ -453,18 +430,12 @@
          CALL DTRTRS( 'Lower', 'No transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           Block 2: Zero out all rows below the M-th row in B:
-!           B(M+1:N,1:NRHS) = ZERO
+!           B(M+1:N,1:NRHS) = 0.0D0
 !
-         DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = ZERO
-            END DO
-         END DO
+         B(M+1:N,1:NRHS) = 0.0D0
 !
 !           Compute B(1:N,1:NRHS) := Q(1:N,:)**T * B(1:M,1:NRHS),
 !           using the compact WY representation of Q,
@@ -495,9 +466,7 @@
          CALL DTRTRS( 'Lower', 'Transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -529,5 +498,3 @@
 !     End of DGELST
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

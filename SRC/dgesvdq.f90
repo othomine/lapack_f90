@@ -23,7 +23,7 @@
 !                          WORK, LWORK, RWORK, LRWORK, INFO )
 !
 !     .. Scalar Arguments ..
-!      IMPLICIT    NONE
+!      IMPLICIT    N1.0D0
 !      CHARACTER   JOBA, JOBP, JOBR, JOBU, JOBV
 !      INTEGER     M, N, LDA, LDU, LDV, NUMRANK, LIWORK, LWORK, LRWORK,
 !                  INFO
@@ -425,10 +425,6 @@
    INTEGER          IWORK( * )
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION ZERO,         ONE
-   PARAMETER      ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     .. Local Scalars ..
    INTEGER     IERR, IWOFF, NR, N1, OPTRATIO, p, q
    INTEGER     LWCON, LWQP3, LWRK_DGELQF, LWRK_DGESVD, LWRK_DGESVD2, &
@@ -453,10 +449,6 @@
    INTEGER    IDAMAX
    DOUBLE PRECISION  DLANGE, DNRM2, DLAMCH
    EXTERNAL    DLANGE, LSAME, IDAMAX, DNRM2, DLAMCH
-!     ..
-!     .. Intrinsic Functions ..
-!
-   INTRINSIC   ABS, MAX, MIN, DBLE, SQRT
 !
 !     Test the input arguments
 !
@@ -551,12 +543,10 @@
               IERR )
           LWRK_DGEQP3 = INT( RDUMMY(1) )
           IF ( WNTUS .OR. WNTUR ) THEN
-              CALL DORMQR( 'L', 'N', M, N, N, A, LDA, RDUMMY, U, &
-                   LDU, RDUMMY, -1, IERR )
+              CALL DORMQR( 'L', 'N', M, N, N, A, LDA, RDUMMY, U, LDU, RDUMMY, -1, IERR )
               LWRK_DORMQR = INT( RDUMMY(1) )
           ELSE IF ( WNTUA ) THEN
-              CALL DORMQR( 'L', 'N', M, M, N, A, LDA, RDUMMY, U, &
-                   LDU, RDUMMY, -1, IERR )
+              CALL DORMQR( 'L', 'N', M, M, N, A, LDA, RDUMMY, U, LDU, RDUMMY, -1, IERR )
               LWRK_DORMQR = INT( RDUMMY(1) )
           ELSE
               LWRK_DORMQR = 0
@@ -739,10 +729,8 @@
 !
 !     Quick return if the matrix is void.
 !
-   IF( ( M == 0 ) .OR. ( N == 0 ) ) THEN
 !     .. all output is void.
-      RETURN
-   END IF
+   IF( ( M == 0 ) .OR. ( N == 0 ) ) RETURN
 !
    BIG = DLAMCH('O')
    ASCALED = .FALSE.
@@ -758,7 +746,7 @@
              RWORK(p) = DLANGE( 'M', 1, N, A(p,1), LDA, RDUMMY )
 !               .. check for NaN's and Inf's
              IF ( ( RWORK(p)  /=  RWORK(p) ) .OR. &
-                  ( (RWORK(p)*ZERO)  /=  ZERO ) ) THEN
+                  ( (RWORK(p)*0.0D0)  /=  0.0D0 ) ) THEN
                  INFO = -8
                  CALL XERBLA( 'DGESVDQ', -INFO )
                  RETURN
@@ -772,18 +760,18 @@
             RWORK(p) = RWORK(q)
             RWORK(q) = RTMP
          END IF
-            ENDDO
+         ENDDO
 !
-         IF ( RWORK(1)  ==  ZERO ) THEN
+         IF ( RWORK(1)  ==  0.0D0 ) THEN
 !              Quick return: A is the M x N zero matrix.
             NUMRANK = 0
-            CALL DLASET( 'G', N, 1, ZERO, ZERO, S, N )
-            IF ( WNTUS ) CALL DLASET('G', M, N, ZERO, ONE, U, LDU)
-            IF ( WNTUA ) CALL DLASET('G', M, M, ZERO, ONE, U, LDU)
-            IF ( WNTVA ) CALL DLASET('G', N, N, ZERO, ONE, V, LDV)
+            CALL DLASET( 'G', N, 1, 0.0D0, 0.0D0, S, N )
+            IF ( WNTUS ) CALL DLASET('G', M, N, 0.0D0, 1.0D0, U, LDU)
+            IF ( WNTUA ) CALL DLASET('G', M, M, 0.0D0, 1.0D0, U, LDU)
+            IF ( WNTVA ) CALL DLASET('G', N, N, 0.0D0, 1.0D0, V, LDV)
             IF ( WNTUF ) THEN
-                CALL DLASET( 'G', N, 1, ZERO, ZERO, WORK, N )
-                CALL DLASET( 'G', M, N, ZERO,  ONE, U, LDU )
+                CALL DLASET( 'G', N, 1, 0.0D0, 0.0D0, WORK, N )
+                CALL DLASET( 'G', M, N, 0.0D0,  1.0D0, U, LDU )
             END IF
             DO p = 1, N
                 IWORK(p) = p
@@ -791,7 +779,7 @@
             IF ( ROWPRM ) THEN
                 DO p = N + 1, N + M - 1
                     IWORK(p) = p - N
-                   ENDDO
+                ENDDO
             END IF
             IF ( CONDA ) RWORK(1) = -1
             RWORK(2) = -1
@@ -801,7 +789,7 @@
          IF ( RWORK(1)  >  BIG / SQRT(DBLE(M)) ) THEN
 !               .. to prevent overflow in the QR factorization, scale the
 !               matrix by 1/sqrt(M) if too large entry detected
-             CALL DLASCL('G',0,0,SQRT(DBLE(M)),ONE, M,N, A,LDA, IERR)
+             CALL DLASCL('G',0,0,SQRT(DBLE(M)),1.0D0, M,N, A,LDA, IERR)
              ASCALED = .TRUE.
          END IF
          CALL DLASWP( N, A, LDA, 1, M-1, IWORK(N+1), 1 )
@@ -814,8 +802,7 @@
 !
    IF ( .NOT.ROWPRM ) THEN
        RTMP = DLANGE( 'M', M, N, A, LDA, RDUMMY )
-       IF ( ( RTMP  /=  RTMP ) .OR. &
-            ( (RTMP*ZERO)  /=  ZERO ) ) THEN
+       IF ( ( RTMP  /=  RTMP ) .OR. ( (RTMP*0.0D0)  /=  0.0D0 ) ) THEN
             INFO = -8
             CALL XERBLA( 'DGESVDQ', -INFO )
             RETURN
@@ -823,7 +810,7 @@
        IF ( RTMP  >  BIG / SQRT(DBLE(M)) ) THEN
 !             .. to prevent overflow in the QR factorization, scale the
 !             matrix by 1/sqrt(M) if too large entry detected
-           CALL DLASCL('G',0,0, SQRT(DBLE(M)),ONE, M,N, A,LDA, IERR)
+           CALL DLASCL('G',0,0, SQRT(DBLE(M)),1.0D0, M,N, A,LDA, IERR)
            ASCALED = .TRUE.
        END IF
    END IF
@@ -833,12 +820,9 @@
 !     A * P = Q * [ R ]
 !                 [ 0 ]
 !
-   DO p = 1, N
 !        .. all columns are free columns
-      IWORK(p) = 0
-      ENDDO
-   CALL DGEQP3( M, N, A, LDA, IWORK, WORK, WORK(N+1), LWORK-N, &
-         IERR )
+   IWORK(1:N) = 0
+   CALL DGEQP3( M, N, A, LDA, IWORK, WORK, WORK(N+1), LWORK-N, IERR )
 !
 !    If the user requested accuracy level allows truncation in the
 !    computed upper triangular factor, the matrix R is examined and,
@@ -859,8 +843,8 @@
       RTMP = SQRT(DBLE(N))*EPSLN
       DO p = 2, N
          IF ( ABS(A(p,p))  <  (RTMP*ABS(A(1,1))) ) GO TO 3002
-            NR = NR + 1
-         ENDDO
+         NR = NR + 1
+      ENDDO
  3002    CONTINUE
 !
    ELSEIF ( ACCLM ) THEN
@@ -875,7 +859,7 @@
          IF ( ( ABS(A(p,p))  <  (EPSLN*ABS(A(p-1,p-1))) ) .OR. &
               ( ABS(A(p,p))  <  SFMIN ) ) GO TO 3402
          NR = NR + 1
-         ENDDO
+      ENDDO
  3402    CONTINUE
 !
    ELSE
@@ -885,9 +869,9 @@
 !        R(i,i)=0 => R(i:N,i:N)=0.
       NR = 1
       DO p = 2, N
-         IF ( ABS(A(p,p))  ==  ZERO ) GO TO 3502
+         IF ( ABS(A(p,p))  ==  0.0D0 ) GO TO 3502
          NR = NR + 1
-         ENDDO
+      ENDDO
  3502    CONTINUE
 !
       IF ( CONDA ) THEN
@@ -902,16 +886,16 @@
 !              perturbation theory.
             DO p = 1, NR
                RTMP = DNRM2( p, V(1,p), 1 )
-               CALL DSCAL( p, ONE/RTMP, V(1,p), 1 )
-               ENDDO
+               V(1:p,p) = V(1:p,p)/RTMP
+            ENDDO
             IF ( .NOT. ( LSVEC .OR. RSVEC ) ) THEN
-                CALL DPOCON( 'U', NR, V, LDV, ONE, RTMP, &
+                CALL DPOCON( 'U', NR, V, LDV, 1.0D0, RTMP, &
                      WORK, IWORK(N+IWOFF), IERR )
             ELSE
-                CALL DPOCON( 'U', NR, V, LDV, ONE, RTMP, &
+                CALL DPOCON( 'U', NR, V, LDV, 1.0D0, RTMP, &
                      WORK(N+1), IWORK(N+IWOFF), IERR )
             END IF
-            SCONDA = ONE / SQRT(RTMP)
+            SCONDA = 1.0D0 / SQRT(RTMP)
 !           For NR=N, SCONDA is an estimate of SQRT(||(R^* * R)^(-1)||_1),
 !           N^(-1/4) * SCONDA <= ||R^(-1)||_2 <= N^(1/4) * SCONDA
 !           See the reference [1] for more details.
@@ -939,9 +923,9 @@
          DO p = 1, MIN( N, NR )
             DO q = p + 1, N
                A(q,p) = A(p,q)
-               IF ( q  <=  NR ) A(p,q) = ZERO
-               ENDDO
+               IF ( q  <=  NR ) A(p,q) = 0.0D0
             ENDDO
+         ENDDO
 !
          CALL DGESVD( 'N', 'N', N, NR, A, LDA, S, U, LDU, &
               V, LDV, WORK, LWORK, INFO )
@@ -951,7 +935,7 @@
 !           .. compute the singular values of R = [A](1:NR,1:N)
 !
          IF ( NR  >  1 ) &
-             CALL DLASET( 'L', NR-1,NR-1, ZERO,ZERO, A(2,1), LDA )
+             CALL DLASET( 'L', NR-1,NR-1, 0.0D0,0.0D0, A(2,1), LDA )
          CALL DGESVD( 'N', 'N', NR, N, A, LDA, S, U, LDU, &
               V, LDV, WORK, LWORK, INFO )
 !
@@ -966,12 +950,9 @@
 !            .. copy R**T into [U] and overwrite [U] with the right singular
 !            vectors of R
          DO p = 1, NR
-            DO q = p, N
-               U(q,p) = A(p,q)
-               ENDDO
-            ENDDO
-         IF ( NR  >  1 ) &
-             CALL DLASET( 'U', NR-1,NR-1, ZERO,ZERO, U(1,2), LDU )
+            U(p:N,p) = A(p,p:N)
+         ENDDO
+         IF ( NR  >  1 ) CALL DLASET( 'U', NR-1,NR-1, 0.0D0,0.0D0, U(1,2), LDU )
 !           .. the left singular vectors not computed, the NR right singular
 !           vectors overwrite [U](1:NR,1:NR) as transposed. These
 !           will be pre-multiplied by Q to build the left singular vectors of A.
@@ -983,15 +964,15 @@
                    RTMP   = U(q,p)
                    U(q,p) = U(p,q)
                    U(p,q) = RTMP
-                   ENDDO
-               ENDDO
+                ENDDO
+            ENDDO
 !
       ELSE
 !            .. apply DGESVD to R
 !            .. copy R into [U] and overwrite [U] with the left singular vectors
           CALL DLACPY( 'U', NR, N, A, LDA, U, LDU )
           IF ( NR  >  1 ) &
-            CALL DLASET( 'L', NR-1, NR-1, ZERO, ZERO, U(2,1), LDU )
+            CALL DLASET( 'L', NR-1, NR-1, 0.0D0, 0.0D0, U(2,1), LDU )
 !            .. the right singular vectors not computed, the NR left singular
 !            vectors overwrite [U](1:NR,1:NR)
              CALL DGESVD( 'O', 'N', NR, N, U, LDU, S, U, LDU, &
@@ -1004,11 +985,10 @@
 !           .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
       IF ( ( NR  <  M ) .AND. ( .NOT.WNTUF ) ) THEN
-          CALL DLASET('A', M-NR, NR, ZERO, ZERO, U(NR+1,1), LDU)
+          U(NR+1:M,1:NR) = 0.0D0
           IF ( NR  <  N1 ) THEN
-             CALL DLASET( 'A',NR,N1-NR,ZERO,ZERO,U(1,NR+1), LDU )
-             CALL DLASET( 'A',M-NR,N1-NR,ZERO,ONE, &
-                  U(NR+1,NR+1), LDU )
+             U(1:NR,NR+1:N1) = 0.0D0
+             CALL DLASET( 'A',M-NR,N1-NR,0.0D0,1.0D0, U(NR+1,NR+1), LDU )
           END IF
       END IF
 !
@@ -1029,12 +1009,9 @@
 !            .. apply DGESVD to R**T
 !            .. copy R**T into V and overwrite V with the left singular vectors
          DO p = 1, NR
-            DO q = p, N
-               V(q,p) = (A(p,q))
-               ENDDO
-            ENDDO
-         IF ( NR  >  1 ) &
-             CALL DLASET( 'U', NR-1,NR-1, ZERO,ZERO, V(1,2), LDV )
+            V(p:N,p) = (A(p,p:N))
+         ENDDO
+         IF ( NR  >  1 ) CALL DLASET( 'U', NR-1,NR-1, 0.0D0,0.0D0, V(1,2), LDV )
 !           .. the left singular vectors of R**T overwrite V, the right singular
 !           vectors not computed
          IF ( WNTVR .OR. ( NR  ==  N ) ) THEN
@@ -1051,10 +1028,8 @@
 !
             IF ( NR  <  N ) THEN
                 DO p = 1, NR
-                   DO q = NR + 1, N
-                       V(p,q) = V(q,p)
-                      ENDDO
-                   ENDDO
+                   V(p,NR+1:N) = V(NR+1:N,p)
+                ENDDO
             END IF
             CALL DLAPMT( .FALSE., NR, N, V, LDV, IWORK )
          ELSE
@@ -1063,7 +1038,7 @@
 !               by padding a zero block. In the case NR << N, a more efficient
 !               way is to first use the QR factorization. For more details
 !               how to implement this, see the " FULL SVD " branch.
-             CALL DLASET('G', N, N-NR, ZERO, ZERO, V(1,NR+1), LDV)
+             CALL DLASET('G', N, N-NR, 0.0D0, 0.0D0, V(1,NR+1), LDV)
              CALL DGESVD( 'O', 'N', N, N, V, LDV, S, U, LDU, &
                   U, LDU, WORK(N+1), LWORK-N, INFO )
 !
@@ -1072,8 +1047,8 @@
                    RTMP   = V(q,p)
                    V(q,p) = V(p,q)
                    V(p,q) = RTMP
-                   ENDDO
                 ENDDO
+             ENDDO
              CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
          END IF
 !
@@ -1082,7 +1057,7 @@
 !            .. copy R into V and overwrite V with the right singular vectors
           CALL DLACPY( 'U', NR, N, A, LDA, V, LDV )
           IF ( NR  >  1 ) &
-            CALL DLASET( 'L', NR-1, NR-1, ZERO, ZERO, V(2,1), LDV )
+            CALL DLASET( 'L', NR-1, NR-1, 0.0D0, 0.0D0, V(2,1), LDV )
 !            .. the right singular vectors overwrite V, the NR left singular
 !            vectors stored in U(1:NR,1:NR)
           IF ( WNTVR .OR. ( NR  ==  N ) ) THEN
@@ -1096,7 +1071,7 @@
 !               by padding a zero block. In the case NR << N, a more efficient
 !               way is to first use the LQ factorization. For more details
 !               how to implement this, see the " FULL SVD " branch.
-              CALL DLASET('G', N-NR, N, ZERO,ZERO, V(NR+1,1), LDV)
+              V(NR+1:N,1:N) = 0.0D0
               CALL DGESVD( 'N', 'O', N, N, V, LDV, S, U, LDU, &
                    V, LDV, WORK(N+1), LWORK-N, INFO )
               CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
@@ -1117,12 +1092,10 @@
 !            .. copy R**T into [V] and overwrite [V] with the left singular
 !            vectors of R**T
          DO p = 1, NR
-            DO q = p, N
-               V(q,p) = A(p,q)
-               ENDDO
-            ENDDO
+            V(p:N,p) = A(p,p:N)
+         ENDDO
          IF ( NR  >  1 ) &
-             CALL DLASET( 'U', NR-1,NR-1, ZERO,ZERO, V(1,2), LDV )
+             CALL DLASET( 'U', NR-1,NR-1, 0.0D0,0.0D0, V(1,2), LDV )
 !
 !           .. the left singular vectors of R**T overwrite [V], the NR right
 !           singular vectors of R**T stored in [U](1:NR,1:NR) as transposed
@@ -1134,14 +1107,14 @@
                   RTMP   = V(q,p)
                   V(q,p) = V(p,q)
                   V(p,q) = RTMP
-                  ENDDO
                ENDDO
+            ENDDO
             IF ( NR  <  N ) THEN
                 DO p = 1, NR
                    DO q = NR+1, N
                       V(p,q) = V(q,p)
-                      ENDDO
                    ENDDO
+                ENDDO
             END IF
             CALL DLAPMT( .FALSE., NR, N, V, LDV, IWORK )
 !
@@ -1150,15 +1123,14 @@
                    RTMP   = U(q,p)
                    U(q,p) = U(p,q)
                    U(p,q) = RTMP
-                   ENDDO
                 ENDDO
+             ENDDO
 !
              IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-               CALL DLASET('A', M-NR,NR, ZERO,ZERO, U(NR+1,1), LDU)
+               U(NR+1:M,1:NR) = 0.0D0
                IF ( NR  <  N1 ) THEN
-                  CALL DLASET('A',NR,N1-NR,ZERO,ZERO,U(1,NR+1),LDU)
-                  CALL DLASET( 'A',M-NR,N1-NR,ZERO,ONE, &
-                       U(NR+1,NR+1), LDU )
+                  U(1:NR,NR+1:N1) = 0.0D0
+                  CALL DLASET( 'A',M-NR,N1-NR,0.0D0,1.0D0, U(NR+1,NR+1), LDU )
                END IF
             END IF
 !
@@ -1174,14 +1146,11 @@
              OPTRATIO = 2
              IF ( OPTRATIO*NR  >  N ) THEN
                 DO p = 1, NR
-                   DO q = p, N
-                      V(q,p) = A(p,q)
-                      ENDDO
-                   ENDDO
-                IF ( NR  >  1 ) &
-                CALL DLASET('U',NR-1,NR-1, ZERO,ZERO, V(1,2),LDV)
+                   V(q,p:N) = A(p:N,q)
+                ENDDO
+                IF ( NR  >  1 ) CALL DLASET('U',NR-1,NR-1, 0.0D0,0.0D0, V(1,2),LDV)
 !
-                CALL DLASET('A',N,N-NR,ZERO,ZERO,V(1,NR+1),LDV)
+                CALL DLASET('A',N,N-NR,0.0D0,0.0D0,V(1,NR+1),LDV)
                 CALL DGESVD( 'O', 'A', N, N, V, LDV, S, V, LDV, &
                      U, LDU, WORK(N+1), LWORK-N, INFO )
 !
@@ -1190,8 +1159,8 @@
                       RTMP   = V(q,p)
                       V(q,p) = V(p,q)
                       V(p,q) = RTMP
-                      ENDDO
                    ENDDO
+                ENDDO
                 CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !              .. assemble the left singular vector matrix U of dimensions
 !              (M x N1), i.e. (M x N) or (M x M).
@@ -1201,50 +1170,47 @@
                       RTMP   = U(q,p)
                       U(q,p) = U(p,q)
                       U(p,q) = RTMP
-                      ENDDO
                    ENDDO
+                ENDDO
 !
                 IF ( ( N  <  M ) .AND. .NOT.(WNTUF)) THEN
-                   CALL DLASET('A',M-N,N,ZERO,ZERO,U(N+1,1),LDU)
+                   U(N+1:M,1:N) = 0.0D0
                    IF ( N  <  N1 ) THEN
-                     CALL DLASET('A',N,N1-N,ZERO,ZERO,U(1,N+1),LDU)
-                     CALL DLASET('A',M-N,N1-N,ZERO,ONE, &
-                          U(N+1,N+1), LDU )
+                     U(1:N,N+1:N1) = 0.0D0
+                     CALL DLASET('A',M-N,N1-N,0.0D0,1.0D0, U(N+1,N+1), LDU )
                    END IF
                 END IF
              ELSE
 !                  .. copy R**T into [U] and overwrite [U] with the right
 !                  singular vectors of R
                 DO p = 1, NR
-                   DO q = p, N
-                      U(q,NR+p) = A(p,q)
-                      ENDDO
-                   ENDDO
+                   U(p:N,NR+p) = A(p,p:N)
+                ENDDO
                 IF ( NR  >  1 ) &
-                CALL DLASET('U',NR-1,NR-1,ZERO,ZERO,U(1,NR+2),LDU)
+                CALL DLASET('U',NR-1,NR-1,0.0D0,0.0D0,U(1,NR+2),LDU)
                 CALL DGEQRF( N, NR, U(1,NR+1), LDU, WORK(N+1), &
                      WORK(N+NR+1), LWORK-N-NR, IERR )
                 DO p = 1, NR
                     DO q = 1, N
                         V(q,p) = U(p,NR+q)
-                       ENDDO
-                   ENDDO
-               CALL DLASET('U',NR-1,NR-1,ZERO,ZERO,V(1,2),LDV)
+                    ENDDO
+               ENDDO
+               CALL DLASET('U',NR-1,NR-1,0.0D0,0.0D0,V(1,2),LDV)
                CALL DGESVD( 'S', 'O', NR, NR, V, LDV, S, U, LDU, &
                     V,LDV, WORK(N+NR+1),LWORK-N-NR, INFO )
-               CALL DLASET('A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV)
-               CALL DLASET('A',NR,N-NR,ZERO,ZERO,V(1,NR+1),LDV)
-               CALL DLASET('A',N-NR,N-NR,ZERO,ONE,V(NR+1,NR+1),LDV)
+               V(NR+1:N,1:NR) = 0.0D0
+               V(1:NR,NR+1:N) = 0.0D0
+               CALL DLASET('A',N-NR,N-NR,0.0D0,1.0D0,V(NR+1,NR+1),LDV)
                CALL DORMQR('R','C', N, N, NR, U(1,NR+1), LDU, &
                     WORK(N+1),V,LDV,WORK(N+NR+1),LWORK-N-NR,IERR)
                CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !                 .. assemble the left singular vector matrix U of dimensions
 !                 (M x NR) or (M x N) or (M x M).
                IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-                  CALL DLASET('A',M-NR,NR,ZERO,ZERO,U(NR+1,1),LDU)
+                  U(NR+1:M,1:NR) = 0.0D0
                   IF ( NR  <  N1 ) THEN
-                  CALL DLASET('A',NR,N1-NR,ZERO,ZERO,U(1,NR+1),LDU)
-                  CALL DLASET( 'A',M-NR,N1-NR,ZERO,ONE, &
+                  U(1:NR,NR+1:N1) = 0.0D0
+                  CALL DLASET( 'A',M-NR,N1-NR,0.0D0,1.0D0, &
                        U(NR+1,NR+1),LDU)
                   END IF
                END IF
@@ -1259,7 +1225,7 @@
 !                .. copy R into [V] and overwrite V with the right singular vectors
               CALL DLACPY( 'U', NR, N, A, LDA, V, LDV )
              IF ( NR  >  1 ) &
-             CALL DLASET( 'L', NR-1,NR-1, ZERO,ZERO, V(2,1), LDV )
+             CALL DLASET( 'L', NR-1,NR-1, 0.0D0,0.0D0, V(2,1), LDV )
 !               .. the right singular vectors of R overwrite [V], the NR left
 !               singular vectors of R stored in [U](1:NR,1:NR)
              CALL DGESVD( 'S', 'O', NR, N, V, LDV, S, U, LDU, &
@@ -1269,11 +1235,10 @@
 !               .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
             IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-               CALL DLASET('A', M-NR,NR, ZERO,ZERO, U(NR+1,1), LDU)
+               U(NR+1:M,1:NR) = 0.0D0
                IF ( NR  <  N1 ) THEN
-                  CALL DLASET('A',NR,N1-NR,ZERO,ZERO,U(1,NR+1),LDU)
-                  CALL DLASET( 'A',M-NR,N1-NR,ZERO,ONE, &
-                       U(NR+1,NR+1), LDU )
+                  U(1:NR,NR+1:N1) = 0.0D0
+                  CALL DLASET( 'A',M-NR,N1-NR,0.0D0,1.0D0, U(NR+1,NR+1), LDU )
                END IF
             END IF
 !
@@ -1289,11 +1254,10 @@
             OPTRATIO = 2
             IF ( OPTRATIO * NR  >  N ) THEN
                CALL DLACPY( 'U', NR, N, A, LDA, V, LDV )
-               IF ( NR  >  1 ) &
-               CALL DLASET('L', NR-1,NR-1, ZERO,ZERO, V(2,1),LDV)
+               IF ( NR  >  1 ) CALL DLASET('L', NR-1,NR-1, 0.0D0,0.0D0, V(2,1),LDV)
 !              .. the right singular vectors of R overwrite [V], the NR left
 !                 singular vectors of R stored in [U](1:NR,1:NR)
-               CALL DLASET('A', N-NR,N, ZERO,ZERO, V(NR+1,1),LDV)
+               V(NR+1:N,1:N) = 0.0D0
                CALL DGESVD( 'S', 'O', N, N, V, LDV, S, U, LDU, &
                     V, LDV, WORK(N+1), LWORK-N, INFO )
                CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
@@ -1303,38 +1267,36 @@
 !                 .. assemble the left singular vector matrix U of dimensions
 !                 (M x N1), i.e. (M x N) or (M x M).
                IF ( ( N  <  M ) .AND. .NOT.(WNTUF)) THEN
-                   CALL DLASET('A',M-N,N,ZERO,ZERO,U(N+1,1),LDU)
+                   U(N+1:M,1:N) = 0.0D0
                    IF ( N  <  N1 ) THEN
-                     CALL DLASET('A',N,N1-N,ZERO,ZERO,U(1,N+1),LDU)
-                     CALL DLASET( 'A',M-N,N1-N,ZERO,ONE, &
-                          U(N+1,N+1), LDU )
+                     U(1:N,N+1:N1) = 0.0D0
+                     CALL DLASET( 'A',M-N,N1-N,0.0D0,1.0D0,U(N+1,N+1), LDU )
                    END IF
                END IF
             ELSE
                CALL DLACPY( 'U', NR, N, A, LDA, U(NR+1,1), LDU )
                IF ( NR  >  1 ) &
-               CALL DLASET('L',NR-1,NR-1,ZERO,ZERO,U(NR+2,1),LDU)
+               CALL DLASET('L',NR-1,NR-1,0.0D0,0.0D0,U(NR+2,1),LDU)
                CALL DGELQF( NR, N, U(NR+1,1), LDU, WORK(N+1), &
                     WORK(N+NR+1), LWORK-N-NR, IERR )
                CALL DLACPY('L',NR,NR,U(NR+1,1),LDU,V,LDV)
                IF ( NR  >  1 ) &
-               CALL DLASET('U',NR-1,NR-1,ZERO,ZERO,V(1,2),LDV)
+               CALL DLASET('U',NR-1,NR-1,0.0D0,0.0D0,V(1,2),LDV)
                CALL DGESVD( 'S', 'O', NR, NR, V, LDV, S, U, LDU, &
                     V, LDV, WORK(N+NR+1), LWORK-N-NR, INFO )
-               CALL DLASET('A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV)
-               CALL DLASET('A',NR,N-NR,ZERO,ZERO,V(1,NR+1),LDV)
-               CALL DLASET('A',N-NR,N-NR,ZERO,ONE,V(NR+1,NR+1),LDV)
+               V(NR+1:N,1:NR) = 0.0D0
+               V(1:NR,NR+1:N) = 0.0D0
+               CALL DLASET('A',N-NR,N-NR,0.0D0,1.0D0,V(NR+1,NR+1),LDV)
                CALL DORMLQ('R','N',N,N,NR,U(NR+1,1),LDU,WORK(N+1), &
                     V, LDV, WORK(N+NR+1),LWORK-N-NR,IERR)
                CALL DLAPMT( .FALSE., N, N, V, LDV, IWORK )
 !               .. assemble the left singular vector matrix U of dimensions
 !              (M x NR) or (M x N) or (M x M).
                IF ( ( NR  <  M ) .AND. .NOT.(WNTUF)) THEN
-                  CALL DLASET('A',M-NR,NR,ZERO,ZERO,U(NR+1,1),LDU)
+                  U(NR+1:M,1:NR) = 0.0D0
                   IF ( NR  <  N1 ) THEN
-                  CALL DLASET('A',NR,N1-NR,ZERO,ZERO,U(1,NR+1),LDU)
-                  CALL DLASET( 'A',M-NR,N1-NR,ZERO,ONE, &
-                       U(NR+1,NR+1), LDU )
+                  U(1:NR,NR+1:N1) = 0.0D0
+                  CALL DLASET( 'A',M-NR,N1-NR,0.0D0,1.0D0, U(NR+1,NR+1), LDU )
                   END IF
                END IF
             END IF
@@ -1358,18 +1320,17 @@
 !     due to underflow, and update the numerical rank.
    p = NR
    DO q = p, 1, -1
-       IF ( S(q)  >  ZERO ) GO TO 4002
+       IF ( S(q)  >  0.0D0 ) GO TO 4002
        NR = NR - 1
-      ENDDO
+   ENDDO
  4002 CONTINUE
 !
 !     .. if numerical rank deficiency is detected, the truncated
 !     singular values are set to zero.
-   IF ( NR  <  N ) CALL DLASET( 'G', N-NR,1, ZERO,ZERO, S(NR+1), N )
+   IF ( NR  <  N ) CALL DLASET( 'G', N-NR,1, 0.0D0,0.0D0, S(NR+1), N )
 !     .. undo scaling; this may cause overflow in the largest singular
 !     values.
-   IF ( ASCALED ) &
-      CALL DLASCL( 'G',0,0, ONE,SQRT(DBLE(M)), NR,1, S, N, IERR )
+   IF ( ASCALED ) CALL DLASCL( 'G',0,0, 1.0D0,SQRT(DBLE(M)), NR,1, S, N, IERR )
    IF ( CONDA ) RWORK(1) = SCONDA
    RWORK(2) = p - NR
 !     .. p-NR is the number of singular values that are computed as
@@ -1382,5 +1343,3 @@
 !     End of DGESVDQ
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

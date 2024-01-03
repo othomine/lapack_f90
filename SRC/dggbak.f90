@@ -143,8 +143,7 @@
 !> \endverbatim
 !>
 !  =====================================================================
-   SUBROUTINE DGGBAK( JOB, SIDE, N, ILO, IHI, LSCALE, RSCALE, M, V, &
-                      LDV, INFO )
+   SUBROUTINE DGGBAK( JOB, SIDE, N, ILO, IHI, LSCALE, RSCALE, M, V, LDV, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -210,15 +209,11 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
-   IF( M == 0 ) &
-      RETURN
-   IF( LSAME( JOB, 'N' ) ) &
-      RETURN
+   IF( N == 0 ) RETURN
+   IF( M == 0 ) RETURN
+   IF( LSAME( JOB, 'N' ) ) RETURN
 !
-   IF( ILO == IHI ) &
-      GO TO 30
+   IF( ILO == IHI ) GO TO 30
 !
 !     Backward balance
 !
@@ -228,7 +223,7 @@
 !
       IF( RIGHTV ) THEN
          DO I = ILO, IHI
-            CALL DSCAL( M, RSCALE( I ), V( I, 1 ), LDV )
+            V(I,1:M) = RSCALE(I)*V(I,1:M)
          ENDDO
       END IF
 !
@@ -236,7 +231,7 @@
 !
       IF( LEFTV ) THEN
          DO I = ILO, IHI
-            CALL DSCAL( M, LSCALE( I ), V( I, 1 ), LDV )
+            V(I,1:M) = LSCALE(I)*V(I,1:M)
          ENDDO
       END IF
    END IF
@@ -249,62 +244,44 @@
 !        Backward permutation on right eigenvectors
 !
       IF( RIGHTV ) THEN
-         IF( ILO == 1 ) &
-            GO TO 50
+         IF( ILO /= 1 ) THEN
 !
          DO I = ILO - 1, 1, -1
             K = INT(RSCALE( I ))
-            IF( K == I ) &
-               GO TO 40
-            CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
-40       CONTINUE
+            IF( K /= I ) CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
          ENDDO
 !
-50       CONTINUE
-         IF( IHI == N ) &
-            GO TO 70
+         ENDIF
+         IF( IHI /= N ) THEN
          DO I = IHI + 1, N
             K = INT(RSCALE( I ))
-            IF( K == I ) &
-               GO TO 60
-            CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
-60       CONTINUE
+            IF( K /= I ) CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
          ENDDO
+         END IF
       END IF
 !
 !        Backward permutation on left eigenvectors
 !
-70    CONTINUE
       IF( LEFTV ) THEN
-         IF( ILO == 1 ) &
-            GO TO 90
+         IF( ILO /= 1 ) THEN
          DO I = ILO - 1, 1, -1
             K = INT(LSCALE( I ))
-            IF( K == I ) &
-               GO TO 80
-            CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
-80       CONTINUE
+            IF( K /= I ) CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
          ENDDO
+         END IF
 !
-90       CONTINUE
-         IF( IHI == N ) &
-            GO TO 110
+         IF( IHI /= N ) THEN
          DO I = IHI + 1, N
             K = INT(LSCALE( I ))
-            IF( K == I ) &
-               GO TO 100
-            CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
-  100       CONTINUE
-            ENDDO
+            IF( K /= I ) CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
+         ENDDO
+      END IF
       END IF
    END IF
 !
-  110 CONTINUE
 !
    RETURN
 !
 !     End of DGGBAK
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -228,12 +228,6 @@
 !     .. Parameters ..
    INTEGER            ITMAX
    PARAMETER          ( ITMAX = 5 )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
-   DOUBLE PRECISION   TWO
-   PARAMETER          ( TWO = 2.0D+0 )
-   DOUBLE PRECISION   THREE
-   PARAMETER          ( THREE = 3.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            NOTRAN
@@ -245,10 +239,7 @@
    INTEGER            ISAVE( 3 )
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           DAXPY, DCOPY, DGTTRS, DLACN2, DLAGTM, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
+   EXTERNAL           DGTTRS, DLACN2, DLAGTM, XERBLA
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -281,10 +272,8 @@
 !     Quick return if possible
 !
    IF( N == 0 .OR. NRHS == 0 ) THEN
-      DO J = 1, NRHS
-         FERR( J ) = ZERO
-         BERR( J ) = ZERO
-      ENDDO
+      FERR(1:NRHS) = 0.0D0
+      BERR(1:NRHS) = 0.0D0
       RETURN
    END IF
 !
@@ -309,7 +298,7 @@
    DO J = 1, NRHS
 !
       COUNT = 1
-      LSTRES = THREE
+      LSTRES = 3.0D0
 20    CONTINUE
 !
 !        Loop until stopping criterion is satisfied.
@@ -317,8 +306,8 @@
 !        Compute residual R = B - op(A) * X,
 !        where op(A) = A, A**T, or A**H, depending on TRANS.
 !
-      CALL DCOPY( N, B( 1, J ), 1, WORK( N+1 ), 1 )
-      CALL DLAGTM( TRANS, N, 1, -ONE, DL, D, DU, X( 1, J ), LDX, ONE, &
+      WORK(N+1:2*N) = B(1:N,J)
+      CALL DLAGTM( TRANS, N, 1, -1.0D0, DL, D, DU, X( 1, J ), LDX, 1.0D0, &
                    WORK( N+1 ), N )
 !
 !        Compute abs(op(A))*abs(x) + abs(b) for use in the backward
@@ -367,7 +356,7 @@
 !        than SAFE2, then SAFE1 is added to the i-th components of the
 !        numerator and denominator before dividing.
 !
-      S = ZERO
+      S = 0.0D0
       DO I = 1, N
          IF( WORK( I ) > SAFE2 ) THEN
             S = MAX( S, ABS( WORK( N+I ) ) / WORK( I ) )
@@ -384,14 +373,13 @@
 !              last iteration, and
 !           3) At most ITMAX iterations tried.
 !
-      IF( BERR( J ) > EPS .AND. TWO*BERR( J ) <= LSTRES .AND. &
-          COUNT <= ITMAX ) THEN
+      IF( BERR( J ) > EPS .AND. 2.0D0*BERR( J ) <= LSTRES .AND. COUNT <= ITMAX ) THEN
 !
 !           Update solution and try again.
 !
          CALL DGTTRS( TRANS, N, 1, DLF, DF, DUF, DU2, IPIV, &
                       WORK( N+1 ), N, INFO )
-         CALL DAXPY( N, ONE, WORK( N+1 ), 1, X( 1, J ), 1 )
+         X(1:N,J) = X(1:N,J) + WORK(N+1:2*N)
          LSTRES = BERR( J )
          COUNT = COUNT + 1
          GO TO 20
@@ -438,16 +426,12 @@
 !
             CALL DGTTRS( TRANST, N, 1, DLF, DF, DUF, DU2, IPIV, &
                          WORK( N+1 ), N, INFO )
-            DO I = 1, N
-               WORK( N+I ) = WORK( I )*WORK( N+I )
-            ENDDO
+            WORK(N+1:2*N) = WORK(1:N)*WORK(N+1:2*N)
          ELSE
 !
 !              Multiply by inv(op(A))*diag(W).
 !
-            DO I = 1, N
-               WORK( N+I ) = WORK( I )*WORK( N+I )
-            ENDDO
+            WORK(N+1:2*N) = WORK(1:N)*WORK(N+1:2*N)
             CALL DGTTRS( TRANSN, N, 1, DLF, DF, DUF, DU2, IPIV, &
                          WORK( N+1 ), N, INFO )
          END IF
@@ -456,12 +440,8 @@
 !
 !        Normalize error.
 !
-      LSTRES = ZERO
-      DO I = 1, N
-         LSTRES = MAX( LSTRES, ABS( X( I, J ) ) )
-         ENDDO
-      IF( LSTRES /= ZERO ) &
-         FERR( J ) = FERR( J ) / LSTRES
+      LSTRES = MAXVAL(ABS(X(1:N,J)))
+      IF( LSTRES /= 0.0D0 ) FERR( J ) = FERR( J ) / LSTRES
 !
       ENDDO
 !
@@ -470,5 +450,3 @@
 !     End of DGTRFS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

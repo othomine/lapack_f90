@@ -224,10 +224,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, WNTUA, WNTUAS, WNTUN, WNTUO, WNTUS, &
@@ -255,9 +251,6 @@
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input arguments
@@ -278,8 +271,7 @@
 !
    IF( .NOT.( WNTUA .OR. WNTUS .OR. WNTUO .OR. WNTUN ) ) THEN
       INFO = -1
-   ELSE IF( .NOT.( WNTVA .OR. WNTVS .OR. WNTVO .OR. WNTVN ) .OR. &
-            ( WNTVO .AND. WNTUO ) ) THEN
+   ELSE IF( .NOT.( WNTVA .OR. WNTVS .OR. WNTVO .OR. WNTVN ) .OR. ( WNTVO .AND. WNTUO ) ) THEN
       INFO = -2
    ELSE IF( M < 0 ) THEN
       INFO = -3
@@ -289,8 +281,7 @@
       INFO = -6
    ELSE IF( LDU < 1 .OR. ( WNTUAS .AND. LDU < M ) ) THEN
       INFO = -9
-   ELSE IF( LDVT < 1 .OR. ( WNTVA .AND. LDVT < N ) .OR. &
-            ( WNTVS .AND. LDVT < MINMN ) ) THEN
+   ELSE IF( LDVT < 1 .OR. ( WNTVA .AND. LDVT < N ) .OR. ( WNTVS .AND. LDVT < MINMN ) ) THEN
       INFO = -11
    END IF
 !
@@ -319,16 +310,13 @@
          CALL DORGQR( M, M, N, A, LDA, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGQR_M = INT( DUM(1) )
 !           Compute space needed for DGEBRD
-         CALL DGEBRD( N, N, A, LDA, S, DUM(1), DUM(1), &
-                      DUM(1), DUM(1), -1, IERR )
+         CALL DGEBRD( N, N, A, LDA, S, DUM(1), DUM(1), DUM(1), DUM(1), -1, IERR )
          LWORK_DGEBRD = INT( DUM(1) )
 !           Compute space needed for DORGBR P
-         CALL DORGBR( 'P', N, N, N, A, LDA, DUM(1), &
-                      DUM(1), -1, IERR )
+         CALL DORGBR( 'P', N, N, N, A, LDA, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGBR_P = INT( DUM(1) )
 !           Compute space needed for DORGBR Q
-         CALL DORGBR( 'Q', N, N, N, A, LDA, DUM(1), &
-                      DUM(1), -1, IERR )
+         CALL DORGBR( 'Q', N, N, N, A, LDA, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGBR_Q = INT( DUM(1) )
 !
          IF( M >= MNTHR ) THEN
@@ -443,19 +431,16 @@
 !
 !              Path 10 (M at least N, but not much larger)
 !
-            CALL DGEBRD( M, N, A, LDA, S, DUM(1), DUM(1), &
-                      DUM(1), DUM(1), -1, IERR )
+            CALL DGEBRD( M, N, A, LDA, S, DUM(1), DUM(1), DUM(1), DUM(1), -1, IERR )
             LWORK_DGEBRD = INT( DUM(1) )
             MAXWRK = 3*N + LWORK_DGEBRD
             IF( WNTUS .OR. WNTUO ) THEN
-               CALL DORGBR( 'Q', M, N, N, A, LDA, DUM(1), &
-                      DUM(1), -1, IERR )
+               CALL DORGBR( 'Q', M, N, N, A, LDA, DUM(1), DUM(1), -1, IERR )
                LWORK_DORGBR_Q = INT( DUM(1) )
                MAXWRK = MAX( MAXWRK, 3*N + LWORK_DORGBR_Q )
             END IF
             IF( WNTUA ) THEN
-               CALL DORGBR( 'Q', M, M, N, A, LDA, DUM(1), &
-                      DUM(1), -1, IERR )
+               CALL DORGBR( 'Q', M, M, N, A, LDA, DUM(1), DUM(1), -1, IERR )
                LWORK_DORGBR_Q = INT( DUM(1) )
                MAXWRK = MAX( MAXWRK, 3*N + LWORK_DORGBR_Q )
             END IF
@@ -480,16 +465,13 @@
          CALL DORGLQ( M, N, M, A, LDA, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGLQ_M = INT( DUM(1) )
 !           Compute space needed for DGEBRD
-         CALL DGEBRD( M, M, A, LDA, S, DUM(1), DUM(1), &
-                      DUM(1), DUM(1), -1, IERR )
+         CALL DGEBRD( M, M, A, LDA, S, DUM(1), DUM(1), DUM(1), DUM(1), -1, IERR )
          LWORK_DGEBRD = INT( DUM(1) )
 !            Compute space needed for DORGBR P
-         CALL DORGBR( 'P', M, M, M, A, N, DUM(1), &
-                      DUM(1), -1, IERR )
+         CALL DORGBR( 'P', M, M, M, A, N, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGBR_P = INT( DUM(1) )
 !           Compute space needed for DORGBR Q
-         CALL DORGBR( 'Q', M, M, M, A, N, DUM(1), &
-                      DUM(1), -1, IERR )
+         CALL DORGBR( 'Q', M, M, M, A, N, DUM(1), DUM(1), -1, IERR )
          LWORK_DORGBR_Q = INT( DUM(1) )
          IF( N >= MNTHR ) THEN
             IF( WNTVN ) THEN
@@ -603,20 +585,17 @@
 !
 !              Path 10t(N greater than M, but not much larger)
 !
-            CALL DGEBRD( M, N, A, LDA, S, DUM(1), DUM(1), &
-                      DUM(1), DUM(1), -1, IERR )
+            CALL DGEBRD( M, N, A, LDA, S, DUM(1), DUM(1), DUM(1), DUM(1), -1, IERR )
             LWORK_DGEBRD = INT( DUM(1) )
             MAXWRK = 3*M + LWORK_DGEBRD
             IF( WNTVS .OR. WNTVO ) THEN
 !                Compute space needed for DORGBR P
-              CALL DORGBR( 'P', M, N, M, A, N, DUM(1), &
-                      DUM(1), -1, IERR )
+              CALL DORGBR( 'P', M, N, M, A, N, DUM(1), DUM(1), -1, IERR )
               LWORK_DORGBR_P = INT( DUM(1) )
               MAXWRK = MAX( MAXWRK, 3*M + LWORK_DORGBR_P )
             END IF
             IF( WNTVA ) THEN
-              CALL DORGBR( 'P', N, N, M, A, N, DUM(1), &
-                      DUM(1), -1, IERR )
+              CALL DORGBR( 'P', N, N, M, A, N, DUM(1), DUM(1), -1, IERR )
               LWORK_DORGBR_P = INT( DUM(1) )
               MAXWRK = MAX( MAXWRK, 3*M + LWORK_DORGBR_P )
             END IF
@@ -630,9 +609,7 @@
       MAXWRK = MAX( MAXWRK, MINWRK )
       WORK( 1 ) = MAXWRK
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) THEN
-         INFO = -13
-      END IF
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -13
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -644,21 +621,19 @@
 !
 !     Quick return if possible
 !
-   IF( M == 0 .OR. N == 0 ) THEN
-      RETURN
-   END IF
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = SQRT( DLAMCH( 'S' ) ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, DUM )
    ISCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       ISCL = 1
       CALL DLASCL( 'G', 0, 0, ANRM, SMLNUM, M, N, A, LDA, IERR )
    ELSE IF( ANRM > BIGNUM ) THEN
@@ -685,14 +660,12 @@
 !              Compute A=Q*R
 !              (Workspace: need 2*N, prefer N + N*NB)
 !
-            CALL DGEQRF( M, N, A, LDA, WORK( ITAU ), WORK( IWORK ), &
-                         LWORK-IWORK+1, IERR )
+            CALL DGEQRF( M, N, A, LDA, WORK( ITAU ), WORK( IWORK ), LWORK-IWORK+1, IERR )
 !
 !              Zero out below R
 !
             IF( N  >  1 ) THEN
-               CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, A( 2, 1 ), &
-                            LDA )
+               CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
             END IF
             IE = 1
             ITAUQ = IE + N
@@ -726,8 +699,7 @@
 !
 !              If right singular vectors desired in VT, copy them there
 !
-            IF( WNTVAS ) &
-               CALL DLACPY( 'F', N, N, A, LDA, VT, LDVT )
+            IF( WNTVAS ) CALL DLACPY( 'F', N, N, A, LDA, VT, LDVT )
 !
          ELSE IF( WNTUO .AND. WNTVN ) THEN
 !
@@ -771,7 +743,7 @@
 !                 Copy R to WORK(IR) and zero out below it
 !
                CALL DLACPY( 'U', N, N, A, LDA, WORK( IR ), LDWRKR )
-               CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, WORK( IR+1 ), &
+               CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IR+1 ), &
                             LDWRKR )
 !
 !                 Generate Q in A
@@ -814,8 +786,8 @@
 !
                DO I = 1, M, LDWRKU
                   CHUNK = MIN( M-I+1, LDWRKU )
-                  CALL DGEMM( 'N', 'N', CHUNK, N, N, ONE, A( I, 1 ), &
-                              LDA, WORK( IR ), LDWRKR, ZERO, &
+                  CALL DGEMM( 'N', 'N', CHUNK, N, N, 1.0D0, A( I, 1 ), &
+                              LDA, WORK( IR ), LDWRKR, 0.0D0, &
                               WORK( IU ), LDWRKU )
                   CALL DLACPY( 'F', CHUNK, N, WORK( IU ), LDWRKU, &
                                A( I, 1 ), LDA )
@@ -895,8 +867,7 @@
 !                 Copy R to VT, zeroing out below it
 !
                CALL DLACPY( 'U', N, N, A, LDA, VT, LDVT )
-               IF( N > 1 ) &
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
+               IF( N > 1 ) CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, &
                                VT( 2, 1 ), LDVT )
 !
 !                 Generate Q in A
@@ -947,8 +918,8 @@
 !
                DO I = 1, M, LDWRKU
                   CHUNK = MIN( M-I+1, LDWRKU )
-                  CALL DGEMM( 'N', 'N', CHUNK, N, N, ONE, A( I, 1 ), &
-                              LDA, WORK( IR ), LDWRKR, ZERO, &
+                  CALL DGEMM( 'N', 'N', CHUNK, N, N, 1.0D0, A( I, 1 ), &
+                              LDA, WORK( IR ), LDWRKR, 0.0D0, &
                               WORK( IU ), LDWRKU )
                   CALL DLACPY( 'F', CHUNK, N, WORK( IU ), LDWRKU, &
                                A( I, 1 ), LDA )
@@ -971,8 +942,7 @@
 !
                CALL DLACPY( 'U', N, N, A, LDA, VT, LDVT )
                IF( N > 1 ) &
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                               VT( 2, 1 ), LDVT )
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, VT( 2, 1 ), LDVT )
 !
 !                 Generate Q in A
 !                 (Workspace: need 2*N, prefer N + N*NB)
@@ -1050,10 +1020,8 @@
 !
 !                    Copy R to WORK(IR), zeroing out below it
 !
-                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IR ), &
-                               LDWRKR )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                               WORK( IR+1 ), LDWRKR )
+                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IR ), LDWRKR )
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IR+1 ), LDWRKR )
 !
 !                    Generate Q in A
 !                    (Workspace: need N*N + 2*N, prefer N*N + N + N*NB)
@@ -1093,8 +1061,8 @@
 !                    WORK(IR), storing result in U
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, A, LDA, &
-                              WORK( IR ), LDWRKR, ZERO, U, LDU )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, A, LDA, &
+                              WORK( IR ), LDWRKR, 0.0D0, U, LDU )
 !
                ELSE
 !
@@ -1123,8 +1091,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                                  A( 2, 1 ), LDA )
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
                   END IF
 !
 !                    Bidiagonalize R in A
@@ -1198,7 +1165,7 @@
 !
                   CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, &
                                WORK( IU+1 ), LDWRKU )
 !
 !                    Generate Q in A
@@ -1252,14 +1219,13 @@
 !                    WORK(IU), storing result in U
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, A, LDA, &
-                              WORK( IU ), LDWRKU, ZERO, U, LDU )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, A, LDA, &
+                              WORK( IU ), LDWRKU, 0.0D0, U, LDU )
 !
 !                    Copy right singular vectors of R to A
 !                    (Workspace: need N*N)
 !
-                  CALL DLACPY( 'F', N, N, WORK( IR ), LDWRKR, A, &
-                               LDA )
+                  CALL DLACPY( 'F', N, N, WORK( IR ), LDWRKR, A, LDA )
 !
                ELSE
 !
@@ -1288,8 +1254,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                                  A( 2, 1 ), LDA )
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
                   END IF
 !
 !                    Bidiagonalize R in A
@@ -1358,10 +1323,8 @@
 !
 !                    Copy R to WORK(IU), zeroing out below it
 !
-                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), &
-                               LDWRKU )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                               WORK( IU+1 ), LDWRKU )
+                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), LDWRKU )
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IU+1 ), LDWRKU )
 !
 !                    Generate Q in A
 !                    (Workspace: need N*N + 2*N, prefer N*N + N + N*NB)
@@ -1411,8 +1374,8 @@
 !                    WORK(IU), storing result in U
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, A, LDA, &
-                              WORK( IU ), LDWRKU, ZERO, U, LDU )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, A, LDA, &
+                              WORK( IU ), LDWRKU, 0.0D0, U, LDU )
 !
                ELSE
 !
@@ -1438,8 +1401,7 @@
 !
                   CALL DLACPY( 'U', N, N, A, LDA, VT, LDVT )
                   IF( N > 1 ) &
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                                  VT( 2, 1 ), LDVT )
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, VT( 2, 1 ), LDVT )
                   IE = ITAU
                   ITAUQ = IE + N
                   ITAUP = ITAUQ + N
@@ -1518,7 +1480,7 @@
 !
                   CALL DLACPY( 'U', N, N, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, &
                                WORK( IR+1 ), LDWRKR )
 !
 !                    Generate Q in U
@@ -1559,8 +1521,8 @@
 !                    WORK(IR), storing result in A
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, U, LDU, &
-                              WORK( IR ), LDWRKR, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, U, LDU, &
+                              WORK( IR ), LDWRKR, 0.0D0, A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
@@ -1593,7 +1555,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, &
                                    A( 2, 1 ), LDA )
                   END IF
 !
@@ -1674,10 +1636,8 @@
 !
 !                    Copy R to WORK(IU), zeroing out below it
 !
-                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), &
-                               LDWRKU )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                               WORK( IU+1 ), LDWRKU )
+                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), LDWRKU )
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IU+1 ), LDWRKU )
                   IE = ITAU
                   ITAUQ = IE + N
                   ITAUP = ITAUQ + N
@@ -1724,8 +1684,8 @@
 !                    WORK(IU), storing result in A
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, U, LDU, &
-                              WORK( IU ), LDWRKU, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, U, LDU, &
+                              WORK( IU ), LDWRKU, 0.0D0, A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
@@ -1733,8 +1693,7 @@
 !
 !                    Copy right singular vectors of R from WORK(IR) to A
 !
-                  CALL DLACPY( 'F', N, N, WORK( IR ), LDWRKR, A, &
-                               LDA )
+                  CALL DLACPY( 'F', N, N, WORK( IR ), LDWRKR, A, LDA )
 !
                ELSE
 !
@@ -1763,8 +1722,7 @@
 !                    Zero out below R in A
 !
                   IF( N  >  1 ) THEN
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                                   A( 2, 1 ), LDA )
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
                   END IF
 !
 !                    Bidiagonalize R in A
@@ -1841,10 +1799,8 @@
 !
 !                    Copy R to WORK(IU), zeroing out below it
 !
-                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), &
-                               LDWRKU )
-                  CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                               WORK( IU+1 ), LDWRKU )
+                  CALL DLACPY( 'U', N, N, A, LDA, WORK( IU ), LDWRKU )
+                  CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, WORK( IU+1 ), LDWRKU )
                   IE = ITAU
                   ITAUQ = IE + N
                   ITAUP = ITAUQ + N
@@ -1888,8 +1844,8 @@
 !                    WORK(IU), storing result in A
 !                    (Workspace: need N*N)
 !
-                  CALL DGEMM( 'N', 'N', M, N, N, ONE, U, LDU, &
-                              WORK( IU ), LDWRKU, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, N, 1.0D0, U, LDU, &
+                              WORK( IU ), LDWRKU, 0.0D0, A, LDA )
 !
 !                    Copy left singular vectors of A from A to U
 !
@@ -1919,8 +1875,7 @@
 !
                   CALL DLACPY( 'U', N, N, A, LDA, VT, LDVT )
                   IF( N > 1 ) &
-                     CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, &
-                                  VT( 2, 1 ), LDVT )
+                     CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, VT( 2, 1 ), LDVT )
                   IE = ITAU
                   ITAUQ = IE + N
                   ITAUP = ITAUQ + N
@@ -1988,10 +1943,8 @@
 !              (Workspace: need 3*N + NCU, prefer 3*N + NCU*NB)
 !
             CALL DLACPY( 'L', M, N, A, LDA, U, LDU )
-            IF( WNTUS ) &
-               NCU = N
-            IF( WNTUA ) &
-               NCU = M
+            IF( WNTUS ) NCU = N
+            IF( WNTUA ) NCU = M
             CALL DORGBR( 'Q', M, NCU, N, U, LDU, WORK( ITAUQ ), &
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
@@ -2024,14 +1977,10 @@
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
          IWORK = IE + N
-         IF( WNTUAS .OR. WNTUO ) &
-            NRU = M
-         IF( WNTUN ) &
-            NRU = 0
-         IF( WNTVAS .OR. WNTVO ) &
-            NCVT = N
-         IF( WNTVN ) &
-            NCVT = 0
+         IF( WNTUAS .OR. WNTUO ) NRU = M
+         IF( WNTUN ) NRU = 0
+         IF( WNTVAS .OR. WNTVO ) NCVT = N
+         IF( WNTVN ) NCVT = 0
          IF( ( .NOT.WNTUO ) .AND. ( .NOT.WNTVO ) ) THEN
 !
 !              Perform bidiagonal QR iteration, if desired, computing
@@ -2087,7 +2036,7 @@
 !
 !              Zero out above L
 !
-            CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, A( 1, 2 ), LDA )
+            CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, A( 1, 2 ), LDA )
             IE = 1
             ITAUQ = IE + M
             ITAUP = ITAUQ + M
@@ -2109,8 +2058,7 @@
             END IF
             IWORK = IE + M
             NRU = 0
-            IF( WNTUO .OR. WNTUAS ) &
-               NRU = M
+            IF( WNTUO .OR. WNTUAS ) NRU = M
 !
 !              Perform bidiagonal QR iteration, computing left singular
 !              vectors of A in A if desired
@@ -2121,8 +2069,7 @@
 !
 !              If left singular vectors desired in U, copy them there
 !
-            IF( WNTUAS ) &
-               CALL DLACPY( 'F', M, M, A, LDA, U, LDU )
+            IF( WNTUAS ) CALL DLACPY( 'F', M, M, A, LDA, U, LDU )
 !
          ELSE IF( WNTVO .AND. WNTUN ) THEN
 !
@@ -2169,7 +2116,7 @@
 !                 Copy L to WORK(IR) and zero out above it
 !
                CALL DLACPY( 'L', M, M, A, LDA, WORK( IR ), LDWRKR )
-               CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
+               CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, &
                             WORK( IR+LDWRKR ), LDWRKR )
 !
 !                 Generate Q in A
@@ -2212,8 +2159,8 @@
 !
                DO I = 1, N, CHUNK
                   BLK = MIN( N-I+1, CHUNK )
-                  CALL DGEMM( 'N', 'N', M, BLK, M, ONE, WORK( IR ), &
-                              LDWRKR, A( 1, I ), LDA, ZERO, &
+                  CALL DGEMM( 'N', 'N', M, BLK, M, 1.0D0, WORK( IR ), &
+                              LDWRKR, A( 1, I ), LDA, 0.0D0, &
                               WORK( IU ), LDWRKU )
                   CALL DLACPY( 'F', M, BLK, WORK( IU ), LDWRKU, &
                                A( 1, I ), LDA )
@@ -2296,8 +2243,7 @@
 !                 Copy L to U, zeroing about above it
 !
                CALL DLACPY( 'L', M, M, A, LDA, U, LDU )
-               CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, U( 1, 2 ), &
-                            LDU )
+               CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, U( 1, 2 ), LDU )
 !
 !                 Generate Q in A
 !                 (Workspace: need M*M + 2*M, prefer M*M + M + M*NB)
@@ -2347,8 +2293,8 @@
 !
                DO I = 1, N, CHUNK
                   BLK = MIN( N-I+1, CHUNK )
-                  CALL DGEMM( 'N', 'N', M, BLK, M, ONE, WORK( IR ), &
-                              LDWRKR, A( 1, I ), LDA, ZERO, &
+                  CALL DGEMM( 'N', 'N', M, BLK, M, 1.0D0, WORK( IR ), &
+                              LDWRKR, A( 1, I ), LDA, 0.0D0, &
                               WORK( IU ), LDWRKU )
                   CALL DLACPY( 'F', M, BLK, WORK( IU ), LDWRKU, &
                                A( 1, I ), LDA )
@@ -2370,8 +2316,7 @@
 !                 Copy L to U, zeroing out above it
 !
                CALL DLACPY( 'L', M, M, A, LDA, U, LDU )
-               CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, U( 1, 2 ), &
-                            LDU )
+               CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, U( 1, 2 ), LDU )
 !
 !                 Generate Q in A
 !                 (Workspace: need 2*M, prefer M + M*NB)
@@ -2449,10 +2394,8 @@
 !
 !                    Copy L to WORK(IR), zeroing out above it
 !
-                  CALL DLACPY( 'L', M, M, A, LDA, WORK( IR ), &
-                               LDWRKR )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
-                               WORK( IR+LDWRKR ), LDWRKR )
+                  CALL DLACPY( 'L', M, M, A, LDA, WORK( IR ), LDWRKR )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, WORK( IR+LDWRKR ), LDWRKR )
 !
 !                    Generate Q in A
 !                    (Workspace: need M*M + 2*M, prefer M*M + M + M*NB)
@@ -2493,8 +2436,8 @@
 !                    Q in A, storing result in VT
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IR ), &
-                              LDWRKR, A, LDA, ZERO, VT, LDVT )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IR ), &
+                              LDWRKR, A, LDA, 0.0D0, VT, LDVT )
 !
                ELSE
 !
@@ -2525,8 +2468,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, A( 1, 2 ), &
-                               LDA )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
 !                    (Workspace: need 4*M, prefer 3*M + 2*M*NB)
@@ -2597,10 +2539,8 @@
 !
 !                    Copy L to WORK(IU), zeroing out below it
 !
-                  CALL DLACPY( 'L', M, M, A, LDA, WORK( IU ), &
-                               LDWRKU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
-                               WORK( IU+LDWRKU ), LDWRKU )
+                  CALL DLACPY( 'L', M, M, A, LDA, WORK( IU ), LDWRKU )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, WORK( IU+LDWRKU ), LDWRKU )
 !
 !                    Generate Q in A
 !                    (Workspace: need 2*M*M + 2*M, prefer 2*M*M + M + M*NB)
@@ -2653,8 +2593,8 @@
 !                    Q in A, storing result in VT
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IU ), &
-                              LDWRKU, A, LDA, ZERO, VT, LDVT )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IU ), &
+                              LDWRKU, A, LDA, 0.0D0, VT, LDVT )
 !
 !                    Copy left singular vectors of L to A
 !                    (Workspace: need M*M)
@@ -2688,8 +2628,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, A( 1, 2 ), &
-                               LDA )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
 !                    (Workspace: need 4*M, prefer 3*M + 2*M*NB)
@@ -2759,7 +2698,7 @@
 !
                   CALL DLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, &
                                WORK( IU+LDWRKU ), LDWRKU )
 !
 !                    Generate Q in A
@@ -2810,8 +2749,8 @@
 !                    Q in A, storing result in VT
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IU ), &
-                              LDWRKU, A, LDA, ZERO, VT, LDVT )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IU ), &
+                              LDWRKU, A, LDA, 0.0D0, VT, LDVT )
 !
                ELSE
 !
@@ -2836,7 +2775,7 @@
 !                    Copy L to U, zeroing out above it
 !
                   CALL DLACPY( 'L', M, M, A, LDA, U, LDU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, U( 1, 2 ), &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, U( 1, 2 ), &
                                LDU )
                   IE = ITAU
                   ITAUQ = IE + M
@@ -2916,7 +2855,7 @@
 !
                   CALL DLACPY( 'L', M, M, A, LDA, WORK( IR ), &
                                LDWRKR )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, &
                                WORK( IR+LDWRKR ), LDWRKR )
 !
 !                    Generate Q in VT
@@ -2958,8 +2897,8 @@
 !                    Q in VT, storing result in A
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IR ), &
-                              LDWRKR, VT, LDVT, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IR ), &
+                              LDWRKR, VT, LDVT, 0.0D0, A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
@@ -2991,8 +2930,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, A( 1, 2 ), &
-                               LDA )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
 !                    (Workspace: need 4*M, prefer 3*M + 2*M*NB)
@@ -3015,8 +2953,7 @@
 !                    (Workspace: need BDSPAC)
 !
                   CALL DBDSQR( 'U', M, N, 0, 0, S, WORK( IE ), VT, &
-                               LDVT, DUM, 1, DUM, 1, WORK( IWORK ), &
-                               INFO )
+                               LDVT, DUM, 1, DUM, 1, WORK( IWORK ), INFO )
 !
                END IF
 !
@@ -3073,7 +3010,7 @@
 !
                   CALL DLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, &
                                WORK( IU+LDWRKU ), LDWRKU )
                   IE = ITAU
                   ITAUQ = IE + M
@@ -3121,8 +3058,8 @@
 !                    Q in VT, storing result in A
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IU ), &
-                              LDWRKU, VT, LDVT, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IU ), &
+                              LDWRKU, VT, LDVT, 0.0D0, A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
@@ -3159,8 +3096,7 @@
 !
 !                    Zero out above L in A
 !
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, A( 1, 2 ), &
-                               LDA )
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, A( 1, 2 ), LDA )
 !
 !                    Bidiagonalize L in A
 !                    (Workspace: need 4*M, prefer 3*M + 2*M*NB)
@@ -3190,8 +3126,7 @@
 !                    (Workspace: need BDSPAC)
 !
                   CALL DBDSQR( 'U', M, N, M, 0, S, WORK( IE ), VT, &
-                               LDVT, A, LDA, DUM, 1, WORK( IWORK ), &
-                               INFO )
+                               LDVT, A, LDA, DUM, 1, WORK( IWORK ), INFO )
 !
                END IF
 !
@@ -3238,7 +3173,7 @@
 !
                   CALL DLACPY( 'L', M, M, A, LDA, WORK( IU ), &
                                LDWRKU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, &
                                WORK( IU+LDWRKU ), LDWRKU )
                   IE = ITAU
                   ITAUQ = IE + M
@@ -3282,8 +3217,8 @@
 !                    Q in VT, storing result in A
 !                    (Workspace: need M*M)
 !
-                  CALL DGEMM( 'N', 'N', M, N, M, ONE, WORK( IU ), &
-                              LDWRKU, VT, LDVT, ZERO, A, LDA )
+                  CALL DGEMM( 'N', 'N', M, N, M, 1.0D0, WORK( IU ), &
+                              LDWRKU, VT, LDVT, 0.0D0, A, LDA )
 !
 !                    Copy right singular vectors of A from A to VT
 !
@@ -3312,7 +3247,7 @@
 !                    Copy L to U, zeroing out above it
 !
                   CALL DLACPY( 'L', M, M, A, LDA, U, LDU )
-                  CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, U( 1, 2 ), &
+                  CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, U( 1, 2 ), &
                                LDU )
                   IE = ITAU
                   ITAUQ = IE + M
@@ -3417,14 +3352,10 @@
                          WORK( IWORK ), LWORK-IWORK+1, IERR )
          END IF
          IWORK = IE + M
-         IF( WNTUAS .OR. WNTUO ) &
-            NRU = M
-         IF( WNTUN ) &
-            NRU = 0
-         IF( WNTVAS .OR. WNTVO ) &
-            NCVT = N
-         IF( WNTVN ) &
-            NCVT = 0
+         IF( WNTUAS .OR. WNTUO ) NRU = M
+         IF( WNTUN ) NRU = 0
+         IF( WNTVAS .OR. WNTVO ) NCVT = N
+         IF( WNTVN ) NCVT = 0
          IF( ( .NOT.WNTUO ) .AND. ( .NOT.WNTVO ) ) THEN
 !
 !              Perform bidiagonal QR iteration, if desired, computing
@@ -3500,5 +3431,3 @@
 !     End of DGESVD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

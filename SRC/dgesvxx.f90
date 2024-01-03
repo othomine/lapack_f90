@@ -561,8 +561,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    INTEGER            FINAL_NRM_ERR_I, FINAL_CMP_ERR_I, BERR_I
    INTEGER            RCOND_I, NRM_RCOND_I, NRM_ERR_I, CMP_RCOND_I
    INTEGER            CMP_ERR_I, PIV_GROWTH_I
@@ -587,8 +585,6 @@
    EXTERNAL           DGEEQUB, DGETRF, DGETRS, DLACPY, DLAQGE, &
                       XERBLA, DLASCL2, DGERFSX
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -597,7 +593,7 @@
    EQUIL = LSAME( FACT, 'E' )
    NOTRAN = LSAME( TRANS, 'N' )
    SMLNUM = DLAMCH( 'Safe minimum' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    IF( NOFACT .OR. EQUIL ) THEN
       EQUED = 'N'
       ROWEQU = .FALSE.
@@ -611,7 +607,7 @@
 !     factorization fails, make everything look horrible.  Only the
 !     pivot growth is set here, the rest is initialized in DGERFSX.
 !
-   RPVGRW = ZERO
+   RPVGRW = 0.0D0
 !
 !     Test the input parameters.  PARAMS is not tested until DGERFSX.
 !
@@ -635,32 +631,32 @@
    ELSE
       IF( ROWEQU ) THEN
          RCMIN = BIGNUM
-         RCMAX = ZERO
+         RCMAX = 0.0D0
          DO J = 1, N
             RCMIN = MIN( RCMIN, R( J ) )
             RCMAX = MAX( RCMAX, R( J ) )
             ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -11
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0D0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
          RCMIN = BIGNUM
-         RCMAX = ZERO
+         RCMAX = 0.0D0
          DO J = 1, N
             RCMIN = MIN( RCMIN, C( J ) )
             RCMAX = MAX( RCMAX, C( J ) )
             ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -12
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0D0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -695,16 +691,8 @@
 !
 !     If the scaling factors are not applied, set them to 1.0.
 !
-      IF ( .NOT.ROWEQU ) THEN
-         DO J = 1, N
-            R( J ) = 1.0D+0
-         END DO
-      END IF
-      IF ( .NOT.COLEQU ) THEN
-         DO J = 1, N
-            C( J ) = 1.0D+0
-         END DO
-      END IF
+      IF ( .NOT.ROWEQU ) R(1:N) = 1.0D+0
+      IF ( .NOT.COLEQU ) C(1:N) = 1.0D+0
    END IF
 !
 !     Scale the right-hand side.
@@ -741,7 +729,7 @@
 !
 !     Compute the solution matrix X.
 !
-   CALL DLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL DGETRS( TRANS, N, NRHS, AF, LDAF, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solution and
@@ -765,5 +753,3 @@
 !     End of DGESVXX
 
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

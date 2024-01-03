@@ -175,10 +175,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, TRAN
@@ -195,9 +191,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEQR, DGEMQR, DLASCL, DLASET, &
                       DTRTRS, XERBLA, DGELQ, DGEMLQ
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX, MIN, INT
 !     ..
 !     .. Executable Statements ..
 !
@@ -259,9 +252,7 @@
       WSIZEM = TSZM + LWM
     END IF
 !
-    IF( ( LWORK < WSIZEM ).AND.( .NOT.LQUERY ) ) THEN
-       INFO = -10
-    END IF
+    IF( ( LWORK < WSIZEM ).AND.( .NOT.LQUERY ) ) INFO = -10
 !
     WORK( 1 ) = DBLE( WSIZEO )
 !
@@ -286,7 +277,7 @@
 !     Quick return if possible
 !
    IF( MIN( M, N, NRHS ) == 0 ) THEN
-        CALL DLASET( 'FULL', MAX( M, N ), NRHS, ZERO, ZERO, &
+        CALL DLASET( 'FULL', MAX( M, N ), NRHS, 0.0D0, 0.0D0, &
                      B, LDB )
         RETURN
    END IF
@@ -294,13 +285,13 @@
 !     Get machine parameters
 !
     SMLNUM = DLAMCH( 'S' ) / DLAMCH( 'P' )
-    BIGNUM = ONE / SMLNUM
+    BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A, B if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, WORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -312,11 +303,11 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'F', MAXMN, NRHS, ZERO, ZERO, B, LDB )
+      B(1:MAXMN,1:NRHS) = 0.0D0
       GO TO 50
    END IF
 !
@@ -326,19 +317,17 @@
    END IF
    BNRM = DLANGE( 'M', BROW, NRHS, B, LDB, WORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, SMLNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 1
    ELSE IF( BNRM > BIGNUM ) THEN
 !
 !        Scale matrix norm down to BIGNUM
 !
-      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, &
-                   INFO )
+      CALL DLASCL( 'G', 0, 0, BNRM, BIGNUM, BROW, NRHS, B, LDB, INFO )
       IBSCL = 2
    END IF
 !
@@ -346,8 +335,7 @@
 !
 !        compute QR factorization of A
 !
-     CALL DGEQR( M, N, A, LDA, WORK( LW2+1 ), LW1, &
-                 WORK( 1 ), LW2, INFO )
+     CALL DGEQR( M, N, A, LDA, WORK( LW2+1 ), LW1, WORK( 1 ), LW2, INFO )
      IF ( .NOT.TRAN ) THEN
 !
 !           Least-Squares Problem min || A * X - B ||
@@ -355,16 +343,12 @@
 !           B(1:M,1:NRHS) := Q**T * B(1:M,1:NRHS)
 !
        CALL DGEMQR( 'L' , 'T', M, NRHS, N, A, LDA, &
-                    WORK( LW2+1 ), LW1, B, LDB, WORK( 1 ), LW2, &
-                    INFO )
+                    WORK( LW2+1 ), LW1, B, LDB, WORK( 1 ), LW2, INFO )
 !
 !           B(1:N,1:NRHS) := inv(R) * B(1:N,1:NRHS)
 !
-       CALL DTRTRS( 'U', 'N', 'N', N, NRHS, &
-                     A, LDA, B, LDB, INFO )
-       IF( INFO > 0 ) THEN
-         RETURN
-       END IF
+       CALL DTRTRS( 'U', 'N', 'N', N, NRHS, A, LDA, B, LDB, INFO )
+       IF( INFO > 0 ) RETURN
        SCLLEN = N
      ELSE
 !
@@ -375,17 +359,11 @@
          CALL DTRTRS( 'U', 'T', 'N', N, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
-!           B(N+1:M,1:NRHS) = ZERO
+!           B(N+1:M,1:NRHS) = 0.0D0
 !
-         DO J = 1, NRHS
-            DO I = N + 1, M
-               B( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         B(N+1:M,1:NRHS) = 0.0D0
 !
 !           B(1:M,1:NRHS) := Q(1:N,:) * B(1:N,1:NRHS)
 !
@@ -401,8 +379,7 @@
 !
 !        Compute LQ factorization of A
 !
-      CALL DGELQ( M, N, A, LDA, WORK( LW2+1 ), LW1, &
-                  WORK( 1 ), LW2, INFO )
+      CALL DGELQ( M, N, A, LDA, WORK( LW2+1 ), LW1, WORK( 1 ), LW2, INFO )
 !
 !        workspace at least M, optimally M*NB.
 !
@@ -415,17 +392,11 @@
          CALL DTRTRS( 'L', 'N', 'N', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
 !           B(M+1:N,1:NRHS) = 0
 !
-         DO J = 1, NRHS
-            DO I = M + 1, N
-               B( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         B(M+1:N,1:NRHS) = 0
 !
 !           B(1:N,1:NRHS) := Q(1:N,:)**T * B(1:M,1:NRHS)
 !
@@ -454,9 +425,7 @@
          CALL DTRTRS( 'Lower', 'Transpose', 'Non-unit', M, NRHS, &
                       A, LDA, B, LDB, INFO )
 !
-         IF( INFO > 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO > 0 ) RETURN
 !
          SCLLEN = M
 !
@@ -488,5 +457,3 @@
 !     End of DGETSLS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

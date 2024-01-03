@@ -196,24 +196,16 @@
    INTEGER            INFO, LDA, M, N
 !     ..
 !     .. Array Arguments ..
-   DOUBLE PRECISION   A( LDA, * ), D( * ), E( * ), TAUP( * ), &
-                      TAUQ( * ), WORK( * )
+   DOUBLE PRECISION   A( LDA, * ), D( * ), E( * ), TAUP( * ), TAUQ( * ), WORK( * )
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           DLARF, DLARFG, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -240,16 +232,14 @@
 !
 !           Generate elementary reflector H(i) to annihilate A(i+1:m,i)
 !
-         CALL DLARFG( M-I+1, A( I, I ), A( MIN( I+1, M ), I ), 1, &
-                      TAUQ( I ) )
+         CALL DLARFG( M-I+1, A( I, I ), A( MIN( I+1, M ), I ), 1, TAUQ( I ) )
          D( I ) = A( I, I )
-         A( I, I ) = ONE
+         A( I, I ) = 1.0D0
 !
 !           Apply H(i) to A(i:m,i+1:n) from the left
 !
          IF( I < N ) &
-            CALL DLARF( 'Left', M-I+1, N-I, A( I, I ), 1, TAUQ( I ), &
-                        A( I, I+1 ), LDA, WORK )
+            CALL DLARF( 'Left', M-I+1, N-I, A( I, I ), 1, TAUQ( I ), A( I, I+1 ), LDA, WORK )
          A( I, I ) = D( I )
 !
          IF( I < N ) THEN
@@ -257,10 +247,9 @@
 !              Generate elementary reflector G(i) to annihilate
 !              A(i,i+2:n)
 !
-            CALL DLARFG( N-I, A( I, I+1 ), A( I, MIN( I+2, N ) ), &
-                         LDA, TAUP( I ) )
+            CALL DLARFG( N-I, A( I, I+1 ), A( I, MIN( I+2, N ) ), LDA, TAUP( I ) )
             E( I ) = A( I, I+1 )
-            A( I, I+1 ) = ONE
+            A( I, I+1 ) = 1.0D0
 !
 !              Apply G(i) to A(i+1:m,i+1:n) from the right
 !
@@ -268,7 +257,7 @@
                         TAUP( I ), A( I+1, I+1 ), LDA, WORK )
             A( I, I+1 ) = E( I )
          ELSE
-            TAUP( I ) = ZERO
+            TAUP( I ) = 0.0D0
          END IF
       ENDDO
    ELSE
@@ -282,7 +271,7 @@
          CALL DLARFG( N-I+1, A( I, I ), A( I, MIN( I+1, N ) ), LDA, &
                       TAUP( I ) )
          D( I ) = A( I, I )
-         A( I, I ) = ONE
+         A( I, I ) = 1.0D0
 !
 !           Apply G(i) to A(i+1:m,i:n) from the right
 !
@@ -299,7 +288,7 @@
             CALL DLARFG( M-I, A( I+1, I ), A( MIN( I+2, M ), I ), 1, &
                          TAUQ( I ) )
             E( I ) = A( I+1, I )
-            A( I+1, I ) = ONE
+            A( I+1, I ) = 1.0D0
 !
 !              Apply H(i) to A(i+1:m,i+1:n) from the left
 !
@@ -307,7 +296,7 @@
                         A( I+1, I+1 ), LDA, WORK )
             A( I+1, I ) = E( I )
          ELSE
-            TAUQ( I ) = ZERO
+            TAUQ( I ) = 0.0D0
          END IF
       ENDDO
    END IF
@@ -316,5 +305,3 @@
 !     End of DGEBD2
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

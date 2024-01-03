@@ -414,10 +414,6 @@
 !               flag is set with INFO=4.
 !.............................................................
 !.............................................................
-!     Parameters
-!     ~~~~~~~~~~
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
 
 !     Local scalars
 !     ~~~~~~~~~~~~~
@@ -449,10 +445,6 @@
       EXTERNAL      DAXPY,  DGEMM,  DSCAL
       EXTERNAL      DGEEV,  DGEJSV, DGESDD, DGESVD, DGESVDQ, &
                     DLACPY, DLASCL, DLASSQ, XERBLA
-
-!     Intrinsic functions
-!     ~~~~~~~~~~~~~~~~~~~
-      INTRINSIC     DBLE, INT, MAX, SQRT
 !............................................................
 !
 !    Test the input arguments
@@ -492,7 +484,7 @@
       ELSE IF ( .NOT. (( NRNK == -2).OR.(NRNK == -1).OR. &
                 ((NRNK >= 1).AND.(NRNK <=N ))) )      THEN
           INFO = -12
-      ELSE IF ( ( TOL < ZERO ) .OR. ( TOL >= ONE ) )  THEN
+      ELSE IF ( ( TOL < 0.0D0 ) .OR. ( TOL >= 1.0D0 ) )  THEN
           INFO = -13
       ELSE IF ( LDZ < M ) THEN
           INFO = -18
@@ -632,19 +624,19 @@
           K = 0
           DO i = 1, N
             !WORK(i) = DNRM2( M, X(1,i), 1 )
-            SCALE  = ZERO
+            SCALE  = 0.0D0
             CALL DLASSQ( M, X(1,i), 1, SCALE, SSUM )
             IF ( DISNAN(SCALE) .OR. DISNAN(SSUM) ) THEN
                 K    =  0
                 INFO = -8
                 CALL XERBLA('DGEDMD',-INFO)
             END IF
-            IF ( (SCALE /= ZERO) .AND. (SSUM /= ZERO) ) THEN
+            IF ( (SCALE /= 0.0D0) .AND. (SSUM /= 0.0D0) ) THEN
                ROOTSC = SQRT(SSUM)
                IF ( SCALE .GE. (OFL / ROOTSC) ) THEN
 !                 Norm of X(:,i) overflows. First, X(:,i)
 !                 is scaled by
-!                 ( ONE / ROOTSC ) / SCALE = 1/||X(:,i)||_2.
+!                 ( 1.0D0 / ROOTSC ) / SCALE = 1/||X(:,i)||_2.
 !                 Next, the norm of X(:,i) is stored without
 !                 overflow as WORK(i) = - SCALE * (ROOTSC/M),
 !                 the minus sign indicating the 1/M factor.
@@ -652,18 +644,18 @@
 !                 underflow may occur in the smallest entries
 !                 of X(:,i). The relative backward and forward
 !                 errors are small in the ell_2 norm.
-                  CALL DLASCL( 'G', 0, 0, SCALE, ONE/ROOTSC, &
+                  CALL DLASCL( 'G', 0, 0, SCALE, 1.0D0/ROOTSC, &
                                M, 1, X(1,i), M, INFO2 )
                   WORK(i) = - SCALE * ( ROOTSC / DBLE(M) )
                ELSE
 !                 X(:,i) will be scaled to unit 2-norm
                   WORK(i) =   SCALE * ROOTSC
-                  CALL DLASCL( 'G',0, 0, WORK(i), ONE, M, 1, &
+                  CALL DLASCL( 'G',0, 0, WORK(i), 1.0D0, M, 1, &
                                X(1,i), M, INFO2 )              ! LAPACK CALL
-!                 X(1:M,i) = (ONE/WORK(i)) * X(1:M,i)          ! INTRINSIC
+!                 X(1:M,i) = (1.0D0/WORK(i)) * X(1:M,i)          ! INTRINSIC
                END IF
             ELSE
-               WORK(i) = ZERO
+               WORK(i) = 0.0D0
                K = K + 1
             END IF
           END DO
@@ -677,14 +669,13 @@
           END IF
           DO i = 1, N
 !           Now, apply the same scaling to the columns of Y.
-            IF ( WORK(i) >  ZERO ) THEN
-                CALL DSCAL( M, ONE/WORK(i), Y(1,i), 1 )  ! BLAS CALL
-!               Y(1:M,i) = (ONE/WORK(i)) * Y(1:M,i)      ! INTRINSIC
-            ELSE IF ( WORK(i) < ZERO ) THEN
+            IF ( WORK(i) >  0.0D0 ) THEN
+                Y(1:M,i) = Y(1:M,i)/WORK(i)
+            ELSE IF ( WORK(i) < 0.0D0 ) THEN
                 CALL DLASCL( 'G', 0, 0, -WORK(i),          &
-                     ONE/DBLE(M), M, 1, Y(1,i), M, INFO2 ) ! LAPACK CALL
+                     1.0D0/DBLE(M), M, 1, Y(1,i), M, INFO2 ) ! LAPACK CALL
             ELSE IF ( Y(IDAMAX(M, Y(1,i),1),i )  &
-                                            /= ZERO ) THEN
+                                            /= 0.0D0 ) THEN
 !               X(:,i) is zero vector. For consistency,
 !               Y(:,i) should also be zero. If Y(:,i) is not
 !               zero, then the data might be inconsistent or
@@ -693,8 +684,7 @@
 !               The computation continues but the
 !               situation will be reported in the output.
                 BADXY = .TRUE.
-                IF ( LSAME(JOBS,'C')) &
-                CALL DSCAL( M, ZERO, Y(1,i), 1 )  ! BLAS CALL
+                IF ( LSAME(JOBS,'C')) Y(1:M,i) = 0.0D0
             END IF
           END DO
       END IF
@@ -705,19 +695,19 @@
           ! carefully computed using DLASSQ.
           DO i = 1, N
             !WORK(i) = DNRM2( M, Y(1,i), 1 )
-            SCALE  = ZERO
+            SCALE  = 0.0D0
             CALL DLASSQ( M, Y(1,i), 1, SCALE, SSUM )
             IF ( DISNAN(SCALE) .OR. DISNAN(SSUM) ) THEN
                 K    =  0
                 INFO = -10
                 CALL XERBLA('DGEDMD',-INFO)
             END IF
-            IF ( SCALE /= ZERO  .AND. (SSUM /= ZERO) ) THEN
+            IF ( SCALE /= 0.0D0  .AND. (SSUM /= 0.0D0) ) THEN
                ROOTSC = SQRT(SSUM)
                IF ( SCALE .GE. (OFL / ROOTSC) ) THEN
 !                 Norm of Y(:,i) overflows. First, Y(:,i)
 !                 is scaled by
-!                 ( ONE / ROOTSC ) / SCALE = 1/||Y(:,i)||_2.
+!                 ( 1.0D0 / ROOTSC ) / SCALE = 1/||Y(:,i)||_2.
 !                 Next, the norm of Y(:,i) is stored without
 !                 overflow as WORK(i) = - SCALE * (ROOTSC/M),
 !                 the minus sign indicating the 1/M factor.
@@ -725,30 +715,29 @@
 !                 underflow may occur in the smallest entries
 !                 of Y(:,i). The relative backward and forward
 !                 errors are small in the ell_2 norm.
-                  CALL DLASCL( 'G', 0, 0, SCALE, ONE/ROOTSC, &
+                  CALL DLASCL( 'G', 0, 0, SCALE, 1.0D0/ROOTSC, &
                                M, 1, Y(1,i), M, INFO2 )
                   WORK(i) = - SCALE * ( ROOTSC / DBLE(M) )
                ELSE
 !                 X(:,i) will be scaled to unit 2-norm
                   WORK(i) =   SCALE * ROOTSC
-                  CALL DLASCL( 'G',0, 0, WORK(i), ONE, M, 1, &
+                  CALL DLASCL( 'G',0, 0, WORK(i), 1.0D0, M, 1, &
                                Y(1,i), M, INFO2 )              ! LAPACK CALL
-!                 Y(1:M,i) = (ONE/WORK(i)) * Y(1:M,i)          ! INTRINSIC
+!                 Y(1:M,i) = (1.0D0/WORK(i)) * Y(1:M,i)          ! INTRINSIC
                END IF
             ELSE
-               WORK(i) = ZERO
+               WORK(i) = 0.0D0
             END IF
          END DO
          DO i = 1, N
 !           Now, apply the same scaling to the columns of X.
-            IF ( WORK(i) >  ZERO ) THEN
-                CALL DSCAL( M, ONE/WORK(i), X(1,i), 1 )  ! BLAS CALL
-!               X(1:M,i) = (ONE/WORK(i)) * X(1:M,i)      ! INTRINSIC
-            ELSE IF ( WORK(i) < ZERO ) THEN
+            IF ( WORK(i) >  0.0D0 ) THEN
+                X(1:M,i) = X(1:M,i)/WORK(i)
+            ELSE IF ( WORK(i) < 0.0D0 ) THEN
                 CALL DLASCL( 'G', 0, 0, -WORK(i),          &
-                     ONE/DBLE(M), M, 1, X(1,i), M, INFO2 ) ! LAPACK CALL
+                     1.0D0/DBLE(M), M, 1, X(1,i), M, INFO2 ) ! LAPACK CALL
             ELSE IF ( X(IDAMAX(M, X(1,i),1),i )  &
-                                           /= ZERO ) THEN
+                                           /= 0.0D0 ) THEN
 !               Y(:,i) is zero vector.  If X(:,i) is not
 !               zero, then a warning flag is raised.
 !               The computation continues but the
@@ -807,7 +796,7 @@
          RETURN
       END IF
 !
-      IF ( WORK(1) == ZERO ) THEN
+      IF ( WORK(1) == 0.0D0 ) THEN
           ! The largest computed singular value of (scaled)
           ! X is zero. Return error code -8
           ! (the 8th input variable had an illegal value).
@@ -856,24 +845,20 @@
       !    W(1:K,1:N). Here Sigma_k=diag(WORK(1:K)).
       IF ( LSAME(T_OR_N, 'N') ) THEN
           DO i = 1, K
-           CALL DSCAL( N, ONE/WORK(i), W(1,i), 1 )    ! BLAS CALL
-           ! W(1:N,i) = (ONE/WORK(i)) * W(1:N,i)      ! INTRINSIC
+           W(1:N,i) = W(1:N,i)/WORK(i)
+           ! W(1:N,i) = (1.0D0/WORK(i)) * W(1:N,i)      ! INTRINSIC
           END DO
       ELSE
           ! This non-unit stride access is due to the fact
           ! that DGESVD, DGESVDQ and DGESDD return the
           ! transposed matrix of the right singular vectors.
           !DO i = 1, K
-          ! CALL DSCAL( N, ONE/WORK(i), W(i,1), LDW )    ! BLAS CALL
-          ! ! W(i,1:N) = (ONE/WORK(i)) * W(i,1:N)      ! INTRINSIC
+          ! CALL DSCAL( N, 1.0D0/WORK(i), W(i,1), LDW )    ! BLAS CALL
+          ! ! W(i,1:N) = (1.0D0/WORK(i)) * W(i,1:N)      ! INTRINSIC
           !END DO
-          DO i = 1, K
-              WORK(N+i) = ONE/WORK(i)
-          END DO
+          WORK(N+1:N+K) = 1.0D0/WORK(1:K)
           DO j = 1, N
-             DO i = 1, K
-                 W(i,j) = (WORK(N+i))*W(i,j)
-             END DO
+             W(1:K,j) = (WORK(N+1:N+K))*W(1:K,j)
           END DO
       END IF
 !
@@ -882,8 +867,8 @@
          ! Need A*U(:,1:K)=Y*V_k*inv(diag(WORK(1:K)))
          ! for computing the refined Ritz vectors
          ! (optionally, outside DGEDMD).
-          CALL DGEMM( 'N', T_OR_N, M, K, N, ONE, Y, LDY, W, &
-                      LDW, ZERO, Z, LDZ )                        ! BLAS CALL
+          CALL DGEMM( 'N', T_OR_N, M, K, N, 1.0D0, Y, LDY, W, &
+                      LDW, 0.0D0, Z, LDZ )                        ! BLAS CALL
           ! Z(1:M,1:K)=MATMUL(Y(1:M,1:N),TRANSPOSE(W(1:K,1:N)))  ! INTRINSIC, for T_OR_N=='T'
           ! Z(1:M,1:K)=MATMUL(Y(1:M,1:N),W(1:N,1:K))             ! INTRINSIC, for T_OR_N=='N'
           !
@@ -895,20 +880,20 @@
           CALL DLACPY( 'A', M, K, Z, LDZ, B, LDB )   ! BLAS CALL
           ! B(1:M,1:K) = Z(1:M,1:K)                  ! INTRINSIC
 
-          CALL DGEMM( 'T', 'N', K, K, M, ONE, X, LDX, Z, &
-                      LDZ, ZERO, S, LDS )                        ! BLAS CALL
+          CALL DGEMM( 'T', 'N', K, K, M, 1.0D0, X, LDX, Z, &
+                      LDZ, 0.0D0, S, LDS )                        ! BLAS CALL
           ! S(1:K,1:K) = MATMUL(TANSPOSE(X(1:M,1:K)),Z(1:M,1:K)) ! INTRINSIC
           ! At this point S = U^T * A * U is the Rayleigh quotient.
       ELSE
         ! A * U(:,1:K) is not explicitly needed and the
         ! computation is organized differently. The Rayleigh
         ! quotient is computed more efficiently.
-        CALL DGEMM( 'T', 'N', K, N, M, ONE, X, LDX, Y, LDY, &
-                   ZERO, Z, LDZ )                                   ! BLAS CALL
+        CALL DGEMM( 'T', 'N', K, N, M, 1.0D0, X, LDX, Y, LDY, &
+                   0.0D0, Z, LDZ )                                   ! BLAS CALL
         ! Z(1:K,1:N) = MATMUL( TRANSPOSE(X(1:M,1:K)), Y(1:M,1:N) )  ! INTRINSIC
         ! In the two DGEMM calls here, can use K for LDZ.
-        CALL DGEMM( 'N', T_OR_N, K, K, N, ONE, Z, LDZ, W, &
-                    LDW, ZERO, S, LDS )                         ! BLAS CALL
+        CALL DGEMM( 'N', T_OR_N, K, K, N, 1.0D0, Z, LDZ, W, &
+                    LDW, 0.0D0, S, LDS )                         ! BLAS CALL
         ! S(1:K,1:K) = MATMUL(Z(1:K,1:N),TRANSPOSE(W(1:K,1:N))) ! INTRINSIC, for T_OR_N=='T'
         ! S(1:K,1:K) = MATMUL(Z(1:K,1:N),(W(1:N,1:K)))          ! INTRINSIC, for T_OR_N=='N'
         ! At this point S = U^T * A * U is the Rayleigh quotient.
@@ -958,20 +943,20 @@
             ! Here, if the refinement is requested, we have
             ! A*U(:,1:K) already computed and stored in Z.
             ! For the residuals, need Y = A * U(:,1;K) * W.
-            CALL DGEMM( 'N', 'N', M, K, K, ONE, Z, LDZ, W, &
-                       LDW, ZERO, Y, LDY )               ! BLAS CALL
+            CALL DGEMM( 'N', 'N', M, K, K, 1.0D0, Z, LDZ, W, &
+                       LDW, 0.0D0, Y, LDY )               ! BLAS CALL
             ! Y(1:M,1:K) = Z(1:M,1:K) * W(1:K,1:K)       ! INTRINSIC
             ! This frees Z; Y contains A * U(:,1:K) * W.
           ELSE
             ! Compute S = V_k * Sigma_k^(-1) * W, where
             ! V_k * Sigma_k^(-1) is stored in Z
-            CALL DGEMM( T_OR_N, 'N', N, K, K, ONE, Z, LDZ, &
-                       W, LDW, ZERO, S, LDS)
+            CALL DGEMM( T_OR_N, 'N', N, K, K, 1.0D0, Z, LDZ, &
+                       W, LDW, 0.0D0, S, LDS)
             ! Then, compute Z = Y * S =
             ! = Y * V_k * Sigma_k^(-1) * W(1:K,1:K) =
             ! = A * U(:,1:K) * W(1:K,1:K)
-            CALL DGEMM( 'N', 'N', M, K, N, ONE, Y, LDY, S, &
-                       LDS, ZERO, Z, LDZ)
+            CALL DGEMM( 'N', 'N', M, K, N, 1.0D0, Y, LDY, S, &
+                       LDS, 0.0D0, Z, LDZ)
             ! Save a copy of Z into Y and free Z for holding
             ! the Ritz vectors.
             CALL DLACPY( 'A', M, K, Z, LDZ, Y, LDY )
@@ -980,34 +965,33 @@
       ELSE IF ( WNTEX ) THEN
           ! Compute S = V_k * Sigma_k^(-1) * W, where
             ! V_k * Sigma_k^(-1) is stored in Z
-            CALL DGEMM( T_OR_N, 'N', N, K, K, ONE, Z, LDZ, &
-                       W, LDW, ZERO, S, LDS )
+            CALL DGEMM( T_OR_N, 'N', N, K, K, 1.0D0, Z, LDZ, &
+                       W, LDW, 0.0D0, S, LDS )
             ! Then, compute Z = Y * S =
             ! = Y * V_k * Sigma_k^(-1) * W(1:K,1:K) =
             ! = A * U(:,1:K) * W(1:K,1:K)
-            CALL DGEMM( 'N', 'N', M, K, N, ONE, Y, LDY, S, &
-                       LDS, ZERO, B, LDB )
+            CALL DGEMM( 'N', 'N', M, K, N, 1.0D0, Y, LDY, S, &
+                       LDS, 0.0D0, B, LDB )
             ! The above call replaces the following two calls
             ! that were used in the developing-testing phase.
-            ! CALL DGEMM( 'N', 'N', M, K, N, ONE, Y, LDY, S, &
-            !           LDS, ZERO, Z, LDZ)
+            ! CALL DGEMM( 'N', 'N', M, K, N, 1.0D0, Y, LDY, S, &
+            !           LDS, 0.0D0, Z, LDZ)
             ! Save a copy of Z into B and free Z for holding
             ! the Ritz vectors.
             ! CALL DLACPY( 'A', M, K, Z, LDZ, B, LDB )
       END IF
 !
       ! Compute the real form of the Ritz vectors
-      IF ( WNTVEC ) CALL DGEMM( 'N', 'N', M, K, K, ONE, X, LDX, W, LDW, &
-                   ZERO, Z, LDZ )                           ! BLAS CALL
+      IF ( WNTVEC ) CALL DGEMM( 'N', 'N', M, K, K, 1.0D0, X, LDX, W, LDW, &
+                   0.0D0, Z, LDZ )                           ! BLAS CALL
       ! Z(1:M,1:K) = MATMUL(X(1:M,1:K), W(1:K,1:K))         ! INTRINSIC
 !
       IF ( WNTRES ) THEN
          i = 1
          DO WHILE ( i <= K )
-            IF ( IMEIG(i) == ZERO ) THEN
+            IF ( IMEIG(i) == 0.0D0 ) THEN
                 ! have a real eigenvalue with real eigenvector
-                CALL DAXPY( M, -REIG(i), Z(1,i), 1, Y(1,i), 1 )       ! BLAS CALL
-                ! Y(1:M,i) = Y(1:M,i) - REIG(i) * Z(1:M,i)            ! INTRINSIC
+                Y(1:M,i) = Y(1:M,i) -REIG(1:M)*Z(1:M,i)
                 RES(i) = DNRM2( M, Y(1,i), 1)                         ! BLAS CALL
                 i = i + 1
             ELSE
@@ -1022,8 +1006,8 @@
                AB(2,1) = -IMEIG(i)
                AB(1,2) =  IMEIG(i)
                AB(2,2) =  REIG(i)
-               CALL DGEMM( 'N', 'N', M, 2, 2, -ONE, Z(1,i), &
-                           LDZ, AB, 2, ONE, Y(1,i), LDY )          ! BLAS CALL
+               CALL DGEMM( 'N', 'N', M, 2, 2, -1.0D0, Z(1,i), &
+                           LDZ, AB, 2, 1.0D0, Y(1,i), LDY )          ! BLAS CALL
                ! Y(1:M,i:i+1) = Y(1:M,i:i+1) - Z(1:M,i:i+1) * AB   ! INTRINSIC
                RES(i)   = DLANGE( 'F', M, 2, Y(1,i), LDY, &
                                   WORK(N+1) )                      ! LAPACK CALL
@@ -1052,4 +1036,3 @@
 !     ......
       END SUBROUTINE DGEDMD
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

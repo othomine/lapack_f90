@@ -409,10 +409,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            ILASCL, ILBSCL, ILV, ILVL, ILVR, LQUERY, NOSCL, &
@@ -437,9 +433,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -551,67 +544,61 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !
 !     Get machine constants
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', N, N, A, LDA, WORK )
    ILASCL = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       ANRMTO = SMLNUM
       ILASCL = .TRUE.
    ELSE IF( ANRM > BIGNUM ) THEN
       ANRMTO = BIGNUM
       ILASCL = .TRUE.
    END IF
-   IF( ILASCL ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
+   IF( ILASCL ) CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
 !
 !     Scale B if max element outside range [SMLNUM,BIGNUM]
 !
    BNRM = DLANGE( 'M', N, N, B, LDB, WORK )
    ILBSCL = .FALSE.
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
       BNRMTO = SMLNUM
       ILBSCL = .TRUE.
    ELSE IF( BNRM > BIGNUM ) THEN
       BNRMTO = BIGNUM
       ILBSCL = .TRUE.
    END IF
-   IF( ILBSCL ) &
-      CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
+   IF( ILBSCL ) CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
 !
 !     Permute and/or balance the matrix pair (A,B)
 !     (Workspace: need 6*N if BALANC = 'S' or 'B', 1 otherwise)
 !
-   CALL DGGBAL( BALANC, N, A, LDA, B, LDB, ILO, IHI, LSCALE, RSCALE, &
-                WORK, IERR )
+   CALL DGGBAL( BALANC, N, A, LDA, B, LDB, ILO, IHI, LSCALE, RSCALE, WORK, IERR )
 !
 !     Compute ABNRM and BBNRM
 !
    ABNRM = DLANGE( '1', N, N, A, LDA, WORK( 1 ) )
    IF( ILASCL ) THEN
       WORK( 1 ) = ABNRM
-      CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, 1, 1, WORK( 1 ), 1, &
-                   IERR )
+      CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, 1, 1, WORK( 1 ), 1, IERR )
       ABNRM = WORK( 1 )
    END IF
 !
    BBNRM = DLANGE( '1', N, N, B, LDB, WORK( 1 ) )
    IF( ILBSCL ) THEN
       WORK( 1 ) = BBNRM
-      CALL DLASCL( 'G', 0, 0, BNRMTO, BNRM, 1, 1, WORK( 1 ), 1, &
-                   IERR )
+      CALL DLASCL( 'G', 0, 0, BNRMTO, BNRM, 1, 1, WORK( 1 ), 1, IERR )
       BBNRM = WORK( 1 )
    END IF
 !
@@ -640,7 +627,7 @@
 !     (Workspace: need N, prefer N*NB)
 !
    IF( ILVL ) THEN
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VL, LDVL )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VL, LDVL )
       IF( IROWS > 1 ) THEN
          CALL DLACPY( 'L', IROWS-1, IROWS-1, B( ILO+1, ILO ), LDB, &
                       VL( ILO+1, ILO ), LDVL )
@@ -650,7 +637,7 @@
    END IF
 !
    IF( ILVR ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VR, LDVR )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VR, LDVR )
 !
 !     Reduce to generalized Hessenberg form
 !     (Workspace: none needed)
@@ -734,7 +721,7 @@
             END IF
             MM = 1
             IF( I < N ) THEN
-               IF( A( I+1, I ) /= ZERO ) THEN
+               IF( A( I+1, I ) /= 0.0D0 ) THEN
                   PAIR = .TRUE.
                   MM = 2
                END IF
@@ -784,31 +771,19 @@
                    LDVL, IERR )
 !
       DO JC = 1, N
-         IF( ALPHAI( JC ) < ZERO ) &
-            GO TO 70
-         TEMP = ZERO
-         IF( ALPHAI( JC ) == ZERO ) THEN
-            DO JR = 1, N
-               TEMP = MAX( TEMP, ABS( VL( JR, JC ) ) )
-            ENDDO
+         IF( ALPHAI( JC ) < 0.0D0 ) GO TO 70
+         IF( ALPHAI( JC ) == 0.0D0 ) THEN
+            TEMP = MAXVAL(ABS(VL(1:N,JC)))
          ELSE
-            DO JR = 1, N
-               TEMP = MAX( TEMP, ABS( VL( JR, JC ) )+ &
-                      ABS( VL( JR, JC+1 ) ) )
-            ENDDO
+            TEMP = MAXVAL(ABS(VL(1:N,JC))+ABS(VL(1:N,JC+1)))
          END IF
-         IF( TEMP < SMLNUM ) &
-            GO TO 70
-         TEMP = ONE / TEMP
-         IF( ALPHAI( JC ) == ZERO ) THEN
-            DO JR = 1, N
-               VL( JR, JC ) = VL( JR, JC )*TEMP
-            ENDDO
+         IF( TEMP < SMLNUM ) GO TO 70
+         TEMP = 1.0D0 / TEMP
+         IF( ALPHAI( JC ) == 0.0D0 ) THEN
+            VL(1:N,JC) = VL(1:N,JC)*TEMP
          ELSE
-            DO JR = 1, N
-               VL( JR, JC ) = VL( JR, JC )*TEMP
-               VL( JR, JC+1 ) = VL( JR, JC+1 )*TEMP
-            ENDDO
+            VL(1:N,JC) = VL(1:N,JC)*TEMP
+            VL(1:N,JC+1) = VL(1:N,JC+1)*TEMP
          END IF
 70    CONTINUE
       ENDDO
@@ -817,34 +792,22 @@
       CALL DGGBAK( BALANC, 'R', N, ILO, IHI, LSCALE, RSCALE, N, VR, &
                    LDVR, IERR )
       DO JC = 1, N
-         IF( ALPHAI( JC ) < ZERO ) &
-            GO TO 120
-         TEMP = ZERO
-         IF( ALPHAI( JC ) == ZERO ) THEN
-            DO JR = 1, N
-               TEMP = MAX( TEMP, ABS( VR( JR, JC ) ) )
-            ENDDO
+         IF( ALPHAI( JC ) < 0.0D0 ) GO TO 120
+         IF( ALPHAI( JC ) == 0.0D0 ) THEN
+            TEMP = MAXVAL(ABS(VR(1:N,JC)))
          ELSE
-            DO JR = 1, N
-               TEMP = MAX( TEMP, ABS( VR( JR, JC ) )+ &
-                      ABS( VR( JR, JC+1 ) ) )
-            ENDDO
+            TEMP = MAXVAL(ABS(VR(1:N,JC))+ABS(VR(1:N,JC+1)))
          END IF
-         IF( TEMP < SMLNUM ) &
-            GO TO 120
-         TEMP = ONE / TEMP
-         IF( ALPHAI( JC ) == ZERO ) THEN
-            DO JR = 1, N
-               VR( JR, JC ) = VR( JR, JC )*TEMP
-               ENDDO
+         IF( TEMP < SMLNUM ) GO TO 120
+         TEMP = 1.0D0 / TEMP
+         IF( ALPHAI( JC ) == 0.0D0 ) THEN
+            VR(1:N,JC) = VR(1:N,JC)*TEMP
          ELSE
-            DO JR = 1, N
-               VR( JR, JC ) = VR( JR, JC )*TEMP
-               VR( JR, JC+1 ) = VR( JR, JC+1 )*TEMP
-               ENDDO
+            VR(1:N,JC) = VR(1:N,JC)*TEMP
+            VR(1:N,JC+1) = VR(1:N,JC+1)*TEMP
          END IF
   120    CONTINUE
-         ENDDO
+      ENDDO
    END IF
 !
 !     Undo scaling if necessary
@@ -866,5 +829,3 @@
 !     End of DGGEVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

@@ -177,8 +177,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
    DOUBLE PRECISION   SCLFAC
    PARAMETER          ( SCLFAC = 2.0D+0 )
    DOUBLE PRECISION   FACTOR
@@ -198,9 +196,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           DSCAL, DSWAP, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     Test the input parameters
 !
@@ -227,9 +222,7 @@
    END IF
 !
    IF( LSAME( JOB, 'N' ) ) THEN
-      DO I = 1, N
-         SCALE( I ) = ONE
-      END DO
+      SCALE(1:N) = 1.0D0
       ILO = 1
       IHI = N
       RETURN
@@ -253,7 +246,7 @@
          DO I = L, 1, -1
             CANSWAP = .TRUE.
             DO J = 1, L
-               IF( I /= J .AND. A( I, J ) /= ZERO ) THEN
+               IF( I /= J .AND. A( I, J ) /= 0.0D0 ) THEN
                   CANSWAP = .FALSE.
                   EXIT
                END IF
@@ -288,7 +281,7 @@
          DO J = K, L
             CANSWAP = .TRUE.
             DO I = K, L
-               IF( I /= J .AND. A( I, J ) /= ZERO ) THEN
+               IF( I /= J .AND. A( I, J ) /= 0.0D0 ) THEN
                   CANSWAP = .FALSE.
                   EXIT
                END IF
@@ -312,9 +305,7 @@
 !
 !     Initialize SCALE for non-permuted submatrix.
 !
-   DO I = K, L
-      SCALE( I ) = ONE
-   END DO
+   SCALE(K:L) = 1.0D0
 !
 !     If we only had to permute, we are done.
 !
@@ -329,9 +320,9 @@
 !     Iterative loop for norm reduction.
 !
    SFMIN1 = DLAMCH( 'S' ) / DLAMCH( 'P' )
-   SFMAX1 = ONE / SFMIN1
+   SFMAX1 = 1.0D0 / SFMIN1
    SFMIN2 = SFMIN1*SCLFAC
-   SFMAX2 = ONE / SFMIN2
+   SFMAX2 = 1.0D0 / SFMIN2
 !
    NOCONV = .TRUE.
    DO WHILE( NOCONV )
@@ -348,7 +339,7 @@
 !
 !           Guard against zero C or R due to underflow.
 !
-         IF( C == ZERO .OR. R == ZERO ) CYCLE
+         IF( C == 0.0D0 .OR. R == 0.0D0 ) CYCLE
 !
 !           Exit if NaN to avoid infinite loop
 !
@@ -359,11 +350,10 @@
          END IF
 !
          G = R / SCLFAC
-         F = ONE
+         F = 1.0D0
          S = C + R
 !
-         DO WHILE( C < G .AND. MAX( F, C, CA ) < SFMAX2 .AND. &
-                   MIN( R, G, RA ) > SFMIN2 )
+         DO WHILE( C < G .AND. MAX( F, C, CA ) < SFMAX2 .AND. MIN( R, G, RA ) > SFMIN2 )
             F = F*SCLFAC
             C = C*SCLFAC
             CA = CA*SCLFAC
@@ -374,8 +364,7 @@
 !
          G = C / SCLFAC
 !
-         DO WHILE( G >= R .AND. MAX( R, RA ) < SFMAX2 .AND. &
-                   MIN( F, C, G, CA ) > SFMIN2 )
+         DO WHILE( G >= R .AND. MAX( R, RA ) < SFMAX2 .AND. MIN( F, C, G, CA ) > SFMIN2 )
             F = F / SCLFAC
             C = C / SCLFAC
             G = G / SCLFAC
@@ -387,18 +376,18 @@
 !           Now balance.
 !
          IF( ( C+R ) >= FACTOR*S ) CYCLE
-         IF( F < ONE .AND. SCALE( I ) < ONE ) THEN
+         IF( F < 1.0D0 .AND. SCALE( I ) < 1.0D0 ) THEN
             IF( F*SCALE( I ) <= SFMIN1 ) CYCLE
          END IF
-         IF( F > ONE .AND. SCALE( I ) > ONE ) THEN
+         IF( F > 1.0D0 .AND. SCALE( I ) > 1.0D0 ) THEN
             IF( SCALE( I ) >= SFMAX1 / F ) CYCLE
          END IF
-         G = ONE / F
+         G = 1.0D0 / F
          SCALE( I ) = SCALE( I )*F
          NOCONV = .TRUE.
 !
-         CALL DSCAL( N-K+1, G, A( I, K ), LDA )
-         CALL DSCAL( L, F, A( 1, I ), 1 )
+         A(I,K:N) = G*A(I,K:N)
+         A(1:L,I) = F*A(1:L,I)
 !
       END DO
 !
@@ -412,5 +401,3 @@
 !     End of DGEBAL
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

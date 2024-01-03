@@ -387,10 +387,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            CURSL, ILASCL, ILBSCL, ILVSL, ILVSR, LASTSL, &
@@ -414,9 +410,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -543,37 +536,35 @@
 !
    EPS = DLAMCH( 'P' )
    SAFMIN = DLAMCH( 'S' )
-   SAFMAX = ONE / SAFMIN
+   SAFMAX = 1.0D0 / SAFMIN
    SMLNUM = SQRT( SAFMIN ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', N, N, A, LDA, WORK )
    ILASCL = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       ANRMTO = SMLNUM
       ILASCL = .TRUE.
    ELSE IF( ANRM > BIGNUM ) THEN
       ANRMTO = BIGNUM
       ILASCL = .TRUE.
    END IF
-   IF( ILASCL ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
+   IF( ILASCL ) CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
 !
 !     Scale B if max element outside range [SMLNUM,BIGNUM]
 !
    BNRM = DLANGE( 'M', N, N, B, LDB, WORK )
    ILBSCL = .FALSE.
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
       BNRMTO = SMLNUM
       ILBSCL = .TRUE.
    ELSE IF( BNRM > BIGNUM ) THEN
       BNRMTO = BIGNUM
       ILBSCL = .TRUE.
    END IF
-   IF( ILBSCL ) &
-      CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
+   IF( ILBSCL ) CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
 !
 !     Permute the matrix to make it more nearly triangular
 !     (Workspace: need 6*N + 2*N for permutation parameters)
@@ -605,7 +596,7 @@
 !     (Workspace: need N, prefer N*NB)
 !
    IF( ILVSL ) THEN
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VSL, LDVSL )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VSL, LDVSL )
       IF( IROWS > 1 ) THEN
          CALL DLACPY( 'L', IROWS-1, IROWS-1, B( ILO+1, ILO ), LDB, &
                       VSL( ILO+1, ILO ), LDVSL )
@@ -616,8 +607,7 @@
 !
 !     Initialize VSR
 !
-   IF( ILVSR ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VSR, LDVSR )
+   IF( ILVSR ) CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VSR, LDVSR )
 !
 !     Reduce to generalized Hessenberg form
 !     (Workspace: none needed)
@@ -642,7 +632,9 @@
       ELSE
          INFO = N + 1
       END IF
-      GO TO 60
+      WORK( 1 ) = MAXWRK
+      IWORK( 1 ) = LIWMIN
+      RETURN
    END IF
 !
 !     Sort eigenvalues ALPHA/BETA and compute the reciprocal of
@@ -677,8 +669,7 @@
                    SDIM, PL, PR, DIF, WORK( IWRK ), LWORK-IWRK+1, &
                    IWORK, LIWORK, IERR )
 !
-      IF( IJOB >= 1 ) &
-         MAXWRK = MAX( MAXWRK, 2*SDIM*( N-SDIM ) )
+      IF( IJOB >= 1 ) MAXWRK = MAX( MAXWRK, 2*SDIM*( N-SDIM ) )
       IF( IERR == -22 ) THEN
 !
 !            not enough real workspace
@@ -693,8 +684,7 @@
             RCONDV( 1 ) = DIF( 1 )
             RCONDV( 2 ) = DIF( 2 )
          END IF
-         IF( IERR == 1 ) &
-            INFO = N + 3
+         IF( IERR == 1 ) INFO = N + 3
       END IF
 !
    END IF
@@ -702,12 +692,10 @@
 !     Apply permutation to VSL and VSR
 !     (Workspace: none needed)
 !
-   IF( ILVSL ) &
-      CALL DGGBAK( 'P', 'L', N, ILO, IHI, WORK( ILEFT ), &
+   IF( ILVSL ) CALL DGGBAK( 'P', 'L', N, ILO, IHI, WORK( ILEFT ), &
                    WORK( IRIGHT ), N, VSL, LDVSL, IERR )
 !
-   IF( ILVSR ) &
-      CALL DGGBAK( 'P', 'R', N, ILO, IHI, WORK( ILEFT ), &
+   IF( ILVSR ) CALL DGGBAK( 'P', 'R', N, ILO, IHI, WORK( ILEFT ), &
                    WORK( IRIGHT ), N, VSR, LDVSR, IERR )
 !
 !     Check if unscaling would cause over/underflow, if so, rescale
@@ -716,7 +704,7 @@
 !
    IF( ILASCL ) THEN
       DO I = 1, N
-         IF( ALPHAI( I ) /= ZERO ) THEN
+         IF( ALPHAI( I ) /= 0.0D0 ) THEN
             IF( ( ALPHAR( I ) / SAFMAX ) > ( ANRMTO / ANRM ) .OR. &
                 ( SAFMIN / ALPHAR( I ) ) > ( ANRM / ANRMTO ) ) THEN
                WORK( 1 ) = ABS( A( I, I ) / ALPHAR( I ) )
@@ -738,7 +726,7 @@
 !
    IF( ILBSCL ) THEN
       DO I = 1, N
-         IF( ALPHAI( I ) /= ZERO ) THEN
+         IF( ALPHAI( I ) /= 0.0D0 ) THEN
             IF( ( BETA( I ) / SAFMAX ) > ( BNRMTO / BNRM ) .OR. &
                 ( SAFMIN / BETA( I ) ) > ( BNRM / BNRMTO ) ) THEN
                WORK( 1 ) = ABS( B( I, I ) / BETA( I ) )
@@ -773,7 +761,7 @@
       IP = 0
       DO I = 1, N
          CURSL = SELCTG( ALPHAR( I ), ALPHAI( I ), BETA( I ) )
-         IF( ALPHAI( I ) == ZERO ) THEN
+         IF( ALPHAI( I ) == 0.0D0 ) THEN
             IF( CURSL ) &
                SDIM = SDIM + 1
             IP = 0
@@ -804,7 +792,6 @@
 !
    END IF
 !
-60 CONTINUE
 !
    WORK( 1 ) = MAXWRK
    IWORK( 1 ) = LIWMIN
@@ -814,5 +801,3 @@
 !     End of DGGESX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

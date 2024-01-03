@@ -323,10 +323,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY, SCALEA, WANTVL, WANTVR, WNTSNB, WNTSNE, &
@@ -352,9 +348,6 @@
    DOUBLE PRECISION   DLAMCH, DLANGE, DLAPY2, DNRM2
    EXTERNAL           LSAME, IDAMAX, ILAENV, DLAMCH, DLANGE, DLAPY2, &
                       DNRM2
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -413,43 +406,34 @@
                           N, NOUT, WORK, -1, IERR )
             LWORK_TREVC = INT( WORK(1) )
             MAXWRK = MAX( MAXWRK, N + LWORK_TREVC )
-            CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VL, LDVL, &
-                   WORK, -1, INFO )
+            CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VL, LDVL, WORK, -1, INFO )
          ELSE IF( WANTVR ) THEN
             CALL DTREVC3( 'R', 'B', SELECT, N, A, LDA, &
                           VL, LDVL, VR, LDVR, &
                           N, NOUT, WORK, -1, IERR )
             LWORK_TREVC = INT( WORK(1) )
             MAXWRK = MAX( MAXWRK, N + LWORK_TREVC )
-            CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VR, LDVR, &
-                   WORK, -1, INFO )
+            CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VR, LDVR, WORK, -1, INFO )
          ELSE
             IF( WNTSNN ) THEN
-               CALL DHSEQR( 'E', 'N', N, 1, N, A, LDA, WR, WI, VR, &
-                   LDVR, WORK, -1, INFO )
+               CALL DHSEQR( 'E', 'N', N, 1, N, A, LDA, WR, WI, VR, LDVR, WORK, -1, INFO )
             ELSE
-               CALL DHSEQR( 'S', 'N', N, 1, N, A, LDA, WR, WI, VR, &
-                   LDVR, WORK, -1, INFO )
+               CALL DHSEQR( 'S', 'N', N, 1, N, A, LDA, WR, WI, VR, LDVR, WORK, -1, INFO )
             END IF
          END IF
          HSWORK = INT( WORK(1) )
 !
          IF( ( .NOT.WANTVL ) .AND. ( .NOT.WANTVR ) ) THEN
             MINWRK = 2*N
-            IF( .NOT.WNTSNN ) &
-               MINWRK = MAX( MINWRK, N*N+6*N )
+            IF( .NOT.WNTSNN ) MINWRK = MAX( MINWRK, N*N+6*N )
             MAXWRK = MAX( MAXWRK, HSWORK )
-            IF( .NOT.WNTSNN ) &
-               MAXWRK = MAX( MAXWRK, N*N + 6*N )
+            IF( .NOT.WNTSNN ) MAXWRK = MAX( MAXWRK, N*N + 6*N )
          ELSE
             MINWRK = 3*N
-            IF( ( .NOT.WNTSNN ) .AND. ( .NOT.WNTSNE ) ) &
-               MINWRK = MAX( MINWRK, N*N + 6*N )
+            IF( ( .NOT.WNTSNN ) .AND. ( .NOT.WNTSNE ) ) MINWRK = MAX( MINWRK, N*N + 6*N )
             MAXWRK = MAX( MAXWRK, HSWORK )
-            MAXWRK = MAX( MAXWRK, N + ( N - 1 )*ILAENV( 1, 'DORGHR', &
-                          ' ', N, 1, N, -1 ) )
-            IF( ( .NOT.WNTSNN ) .AND. ( .NOT.WNTSNE ) ) &
-               MAXWRK = MAX( MAXWRK, N*N + 6*N )
+            MAXWRK = MAX( MAXWRK, N + ( N - 1 )*ILAENV( 1, 'DORGHR', ' ', N, 1, N, -1 ) )
+            IF( ( .NOT.WNTSNN ) .AND. ( .NOT.WNTSNE ) ) MAXWRK = MAX( MAXWRK, N*N + 6*N )
             MAXWRK = MAX( MAXWRK, 3*N )
          END IF
          MAXWRK = MAX( MAXWRK, MINWRK )
@@ -470,31 +454,29 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Get machine constants
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ICOND = 0
    ANRM = DLANGE( 'M', N, N, A, LDA, DUM )
    SCALEA = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = SMLNUM
    ELSE IF( ANRM > BIGNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = BIGNUM
    END IF
-   IF( SCALEA ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+   IF( SCALEA ) CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
 !
 !     Balance the matrix and compute ABNRM
 !
@@ -511,8 +493,7 @@
 !
    ITAU = 1
    IWRK = ITAU + N
-   CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ), &
-                LWORK-IWRK+1, IERR )
+   CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ), LWORK-IWRK+1, IERR )
 !
    IF( WANTVL ) THEN
 !
@@ -525,8 +506,7 @@
 !        Generate orthogonal matrix in VL
 !        (Workspace: need 2*N-1, prefer N+(N-1)*NB)
 !
-      CALL DORGHR( N, ILO, IHI, VL, LDVL, WORK( ITAU ), WORK( IWRK ), &
-                   LWORK-IWRK+1, IERR )
+      CALL DORGHR( N, ILO, IHI, VL, LDVL, WORK( ITAU ), WORK( IWRK ), LWORK-IWRK+1, IERR )
 !
 !        Perform QR iteration, accumulating Schur vectors in VL
 !        (Workspace: need 1, prefer HSWORK (see comments) )
@@ -585,8 +565,7 @@
 !
 !     If INFO  /=  0 from DHSEQR, then quit
 !
-   IF( INFO /= 0 ) &
-      GO TO 50
+   IF( INFO /= 0 ) GO TO 50
 !
    IF( WANTVL .OR. WANTVR ) THEN
 !
@@ -616,21 +595,19 @@
 !        Normalize left eigenvectors and make largest component real
 !
       DO I = 1, N
-         IF( WI( I ) == ZERO ) THEN
-            SCL = ONE / DNRM2( N, VL( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VL( 1, I ), 1 )
-         ELSE IF( WI( I ) > ZERO ) THEN
-            SCL = ONE / DLAPY2( DNRM2( N, VL( 1, I ), 1 ), &
+         IF( WI( I ) == 0.0D0 ) THEN
+            SCL = 1.0D0 / DNRM2( N, VL( 1, I ), 1 )
+            VL(1:N,I) = SCL*VL(1:N,I)
+         ELSE IF( WI( I ) > 0.0D0 ) THEN
+            SCL = 1.0D0 / DLAPY2( DNRM2( N, VL( 1, I ), 1 ), &
                   DNRM2( N, VL( 1, I+1 ), 1 ) )
-            CALL DSCAL( N, SCL, VL( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VL( 1, I+1 ), 1 )
-            DO K = 1, N
-               WORK( K ) = VL( K, I )**2 + VL( K, I+1 )**2
-            ENDDO
+            VL(1:N,I) = SCL*VL(1:N,I)
+            VL(1:N,I+1) = SCL*VL(1:N,I+1)
+            WORK(1:N) = VL(1:N,I)**2 + VL(1:N,I+1)**2
             K = IDAMAX( N, WORK, 1 )
             CALL DLARTG( VL( K, I ), VL( K, I+1 ), CS, SN, R )
             CALL DROT( N, VL( 1, I ), 1, VL( 1, I+1 ), 1, CS, SN )
-            VL( K, I+1 ) = ZERO
+            VL( K, I+1 ) = 0.0D0
          END IF
       ENDDO
    END IF
@@ -645,21 +622,19 @@
 !        Normalize right eigenvectors and make largest component real
 !
       DO I = 1, N
-         IF( WI( I ) == ZERO ) THEN
-            SCL = ONE / DNRM2( N, VR( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VR( 1, I ), 1 )
-         ELSE IF( WI( I ) > ZERO ) THEN
-            SCL = ONE / DLAPY2( DNRM2( N, VR( 1, I ), 1 ), &
+         IF( WI( I ) == 0.0D0 ) THEN
+            SCL = 1.0D0 / DNRM2( N, VR( 1, I ), 1 )
+            VR(1:N,I) = VR(1:N,I)*SCL
+         ELSE IF( WI( I ) > 0.0D0 ) THEN
+            SCL = 1.0D0 / DLAPY2( DNRM2( N, VR( 1, I ), 1 ), &
                   DNRM2( N, VR( 1, I+1 ), 1 ) )
-            CALL DSCAL( N, SCL, VR( 1, I ), 1 )
-            CALL DSCAL( N, SCL, VR( 1, I+1 ), 1 )
-            DO K = 1, N
-               WORK( K ) = VR( K, I )**2 + VR( K, I+1 )**2
-            ENDDO
+            VR(1:N,I) = SCL*VR(1:N,I)
+            VR(1:N,I+1) = SCL*VR(1:N,I+1)
+            WORK(1:N) = VR(1:N,I)**2 + VR(1:N,I+1)**2
             K = IDAMAX( N, WORK, 1 )
             CALL DLARTG( VR( K, I ), VR( K, I+1 ), CS, SN, R )
             CALL DROT( N, VR( 1, I ), 1, VR( 1, I+1 ), 1, CS, SN )
-            VR( K, I+1 ) = ZERO
+            VR( K, I+1 ) = 0.0D0
          END IF
       ENDDO
    END IF
@@ -674,13 +649,10 @@
                    MAX( N-INFO, 1 ), IERR )
       IF( INFO == 0 ) THEN
          IF( ( WNTSNV .OR. WNTSNB ) .AND. ICOND == 0 ) &
-            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N, 1, RCONDV, N, &
-                         IERR )
+            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N, 1, RCONDV, N, IERR )
       ELSE
-         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WR, N, &
-                      IERR )
-         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WI, N, &
-                      IERR )
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WR, N, IERR )
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WI, N, IERR )
       END IF
    END IF
 !
@@ -690,5 +662,3 @@
 !     End of DGEEVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

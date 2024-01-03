@@ -194,8 +194,7 @@
 !>     California at Berkeley, USA
 !>
 !  =====================================================================
-   SUBROUTINE DBDSDC( UPLO, COMPQ, N, D, E, U, LDU, VT, LDVT, Q, IQ, &
-                      WORK, IWORK, INFO )
+   SUBROUTINE DBDSDC( UPLO, COMPQ, N, D, E, U, LDU, VT, LDVT, Q, IQ, WORK, IWORK, INFO )
 !
 !  -- LAPACK computational routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -207,19 +206,16 @@
 !     ..
 !     .. Array Arguments ..
    INTEGER            IQ( * ), IWORK( * )
-   DOUBLE PRECISION   D( * ), E( * ), Q( * ), U( LDU, * ), &
-                      VT( LDVT, * ), WORK( * )
+   DOUBLE PRECISION   D( * ), E( * ), Q( * ), U( LDU, * ), VT( LDVT, * ), WORK( * )
 !     ..
 !
 !  =====================================================================
 !  Changed dimension statement in comment describing E from (N) to
 !  (N-1).  Sven, 17 Feb 05.
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TWO
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0 )
 !     ..
+!     .. Local Array ..
+   DOUBLE PRECISION   U_tmp( N ), VT_tmp( N )
 !     .. Local Scalars ..
    INTEGER            DIFL, DIFR, GIVCOL, GIVNUM, GIVPTR, I, IC, &
                       ICOMPQ, IERR, II, IS, IU, IUPLO, IVT, J, K, KK, &
@@ -237,9 +233,6 @@
    EXTERNAL           DCOPY, DLARTG, DLASCL, DLASD0, DLASDA, DLASDQ, &
                       DLASET, DLASR, DSWAP, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, INT, LOG, SIGN
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -247,10 +240,8 @@
    INFO = 0
 !
    IUPLO = 0
-   IF( LSAME( UPLO, 'U' ) ) &
-      IUPLO = 1
-   IF( LSAME( UPLO, 'L' ) ) &
-      IUPLO = 2
+   IF( LSAME( UPLO, 'U' ) ) IUPLO = 1
+   IF( LSAME( UPLO, 'L' ) ) IUPLO = 2
    IF( LSAME( COMPQ, 'N' ) ) THEN
       ICOMPQ = 0
    ELSE IF( LSAME( COMPQ, 'P' ) ) THEN
@@ -266,11 +257,9 @@
       INFO = -2
    ELSE IF( N < 0 ) THEN
       INFO = -3
-   ELSE IF( ( LDU < 1 ) .OR. ( ( ICOMPQ == 2 ) .AND. ( LDU < &
-            N ) ) ) THEN
+   ELSE IF( ( LDU < 1 ) .OR. ( ( ICOMPQ == 2 ) .AND. ( LDU < N ) ) ) THEN
       INFO = -7
-   ELSE IF( ( LDVT < 1 ) .OR. ( ( ICOMPQ == 2 ) .AND. ( LDVT < &
-            N ) ) ) THEN
+   ELSE IF( ( LDVT < 1 ) .OR. ( ( ICOMPQ == 2 ) .AND. ( LDVT < N ) ) ) THEN
       INFO = -9
    END IF
    IF( INFO /= 0 ) THEN
@@ -280,16 +269,15 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
    SMLSIZ = ILAENV( 9, 'DBDSDC', ' ', 0, 0, 0, 0 )
    IF( N == 1 ) THEN
       IF( ICOMPQ == 1 ) THEN
-         Q( 1 ) = SIGN( ONE, D( 1 ) )
-         Q( 1+SMLSIZ*N ) = ONE
+         Q( 1 ) = SIGN( 1.0D0, D( 1 ) )
+         Q( 1+SMLSIZ*N ) = 1.0D0
       ELSE IF( ICOMPQ == 2 ) THEN
-         U( 1, 1 ) = SIGN( ONE, D( 1 ) )
-         VT( 1, 1 ) = ONE
+         U( 1, 1 ) = SIGN( 1.0D0, D( 1 ) )
+         VT( 1, 1 ) = 1.0D0
       END IF
       D( 1 ) = ABS( D( 1 ) )
       RETURN
@@ -302,8 +290,8 @@
    WSTART = 1
    QSTART = 3
    IF( ICOMPQ == 1 ) THEN
-      CALL DCOPY( N, D, 1, Q( 1 ), 1 )
-      CALL DCOPY( N-1, E, 1, Q( N+1 ), 1 )
+      Q(1:N) = D(1:N)
+      Q(N+1:2*N) = E(1:N-1)
    END IF
    IF( IUPLO == 2 ) THEN
       QSTART = 5
@@ -339,17 +327,19 @@
 !
    IF( N <= SMLSIZ ) THEN
       IF( ICOMPQ == 2 ) THEN
-         CALL DLASET( 'A', N, N, ZERO, ONE, U, LDU )
-         CALL DLASET( 'A', N, N, ZERO, ONE, VT, LDVT )
+         U(1:N,1:N) = 0.0D0
+         VT(1:N,1:N) = 0.0D0
+         DO I=1, N
+            U(I,I) = 1.0D0
+            VT(I,I) = 1.0D0
+         ENDDO
          CALL DLASDQ( 'U', 0, N, N, N, 0, D, E, VT, LDVT, U, LDU, U, &
                       LDU, WORK( WSTART ), INFO )
       ELSE IF( ICOMPQ == 1 ) THEN
          IU = 1
          IVT = IU + N
-         CALL DLASET( 'A', N, N, ZERO, ONE, Q( IU+( QSTART-1 )*N ), &
-                      N )
-         CALL DLASET( 'A', N, N, ZERO, ONE, Q( IVT+( QSTART-1 )*N ), &
-                      N )
+         CALL DLASET( 'A', N, N, 0.0D0, 1.0D0, Q( IU+( QSTART-1 )*N ), N )
+         CALL DLASET( 'A', N, N, 0.0D0, 1.0D0, Q( IVT+( QSTART-1 )*N ), N )
          CALL DLASDQ( 'U', 0, N, N, N, 0, D, E, &
                       Q( IVT+( QSTART-1 )*N ), N, &
                       Q( IU+( QSTART-1 )*N ), N, &
@@ -360,21 +350,24 @@
    END IF
 !
    IF( ICOMPQ == 2 ) THEN
-      CALL DLASET( 'A', N, N, ZERO, ONE, U, LDU )
-      CALL DLASET( 'A', N, N, ZERO, ONE, VT, LDVT )
+      U(1:N,1:N) = 0.0D0
+      VT(1:N,1:N) = 0.0D0
+      DO I=1, N
+         U(I,I) = 1.0D0
+         VT(I,I) = 1.0D0
+      ENDDO
    END IF
 !
 !     Scale.
 !
    ORGNRM = DLANST( 'M', N, D, E )
-   IF( ORGNRM == ZERO ) &
-      RETURN
-   CALL DLASCL( 'G', 0, 0, ORGNRM, ONE, N, 1, D, N, IERR )
-   CALL DLASCL( 'G', 0, 0, ORGNRM, ONE, NM1, 1, E, NM1, IERR )
+   IF( ORGNRM == 0.0D0 ) RETURN
+   CALL DLASCL( 'G', 0, 0, ORGNRM, 1.0D0, N, 1, D, N, IERR )
+   CALL DLASCL( 'G', 0, 0, ORGNRM, 1.0D0, NM1, 1, E, NM1, IERR )
 !
    EPS = (0.9D+0)*DLAMCH( 'Epsilon' )
 !
-   MLVL = INT( LOG( DBLE( N ) / DBLE( SMLSIZ+1 ) ) / LOG( TWO ) ) + 1
+   MLVL = INT( LOG( DBLE( N ) / DBLE( SMLSIZ+1 ) ) / LOG( 2.0D0 ) ) + 1
    SMLSZP = SMLSIZ + 1
 !
    IF( ICOMPQ == 1 ) THEN
@@ -427,11 +420,11 @@
 !
             NSIZE = I - START + 1
             IF( ICOMPQ == 2 ) THEN
-               U( N, N ) = SIGN( ONE, D( N ) )
-               VT( N, N ) = ONE
+               U( N, N ) = SIGN( 1.0D0, D( N ) )
+               VT( N, N ) = 1.0D0
             ELSE IF( ICOMPQ == 1 ) THEN
-               Q( N+( QSTART-1 )*N ) = SIGN( ONE, D( N ) )
-               Q( N+( SMLSIZ+QSTART-1 )*N ) = ONE
+               Q( N+( QSTART-1 )*N ) = SIGN( 1.0D0, D( N ) )
+               Q( N+( SMLSIZ+QSTART-1 )*N ) = 1.0D0
             END IF
             D( N ) = ABS( D( N ) )
          END IF
@@ -454,16 +447,14 @@
                          Q( START+( IS+QSTART-2 )*N ), &
                          WORK( WSTART ), IWORK, INFO )
          END IF
-         IF( INFO /= 0 ) THEN
-            RETURN
-         END IF
+         IF( INFO /= 0 ) RETURN
          START = I + 1
       END IF
    ENDDO
 !
 !     Unscale
 !
-   CALL DLASCL( 'G', 0, 0, ONE, ORGNRM, N, 1, D, N, IERR )
+   CALL DLASCL( 'G', 0, 0, 1.0D0, ORGNRM, N, 1, D, N, IERR )
 40 CONTINUE
 !
 !     Use Selection Sort to minimize swaps of singular vectors
@@ -484,8 +475,12 @@
          IF( ICOMPQ == 1 ) THEN
             IQ( I ) = KK
          ELSE IF( ICOMPQ == 2 ) THEN
-            CALL DSWAP( N, U( 1, I ), 1, U( 1, KK ), 1 )
-            CALL DSWAP( N, VT( I, 1 ), LDVT, VT( KK, 1 ), LDVT )
+            U_tmp(1:N) = U(1:N,I)
+            U(1:N,I) = U(1:N,KK)
+            U(1:N,KK) = U_tmp(1:N)
+            VT_tmp(1:N) = VT(I,1:N)
+            VT(I,1:N) = VT(KK,1:N)
+            VT(KK,1:N) = VT_tmp(1:N)
          END IF
       ELSE IF( ICOMPQ == 1 ) THEN
          IQ( I ) = I
@@ -513,5 +508,3 @@
 !     End of DBDSDC
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

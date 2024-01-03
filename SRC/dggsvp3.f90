@@ -290,10 +290,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            FORWRD, WANTQ, WANTU, WANTV, LQUERY
@@ -306,9 +302,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGEQP3, DGEQR2, DGERQ2, DLACPY, DLAPMT, &
                       DLASET, DORG2R, DORM2R, DORMR2, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -355,14 +348,10 @@
    IF( INFO == 0 ) THEN
       CALL DGEQP3( P, N, B, LDB, IWORK, TAU, WORK, -1, INFO )
       LWKOPT = INT( WORK ( 1 ) )
-      IF( WANTV ) THEN
-         LWKOPT = MAX( LWKOPT, P )
-      END IF
+      IF( WANTV ) LWKOPT = MAX( LWKOPT, P )
       LWKOPT = MAX( LWKOPT, MIN( N, P ) )
       LWKOPT = MAX( LWKOPT, M )
-      IF( WANTQ ) THEN
-         LWKOPT = MAX( LWKOPT, N )
-      END IF
+      IF( WANTQ ) LWKOPT = MAX( LWKOPT, N )
       CALL DGEQP3( M, N, A, LDA, IWORK, TAU, WORK, -1, INFO )
       LWKOPT = MAX( LWKOPT, INT( WORK ( 1 ) ) )
       LWKOPT = MAX( 1, LWKOPT )
@@ -373,16 +362,12 @@
       CALL XERBLA( 'DGGSVP3', -INFO )
       RETURN
    END IF
-   IF( LQUERY ) THEN
-      RETURN
-   ENDIF
+   IF( LQUERY ) RETURN
 !
 !     QR with column pivoting of B: B*P = V*( S11 S12 )
 !                                           (  0   0  )
 !
-   DO I = 1, N
-      IWORK( I ) = 0
-   ENDDO
+   IWORK(1:N) = 0
    CALL DGEQP3( P, N, B, LDB, IWORK, TAU, WORK, LWORK, INFO )
 !
 !     Update A := A*P
@@ -393,36 +378,30 @@
 !
    L = 0
    DO I = 1, MIN( P, N )
-      IF( ABS( B( I, I ) ) > TOLB ) &
-         L = L + 1
+      IF( ABS( B( I, I ) ) > TOLB ) L = L + 1
    ENDDO
 !
    IF( WANTV ) THEN
 !
 !        Copy the details of V, and form V.
 !
-      CALL DLASET( 'Full', P, P, ZERO, ZERO, V, LDV )
-      IF( P > 1 ) &
-         CALL DLACPY( 'Lower', P-1, N, B( 2, 1 ), LDB, V( 2, 1 ), &
-                      LDV )
+      V(1:P,1:P) = 0.0D0
+      IF( P > 1 ) CALL DLACPY( 'Lower', P-1, N, B( 2, 1 ), LDB, V( 2, 1 ), LDV )
       CALL DORG2R( P, P, MIN( P, N ), V, LDV, TAU, WORK, INFO )
    END IF
 !
 !     Clean up B
 !
    DO J = 1, L - 1
-      DO I = J + 1, L
-         B( I, J ) = ZERO
-      ENDDO
+      B(J+1:L,J) = 0.0D0
    ENDDO
-   IF( P > L ) &
-      CALL DLASET( 'Full', P-L, N, ZERO, ZERO, B( L+1, 1 ), LDB )
+   IF( P > L ) B(L+1:P,1:N) = 0.0D0
 !
    IF( WANTQ ) THEN
 !
 !        Set Q = I and Update Q := Q*P
 !
-      CALL DLASET( 'Full', N, N, ZERO, ONE, Q, LDQ )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, Q, LDQ )
       CALL DLAPMT( FORWRD, N, N, Q, LDQ, IWORK )
    END IF
 !
@@ -447,11 +426,9 @@
 !
 !        Clean up B
 !
-      CALL DLASET( 'Full', L, N-L, ZERO, ZERO, B, LDB )
+      B(1:L,1:N-L) = 0.0D0
       DO J = N - L + 1, N
-         DO I = J - N + L + 1, L
-            B( I, J ) = ZERO
-         ENDDO
+         B(J-N+L+1:L,J) = 0.0D0
       ENDDO
 !
    END IF
@@ -464,17 +441,14 @@
 !              A11 = U*(  0  T12 )*P1**T
 !                      (  0   0  )
 !
-   DO I = 1, N - L
-      IWORK( I ) = 0
-   ENDDO
+   IWORK(1:N-L) = 0
    CALL DGEQP3( M, N-L, A, LDA, IWORK, TAU, WORK, LWORK, INFO )
 !
 !     Determine the effective rank of A11
 !
    K = 0
    DO I = 1, MIN( M, N-L )
-      IF( ABS( A( I, I ) ) > TOLA ) &
-         K = K + 1
+      IF( ABS( A( I, I ) ) > TOLA ) K = K + 1
    ENDDO
 !
 !     Update A12 := U**T*A12, where A12 = A( 1:M, N-L+1:N )
@@ -486,9 +460,8 @@
 !
 !        Copy the details of U, and form U
 !
-      CALL DLASET( 'Full', M, M, ZERO, ZERO, U, LDU )
-      IF( M > 1 ) &
-         CALL DLACPY( 'Lower', M-1, N-L, A( 2, 1 ), LDA, U( 2, 1 ), &
+      U(1:M,1:M) = 0.0D0
+      IF( M > 1 ) CALL DLACPY( 'Lower', M-1, N-L, A( 2, 1 ), LDA, U( 2, 1 ), &
                       LDU )
       CALL DORG2R( M, M, MIN( M, N-L ), U, LDU, TAU, WORK, INFO )
    END IF
@@ -504,12 +477,9 @@
 !     A(1:K, 1:K) = 0, and A( K+1:M, 1:N-L ) = 0.
 !
    DO J = 1, K - 1
-      DO I = J + 1, K
-         A( I, J ) = ZERO
-      ENDDO
-      ENDDO
-   IF( M > K ) &
-      CALL DLASET( 'Full', M-K, N-L, ZERO, ZERO, A( K+1, 1 ), LDA )
+      A(J+1:K,J) = 0.0D0
+   ENDDO
+   IF( M > K ) A(K+1:M,1:N-L) = 0.0D0
 !
    IF( N-L > K ) THEN
 !
@@ -527,12 +497,10 @@
 !
 !        Clean up A
 !
-      CALL DLASET( 'Full', K, N-L-K, ZERO, ZERO, A, LDA )
+      A(1:K,1:N-L-K) = 0.0D0
       DO J = N - L - K + 1, N - L
-         DO I = J - N + L + K + 1, K
-            A( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         A(J-N+L+K+1:K,J) = 0.0D0
+      ENDDO
 !
    END IF
 !
@@ -554,10 +522,8 @@
 !        Clean up
 !
       DO J = N - L + 1, N
-         DO I = J - N + K + L + 1, M
-            A( I, J ) = ZERO
-            ENDDO
-         ENDDO
+         A(J-N+K+L+1:M,J) = 0.0D0
+      ENDDO
 !
    END IF
 !
@@ -567,5 +533,3 @@
 !     End of DGGSVP3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

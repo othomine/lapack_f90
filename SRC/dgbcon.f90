@@ -160,10 +160,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE, ZERO
-   PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LNOTI, ONENRM
@@ -183,9 +179,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DAXPY, DLACN2, DLATBS, DRSCL, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MIN
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -202,7 +195,7 @@
       INFO = -4
    ELSE IF( LDAB < 2*KL+KU+1 ) THEN
       INFO = -6
-   ELSE IF( ANORM < ZERO ) THEN
+   ELSE IF( ANORM < 0.0D0 ) THEN
       INFO = -8
    END IF
    IF( INFO /= 0 ) THEN
@@ -212,11 +205,11 @@
 !
 !     Quick return if possible
 !
-   RCOND = ZERO
+   RCOND = 0.0D0
    IF( N == 0 ) THEN
-      RCOND = ONE
+      RCOND = 1.0D0
       RETURN
-   ELSE IF( ANORM == ZERO ) THEN
+   ELSE IF( ANORM == 0.0D0 ) THEN
       RETURN
    END IF
 !
@@ -224,7 +217,7 @@
 !
 !     Estimate the norm of inv(A).
 !
-   AINVNM = ZERO
+   AINVNM = 0.0D0
    NORMIN = 'N'
    IF( ONENRM ) THEN
       KASE1 = 1
@@ -250,7 +243,7 @@
                   WORK( JP ) = WORK( J )
                   WORK( J ) = T
                END IF
-               CALL DAXPY( LM, -T, AB( KD+1, J ), 1, WORK( J+1 ), 1 )
+               WORK(J+1:J+LM) = WORK(J+1:J+LM) - T*AB( KD+1:KD+LM,J)
             ENDDO
          END IF
 !
@@ -272,8 +265,7 @@
          IF( LNOTI ) THEN
             DO J = N - 1, 1, -1
                LM = MIN( KL, N-J )
-               WORK( J ) = WORK( J ) - DDOT( LM, AB( KD+1, J ), 1, &
-                           WORK( J+1 ), 1 )
+               WORK( J ) = WORK( J ) - DDOT( LM, AB( KD+1, J ), 1, WORK( J+1 ), 1 )
                JP = IPIV( J )
                IF( JP /= J ) THEN
                   T = WORK( JP )
@@ -287,10 +279,9 @@
 !        Divide X by 1/SCALE if doing so will not cause overflow.
 !
       NORMIN = 'Y'
-      IF( SCALE /= ONE ) THEN
+      IF( SCALE /= 1.0D0 ) THEN
          IX = IDAMAX( N, WORK, 1 )
-         IF( SCALE < ABS( WORK( IX ) )*SMLNUM .OR. SCALE == ZERO ) &
-            GO TO 40
+         IF( SCALE < ABS( WORK( IX ) )*SMLNUM .OR. SCALE == 0.0D0 ) GO TO 40
          CALL DRSCL( N, SCALE, WORK, 1 )
       END IF
       GO TO 10
@@ -298,8 +289,7 @@
 !
 !     Compute the estimate of the reciprocal condition number.
 !
-   IF( AINVNM /= ZERO ) &
-      RCOND = ( ONE / AINVNM ) / ANORM
+   IF( AINVNM /= 0.0D0 ) RCOND = ( 1.0D0 / AINVNM ) / ANORM
 !
 40 CONTINUE
    RETURN
@@ -307,5 +297,3 @@
 !     End of DGBCON
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

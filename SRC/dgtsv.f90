@@ -138,17 +138,10 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO
-   PARAMETER          ( ZERO = 0.0D+0 )
 !     ..
 !     .. Local Scalars ..
    INTEGER            I, J
    DOUBLE PRECISION   FACT, TEMP
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           XERBLA
@@ -168,8 +161,7 @@
       RETURN
    END IF
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
    IF( NRHS == 1 ) THEN
       DO I = 1, N - 2
@@ -177,7 +169,7 @@
 !
 !              No row interchange required
 !
-            IF( D( I ) /= ZERO ) THEN
+            IF( D( I ) /= 0.0D0 ) THEN
                FACT = DL( I ) / D( I )
                D( I+1 ) = D( I+1 ) - FACT*DU( I )
                B( I+1, 1 ) = B( I+1, 1 ) - FACT*B( I, 1 )
@@ -185,7 +177,7 @@
                INFO = I
                RETURN
             END IF
-            DL( I ) = ZERO
+            DL( I ) = 0.0D0
          ELSE
 !
 !              Interchange rows I and I+1
@@ -205,7 +197,7 @@
       IF( N > 1 ) THEN
          I = N - 1
          IF( ABS( D( I ) ) >= ABS( DL( I ) ) ) THEN
-            IF( D( I ) /= ZERO ) THEN
+            IF( D( I ) /= 0.0D0 ) THEN
                FACT = DL( I ) / D( I )
                D( I+1 ) = D( I+1 ) - FACT*DU( I )
                B( I+1, 1 ) = B( I+1, 1 ) - FACT*B( I, 1 )
@@ -224,7 +216,7 @@
             B( I+1, 1 ) = TEMP - FACT*B( I+1, 1 )
          END IF
       END IF
-      IF( D( N ) == ZERO ) THEN
+      IF( D( N ) == 0.0D0 ) THEN
          INFO = N
          RETURN
       END IF
@@ -234,7 +226,7 @@
 !
 !              No row interchange required
 !
-            IF( D( I ) /= ZERO ) THEN
+            IF( D( I ) /= 0.0D0 ) THEN
                FACT = DL( I ) / D( I )
                D( I+1 ) = D( I+1 ) - FACT*DU( I )
                DO J = 1, NRHS
@@ -244,7 +236,7 @@
                INFO = I
                RETURN
             END IF
-            DL( I ) = ZERO
+            DL( I ) = 0.0D0
          ELSE
 !
 !              Interchange rows I and I+1
@@ -266,12 +258,10 @@
       IF( N > 1 ) THEN
          I = N - 1
          IF( ABS( D( I ) ) >= ABS( DL( I ) ) ) THEN
-            IF( D( I ) /= ZERO ) THEN
+            IF( D( I ) /= 0.0D0 ) THEN
                FACT = DL( I ) / D( I )
                D( I+1 ) = D( I+1 ) - FACT*DU( I )
-               DO J = 1, NRHS
-                  B( I+1, J ) = B( I+1, J ) - FACT*B( I, J )
-               ENDDO
+               B(I+1,1:NRHS) = B(I+1,1:NRHS) - FACT*B(I,1:NRHS)
             ELSE
                INFO = I
                RETURN
@@ -289,7 +279,7 @@
             ENDDO
          END IF
       END IF
-      IF( D( N ) == ZERO ) THEN
+      IF( D( N ) == 0.0D0 ) THEN
          INFO = N
          RETURN
       END IF
@@ -301,8 +291,7 @@
       J = 1
 70    CONTINUE
       B( N, J ) = B( N, J ) / D( N )
-      IF( N > 1 ) &
-         B( N-1, J ) = ( B( N-1, J )-DU( N-1 )*B( N, J ) ) / D( N-1 )
+      IF( N > 1 ) B( N-1, J ) = ( B( N-1, J )-DU( N-1 )*B( N, J ) ) / D( N-1 )
       DO I = N - 2, 1, -1
          B( I, J ) = ( B( I, J )-DU( I )*B( I+1, J )-DL( I )* &
                      B( I+2, J ) ) / D( I )
@@ -314,14 +303,13 @@
    ELSE
       DO J = 1, NRHS
          B( N, J ) = B( N, J ) / D( N )
-         IF( N > 1 ) &
-            B( N-1, J ) = ( B( N-1, J )-DU( N-1 )*B( N, J ) ) / &
+         IF( N > 1 ) B( N-1, J ) = ( B( N-1, J )-DU( N-1 )*B( N, J ) ) / &
                           D( N-1 )
          DO I = N - 2, 1, -1
             B( I, J ) = ( B( I, J )-DU( I )*B( I+1, J )-DL( I )* &
                         B( I+2, J ) ) / D( I )
          ENDDO
-         ENDDO
+      ENDDO
    END IF
 !
    RETURN
@@ -329,5 +317,3 @@
 !     End of DGTSV
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

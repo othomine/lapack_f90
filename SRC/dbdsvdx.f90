@@ -243,9 +243,6 @@
 !  =====================================================================
 !
 !     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE, TEN, HNDRD, MEIGTH
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TEN = 10.0D0, &
-                        HNDRD = 100.0D0, MEIGTH = -0.1250D0 )
    DOUBLE PRECISION   FUDGE
    PARAMETER          ( FUDGE = 2.0D0 )
 !     ..
@@ -269,9 +266,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DSTEVX, DCOPY, DLASET, DSCAL, DSWAP, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, DBLE, SIGN, SQRT
-!     ..
 !     .. Executable Statements ..
 !
 !     Test the input parameters.
@@ -293,7 +287,7 @@
       INFO = -4
    ELSE IF( N > 0 ) THEN
       IF( VALSV ) THEN
-         IF( VL < ZERO ) THEN
+         IF( VL < 0.0D0 ) THEN
             INFO = -7
          ELSE IF( VU <= VL ) THEN
             INFO = -8
@@ -331,8 +325,8 @@
          END IF
       END IF
       IF( WANTZ ) THEN
-         Z( 1, 1 ) = SIGN( ONE, D( 1 ) )
-         Z( 2, 1 ) = ONE
+         Z( 1, 1 ) = SIGN( 1.0D0, D( 1 ) )
+         Z( 2, 1 ) = 1.0D0
       END IF
       RETURN
    END IF
@@ -348,24 +342,21 @@
 !     W. Kahan, Accurate singular values of bidiagonal matrices, SIAM
 !     J. Sci. and Stat. Comput., 11:873–912, 1990.)
 !
-   TOL = MAX( TEN, MIN( HNDRD, EPS**MEIGTH ) )*EPS
+   TOL = MAX( 10.0D0, MIN( 100.0D0, EPS**-0.1250D0 ) )*EPS
 !
 !     Compute approximate maximum, minimum singular values.
 !
-   I = IDAMAX( N, D, 1 )
-   SMAX = ABS( D( I ) )
-   I = IDAMAX( N-1, E, 1 )
-   SMAX = MAX( SMAX, ABS( E( I ) ) )
+   SMAX = MAX(MAXVAL(ABS(D(1:N))), MAXVAL(ABS(E(1:N-1))))
 !
 !     Compute threshold for neglecting D's and E's.
 !
    SMIN = ABS( D( 1 ) )
-   IF( SMIN /= ZERO ) THEN
+   IF( SMIN /= 0.0D0 ) THEN
       MU = SMIN
       DO I = 2, N
          MU = ABS( D( I ) )*( MU / ( MU+ABS( E( I-1 ) ) ) )
          SMIN = MIN( SMIN, MU )
-         IF( SMIN == ZERO ) EXIT
+         IF( SMIN == 0.0D0 ) EXIT
       END DO
    END IF
    SMIN = SMIN / SQRT( DBLE( N ) )
@@ -374,10 +365,10 @@
 !     Check for zeros in D and E (splits), i.e. submatrices.
 !
    DO I = 1, N-1
-      IF( ABS( D( I ) ) <= THRESH ) D( I ) = ZERO
-      IF( ABS( E( I ) ) <= THRESH ) E( I ) = ZERO
+      IF( ABS( D( I ) ) <= THRESH ) D( I ) = 0.0D0
+      IF( ABS( E( I ) ) <= THRESH ) E( I ) = 0.0D0
    END DO
-   IF( ABS( D( N ) ) <= THRESH ) D( N ) = ZERO
+   IF( ABS( D( N ) ) <= THRESH ) D( N ) = 0.0D0
 !
 !     Pointers for arrays used by DSTEVX.
 !
@@ -393,8 +384,8 @@
 !
    ILTGK = 0
    IUTGK = 0
-   VLTGK = ZERO
-   VUTGK = ZERO
+   VLTGK = 0.0D0
+   VUTGK = 0.0D0
 !
    IF( ALLSV ) THEN
 !
@@ -404,7 +395,7 @@
 !        of the active submatrix.
 !
       RNGVX = 'I'
-      IF( WANTZ ) CALL DLASET( 'F', N*2, N+1, ZERO, ZERO, Z, LDZ )
+      IF( WANTZ ) CALL DLASET( 'F', N*2, N+1, 0.0D0, 0.0D0, Z, LDZ )
    ELSE IF( VALSV ) THEN
 !
 !        Find singular values in a half-open interval. We aim
@@ -414,7 +405,7 @@
       RNGVX = 'V'
       VLTGK = -VU
       VUTGK = -VL
-      WORK( IDTGK:IDTGK+2*N-1 ) = ZERO
+      WORK( IDTGK:IDTGK+2*N-1 ) = 0.0D0
       CALL DCOPY( N, D, 1, WORK( IETGK ), 2 )
       CALL DCOPY( N-1, E, 1, WORK( IETGK+1 ), 2 )
       CALL DSTEVX( 'N', 'V', N*2, WORK( IDTGK ), WORK( IETGK ), &
@@ -424,7 +415,7 @@
       IF( NS == 0 ) THEN
          RETURN
       ELSE
-         IF( WANTZ ) CALL DLASET( 'F', N*2, NS, ZERO, ZERO, Z, LDZ )
+         IF( WANTZ ) CALL DLASET( 'F', N*2, NS, 0.0D0, 0.0D0, Z, LDZ )
       END IF
    ELSE IF( INDSV ) THEN
 !
@@ -438,7 +429,7 @@
       ILTGK = IL
       IUTGK = IU
       RNGVX = 'V'
-      WORK( IDTGK:IDTGK+2*N-1 ) = ZERO
+      WORK( IDTGK:IDTGK+2*N-1 ) = 0.0D0
       CALL DCOPY( N, D, 1, WORK( IETGK ), 2 )
       CALL DCOPY( N-1, E, 1, WORK( IETGK+1 ), 2 )
       CALL DSTEVX( 'N', 'I', N*2, WORK( IDTGK ), WORK( IETGK ), &
@@ -446,7 +437,7 @@
                    Z, LDZ, WORK( ITEMP ), IWORK( IIWORK ), &
                    IWORK( IIFAIL ), INFO )
       VLTGK = S( 1 ) - FUDGE*SMAX*ULP*N
-      WORK( IDTGK:IDTGK+2*N-1 ) = ZERO
+      WORK( IDTGK:IDTGK+2*N-1 ) = 0.0D0
       CALL DCOPY( N, D, 1, WORK( IETGK ), 2 )
       CALL DCOPY( N-1, E, 1, WORK( IETGK+1 ), 2 )
       CALL DSTEVX( 'N', 'I', N*2, WORK( IDTGK ), WORK( IETGK ), &
@@ -454,14 +445,14 @@
                    Z, LDZ, WORK( ITEMP ), IWORK( IIWORK ), &
                    IWORK( IIFAIL ), INFO )
       VUTGK = S( 1 ) + FUDGE*SMAX*ULP*N
-      VUTGK = MIN( VUTGK, ZERO )
+      VUTGK = MIN( VUTGK, 0.0D0 )
 !
 !        If VLTGK=VUTGK, DSTEVX returns an error message,
 !        so if needed we change VUTGK slightly.
 !
       IF( VLTGK == VUTGK ) VLTGK = VLTGK - TOL
 !
-      IF( WANTZ ) CALL DLASET( 'F', N*2, IU-IL+1, ZERO, ZERO, Z, LDZ)
+      IF( WANTZ ) CALL DLASET( 'F', N*2, IU-IL+1, 0.0D0, 0.0D0, Z, LDZ)
    END IF
 !
 !     Initialize variables and pointers for S, Z, and WORK.
@@ -485,9 +476,9 @@
 !
 !     Form the tridiagonal TGK matrix.
 !
-   S( 1:N ) = ZERO
-   WORK( IETGK+2*N-1 ) = ZERO
-   WORK( IDTGK:IDTGK+2*N-1 ) = ZERO
+   S( 1:N ) = 0.0D0
+   WORK( IETGK+2*N-1 ) = 0.0D0
+   WORK( IDTGK:IDTGK+2*N-1 ) = 0.0D0
    CALL DCOPY( N, D, 1, WORK( IETGK ), 2 )
    CALL DCOPY( N-1, E, 1, WORK( IETGK+1 ), 2 )
 !
@@ -496,7 +487,7 @@
 !     in E and inner level in D.
 !
    DO IEPTR = 2, N*2, 2
-      IF( WORK( IETGK+IEPTR-1 ) == ZERO ) THEN
+      IF( WORK( IETGK+IEPTR-1 ) == 0.0D0 ) THEN
 !
 !           Split in E (this piece of B is square) or bottom
 !           of the (input bidiagonal) matrix.
@@ -504,7 +495,7 @@
          ISPLT = IDBEG
          IDEND = IEPTR - 1
          DO IDPTR = IDBEG, IDEND, 2
-            IF( WORK( IETGK+IDPTR-1 ) == ZERO ) THEN
+            IF( WORK( IETGK+IDPTR-1 ) == 0.0D0 ) THEN
 !
 !                 Split in D (rectangular submatrix). Set the number
 !                 of rows in U and V (NRU and NRV) accordingly.
@@ -574,10 +565,8 @@
 !
                ILTGK = 1
                IUTGK = NTGK / 2
-               IF( ALLSV .OR. VUTGK == ZERO ) THEN
-                  IF( SVEQ0 .OR. &
-                      SMIN < EPS .OR. &
-                      MOD(NTGK,2) > 0 ) THEN
+               IF( ALLSV .OR. VUTGK == 0.0D0 ) THEN
+                  IF( SVEQ0 .OR. SMIN < EPS .OR. MOD(NTGK,2) > 0 ) THEN
 !                        Special case: eigenvalue equal to zero or very
 !                        small, additional eigenvector is needed.
                       IUTGK = IUTGK + 1
@@ -594,10 +583,8 @@
                             Z( IROWZ,ICOLZ ), LDZ, WORK( ITEMP ), &
                             IWORK( IIWORK ), IWORK( IIFAIL ), &
                             INFO )
-               IF( INFO /= 0 ) THEN
+               IF( INFO /= 0 ) RETURN
 !                    Exit with the error code from DSTEVX.
-                  RETURN
-               END IF
                EMIN = ABS( MAXVAL( S( ISBEG:ISBEG+NSL-1 ) ) )
 !
                IF( NSL > 0 .AND. WANTZ ) THEN
@@ -610,9 +597,7 @@
 !                    those norms and, if needed, reorthogonalize the
 !                    vectors.
 !
-                  IF( NSL > 1 .AND. &
-                      VUTGK == ZERO .AND. &
-                      MOD(NTGK,2) == 0 .AND. &
+                  IF( NSL > 1 .AND. VUTGK == 0.0D0 .AND. MOD(NTGK,2) == 0 .AND. &
                       EMIN == 0 .AND. .NOT.SPLIT ) THEN
 !
 !                       D=0 at the top or bottom of the active submatrix:
@@ -620,11 +605,9 @@
 !                       eigenvectors corresponding to the two smallest
 !                       eigenvalues.
 !
-                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-2 ) = &
-                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-2 ) + &
-                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-1 )
-                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-1 ) = &
-                     ZERO
+                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-2 ) = Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-2 ) + &
+                                                           Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-1 )
+                     Z( IROWZ:IROWZ+NTGK-1,ICOLZ+NSL-1 ) = 0.0D0
 !                       IF( IUTGK*2 > NTGK ) THEN
 !                          Eigenvalue equal to zero or very small.
 !                          NSL = NSL - 1
@@ -633,37 +616,32 @@
 !
                   DO I = 0, MIN( NSL-1, NRU-1 )
                      NRMU = DNRM2( NRU, Z( IROWU, ICOLZ+I ), 2 )
-                     IF( NRMU == ZERO ) THEN
+                     IF( NRMU == 0.0D0 ) THEN
                         INFO = N*2 + 1
                         RETURN
                      END IF
-                     CALL DSCAL( NRU, ONE/NRMU, &
-                                 Z( IROWU,ICOLZ+I ), 2 )
-                     IF( NRMU /= ONE .AND. &
-                         ABS( NRMU-ORTOL )*SQRT2 > ONE ) &
+                     CALL DSCAL( NRU, 1.0D0/NRMU, Z( IROWU,ICOLZ+I ), 2 )
+                     IF( NRMU /= 1.0D0 .AND. &
+                         ABS( NRMU-ORTOL )*SQRT2 > 1.0D0 ) &
                          THEN
                         DO J = 0, I-1
-                           ZJTJI = -DDOT( NRU, Z( IROWU, ICOLZ+J ), &
-                                          2, Z( IROWU, ICOLZ+I ), 2 )
-                           CALL DAXPY( NRU, ZJTJI, &
-                                       Z( IROWU, ICOLZ+J ), 2, &
-                                       Z( IROWU, ICOLZ+I ), 2 )
+                           ZJTJI = -DDOT( NRU, Z( IROWU, ICOLZ+J ), 2, Z( IROWU, ICOLZ+I ), 2 )
+                           CALL DAXPY( NRU, ZJTJI, Z( IROWU, ICOLZ+J ), 2, Z( IROWU, ICOLZ+I ), 2 )
                         END DO
                         NRMU = DNRM2( NRU, Z( IROWU, ICOLZ+I ), 2 )
-                        CALL DSCAL( NRU, ONE/NRMU, &
+                        CALL DSCAL( NRU, 1.0D0/NRMU, &
                                     Z( IROWU,ICOLZ+I ), 2 )
                      END IF
                   END DO
                   DO I = 0, MIN( NSL-1, NRV-1 )
                      NRMV = DNRM2( NRV, Z( IROWV, ICOLZ+I ), 2 )
-                     IF( NRMV == ZERO ) THEN
+                     IF( NRMV == 0.0D0 ) THEN
                         INFO = N*2 + 1
                         RETURN
                      END IF
-                     CALL DSCAL( NRV, -ONE/NRMV, &
-                                 Z( IROWV,ICOLZ+I ), 2 )
-                     IF( NRMV /= ONE .AND. &
-                         ABS( NRMV-ORTOL )*SQRT2 > ONE ) &
+                     CALL DSCAL( NRV, -1.0D0/NRMV, Z( IROWV,ICOLZ+I ), 2 )
+                     IF( NRMV /= 1.0D0 .AND. &
+                         ABS( NRMV-ORTOL )*SQRT2 > 1.0D0 ) &
                          THEN
                         DO J = 0, I-1
                            ZJTJI = -DDOT( NRV, Z( IROWV, ICOLZ+J ), &
@@ -673,13 +651,11 @@
                                        Z( IROWV, ICOLZ+I ), 2 )
                         END DO
                         NRMV = DNRM2( NRV, Z( IROWV, ICOLZ+I ), 2 )
-                        CALL DSCAL( NRV, ONE/NRMV, &
+                        CALL DSCAL( NRV, 1.0D0/NRMV, &
                                     Z( IROWV,ICOLZ+I ), 2 )
                      END IF
                   END DO
-                  IF( VUTGK == ZERO .AND. &
-                      IDPTR < IDEND .AND. &
-                      MOD(NTGK,2) > 0 ) THEN
+                  IF( VUTGK == 0.0D0 .AND. IDPTR < IDEND .AND. MOD(NTGK,2) > 0 ) THEN
 !
 !                       D=0 in the middle of the active submatrix (one
 !                       eigenvalue is equal to zero): save the corresponding
@@ -690,7 +666,7 @@
                      Z( IROWZ:IROWZ+NTGK-1,N+1 ) = &
                         Z( IROWZ:IROWZ+NTGK-1,NS+NSL )
                      Z( IROWZ:IROWZ+NTGK-1,NS+NSL ) = &
-                        ZERO
+                        0.0D0
                   END IF
                END IF !** WANTZ **!
 !
@@ -716,7 +692,7 @@
                NRV = 0
             END IF !** NTGK > 0 **!
             IF( IROWZ < N*2 .AND. WANTZ ) THEN
-               Z( 1:IROWZ-1, ICOLZ ) = ZERO
+               Z( 1:IROWZ-1, ICOLZ ) = 0.0D0
             END IF
          END DO !** IDPTR loop **!
          IF( SPLIT .AND. WANTZ ) THEN
@@ -724,9 +700,8 @@
 !              Bring back eigenvector corresponding
 !              to eigenvalue equal to zero.
 !
-            Z( IDBEG:IDEND-NTGK+1,ISBEG-1 ) = &
-            Z( IDBEG:IDEND-NTGK+1,ISBEG-1 ) + &
-            Z( IDBEG:IDEND-NTGK+1,N+1 )
+            Z( IDBEG:IDEND-NTGK+1,ISBEG-1 ) = Z( IDBEG:IDEND-NTGK+1,ISBEG-1 ) + &
+                                              Z( IDBEG:IDEND-NTGK+1,N+1 )
             Z( IDBEG:IDEND-NTGK+1,N+1 ) = 0
          END IF
          IROWV = IROWV - 1
@@ -761,8 +736,8 @@
    IF( INDSV ) THEN
       K = IU - IL + 1
       IF( K < NS ) THEN
-         S( K+1:NS ) = ZERO
-         IF( WANTZ ) Z( 1:N*2,K+1:NS ) = ZERO
+         S( K+1:NS ) = 0.0D0
+         IF( WANTZ ) Z( 1:N*2,K+1:NS ) = 0.0D0
          NS = K
       END IF
    END IF
@@ -788,5 +763,3 @@
 !     End of DBDSVDX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

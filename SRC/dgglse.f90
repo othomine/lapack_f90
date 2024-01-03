@@ -176,8 +176,7 @@
 !> \ingroup gglse
 !
 !  =====================================================================
-   SUBROUTINE DGGLSE( M, N, P, A, LDA, B, LDB, C, D, X, WORK, LWORK, &
-                      INFO )
+   SUBROUTINE DGGLSE( M, N, P, A, LDA, B, LDB, C, D, X, WORK, LWORK, INFO )
 !
 !  -- LAPACK driver routine --
 !  -- LAPACK is a software package provided by Univ. of Tennessee,    --
@@ -192,10 +191,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ONE
-   PARAMETER          ( ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -209,9 +204,6 @@
 !     .. External Functions ..
    INTEGER            ILAENV
    EXTERNAL           ILAENV
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          INT, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -263,8 +255,7 @@
 !
 !     Quick return if possible
 !
-   IF( N == 0 ) &
-      RETURN
+   IF( N == 0 ) RETURN
 !
 !     Compute the GRQ factorization of matrices B and A:
 !
@@ -299,12 +290,12 @@
 !
 !        Put the solution in X
 !
-      CALL DCOPY( P, D, 1, X( N-P+1 ), 1 )
+      X(N-P+1:N) = D(1:P)
 !
 !        Update c1
 !
-      CALL DGEMV( 'No transpose', N-P, P, -ONE, A( 1, N-P+1 ), LDA, &
-                  D, 1, ONE, C, 1 )
+      CALL DGEMV( 'No transpose', N-P, P, -1.0D0, A( 1, N-P+1 ), LDA, &
+                  D, 1, 1.0D0, C, 1 )
    END IF
 !
 !     Solve R11*x1 = c1 for x1
@@ -320,7 +311,7 @@
 !
 !        Put the solutions in X
 !
-      CALL DCOPY( N-P, C, 1, X, 1 )
+      X(1:N-P) = C(1:N-P)
    END IF
 !
 !     Compute the residual vector:
@@ -328,15 +319,15 @@
    IF( M < N ) THEN
       NR = M + P - N
       IF( NR > 0 ) &
-         CALL DGEMV( 'No transpose', NR, N-M, -ONE, A( N-P+1, M+1 ), &
-                     LDA, D( NR+1 ), 1, ONE, C( N-P+1 ), 1 )
+         CALL DGEMV( 'No transpose', NR, N-M, -1.0D0, A( N-P+1, M+1 ), &
+                     LDA, D( NR+1 ), 1, 1.0D0, C( N-P+1 ), 1 )
    ELSE
       NR = P
    END IF
    IF( NR > 0 ) THEN
       CALL DTRMV( 'Upper', 'No transpose', 'Non unit', NR, &
                   A( N-P+1, N-P+1 ), LDA, D, 1 )
-      CALL DAXPY( NR, -ONE, D, 1, C( N-P+1 ), 1 )
+      C(N-P+1:N-P+NR) = C(N-P+1:N-P+NR) - D(1:NR)
    END IF
 !
 !     Backward transformation x = Q**T*x
@@ -350,5 +341,3 @@
 !     End of DGGLSE
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

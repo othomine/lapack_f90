@@ -365,10 +365,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            COLEQU, EQUIL, NOFACT, NOTRAN, ROWEQU
@@ -386,9 +382,6 @@
    EXTERNAL           DGECON, DGEEQU, DGERFS, DGETRF, DGETRS, DLACPY, &
                       DLAQGE, XERBLA
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
-!     ..
 !     .. Executable Statements ..
 !
    INFO = 0
@@ -403,7 +396,7 @@
       ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
       COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       SMLNUM = DLAMCH( 'Safe minimum' )
-      BIGNUM = ONE / SMLNUM
+      BIGNUM = 1.0D0 / SMLNUM
    END IF
 !
 !     Test the input parameters.
@@ -427,33 +420,25 @@
       INFO = -10
    ELSE
       IF( ROWEQU ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, R( J ) )
-            RCMAX = MAX( RCMAX, R( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(R(1:N))
+         RCMAX = MAXVAL(R(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -11
          ELSE IF( N > 0 ) THEN
             ROWCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            ROWCND = ONE
+            ROWCND = 1.0D0
          END IF
       END IF
       IF( COLEQU .AND. INFO == 0 ) THEN
-         RCMIN = BIGNUM
-         RCMAX = ZERO
-         DO J = 1, N
-            RCMIN = MIN( RCMIN, C( J ) )
-            RCMAX = MAX( RCMAX, C( J ) )
-         ENDDO
-         IF( RCMIN <= ZERO ) THEN
+         RCMIN = MINVAL(C(1:N))
+         RCMAX = MAXVAL(C(1:N))
+         IF( RCMIN <= 0.0D0 ) THEN
             INFO = -12
          ELSE IF( N > 0 ) THEN
             COLCND = MAX( RCMIN, SMLNUM ) / MIN( RCMAX, BIGNUM )
          ELSE
-            COLCND = ONE
+            COLCND = 1.0D0
          END IF
       END IF
       IF( INFO == 0 ) THEN
@@ -479,8 +464,7 @@
 !
 !           Equilibrate the matrix.
 !
-         CALL DLAQGE( N, N, A, LDA, R, C, ROWCND, COLCND, AMAX, &
-                      EQUED )
+         CALL DLAQGE( N, N, A, LDA, R, C, ROWCND, COLCND, AMAX, EQUED )
          ROWEQU = LSAME( EQUED, 'R' ) .OR. LSAME( EQUED, 'B' )
          COLEQU = LSAME( EQUED, 'C' ) .OR. LSAME( EQUED, 'B' )
       END IF
@@ -491,16 +475,12 @@
    IF( NOTRAN ) THEN
       IF( ROWEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               B( I, J ) = R( I )*B( I, J )
-            ENDDO
+            B(1:N,J) = R(1:N)*B(1:N,J)
          ENDDO
       END IF
    ELSE IF( COLEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            B( I, J ) = C( I )*B( I, J )
-         ENDDO
+         B(1:N,J) = C(1:N)*B(1:N,J)
       ENDDO
    END IF
 !
@@ -518,15 +498,14 @@
 !           Compute the reciprocal pivot growth factor of the
 !           leading rank-deficient INFO columns of A.
 !
-         RPVGRW = DLANTR( 'M', 'U', 'N', INFO, INFO, AF, LDAF, &
-                  WORK )
-         IF( RPVGRW == ZERO ) THEN
-            RPVGRW = ONE
+         RPVGRW = DLANTR( 'M', 'U', 'N', INFO, INFO, AF, LDAF, WORK )
+         IF( RPVGRW == 0.0D0 ) THEN
+            RPVGRW = 1.0D0
          ELSE
             RPVGRW = DLANGE( 'M', N, INFO, A, LDA, WORK ) / RPVGRW
          END IF
          WORK( 1 ) = RPVGRW
-         RCOND = ZERO
+         RCOND = 0.0D0
          RETURN
       END IF
    END IF
@@ -541,8 +520,8 @@
    END IF
    ANORM = DLANGE( NORM, N, N, A, LDA, WORK )
    RPVGRW = DLANTR( 'M', 'U', 'N', N, N, AF, LDAF, WORK )
-   IF( RPVGRW == ZERO ) THEN
-      RPVGRW = ONE
+   IF( RPVGRW == 0.0D0 ) THEN
+      RPVGRW = 1.0D0
    ELSE
       RPVGRW = DLANGE( 'M', N, N, A, LDA, WORK ) / RPVGRW
    END IF
@@ -553,7 +532,7 @@
 !
 !     Compute the solution matrix X.
 !
-   CALL DLACPY( 'Full', N, NRHS, B, LDB, X, LDX )
+   X(1:N,1:NRHS) = B(1:N,1:NRHS)
    CALL DGETRS( TRANS, N, NRHS, AF, LDAF, IPIV, X, LDX, INFO )
 !
 !     Use iterative refinement to improve the computed solution and
@@ -568,35 +547,24 @@
    IF( NOTRAN ) THEN
       IF( COLEQU ) THEN
          DO J = 1, NRHS
-            DO I = 1, N
-               X( I, J ) = C( I )*X( I, J )
-            ENDDO
+            X(1:N,J) = C(1:N)*X(1:N,J)
          ENDDO
-         DO J = 1, NRHS
-            FERR( J ) = FERR( J ) / COLCND
-         ENDDO
+         FERR(1:NRHS) = FERR(1:NRHS) / COLCND
       END IF
    ELSE IF( ROWEQU ) THEN
       DO J = 1, NRHS
-         DO I = 1, N
-            X( I, J ) = R( I )*X( I, J )
-            ENDDO
-         ENDDO
-      DO J = 1, NRHS
-         FERR( J ) = FERR( J ) / ROWCND
-         ENDDO
+         X(1:N,J) = R(1:N)*X(1:N,J)
+      ENDDO
+      FERR(1:NRHS) = FERR(1:NRHS) / ROWCND
    END IF
 !
    WORK( 1 ) = RPVGRW
 !
 !     Set INFO = N+1 if the matrix is singular to working precision.
 !
-   IF( RCOND < DLAMCH( 'Epsilon' ) ) &
-      INFO = N + 1
+   IF( RCOND < DLAMCH( 'Epsilon' ) ) INFO = N + 1
    RETURN
 !
 !     End of DGESVX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

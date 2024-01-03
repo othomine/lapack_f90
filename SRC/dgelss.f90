@@ -184,10 +184,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -211,9 +207,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -280,8 +273,7 @@
                    B, LDB, DUM(1), -1, INFO )
             LWORK_DORMBR = INT( DUM(1) )
 !              Compute space needed for DORGBR
-            CALL DORGBR( 'P', N, N, N, A, LDA, DUM(1), &
-                      DUM(1), -1, INFO )
+            CALL DORGBR( 'P', N, N, N, A, LDA, DUM(1), DUM(1), -1, INFO )
             LWORK_DORGBR = INT( DUM(1) )
 !              Compute total workspace needed
             MAXWRK = MAX( MAXWRK, 3*N + LWORK_DGEBRD )
@@ -304,24 +296,19 @@
 !                 than rows
 !
 !                 Compute space needed for DGELQF
-               CALL DGELQF( M, N, A, LDA, DUM(1), DUM(1), &
-                   -1, INFO )
+               CALL DGELQF( M, N, A, LDA, DUM(1), DUM(1), -1, INFO )
                LWORK_DGELQF = INT( DUM(1) )
 !                 Compute space needed for DGEBRD
-               CALL DGEBRD( M, M, A, LDA, S, DUM(1), DUM(1), &
-                         DUM(1), DUM(1), -1, INFO )
+               CALL DGEBRD( M, M, A, LDA, S, DUM(1), DUM(1), DUM(1), DUM(1), -1, INFO )
                LWORK_DGEBRD = INT( DUM(1) )
 !                 Compute space needed for DORMBR
-               CALL DORMBR( 'Q', 'L', 'T', M, NRHS, N, A, LDA, &
-                   DUM(1), B, LDB, DUM(1), -1, INFO )
+               CALL DORMBR( 'Q', 'L', 'T', M, NRHS, N, A, LDA, DUM(1), B, LDB, DUM(1), -1, INFO )
                LWORK_DORMBR = INT( DUM(1) )
 !                 Compute space needed for DORGBR
-               CALL DORGBR( 'P', M, M, M, A, LDA, DUM(1), &
-                      DUM(1), -1, INFO )
+               CALL DORGBR( 'P', M, M, M, A, LDA, DUM(1), DUM(1), -1, INFO )
                LWORK_DORGBR = INT( DUM(1) )
 !                 Compute space needed for DORMLQ
-               CALL DORMLQ( 'L', 'T', N, NRHS, M, A, LDA, DUM(1), &
-                    B, LDB, DUM(1), -1, INFO )
+               CALL DORMLQ( 'L', 'T', N, NRHS, M, A, LDA, DUM(1), B, LDB, DUM(1), -1, INFO )
                LWORK_DORMLQ = INT( DUM(1) )
 !                 Compute total workspace needed
                MAXWRK = M + LWORK_DGELQF
@@ -362,8 +349,7 @@
       END IF
       WORK( 1 ) = MAXWRK
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) &
-         INFO = -12
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -12
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -385,13 +371,13 @@
    EPS = DLAMCH( 'P' )
    SFMIN = DLAMCH( 'S' )
    SMLNUM = SFMIN / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, WORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -403,12 +389,12 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'F', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
-      CALL DLASET( 'F', MINMN, 1, ZERO, ZERO, S, MINMN )
+      CALL DLASET( 'F', MAX( M, N ), NRHS, 0.0D0, 0.0D0, B, LDB )
+      CALL DLASET( 'F', MINMN, 1, 0.0D0, 0.0D0, S, MINMN )
       RANK = 0
       GO TO 70
    END IF
@@ -417,7 +403,7 @@
 !
    BNRM = DLANGE( 'M', M, NRHS, B, LDB, WORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -460,8 +446,7 @@
 !
 !           Zero out below R
 !
-         IF( N > 1 ) &
-            CALL DLASET( 'L', N-1, N-1, ZERO, ZERO, A( 2, 1 ), LDA )
+         IF( N > 1 ) CALL DLASET( 'L', N-1, N-1, 0.0D0, 0.0D0, A( 2, 1 ), LDA )
       END IF
 !
       IE = 1
@@ -496,21 +481,19 @@
 !
       CALL DBDSQR( 'U', N, N, 0, NRHS, S, WORK( IE ), A, LDA, DUM, &
                    1, B, LDB, WORK( IWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
-         THR = MAX( EPS*S( 1 ), SFMIN )
+      IF( RCOND < 0.0D0 ) THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, N
          IF( S( I ) > THR ) THEN
             CALL DRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL DLASET( 'F', 1, NRHS, ZERO, ZERO, B( I, 1 ), LDB )
+            B(I,1:NRHS) = 0.0D0
          END IF
       ENDDO
 !
@@ -518,23 +501,21 @@
 !        (Workspace: need N, prefer N*NRHS)
 !
       IF( LWORK >= LDB*NRHS .AND. NRHS > 1 ) THEN
-         CALL DGEMM( 'T', 'N', N, NRHS, N, ONE, A, LDA, B, LDB, ZERO, &
-                     WORK, LDB )
+         CALL DGEMM( 'T', 'N', N, NRHS, N, 1.0D0, A, LDA, B, LDB, 0.0D0, WORK, LDB )
          CALL DLACPY( 'G', N, NRHS, WORK, LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = LWORK / N
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL DGEMM( 'T', 'N', N, BL, N, ONE, A, LDA, B( 1, I ), &
-                        LDB, ZERO, WORK, N )
+            CALL DGEMM( 'T', 'N', N, BL, N, 1.0D0, A, LDA, B( 1, I ), LDB, 0.0D0, WORK, N )
             CALL DLACPY( 'G', N, BL, WORK, N, B( 1, I ), LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL DGEMV( 'T', N, N, ONE, A, LDA, B, 1, ZERO, WORK, 1 )
+         CALL DGEMV( 'T', N, N, 1.0D0, A, LDA, B, 1, 0.0D0, WORK, 1 )
          CALL DCOPY( N, WORK, 1, B, 1 )
       END IF
 !
-   ELSE IF( N >= MNTHR .AND. LWORK >= 4*M+M*M+ &
+   ELSE IF( N >= MNTHR .AND. LWORK >= (4+M)*M+ &
             MAX( M, 2*M-4, NRHS, N-3*M ) ) THEN
 !
 !        Path 2a - underdetermined, with many more columns than rows
@@ -556,7 +537,7 @@
 !        Copy L to WORK(IL), zeroing out above it
 !
       CALL DLACPY( 'L', M, M, A, LDA, WORK( IL ), LDWORK )
-      CALL DLASET( 'U', M-1, M-1, ZERO, ZERO, WORK( IL+LDWORK ), &
+      CALL DLASET( 'U', M-1, M-1, 0.0D0, 0.0D0, WORK( IL+LDWORK ), &
                    LDWORK )
       IE = IL + LDWORK*M
       ITAUQ = IE + M
@@ -591,21 +572,19 @@
 !
       CALL DBDSQR( 'U', M, M, 0, NRHS, S, WORK( IE ), WORK( IL ), &
                    LDWORK, A, LDA, B, LDB, WORK( IWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
-         THR = MAX( EPS*S( 1 ), SFMIN )
+      IF( RCOND < 0.0D0 ) THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, M
          IF( S( I ) > THR ) THEN
             CALL DRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL DLASET( 'F', 1, NRHS, ZERO, ZERO, B( I, 1 ), LDB )
+            B(I,1:NRHS) = 0.0D0
          END IF
       ENDDO
       IWORK = IE
@@ -614,27 +593,27 @@
 !        (Workspace: need M*M+2*M, prefer M*M+M+M*NRHS)
 !
       IF( LWORK >= LDB*NRHS+IWORK-1 .AND. NRHS > 1 ) THEN
-         CALL DGEMM( 'T', 'N', M, NRHS, M, ONE, WORK( IL ), LDWORK, &
-                     B, LDB, ZERO, WORK( IWORK ), LDB )
+         CALL DGEMM( 'T', 'N', M, NRHS, M, 1.0D0, WORK( IL ), LDWORK, &
+                     B, LDB, 0.0D0, WORK( IWORK ), LDB )
          CALL DLACPY( 'G', M, NRHS, WORK( IWORK ), LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = ( LWORK-IWORK+1 ) / M
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL DGEMM( 'T', 'N', M, BL, M, ONE, WORK( IL ), LDWORK, &
-                        B( 1, I ), LDB, ZERO, WORK( IWORK ), M )
+            CALL DGEMM( 'T', 'N', M, BL, M, 1.0D0, WORK( IL ), LDWORK, &
+                        B( 1, I ), LDB, 0.0D0, WORK( IWORK ), M )
             CALL DLACPY( 'G', M, BL, WORK( IWORK ), M, B( 1, I ), &
                          LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL DGEMV( 'T', M, M, ONE, WORK( IL ), LDWORK, B( 1, 1 ), &
-                     1, ZERO, WORK( IWORK ), 1 )
+         CALL DGEMV( 'T', M, M, 1.0D0, WORK( IL ), LDWORK, B( 1, 1 ), &
+                     1, 0.0D0, WORK( IWORK ), 1 )
          CALL DCOPY( M, WORK( IWORK ), 1, B( 1, 1 ), 1 )
       END IF
 !
 !        Zero out below first M rows of B
 !
-      CALL DLASET( 'F', N-M, NRHS, ZERO, ZERO, B( M+1, 1 ), LDB )
+      B(M+1:N,1:NRHS) = 0.0D0
       IWORK = ITAU + M
 !
 !        Multiply transpose(Q) by B
@@ -679,21 +658,19 @@
 !
       CALL DBDSQR( 'L', M, N, 0, NRHS, S, WORK( IE ), A, LDA, DUM, &
                    1, B, LDB, WORK( IWORK ), INFO )
-      IF( INFO /= 0 ) &
-         GO TO 70
+      IF( INFO /= 0 ) GO TO 70
 !
 !        Multiply B by reciprocals of singular values
 !
       THR = MAX( RCOND*S( 1 ), SFMIN )
-      IF( RCOND < ZERO ) &
-         THR = MAX( EPS*S( 1 ), SFMIN )
+      IF( RCOND < 0.0D0 ) THR = MAX( EPS*S( 1 ), SFMIN )
       RANK = 0
       DO I = 1, M
          IF( S( I ) > THR ) THEN
             CALL DRSCL( NRHS, S( I ), B( I, 1 ), LDB )
             RANK = RANK + 1
          ELSE
-            CALL DLASET( 'F', 1, NRHS, ZERO, ZERO, B( I, 1 ), LDB )
+            B(I,1:NRHS) = 0.0D0
          END IF
       ENDDO
 !
@@ -701,20 +678,20 @@
 !        (Workspace: need N, prefer N*NRHS)
 !
       IF( LWORK >= LDB*NRHS .AND. NRHS > 1 ) THEN
-         CALL DGEMM( 'T', 'N', N, NRHS, M, ONE, A, LDA, B, LDB, ZERO, &
+         CALL DGEMM( 'T', 'N', N, NRHS, M, 1.0D0, A, LDA, B, LDB, 0.0D0, &
                      WORK, LDB )
          CALL DLACPY( 'F', N, NRHS, WORK, LDB, B, LDB )
       ELSE IF( NRHS > 1 ) THEN
          CHUNK = LWORK / N
          DO I = 1, NRHS, CHUNK
             BL = MIN( NRHS-I+1, CHUNK )
-            CALL DGEMM( 'T', 'N', N, BL, M, ONE, A, LDA, B( 1, I ), &
-                        LDB, ZERO, WORK, N )
+            CALL DGEMM( 'T', 'N', N, BL, M, 1.0D0, A, LDA, B( 1, I ), &
+                        LDB, 0.0D0, WORK, N )
             CALL DLACPY( 'F', N, BL, WORK, N, B( 1, I ), LDB )
          ENDDO
       ELSE IF( NRHS == 1 ) THEN
-         CALL DGEMV( 'T', M, N, ONE, A, LDA, B, 1, ZERO, WORK, 1 )
-         CALL DCOPY( N, WORK, 1, B, 1 )
+         CALL DGEMV( 'T', M, N, 1.0D0, A, LDA, B, 1, 0.0D0, WORK, 1 )
+         B(1:N,1) = WORK(1:N)
       END IF
    END IF
 !
@@ -742,5 +719,3 @@
 !     End of DGELSS
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

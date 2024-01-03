@@ -303,10 +303,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            CURSL, ILASCL, ILBSCL, ILVSL, ILVSR, LASTSL, &
@@ -330,9 +326,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -408,8 +401,7 @@
       END IF
       WORK( 1 ) = MAXWRK
 !
-      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) &
-         INFO = -19
+      IF( LWORK < MINWRK .AND. .NOT.LQUERY ) INFO = -19
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -430,37 +422,35 @@
 !
    EPS = DLAMCH( 'P' )
    SAFMIN = DLAMCH( 'S' )
-   SAFMAX = ONE / SAFMIN
+   SAFMAX = 1.0D0 / SAFMIN
    SMLNUM = SQRT( SAFMIN ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', N, N, A, LDA, WORK )
    ILASCL = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       ANRMTO = SMLNUM
       ILASCL = .TRUE.
    ELSE IF( ANRM > BIGNUM ) THEN
       ANRMTO = BIGNUM
       ILASCL = .TRUE.
    END IF
-   IF( ILASCL ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
+   IF( ILASCL ) CALL DLASCL( 'G', 0, 0, ANRM, ANRMTO, N, N, A, LDA, IERR )
 !
 !     Scale B if max element outside range [SMLNUM,BIGNUM]
 !
    BNRM = DLANGE( 'M', N, N, B, LDB, WORK )
    ILBSCL = .FALSE.
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
       BNRMTO = SMLNUM
       ILBSCL = .TRUE.
    ELSE IF( BNRM > BIGNUM ) THEN
       BNRMTO = BIGNUM
       ILBSCL = .TRUE.
    END IF
-   IF( ILBSCL ) &
-      CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
+   IF( ILBSCL ) CALL DLASCL( 'G', 0, 0, BNRM, BNRMTO, N, N, B, LDB, IERR )
 !
 !     Permute the matrix to make it more nearly triangular
 !     (Workspace: need 6*N + 2*N space for storing balancing factors)
@@ -492,7 +482,7 @@
 !     (Workspace: need N, prefer N*NB)
 !
    IF( ILVSL ) THEN
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VSL, LDVSL )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VSL, LDVSL )
       IF( IROWS > 1 ) THEN
          CALL DLACPY( 'L', IROWS-1, IROWS-1, B( ILO+1, ILO ), LDB, &
                       VSL( ILO+1, ILO ), LDVSL )
@@ -504,7 +494,7 @@
 !     Initialize VSR
 !
    IF( ILVSR ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, VSR, LDVSR )
+      CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, VSR, LDVSR )
 !
 !     Reduce to generalized Hessenberg form
 !     (Workspace: none needed)
@@ -527,7 +517,8 @@
       ELSE
          INFO = N + 1
       END IF
-      GO TO 50
+      WORK( 1 ) = MAXWRK
+      RETURN
    END IF
 !
 !     Sort eigenvalues ALPHA/BETA if desired
@@ -539,13 +530,10 @@
 !        Undo scaling on eigenvalues before SELCTGing
 !
       IF( ILASCL ) THEN
-         CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, N, 1, ALPHAR, N, &
-                      IERR )
-         CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, N, 1, ALPHAI, N, &
-                      IERR )
+         CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, N, 1, ALPHAR, N, IERR )
+         CALL DLASCL( 'G', 0, 0, ANRMTO, ANRM, N, 1, ALPHAI, N, IERR )
       END IF
-      IF( ILBSCL ) &
-         CALL DLASCL( 'G', 0, 0, BNRMTO, BNRM, N, 1, BETA, N, IERR )
+      IF( ILBSCL ) CALL DLASCL( 'G', 0, 0, BNRMTO, BNRM, N, 1, BETA, N, IERR )
 !
 !        Select eigenvalues
 !
@@ -557,20 +545,17 @@
                    ALPHAI, BETA, VSL, LDVSL, VSR, LDVSR, SDIM, PVSL, &
                    PVSR, DIF, WORK( IWRK ), LWORK-IWRK+1, IDUM, 1, &
                    IERR )
-      IF( IERR == 1 ) &
-         INFO = N + 3
+      IF( IERR == 1 ) INFO = N + 3
 !
    END IF
 !
 !     Apply back-permutation to VSL and VSR
 !     (Workspace: none needed)
 !
-   IF( ILVSL ) &
-      CALL DGGBAK( 'P', 'L', N, ILO, IHI, WORK( ILEFT ), &
+   IF( ILVSL ) CALL DGGBAK( 'P', 'L', N, ILO, IHI, WORK( ILEFT ), &
                    WORK( IRIGHT ), N, VSL, LDVSL, IERR )
 !
-   IF( ILVSR ) &
-      CALL DGGBAK( 'P', 'R', N, ILO, IHI, WORK( ILEFT ), &
+   IF( ILVSR ) CALL DGGBAK( 'P', 'R', N, ILO, IHI, WORK( ILEFT ), &
                    WORK( IRIGHT ), N, VSR, LDVSR, IERR )
 !
 !     Check if unscaling would cause over/underflow, if so, rescale
@@ -579,7 +564,7 @@
 !
    IF( ILASCL ) THEN
       DO I = 1, N
-         IF( ALPHAI( I ) /= ZERO ) THEN
+         IF( ALPHAI( I ) /= 0.0D0 ) THEN
             IF( ( ALPHAR( I ) / SAFMAX ) > ( ANRMTO / ANRM ) .OR. &
                 ( SAFMIN / ALPHAR( I ) ) > ( ANRM / ANRMTO ) ) THEN
                WORK( 1 ) = ABS( A( I, I ) / ALPHAR( I ) )
@@ -601,7 +586,7 @@
 !
    IF( ILBSCL ) THEN
       DO I = 1, N
-         IF( ALPHAI( I ) /= ZERO ) THEN
+         IF( ALPHAI( I ) /= 0.0D0 ) THEN
             IF( ( BETA( I ) / SAFMAX ) > ( BNRMTO / BNRM ) .OR. &
                 ( SAFMIN / BETA( I ) ) > ( BNRM / BNRMTO ) ) THEN
                WORK( 1 ) = ABS( B( I, I ) / BETA( I ) )
@@ -636,12 +621,10 @@
       IP = 0
       DO I = 1, N
          CURSL = SELCTG( ALPHAR( I ), ALPHAI( I ), BETA( I ) )
-         IF( ALPHAI( I ) == ZERO ) THEN
-            IF( CURSL ) &
-               SDIM = SDIM + 1
+         IF( ALPHAI( I ) == 0.0D0 ) THEN
+            IF( CURSL ) SDIM = SDIM + 1
             IP = 0
-            IF( CURSL .AND. .NOT.LASTSL ) &
-               INFO = N + 2
+            IF( CURSL .AND. .NOT.LASTSL ) INFO = N + 2
          ELSE
             IF( IP == 1 ) THEN
 !
@@ -649,11 +632,9 @@
 !
                CURSL = CURSL .OR. LASTSL
                LASTSL = CURSL
-               IF( CURSL ) &
-                  SDIM = SDIM + 2
+               IF( CURSL ) SDIM = SDIM + 2
                IP = -1
-               IF( CURSL .AND. .NOT.LST2SL ) &
-                  INFO = N + 2
+               IF( CURSL .AND. .NOT.LST2SL ) INFO = N + 2
             ELSE
 !
 !                 First eigenvalue of conjugate pair
@@ -667,7 +648,6 @@
 !
    END IF
 !
-50 CONTINUE
 !
    WORK( 1 ) = MAXWRK
 !
@@ -676,5 +656,3 @@
 !     End of DGGES
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

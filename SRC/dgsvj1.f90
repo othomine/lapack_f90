@@ -250,10 +250,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Local Parameters ..
-   DOUBLE PRECISION   ZERO, HALF, ONE
-   PARAMETER          ( ZERO = 0.0D0, HALF = 0.5D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    DOUBLE PRECISION   AAPP, AAPP0, AAPQ, AAQQ, APOAQ, AQOAP, BIG, &
@@ -268,17 +264,14 @@
 !     .. Local Arrays ..
    DOUBLE PRECISION   FASTR( 5 )
 !     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DABS, MAX, DBLE, MIN, DSIGN, DSQRT
-!     ..
 !     .. External Functions ..
-   DOUBLE PRECISION   DDOT, DNRM2
+   DOUBLE PRECISION   DNRM2
    INTEGER            IDAMAX
    LOGICAL            LSAME
-   EXTERNAL           IDAMAX, LSAME, DDOT, DNRM2
+   EXTERNAL           IDAMAX, LSAME, DNRM2
 !     ..
 !     .. External Subroutines ..
-   EXTERNAL           DAXPY, DCOPY, DLASCL, DLASSQ, DROTM, DSWAP, &
+   EXTERNAL           DLASCL, DLASSQ, DROTM, DSWAP, &
                       XERBLA
 !     ..
 !     .. Executable Statements ..
@@ -328,10 +321,10 @@
    ROOTEPS = DSQRT( EPS )
    ROOTSFMIN = DSQRT( SFMIN )
    SMALL = SFMIN / EPS
-   BIG = ONE / SFMIN
-   ROOTBIG = ONE / ROOTSFMIN
+   BIG = 1.0D0 / SFMIN
+   ROOTBIG = 1.0D0 / ROOTSFMIN
    LARGE = BIG / DSQRT( DBLE( M*N ) )
-   BIGTHETA = ONE / ROOTEPS
+   BIGTHETA = 1.0D0 / ROOTEPS
    ROOTTOL = DSQRT( TOL )
 !
 !     .. Initialize the right singular vector matrix ..
@@ -340,7 +333,7 @@
 !
    EMPTSW = N1*( N-N1 )
    NOTROT = 0
-   FASTR( 1 ) = ZERO
+   FASTR( 1 ) = 0.0D0
 !
 !     .. Row-cyclic pivot strategy with de Rijk's pivoting ..
 !
@@ -374,8 +367,8 @@
    DO i = 1, NSWEEP
 !     .. go go go ...
 !
-      MXAAPQ = ZERO
-      MXSINJ = ZERO
+      MXAAPQ = 0.0D0
+      MXSINJ = 0.0D0
       ISWROT = 0
 !
       NOTROT = 0
@@ -402,7 +395,7 @@
 
                AAPP = SVA( p )
 
-               IF( AAPP > ZERO ) THEN
+               IF( AAPP > 0.0D0 ) THEN
 
                   PSKIPPED = 0
 
@@ -410,29 +403,26 @@
 !
                      AAQQ = SVA( q )
 
-                     IF( AAQQ > ZERO ) THEN
+                     IF( AAQQ > 0.0D0 ) THEN
                         AAPP0 = AAPP
 !
 !     .. M x 2 Jacobi SVD ..
 !
 !        .. Safe Gram matrix computation ..
 !
-                        IF( AAQQ >= ONE ) THEN
+                        IF( AAQQ >= 1.0D0 ) THEN
                            IF( AAPP >= AAQQ ) THEN
                               ROTOK = ( SMALL*AAPP ) <= AAQQ
                            ELSE
                               ROTOK = ( SMALL*AAQQ ) <= AAPP
                            END IF
                            IF( AAPP < ( BIG / AAQQ ) ) THEN
-                              AAPQ = ( DDOT( M, A( 1, p ), 1, A( 1, &
-                                     q ), 1 )*D( p )*D( q ) / AAQQ ) &
-                                     / AAPP
+                              AAPQ = SUM(A(1:M,p)*A(1:M,q))*D( p )*D( q ) / AAQQ / AAPP
                            ELSE
-                              CALL DCOPY( M, A( 1, p ), 1, WORK, 1 )
+                              WORK(1:M) = A(1:M,p)
                               CALL DLASCL( 'G', 0, 0, AAPP, D( p ), &
                                            M, 1, WORK, LDA, IERR )
-                              AAPQ = DDOT( M, WORK, 1, A( 1, q ), &
-                                     1 )*D( q ) / AAQQ
+                              AAPQ = SUM(WORK(1:M)*A(1:M,q))*D( q ) / AAQQ
                            END IF
                         ELSE
                            IF( AAPP >= AAQQ ) THEN
@@ -441,15 +431,12 @@
                               ROTOK = AAQQ <= ( AAPP / SMALL )
                            END IF
                            IF( AAPP > ( SMALL / AAQQ ) ) THEN
-                              AAPQ = ( DDOT( M, A( 1, p ), 1, A( 1, &
-                                     q ), 1 )*D( p )*D( q ) / AAQQ ) &
-                                     / AAPP
+                              AAPQ = SUM(A(1:M,p)*A(1:M,q))*D( p )*D( q ) / AAQQ / AAPP
                            ELSE
-                              CALL DCOPY( M, A( 1, q ), 1, WORK, 1 )
+                              WORK(1:M) = A(1:M,q)
                               CALL DLASCL( 'G', 0, 0, AAQQ, D( q ), &
                                            M, 1, WORK, LDA, IERR )
-                              AAPQ = DDOT( M, WORK, 1, A( 1, p ), &
-                                     1 )*D( p ) / AAPP
+                              AAPQ = SUM(WORK(1:M)*A(1:M,p))*D( p ) / AAPP
                            END IF
                         END IF
 
@@ -467,11 +454,11 @@
 !
                               AQOAP = AAQQ / AAPP
                               APOAQ = AAPP / AAQQ
-                              THETA = -HALF*DABS(AQOAP-APOAQ) / AAPQ
+                              THETA = -0.5D0*DABS(AQOAP-APOAQ) / AAPQ
                               IF( AAQQ > AAPP0 )THETA = -THETA
 
                               IF( DABS( THETA ) > BIGTHETA ) THEN
-                                 T = HALF / THETA
+                                 T = 0.5D0 / THETA
                                  FASTR( 3 ) = T*D( p ) / D( q )
                                  FASTR( 4 ) = -T*D( q ) / D( p )
                                  CALL DROTM( M, A( 1, p ), 1, &
@@ -480,32 +467,32 @@
                                                  V( 1, p ), 1, &
                                                  V( 1, q ), 1, &
                                                  FASTR )
-                                 SVA( q ) = AAQQ*DSQRT( MAX( ZERO, &
-                                            ONE+T*APOAQ*AAPQ ) )
-                                 AAPP = AAPP*DSQRT( MAX( ZERO, &
-                                        ONE-T*AQOAP*AAPQ ) )
+                                 SVA( q ) = AAQQ*DSQRT( MAX( 0.0D0, &
+                                            1.0D0+T*APOAQ*AAPQ ) )
+                                 AAPP = AAPP*DSQRT( MAX( 0.0D0, &
+                                        1.0D0-T*AQOAP*AAPQ ) )
                                  MXSINJ = MAX( MXSINJ, DABS( T ) )
                               ELSE
 !
 !                 .. choose correct signum for THETA and rotate
 !
-                                 THSIGN = -DSIGN( ONE, AAPQ )
+                                 THSIGN = -DSIGN( 1.0D0, AAPQ )
                                  IF( AAQQ > AAPP0 )THSIGN = -THSIGN
-                                 T = ONE / ( THETA+THSIGN* &
-                                     DSQRT( ONE+THETA*THETA ) )
-                                 CS = DSQRT( ONE / ( ONE+T*T ) )
+                                 T = 1.0D0 / ( THETA+THSIGN* &
+                                     DSQRT( 1.0D0+THETA*THETA ) )
+                                 CS = DSQRT( 1.0D0 / ( 1.0D0+T*T ) )
                                  SN = T*CS
                                  MXSINJ = MAX( MXSINJ, DABS( SN ) )
-                                 SVA( q ) = AAQQ*DSQRT( MAX( ZERO, &
-                                            ONE+T*APOAQ*AAPQ ) )
-                                 AAPP = AAPP*DSQRT( MAX( ZERO, &
-                                       ONE-T*AQOAP*AAPQ ) )
+                                 SVA( q ) = AAQQ*DSQRT( MAX( 0.0D0, &
+                                            1.0D0+T*APOAQ*AAPQ ) )
+                                 AAPP = AAPP*DSQRT( MAX( 0.0D0, &
+                                       1.0D0-T*AQOAP*AAPQ ) )
 
                                  APOAQ = D( p ) / D( q )
                                  AQOAP = D( q ) / D( p )
-                                 IF( D( p ) >= ONE ) THEN
+                                 IF( D( p ) >= 1.0D0 ) THEN
 !
-                                    IF( D( q ) >= ONE ) THEN
+                                    IF( D( q ) >= 1.0D0 ) THEN
                                        FASTR( 3 ) = T*APOAQ
                                        FASTR( 4 ) = -T*AQOAP
                                        D( p ) = D( p )*CS
@@ -517,81 +504,43 @@
                                            V( 1, p ), 1, V( 1, q ), &
                                            1, FASTR )
                                     ELSE
-                                       CALL DAXPY( M, -T*AQOAP, &
-                                                   A( 1, q ), 1, &
-                                                   A( 1, p ), 1 )
-                                       CALL DAXPY( M, CS*SN*APOAQ, &
-                                                   A( 1, p ), 1, &
-                                                   A( 1, q ), 1 )
+                                       A(1:M,p) = A(1:M,p)-T*AQOAP*A(1:M,q)
+                                       A(1:M,q) = A(1:M,q)+CS*SN*APOAQ*A(1:M,p)
                                        IF( RSVEC ) THEN
-                                          CALL DAXPY( MVL, -T*AQOAP, &
-                                                      V( 1, q ), 1, &
-                                                      V( 1, p ), 1 )
-                                          CALL DAXPY( MVL, &
-                                                      CS*SN*APOAQ, &
-                                                      V( 1, p ), 1, &
-                                                      V( 1, q ), 1 )
+                                          V(1:MVL,p) = V(1:MVL,p)-T*AQOAP*V(1:MVL,q)
+                                          V(1:MVL,q) = V(1:MVL,q)+CS*SN*APOAQ*V(1:MVL,p)
                                        END IF
                                        D( p ) = D( p )*CS
                                        D( q ) = D( q ) / CS
                                     END IF
                                  ELSE
-                                    IF( D( q ) >= ONE ) THEN
-                                       CALL DAXPY( M, T*APOAQ, &
-                                                   A( 1, p ), 1, &
-                                                   A( 1, q ), 1 )
-                                       CALL DAXPY( M, -CS*SN*AQOAP, &
-                                                   A( 1, q ), 1, &
-                                                   A( 1, p ), 1 )
+                                    IF( D( q ) >= 1.0D0 ) THEN
+                                       A(1:M,q) = A(1:M,q)+T*APOAQ*A(1:M,p)
+                                       A(1:M,p) = A(1:M,p)-CS*SN*AQOAP*A(1:M,q)
                                        IF( RSVEC ) THEN
-                                          CALL DAXPY( MVL, T*APOAQ, &
-                                                      V( 1, p ), 1, &
-                                                      V( 1, q ), 1 )
-                                          CALL DAXPY( MVL, &
-                                                      -CS*SN*AQOAP, &
-                                                      V( 1, q ), 1, &
-                                                      V( 1, p ), 1 )
+                                          V(1:MVL,q) = V(1:MVL,q)+T*APOAQ*V(1:MVL,p)
+                                          V(1:MVL,p) = V(1:MVL,p)-CS*SN*AQOAP*V(1:MVL,q)
                                        END IF
                                        D( p ) = D( p ) / CS
                                        D( q ) = D( q )*CS
                                     ELSE
                                        IF( D( p ) >= D( q ) ) THEN
-                                          CALL DAXPY( M, -T*AQOAP, &
-                                                      A( 1, q ), 1, &
-                                                      A( 1, p ), 1 )
-                                          CALL DAXPY( M, CS*SN*APOAQ, &
-                                                      A( 1, p ), 1, &
-                                                      A( 1, q ), 1 )
+                                          A(1:M,p) = A(1:M,p)-T*AQOAP*A(1:M,q)
+                                          A(1:M,q) = A(1:M,q)+CS*SN*APOAQ*A(1:M,p)
                                           D( p ) = D( p )*CS
                                           D( q ) = D( q ) / CS
                                           IF( RSVEC ) THEN
-                                             CALL DAXPY( MVL, &
-                                                  -T*AQOAP, &
-                                                  V( 1, q ), 1, &
-                                                  V( 1, p ), 1 )
-                                             CALL DAXPY( MVL, &
-                                                  CS*SN*APOAQ, &
-                                                  V( 1, p ), 1, &
-                                                  V( 1, q ), 1 )
+                                             V(1:MVL,p) = V(1:MVL,p)-T*AQOAP*V(1:MVL,q)
+                                             V(1:MVL,q) = V(1:MVL,q)+CS*SN*APOAQ*V(1:MVL,p)
                                           END IF
                                        ELSE
-                                          CALL DAXPY( M, T*APOAQ, &
-                                                      A( 1, p ), 1, &
-                                                      A( 1, q ), 1 )
-                                          CALL DAXPY( M, &
-                                                      -CS*SN*AQOAP, &
-                                                      A( 1, q ), 1, &
-                                                      A( 1, p ), 1 )
+                                          A(1:M,q) = A(1:M,q)+T*APOAQ*A(1:M,p)
+                                          A(1:M,p) = A(1:M,p)-CS*SN*AQOAP*A(1:M,q)
                                           D( p ) = D( p ) / CS
                                           D( q ) = D( q )*CS
                                           IF( RSVEC ) THEN
-                                             CALL DAXPY( MVL, &
-                                                  T*APOAQ, V( 1, p ), &
-                                                  1, V( 1, q ), 1 )
-                                             CALL DAXPY( MVL, &
-                                                  -CS*SN*AQOAP, &
-                                                  V( 1, q ), 1, &
-                                                  V( 1, p ), 1 )
+                                             V(1:MVL,q) = V(1:MVL,q)+T*APOAQ*V(1:MVL,p)
+                                             V(1:MVL,p) = V(1:MVL,p)-CS*SN*AQOAP*V(1:MVL,q)
                                           END IF
                                        END IF
                                     END IF
@@ -600,38 +549,34 @@
 
                            ELSE
                               IF( AAPP > AAQQ ) THEN
-                                 CALL DCOPY( M, A( 1, p ), 1, WORK, &
-                                             1 )
-                                 CALL DLASCL( 'G', 0, 0, AAPP, ONE, &
+                                 WORK(1:M) = A(1:M,p)
+                                 CALL DLASCL( 'G', 0, 0, AAPP, 1.0D0, &
                                               M, 1, WORK, LDA, IERR )
-                                 CALL DLASCL( 'G', 0, 0, AAQQ, ONE, &
+                                 CALL DLASCL( 'G', 0, 0, AAQQ, 1.0D0, &
                                               M, 1, A( 1, q ), LDA, &
                                               IERR )
                                  TEMP1 = -AAPQ*D( p ) / D( q )
-                                 CALL DAXPY( M, TEMP1, WORK, 1, &
-                                             A( 1, q ), 1 )
-                                 CALL DLASCL( 'G', 0, 0, ONE, AAQQ, &
+                                 A(1:M,q) = A(1:M,q) + TEMP1*WORK(1:M)
+                                 CALL DLASCL( 'G', 0, 0, 1.0D0, AAQQ, &
                                               M, 1, A( 1, q ), LDA, &
                                               IERR )
-                                 SVA( q ) = AAQQ*DSQRT( MAX( ZERO, &
-                                            ONE-AAPQ*AAPQ ) )
+                                 SVA( q ) = AAQQ*DSQRT( MAX( 0.0D0, &
+                                            1.0D0-AAPQ*AAPQ ) )
                                  MXSINJ = MAX( MXSINJ, SFMIN )
                               ELSE
-                                 CALL DCOPY( M, A( 1, q ), 1, WORK, &
-                                             1 )
-                                 CALL DLASCL( 'G', 0, 0, AAQQ, ONE, &
+                                 WORK(1:M) = A(1:M,q)
+                                 CALL DLASCL( 'G', 0, 0, AAQQ, 1.0D0, &
                                               M, 1, WORK, LDA, IERR )
-                                 CALL DLASCL( 'G', 0, 0, AAPP, ONE, &
+                                 CALL DLASCL( 'G', 0, 0, AAPP, 1.0D0, &
                                               M, 1, A( 1, p ), LDA, &
                                               IERR )
                                  TEMP1 = -AAPQ*D( q ) / D( p )
-                                 CALL DAXPY( M, TEMP1, WORK, 1, &
-                                             A( 1, p ), 1 )
-                                 CALL DLASCL( 'G', 0, 0, ONE, AAPP, &
+                                 A(1:M,p) = A(1:M,p) + TEMP1*WORK(1:M)
+                                 CALL DLASCL( 'G', 0, 0, 1.0D0, AAPP, &
                                               M, 1, A( 1, p ), LDA, &
                                               IERR )
-                                 SVA( p ) = AAPP*DSQRT( MAX( ZERO, &
-                                            ONE-AAPQ*AAPQ ) )
+                                 SVA( p ) = AAPP*DSQRT( MAX( 0.0D0, &
+                                            1.0D0-AAPQ*AAPQ ) )
                                  MXSINJ = MAX( MXSINJ, SFMIN )
                               END IF
                            END IF
@@ -646,8 +591,8 @@
                                  SVA( q ) = DNRM2( M, A( 1, q ), 1 )* &
                                             D( q )
                               ELSE
-                                 T = ZERO
-                                 AAQQ = ONE
+                                 T = 0.0D0
+                                 AAQQ = 1.0D0
                                  CALL DLASSQ( M, A( 1, q ), 1, T, &
                                               AAQQ )
                                  SVA( q ) = T*DSQRT( AAQQ )*D( q )
@@ -659,8 +604,8 @@
                                  AAPP = DNRM2( M, A( 1, p ), 1 )* &
                                         D( p )
                               ELSE
-                                 T = ZERO
-                                 AAPP = ONE
+                                 T = 0.0D0
+                                 AAPP = 1.0D0
                                  CALL DLASSQ( M, A( 1, p ), 1, T, &
                                               AAPP )
                                  AAPP = T*DSQRT( AAPP )*D( p )
@@ -702,9 +647,9 @@
                   SVA( p ) = AAPP
 !
                ELSE
-                  IF( AAPP == ZERO )NOTROT = NOTROT + &
+                  IF( AAPP == 0.0D0 )NOTROT = NOTROT + &
                       MIN( jgl+KBL-1, N ) - jgl + 1
-                  IF( AAPP < ZERO )NOTROT = 0
+                  IF( AAPP < 0.0D0 )NOTROT = 0
 !**      IF ( NOTROT  >=  EMPTSW )  GO TO 2011
                END IF
 
@@ -716,9 +661,9 @@
 !2011 bailed out of the jbc-loop
          DO p = igl, MIN( igl+KBL-1, N )
             SVA( p ) = DABS( SVA( p ) )
-            ENDDO
-!**   IF ( NOTROT  >=  EMPTSW ) GO TO 1994
          ENDDO
+!**   IF ( NOTROT  >=  EMPTSW ) GO TO 1994
+      ENDDO
 !2000 :: end of the ibr-loop
 !
 !     .. update SVA(N)
@@ -726,8 +671,8 @@
           THEN
          SVA( N ) = DNRM2( M, A( 1, N ), 1 )*D( N )
       ELSE
-         T = ZERO
-         AAPP = ONE
+         T = 0.0D0
+         AAPP = 1.0D0
          CALL DLASSQ( M, A( 1, N ), 1, T, AAPP )
          SVA( N ) = T*DSQRT( AAPP )*D( N )
       END IF
@@ -773,12 +718,10 @@
          CALL DSWAP( M, A( 1, p ), 1, A( 1, q ), 1 )
          IF( RSVEC )CALL DSWAP( MVL, V( 1, p ), 1, V( 1, q ), 1 )
       END IF
-      ENDDO
+   ENDDO
 !
    RETURN
 !     ..
 !     .. END OF DGSVJ1
 !     ..
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

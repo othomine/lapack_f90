@@ -245,10 +245,6 @@
 !     ..
 !
 ! =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            BLK22, INITQ, INITZ, LQUERY, WANTQ, WANTZ
@@ -266,9 +262,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DGGHRD, DLARTG, DLASET, DORM22, DROT, DGEMM, &
                       DGEMV, DTRMV, DLACPY, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          DBLE, MAX
 !     ..
 !     .. Executable Statements ..
 !
@@ -314,21 +307,18 @@
 !
 !     Initialize Q and Z if desired.
 !
-   IF( INITQ ) &
-      CALL DLASET( 'All', N, N, ZERO, ONE, Q, LDQ )
-   IF( INITZ ) &
-      CALL DLASET( 'All', N, N, ZERO, ONE, Z, LDZ )
+   IF( INITQ ) CALL DLASET( 'All', N, N, 0.0D0, 1.0D0, Q, LDQ )
+   IF( INITZ ) CALL DLASET( 'All', N, N, 0.0D0, 1.0D0, Z, LDZ )
 !
 !     Zero out lower triangle of B.
 !
-   IF( N > 1 ) &
-      CALL DLASET( 'Lower', N-1, N-1, ZERO, ZERO, B(2, 1), LDB )
+   IF( N > 1 ) CALL DLASET( 'Lower', N-1, N-1, 0.0D0, 0.0D0, B(2, 1), LDB )
 !
 !     Quick return if possible
 !
    NH = IHI - ILO + 1
    IF( NH <= 1 ) THEN
-      WORK( 1 ) = ONE
+      WORK( 1 ) = 1.0D0
       RETURN
    END IF
 !
@@ -384,11 +374,10 @@
 !
          N2NB = ( IHI-JCOL-1 ) / NNB - 1
          NBLST = IHI - JCOL - N2NB*NNB
-         CALL DLASET( 'All', NBLST, NBLST, ZERO, ONE, WORK, NBLST )
+         CALL DLASET( 'All', NBLST, NBLST, 0.0D0, 1.0D0, WORK, NBLST )
          PW = NBLST * NBLST + 1
          DO I = 1, N2NB
-            CALL DLASET( 'All', 2*NNB, 2*NNB, ZERO, ONE, &
-                         WORK( PW ), 2*NNB )
+            CALL DLASET( 'All', 2*NNB, 2*NNB, 0.0D0, 1.0D0, WORK( PW ), 2*NNB )
             PW = PW + 4*NNB*NNB
          END DO
 !
@@ -472,7 +461,7 @@
                   TEMP = B( JJ+1, JJ+1 )
                   CALL DLARTG( TEMP, B( JJ+1, JJ ), C, S, &
                                B( JJ+1, JJ+1 ) )
-                  B( JJ+1, JJ ) = ZERO
+                  B( JJ+1, JJ ) = 0.0D0
                   CALL DROT( JJ-TOP, B( TOP+1, JJ+1 ), 1, &
                              B( TOP+1, JJ ), 1, C, S )
                   A( JJ+1, J ) = C
@@ -534,8 +523,8 @@
 !                 triangular.
 !
                JROW = IHI - NBLST + 1
-               CALL DGEMV( 'Transpose', NBLST, LEN, ONE, WORK, &
-                           NBLST, A( JROW, J+1 ), 1, ZERO, &
+               CALL DGEMV( 'Transpose', NBLST, LEN, 1.0D0, WORK, &
+                           NBLST, A( JROW, J+1 ), 1, 0.0D0, &
                            WORK( PW ), 1 )
                PPW = PW + LEN
                DO I = JROW, JROW+NBLST-LEN-1
@@ -545,9 +534,9 @@
                CALL DTRMV( 'Lower', 'Transpose', 'Non-unit', &
                            NBLST-LEN, WORK( LEN*NBLST + 1 ), NBLST, &
                            WORK( PW+LEN ), 1 )
-               CALL DGEMV( 'Transpose', LEN, NBLST-LEN, ONE, &
+               CALL DGEMV( 'Transpose', LEN, NBLST-LEN, 1.0D0, &
                            WORK( (LEN+1)*NBLST - LEN + 1 ), NBLST, &
-                           A( JROW+NBLST-LEN, J+1 ), 1, ONE, &
+                           A( JROW+NBLST-LEN, J+1 ), 1, 1.0D0, &
                            WORK( PW+LEN ), 1 )
                PPW = PW
                DO I = JROW, JROW+NBLST-1
@@ -587,12 +576,12 @@
                   CALL DTRMV( 'Lower', 'Transpose', 'Non-unit', NNB, &
                               WORK( PPWO + 2*LEN*NNB ), &
                               2*NNB, WORK( PW + LEN ), 1 )
-                  CALL DGEMV( 'Transpose', NNB, LEN, ONE, &
+                  CALL DGEMV( 'Transpose', NNB, LEN, 1.0D0, &
                               WORK( PPWO ), 2*NNB, A( JROW, J+1 ), 1, &
-                              ONE, WORK( PW ), 1 )
-                  CALL DGEMV( 'Transpose', LEN, NNB, ONE, &
+                              1.0D0, WORK( PW ), 1 )
+                  CALL DGEMV( 'Transpose', LEN, NNB, 1.0D0, &
                               WORK( PPWO + 2*LEN*NNB + NNB ), 2*NNB, &
-                              A( JROW+NNB, J+1 ), 1, ONE, &
+                              A( JROW+NNB, J+1 ), 1, 1.0D0, &
                               WORK( PW+LEN ), 1 )
                   PPW = PW
                   DO I = JROW, JROW+LEN+NNB-1
@@ -609,8 +598,8 @@
          COLA = N - JCOL - NNB + 1
          J = IHI - NBLST + 1
          CALL DGEMM( 'Transpose', 'No Transpose', NBLST, &
-                     COLA, NBLST, ONE, WORK, NBLST, &
-                     A( J, JCOL+NNB ), LDA, ZERO, WORK( PW ), &
+                     COLA, NBLST, 1.0D0, WORK, NBLST, &
+                     A( J, JCOL+NNB ), LDA, 0.0D0, WORK( PW ), &
                      NBLST )
          CALL DLACPY( 'All', NBLST, COLA, WORK( PW ), NBLST, &
                       A( J, JCOL+NNB ), LDA )
@@ -637,8 +626,8 @@
 !                 Ignore the structure of U.
 !
                CALL DGEMM( 'Transpose', 'No Transpose', 2*NNB, &
-                           COLA, 2*NNB, ONE, WORK( PPWO ), 2*NNB, &
-                           A( J, JCOL+NNB ), LDA, ZERO, WORK( PW ), &
+                           COLA, 2*NNB, 1.0D0, WORK( PPWO ), 2*NNB, &
+                           A( J, JCOL+NNB ), LDA, 0.0D0, WORK( PW ), &
                            2*NNB )
                CALL DLACPY( 'All', 2*NNB, COLA, WORK( PW ), 2*NNB, &
                             A( J, JCOL+NNB ), LDA )
@@ -658,8 +647,8 @@
                NH = N
             END IF
             CALL DGEMM( 'No Transpose', 'No Transpose', NH, &
-                        NBLST, NBLST, ONE, Q( TOPQ, J ), LDQ, &
-                        WORK, NBLST, ZERO, WORK( PW ), NH )
+                        NBLST, NBLST, 1.0D0, Q( TOPQ, J ), LDQ, &
+                        WORK, NBLST, 0.0D0, WORK( PW ), NH )
             CALL DLACPY( 'All', NH, NBLST, WORK( PW ), NH, &
                          Q( TOPQ, J ), LDQ )
             PPWO = NBLST*NBLST + 1
@@ -682,8 +671,8 @@
 !                    Ignore the structure of U.
 !
                   CALL DGEMM( 'No Transpose', 'No Transpose', NH, &
-                              2*NNB, 2*NNB, ONE, Q( TOPQ, J ), LDQ, &
-                              WORK( PPWO ), 2*NNB, ZERO, WORK( PW ), &
+                              2*NNB, 2*NNB, 1.0D0, Q( TOPQ, J ), LDQ, &
+                              WORK( PPWO ), 2*NNB, 0.0D0, WORK( PW ), &
                               NH )
                   CALL DLACPY( 'All', NH, 2*NNB, WORK( PW ), NH, &
                                Q( TOPQ, J ), LDQ )
@@ -699,11 +688,11 @@
 !              Initialize small orthogonal factors that will hold the
 !              accumulated Givens rotations in workspace.
 !
-            CALL DLASET( 'All', NBLST, NBLST, ZERO, ONE, WORK, &
+            CALL DLASET( 'All', NBLST, NBLST, 0.0D0, 1.0D0, WORK, &
                          NBLST )
             PW = NBLST * NBLST + 1
             DO I = 1, N2NB
-               CALL DLASET( 'All', 2*NNB, 2*NNB, ZERO, ONE, &
+               CALL DLASET( 'All', 2*NNB, 2*NNB, 0.0D0, 1.0D0, &
                             WORK( PW ), 2*NNB )
                PW = PW + 4*NNB*NNB
             END DO
@@ -716,9 +705,9 @@
                JROW = J + N2NB*NNB + 2
                DO I = IHI, JROW, -1
                   C = A( I, J )
-                  A( I, J ) = ZERO
+                  A( I, J ) = 0.0D0
                   S = B( I, J )
-                  B( I, J ) = ZERO
+                  B( I, J ) = 0.0D0
                   DO JJ = PPW, PPW+LEN-1
                      TEMP = WORK( JJ + NBLST )
                      WORK( JJ + NBLST ) = C*TEMP - S*WORK( JJ )
@@ -735,9 +724,9 @@
                   LEN  = 2 + J - JCOL
                   DO I = JROW+NNB-1, JROW, -1
                      C = A( I, J )
-                     A( I, J ) = ZERO
+                     A( I, J ) = 0.0D0
                      S = B( I, J )
-                     B( I, J ) = ZERO
+                     B( I, J ) = 0.0D0
                      DO JJ = PPW, PPW+LEN-1
                         TEMP = WORK( JJ + 2*NNB )
                         WORK( JJ + 2*NNB ) = C*TEMP - S*WORK( JJ )
@@ -751,9 +740,9 @@
             END DO
          ELSE
 !
-            CALL DLASET( 'Lower', IHI - JCOL - 1, NNB, ZERO, ZERO, &
+            CALL DLASET( 'Lower', IHI - JCOL - 1, NNB, 0.0D0, 0.0D0, &
                          A( JCOL + 2, JCOL ), LDA )
-            CALL DLASET( 'Lower', IHI - JCOL - 1, NNB, ZERO, ZERO, &
+            CALL DLASET( 'Lower', IHI - JCOL - 1, NNB, 0.0D0, 0.0D0, &
                          B( JCOL + 2, JCOL ), LDB )
          END IF
 !
@@ -762,8 +751,8 @@
          IF ( TOP > 0 ) THEN
             J = IHI - NBLST + 1
             CALL DGEMM( 'No Transpose', 'No Transpose', TOP, &
-                        NBLST, NBLST, ONE, A( 1, J ), LDA, &
-                        WORK, NBLST, ZERO, WORK( PW ), TOP )
+                        NBLST, NBLST, 1.0D0, A( 1, J ), LDA, &
+                        WORK, NBLST, 0.0D0, WORK( PW ), TOP )
             CALL DLACPY( 'All', TOP, NBLST, WORK( PW ), TOP, &
                          A( 1, J ), LDA )
             PPWO = NBLST*NBLST + 1
@@ -782,8 +771,8 @@
 !                    Ignore the structure of U.
 !
                   CALL DGEMM( 'No Transpose', 'No Transpose', TOP, &
-                              2*NNB, 2*NNB, ONE, A( 1, J ), LDA, &
-                              WORK( PPWO ), 2*NNB, ZERO, &
+                              2*NNB, 2*NNB, 1.0D0, A( 1, J ), LDA, &
+                              WORK( PPWO ), 2*NNB, 0.0D0, &
                               WORK( PW ), TOP )
                   CALL DLACPY( 'All', TOP, 2*NNB, WORK( PW ), TOP, &
                                A( 1, J ), LDA )
@@ -793,8 +782,8 @@
 !
             J = IHI - NBLST + 1
             CALL DGEMM( 'No Transpose', 'No Transpose', TOP, &
-                        NBLST, NBLST, ONE, B( 1, J ), LDB, &
-                        WORK, NBLST, ZERO, WORK( PW ), TOP )
+                        NBLST, NBLST, 1.0D0, B( 1, J ), LDB, &
+                        WORK, NBLST, 0.0D0, WORK( PW ), TOP )
             CALL DLACPY( 'All', TOP, NBLST, WORK( PW ), TOP, &
                          B( 1, J ), LDB )
             PPWO = NBLST*NBLST + 1
@@ -813,8 +802,8 @@
 !                    Ignore the structure of U.
 !
                   CALL DGEMM( 'No Transpose', 'No Transpose', TOP, &
-                              2*NNB, 2*NNB, ONE, B( 1, J ), LDB, &
-                              WORK( PPWO ), 2*NNB, ZERO, &
+                              2*NNB, 2*NNB, 1.0D0, B( 1, J ), LDB, &
+                              WORK( PPWO ), 2*NNB, 0.0D0, &
                               WORK( PW ), TOP )
                   CALL DLACPY( 'All', TOP, 2*NNB, WORK( PW ), TOP, &
                                B( 1, J ), LDB )
@@ -835,8 +824,8 @@
                NH = N
             END IF
             CALL DGEMM( 'No Transpose', 'No Transpose', NH, &
-                        NBLST, NBLST, ONE, Z( TOPQ, J ), LDZ, &
-                        WORK, NBLST, ZERO, WORK( PW ), NH )
+                        NBLST, NBLST, 1.0D0, Z( TOPQ, J ), LDZ, &
+                        WORK, NBLST, 0.0D0, WORK( PW ), NH )
             CALL DLACPY( 'All', NH, NBLST, WORK( PW ), NH, &
                          Z( TOPQ, J ), LDZ )
             PPWO = NBLST*NBLST + 1
@@ -859,8 +848,8 @@
 !                    Ignore the structure of U.
 !
                   CALL DGEMM( 'No Transpose', 'No Transpose', NH, &
-                              2*NNB, 2*NNB, ONE, Z( TOPQ, J ), LDZ, &
-                              WORK( PPWO ), 2*NNB, ZERO, WORK( PW ), &
+                              2*NNB, 2*NNB, 1.0D0, Z( TOPQ, J ), LDZ, &
+                              WORK( PPWO ), 2*NNB, 0.0D0, WORK( PW ), &
                               NH )
                   CALL DLACPY( 'All', NH, 2*NNB, WORK( PW ), NH, &
                                Z( TOPQ, J ), LDZ )
@@ -893,5 +882,3 @@
 !     End of DGGHD3
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

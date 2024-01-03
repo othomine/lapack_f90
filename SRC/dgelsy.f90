@@ -223,8 +223,6 @@
 !     .. Parameters ..
    INTEGER            IMAX, IMIN
    PARAMETER          ( IMAX = 1, IMIN = 2 )
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            LQUERY
@@ -241,9 +239,6 @@
 !     .. External Subroutines ..
    EXTERNAL           DCOPY, DGEQP3, DLAIC1, DLASCL, DLASET, &
                       DORMQR, DORMRZ, DTRSM, DTZRZF, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          ABS, MAX, MIN
 !     ..
 !     .. Executable Statements ..
 !
@@ -285,9 +280,7 @@
       END IF
       WORK( 1 ) = LWKOPT
 !
-      IF( LWORK < LWKMIN .AND. .NOT.LQUERY ) THEN
-         INFO = -12
-      END IF
+      IF( LWORK < LWKMIN .AND. .NOT.LQUERY ) INFO = -12
    END IF
 !
    IF( INFO /= 0 ) THEN
@@ -307,13 +300,13 @@
 !     Get machine parameters
 !
    SMLNUM = DLAMCH( 'S' ) / DLAMCH( 'P' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A, B if max entries outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', M, N, A, LDA, WORK )
    IASCL = 0
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -325,18 +318,18 @@
 !
       CALL DLASCL( 'G', 0, 0, ANRM, BIGNUM, M, N, A, LDA, INFO )
       IASCL = 2
-   ELSE IF( ANRM == ZERO ) THEN
+   ELSE IF( ANRM == 0.0D0 ) THEN
 !
 !        Matrix all zero. Return zero solution.
 !
-      CALL DLASET( 'F', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = 0.0D0
       RANK = 0
       GO TO 70
    END IF
 !
    BNRM = DLANGE( 'M', M, NRHS, B, LDB, WORK )
    IBSCL = 0
-   IF( BNRM > ZERO .AND. BNRM < SMLNUM ) THEN
+   IF( BNRM > 0.0D0 .AND. BNRM < SMLNUM ) THEN
 !
 !        Scale matrix norm up to SMLNUM
 !
@@ -353,8 +346,7 @@
 !     Compute QR factorization with column pivoting of A:
 !        A * P = Q * R
 !
-   CALL DGEQP3( M, N, A, LDA, JPVT, WORK( 1 ), WORK( MN+1 ), &
-                LWORK-MN, INFO )
+   CALL DGEQP3( M, N, A, LDA, JPVT, WORK( 1 ), WORK( MN+1 ), LWORK-MN, INFO )
    WSIZE = MN + WORK( MN+1 )
 !
 !     workspace: MN+2*N+NB*(N+1).
@@ -362,13 +354,13 @@
 !
 !     Determine RANK using incremental condition estimation
 !
-   WORK( ISMIN ) = ONE
-   WORK( ISMAX ) = ONE
+   WORK( ISMIN ) = 1.0D0
+   WORK( ISMAX ) = 1.0D0
    SMAX = ABS( A( 1, 1 ) )
    SMIN = SMAX
-   IF( ABS( A( 1, 1 ) ) == ZERO ) THEN
+   IF( ABS( A( 1, 1 ) ) == 0.0D0 ) THEN
       RANK = 0
-      CALL DLASET( 'F', MAX( M, N ), NRHS, ZERO, ZERO, B, LDB )
+      B(1:MAX(M,N),1:NRHS) = 0.0D0
       GO TO 70
    ELSE
       RANK = 1
@@ -422,13 +414,9 @@
 !     B(1:RANK,1:NRHS) := inv(T11) * B(1:RANK,1:NRHS)
 !
    CALL DTRSM( 'Left', 'Upper', 'No transpose', 'Non-unit', RANK, &
-               NRHS, ONE, A, LDA, B, LDB )
+               NRHS, 1.0D0, A, LDA, B, LDB )
 !
-   DO J = 1, NRHS
-      DO I = RANK + 1, N
-         B( I, J ) = ZERO
-      ENDDO
-   ENDDO
+   B(RANK+1:N,1:NRHS) = 0.0D0
 !
 !     B(1:N,1:NRHS) := Y**T * B(1:N,1:NRHS)
 !
@@ -443,10 +431,8 @@
 !     B(1:N,1:NRHS) := P * B(1:N,1:NRHS)
 !
    DO J = 1, NRHS
-      DO I = 1, N
-         WORK( JPVT( I ) ) = B( I, J )
-      ENDDO
-      CALL DCOPY( N, WORK( 1 ), 1, B( 1, J ), 1 )
+      WORK(JPVT(1:N)) = B(1:N,J)
+      B(1:N,J) = WORK(1:N)
    ENDDO
 !
 !     workspace: N.
@@ -476,5 +462,3 @@
 !     End of DGELSY
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

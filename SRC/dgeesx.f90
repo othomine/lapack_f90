@@ -301,10 +301,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            CURSL, LASTSL, LQUERY, LST2SL, SCALEA, WANTSB, &
@@ -326,9 +322,6 @@
    INTEGER            ILAENV
    DOUBLE PRECISION   DLAMCH, DLANGE
    EXTERNAL           LSAME, ILAENV, DLAMCH, DLANGE
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, SQRT
 !     ..
 !     .. Executable Statements ..
 !
@@ -393,10 +386,8 @@
             MAXWRK = MAX( MAXWRK, N + HSWORK )
          END IF
          LWRK = MAXWRK
-         IF( .NOT.WANTSN ) &
-            LWRK = MAX( LWRK, N + ( N*N )/2 )
-         IF( WANTSV .OR. WANTSB ) &
-            LIWRK = ( N*N )/4
+         IF( .NOT.WANTSN ) LWRK = MAX( LWRK, N + ( N*N )/2 )
+         IF( WANTSV .OR. WANTSB ) LIWRK = ( N*N )/4
       END IF
       IWORK( 1 ) = LIWRK
       WORK( 1 ) = LWRK
@@ -426,23 +417,22 @@
 !
    EPS = DLAMCH( 'P' )
    SMLNUM = DLAMCH( 'S' )
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
    SMLNUM = SQRT( SMLNUM ) / EPS
-   BIGNUM = ONE / SMLNUM
+   BIGNUM = 1.0D0 / SMLNUM
 !
 !     Scale A if max element outside range [SMLNUM,BIGNUM]
 !
    ANRM = DLANGE( 'M', N, N, A, LDA, DUM )
    SCALEA = .FALSE.
-   IF( ANRM > ZERO .AND. ANRM < SMLNUM ) THEN
+   IF( ANRM > 0.0D0 .AND. ANRM < SMLNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = SMLNUM
    ELSE IF( ANRM > BIGNUM ) THEN
       SCALEA = .TRUE.
       CSCALE = BIGNUM
    END IF
-   IF( SCALEA ) &
-      CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+   IF( SCALEA ) CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
 !
 !     Permute the matrix to make it more nearly triangular
 !     (RWorkspace: need N)
@@ -455,8 +445,7 @@
 !
    ITAU = N + IBAL
    IWRK = N + ITAU
-   CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ), &
-                LWORK-IWRK+1, IERR )
+   CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ), LWORK-IWRK+1, IERR )
 !
    IF( WANTVS ) THEN
 !
@@ -479,8 +468,7 @@
    IWRK = ITAU
    CALL DHSEQR( 'S', JOBVS, N, ILO, IHI, A, LDA, WR, WI, VS, LDVS, &
                 WORK( IWRK ), LWORK-IWRK+1, IEVAL )
-   IF( IEVAL > 0 ) &
-      INFO = IEVAL
+   IF( IEVAL > 0 ) INFO = IEVAL
 !
 !     Sort eigenvalues if desired
 !
@@ -563,28 +551,22 @@
          END IF
          INXT = I1 - 1
          DO I = I1, I2
-            IF( I < INXT ) &
-               GO TO 20
-            IF( WI( I ) == ZERO ) THEN
+            IF( I < INXT ) GO TO 20
+            IF( WI( I ) == 0.0D0 ) THEN
                INXT = I + 1
             ELSE
-               IF( A( I+1, I ) == ZERO ) THEN
-                  WI( I ) = ZERO
-                  WI( I+1 ) = ZERO
-               ELSE IF( A( I+1, I ) /= ZERO .AND. A( I, I+1 ) == &
-                        ZERO ) THEN
-                  WI( I ) = ZERO
-                  WI( I+1 ) = ZERO
-                  IF( I > 1 ) &
-                     CALL DSWAP( I-1, A( 1, I ), 1, A( 1, I+1 ), 1 )
-                  IF( N > I+1 ) &
-                     CALL DSWAP( N-I-1, A( I, I+2 ), LDA, &
-                                 A( I+1, I+2 ), LDA )
-                  IF( WANTVS ) THEN
-                    CALL DSWAP( N, VS( 1, I ), 1, VS( 1, I+1 ), 1 )
-                  END IF
+               IF( A( I+1, I ) == 0.0D0 ) THEN
+                  WI( I ) = 0.0D0
+                  WI( I+1 ) = 0.0D0
+               ELSE IF( A( I+1, I ) /= 0.0D0 .AND. A( I, I+1 ) == &
+                        0.0D0 ) THEN
+                  WI( I ) = 0.0D0
+                  WI( I+1 ) = 0.0D0
+                  IF( I > 1 ) CALL DSWAP( I-1, A( 1, I ), 1, A( 1, I+1 ), 1 )
+                  IF( N > I+1 ) CALL DSWAP( N-I-1, A( I, I+2 ), LDA, A( I+1, I+2 ), LDA )
+                  IF( WANTVS ) CALL DSWAP( N, VS( 1, I ), 1, VS( 1, I+1 ), 1 )
                   A( I, I+1 ) = A( I+1, I )
-                  A( I+1, I ) = ZERO
+                  A( I+1, I ) = 0.0D0
                END IF
                INXT = I + 2
             END IF
@@ -605,12 +587,10 @@
       IP = 0
       DO I = 1, N
          CURSL = SELECT( WR( I ), WI( I ) )
-         IF( WI( I ) == ZERO ) THEN
-            IF( CURSL ) &
-               SDIM = SDIM + 1
+         IF( WI( I ) == 0.0D0 ) THEN
+            IF( CURSL ) SDIM = SDIM + 1
             IP = 0
-            IF( CURSL .AND. .NOT.LASTSL ) &
-               INFO = N + 2
+            IF( CURSL .AND. .NOT.LASTSL ) INFO = N + 2
          ELSE
             IF( IP == 1 ) THEN
 !
@@ -618,11 +598,9 @@
 !
                CURSL = CURSL .OR. LASTSL
                LASTSL = CURSL
-               IF( CURSL ) &
-                  SDIM = SDIM + 2
+               IF( CURSL ) SDIM = SDIM + 2
                IP = -1
-               IF( CURSL .AND. .NOT.LST2SL ) &
-                  INFO = N + 2
+               IF( CURSL .AND. .NOT.LST2SL ) INFO = N + 2
             ELSE
 !
 !                 First eigenvalue of conjugate pair
@@ -647,5 +625,3 @@
 !     End of DGEESX
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-

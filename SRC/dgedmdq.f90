@@ -442,10 +442,6 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !               flag is set with INFO=4.
 !.............................................................
 !.............................................................
-!     Parameters
-!     ~~~~~~~~~~
-      REAL(KIND=WP), PARAMETER ::  ONE = 1.0_WP
-      REAL(KIND=WP), PARAMETER :: ZERO = 0.0_WP
 !
 !     Local scalars
 !     ~~~~~~~~~~~~~
@@ -470,16 +466,11 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     External subroutines (BLAS and LAPACK)
 !     ~~~~~~~~~~~~~~~~~~~~
       EXTERNAL      DGEMM
-      EXTERNAL      DGEQRF, DLACPY, DLASET, DORGQR, &
-                    DORMQR, XERBLA
+      EXTERNAL      DGEQRF, DLACPY, DLASET, DORGQR, DORMQR, XERBLA
 
 !     External subroutines
 !     ~~~~~~~~~~~~~~~~~~~~
       EXTERNAL      DGEDMD
-
-!     Intrinsic functions
-!     ~~~~~~~~~~~~~~~~~~~
-      INTRINSIC      MAX, MIN, INT
  !..........................................................
  !
  !    Test the input arguments
@@ -529,7 +520,7 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
       ELSE IF ( .NOT. (( NRNK == -2).OR.(NRNK == -1).OR.    &
                        ((NRNK >= 1).AND.(NRNK <=N ))) )  THEN
           INFO = -16
-      ELSE IF ( ( TOL < ZERO ) .OR. ( TOL >= ONE ) ) THEN
+      ELSE IF ( ( TOL < 0.0D0 ) .OR. ( TOL >= 1.0D0 ) ) THEN
           INFO = -17
       ELSE IF ( LDZ < M ) THEN
           INFO = -22
@@ -568,8 +559,7 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
          MLWQR  = MAX(1,N)  ! Minimal workspace length for DGEQRF.
          MLWORK = MINMN + MLWQR
          IF ( LQUERY ) THEN
-             CALL DGEQRF( M, N, F, LDF, WORK, RDUMMY, -1, &
-                          INFO1 )
+             CALL DGEQRF( M, N, F, LDF, WORK, RDUMMY, -1, INFO1 )
              OLWQR  = INT(RDUMMY(1))
              OLWORK = MIN(M,N) + OLWQR
          END IF
@@ -599,8 +589,7 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
             MLWGQR = N
             MLWORK = MAX(MLWORK,MINMN+N-1+MLWGQR)
             IF ( LQUERY ) THEN
-                CALL DORGQR( M, MINMN, MINMN, F, LDF, WORK, &
-                             WORK, -1, INFO1 )
+                CALL DORGQR( M, MINMN, MINMN, F, LDF, WORK, WORK, -1, INFO1 )
                 OLWGQR = INT(WORK(1))
                 OLWORK = MAX(OLWORK,MINMN+N-1+OLWGQR)
             END IF
@@ -620,25 +609,23 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
           WORK(2)  = OLWORK
           RETURN
       END IF
-!.....	
+!
 !     Initial QR factorization that is used to represent the
 !     snapshots as elements of lower dimensional subspace.
 !     For large scale computation with M >>N , at this place
 !     one can use an out of core QRF.
 !
-      CALL DGEQRF( M, N, F, LDF, WORK,               &
-                   WORK(MINMN+1), LWORK-MINMN, INFO1 )
+      CALL DGEQRF( M, N, F, LDF, WORK, WORK(MINMN+1), LWORK-MINMN, INFO1 )
 !
 !     Define X and Y as the snapshots representations in the
 !     orthogonal basis computed in the QR factorization.
 !     X corresponds to the leading N-1 and Y to the trailing
 !     N-1 snapshots.
-      CALL DLASET( 'L', MINMN, N-1, ZERO,  ZERO, X, LDX )
+      CALL DLASET( 'L', MINMN, N-1, 0.0D0,  0.0D0, X, LDX )
       CALL DLACPY( 'U', MINMN, N-1, F,      LDF, X, LDX )
       CALL DLACPY( 'A', MINMN, N-1, F(1,2), LDF, Y, LDY )
       IF ( M >= 3 ) THEN
-          CALL DLASET( 'L', MINMN-2, N-2, ZERO,  ZERO, &
-                       Y(3,1), LDY )
+          CALL DLASET( 'L', MINMN-2, N-2, 0.0D0,  0.0D0, Y(3,1), LDY )
       END IF
 !
 !     Compute the DMD of the projected snapshot pairs (X,Y)
@@ -659,8 +646,7 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     formed or returned in factored form.
       IF ( WNTVEC ) THEN
         ! Compute the eigenvectors explicitly.
-        IF ( M > MINMN ) CALL DLASET( 'A', M-MINMN, K, ZERO, &
-                                     ZERO, Z(MINMN+1,1), LDZ )
+        IF ( M > MINMN ) Z(MINMN+1:M,1:K) = 0.0D0
         CALL DORMQR( 'L','N', M, K, MINMN, F, LDF, WORK, Z,  &
              LDZ, WORK(MINMN+N), LWORK-(MINMN+N-1), INFO1 )
       ELSE IF ( WNTVCF ) THEN
@@ -671,8 +657,7 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
         !   second factor (the eigenvectors of the Rayleigh
         !   quotient) is in the array V, as returned by DGEDMD.
         CALL DLACPY( 'A', N, K, X, LDX, Z, LDZ )
-        IF ( M > N ) CALL DLASET( 'A', M-N, K, ZERO, ZERO,   &
-                                  Z(N+1,1), LDZ )
+        IF ( M > N ) Z(N+1:M,1:K) = 0.0D0
         CALL DORMQR( 'L','N', M, K, MINMN, F, LDF, WORK, Z,  &
              LDZ, WORK(MINMN+N), LWORK-(MINMN+N-1), INFO1 )
       END IF
@@ -685,8 +670,8 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !     followed by a streaming DMD that is implemented in a
 !     QR compressed form.
       IF ( WNTTRF ) THEN ! Return the upper triangular R in Y
-         CALL DLASET( 'A', MINMN, N, ZERO,  ZERO, Y, LDY )
-         CALL DLACPY( 'U', MINMN, N, F, LDF,      Y, LDY )
+         Y(1:MINMN, 1:N) = 0.0D0
+         CALL DLACPY( 'U', MINMN, N, F, LDF, Y, LDY )
       END IF
 !
 !     The orthonormal/orthogonal factor Q in the initial QR
@@ -702,4 +687,3 @@ SUBROUTINE DGEDMDQ( JOBS,  JOBZ, JOBR, JOBQ, JOBT, JOBF,   &
 !
       END SUBROUTINE DGEDMDQ
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

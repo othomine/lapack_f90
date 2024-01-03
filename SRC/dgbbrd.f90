@@ -200,10 +200,6 @@
 !     ..
 !
 !  =====================================================================
-!
-!     .. Parameters ..
-   DOUBLE PRECISION   ZERO, ONE
-   PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
 !     ..
 !     .. Local Scalars ..
    LOGICAL            WANTB, WANTC, WANTPT, WANTQ
@@ -213,9 +209,6 @@
 !     ..
 !     .. External Subroutines ..
    EXTERNAL           DLARGV, DLARTG, DLARTV, DLASET, DROT, XERBLA
-!     ..
-!     .. Intrinsic Functions ..
-   INTRINSIC          MAX, MIN
 !     ..
 !     .. External Functions ..
    LOGICAL            LSAME
@@ -260,15 +253,12 @@
 !
 !     Initialize Q and P**T to the unit matrix, if needed
 !
-   IF( WANTQ ) &
-      CALL DLASET( 'Full', M, M, ZERO, ONE, Q, LDQ )
-   IF( WANTPT ) &
-      CALL DLASET( 'Full', N, N, ZERO, ONE, PT, LDPT )
+   IF( WANTQ ) CALL DLASET( 'Full', M, M, 0.0D0, 1.0D0, Q, LDQ )
+   IF( WANTPT ) CALL DLASET( 'Full', N, N, 0.0D0, 1.0D0, PT, LDPT )
 !
 !     Quick return if possible.
 !
-   IF( M == 0 .OR. N == 0 ) &
-      RETURN
+   IF( M == 0 .OR. N == 0 ) RETURN
 !
    MINMN = MIN( M, N )
 !
@@ -485,11 +475,8 @@
             E( I ) = RS*AB( 1, I+1 )
             AB( 1, I+1 ) = RC*AB( 1, I+1 )
          END IF
-         IF( WANTQ ) &
-            CALL DROT( M, Q( 1, I ), 1, Q( 1, I+1 ), 1, RC, RS )
-         IF( WANTC ) &
-            CALL DROT( NCC, C( I, 1 ), LDC, C( I+1, 1 ), LDC, RC, &
-                       RS )
+         IF( WANTQ ) CALL DROT( M, Q( 1, I ), 1, Q( 1, I+1 ), 1, RC, RS )
+         IF( WANTC ) CALL DROT( NCC, C( I, 1 ), LDC, C( I+1, 1 ), LDC, RC, RS )
          ENDDO
       IF( M <= N ) &
          D( M ) = AB( 1, M )
@@ -511,37 +498,25 @@
                RB = -RS*AB( KU, I )
                E( I-1 ) = RC*AB( KU, I )
             END IF
-            IF( WANTPT ) &
-               CALL DROT( N, PT( I, 1 ), LDPT, PT( M+1, 1 ), LDPT, &
-                          RC, RS )
+            IF( WANTPT ) CALL DROT( N, PT( I, 1 ), LDPT, PT( M+1, 1 ), LDPT, RC, RS )
             ENDDO
       ELSE
 !
 !           Copy off-diagonal elements to E and diagonal elements to D
 !
-         DO I = 1, MINMN - 1
-            E( I ) = AB( KU, I+1 )
-            ENDDO
-         DO I = 1, MINMN
-            D( I ) = AB( KU+1, I )
-            ENDDO
+         E(1:MINMN-1) = AB( KU, 2:MINMN )
+         D(1:MINMN) = AB( KU+1,1:MINMN)
       END IF
    ELSE
 !
 !        A is diagonal. Set elements of E to zero and copy diagonal
 !        elements to D.
 !
-      DO I = 1, MINMN - 1
-         E( I ) = ZERO
-         ENDDO
-      DO I = 1, MINMN
-         D( I ) = AB( 1, I )
-         ENDDO
+      E(1:MINMN-1) = 0.0D0
+      D(1:MINMN) = AB( 1,1:MINMN)
    END IF
    RETURN
 !
 !     End of DGBBRD
 !
 END
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-
